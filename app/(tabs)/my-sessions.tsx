@@ -470,6 +470,9 @@ export default function MySessionsScreen() {
                               <Chip label={typeLabel} variant="default" />
                             ) : null;
                           })()}
+                          {session.visibility === "members" && (
+                            <Chip label="🔒 MEMBRES" variant="custom" />
+                          )}
                           {isCustom && (
                             <Chip label="Créée par toi" variant="success" />
                           )}
@@ -537,6 +540,9 @@ export default function MySessionsScreen() {
                           <Chip label={typeLabel} variant="default" />
                         ) : null;
                       })()}
+                      {session.visibility === "members" && (
+                        <Chip label="🔒 MEMBRES" variant="custom" />
+                      )}
                       {isCustom && (
                         <Chip label="CRÉÉE PAR TOI" variant="success" />
                       )}
