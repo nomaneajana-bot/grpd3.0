@@ -358,77 +358,64 @@ export default function SessionScreen() {
 
         {/* Session Details Card - Professional Runner Info */}
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>DÉTAILS DE LA SÉANCE</Text>
-
-          {/* Workout Description */}
-          <View style={styles.cardSection}>
-            <Text style={styles.infoLabelSmall}>Description</Text>
-            <Text style={styles.infoValueSmall}>
-              {session.typeLabel === "FARTLEK" &&
-                "Entraînement par intervalles avec variations de rythme. Le fartlek long combine des efforts soutenus avec des récupérations actives pour développer l'endurance et la vitesse."}
-              {session.typeLabel === "SÉRIES" &&
-                "Intervalles structurés sur piste ou route. Travail de vitesse et de résistance à l'effort."}
-              {session.typeLabel === "FOOTING" &&
-                "Sortie d'endurance à allure confortable. Développement de la base aérobie."}
-              {session.typeLabel === "PROGRESSIF" &&
-                "Sortie progressive avec accélération graduelle. Développement de l'endurance et de la capacité à maintenir un effort croissant."}
-              {!["FARTLEK", "SÉRIES", "FOOTING", "PROGRESSIF"].includes(
-                session.typeLabel,
-              ) &&
-                "Séance d'entraînement structurée pour améliorer la performance."}
-            </Text>
+          <View style={styles.groupsHeader}>
+            <Text style={styles.cardLabel}>INFORMATIONS</Text>
           </View>
 
-          <View style={styles.divider} />
-
-          {/* Meeting Point */}
-          <View style={styles.cardSection}>
-            <Text style={styles.infoLabelSmall}>Point de rendez-vous</Text>
-            <Text style={styles.infoValueSmall}>
+          {/* Compact info rows */}
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Distance</Text>
+            <Text style={styles.infoValue}>{session.estimatedDistanceKm} km</Text>
+          </View>
+          
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Rendez-vous</Text>
+            <Text style={styles.infoValue}>
               {session.meetingPoint ||
                 (session.spot === "Spot 1"
-                  ? "Marina Casablanca - Entrée principale"
+                  ? "Marina Casablanca"
                   : session.spot)}
             </Text>
-            {session.meetingPointGPS && (
-              <Text style={styles.infoSubtext}>{session.meetingPointGPS}</Text>
-            )}
-            <Text style={styles.infoSubtext}>
-              Arrive 10 minutes avant le départ pour l'échauffement
-            </Text>
           </View>
+
+          {session.meetingPointGPS && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>GPS</Text>
+              <Text style={styles.infoValue}>{session.meetingPointGPS}</Text>
+            </View>
+          )}
 
           <View style={styles.divider} />
 
-          {/* Total Distance/Duration */}
-          <View style={styles.cardSection}>
-            <Text style={styles.infoLabelSmall}>Distance estimée</Text>
-            <Text style={styles.infoValueSmall}>
-              {session.estimatedDistanceKm} km
-            </Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Equipment/Recommendations */}
-          <View style={styles.cardSection}>
-            <Text style={styles.infoLabelSmall}>Équipement recommandé</Text>
-            <Text style={styles.infoValueSmall}>
-              • Chaussures de course adaptées{"\n"}• Vêtements adaptés à la
-              météo{"\n"}• Eau ou boisson d'effort{"\n"}• Lampe frontale si
-              départ tôt le matin
-            </Text>
-          </View>
+          {/* Description - more compact */}
+          <Text style={styles.infoLabelSmall} style={{ marginBottom: 8 }}>
+            À propos de cette séance
+          </Text>
+          <Text style={styles.descriptionText}>
+            {session.typeLabel === "FARTLEK" &&
+              "Intervalles avec variations de rythme pour développer l'endurance et la vitesse."}
+            {session.typeLabel === "SÉRIES" &&
+              "Intervalles structurés sur piste ou route. Travail de vitesse et résistance."}
+            {session.typeLabel === "FOOTING" &&
+              "Sortie d'endurance à allure confortable pour développer la base aérobie."}
+            {session.typeLabel === "PROGRESSIF" &&
+              "Sortie progressive avec accélération graduelle pour améliorer l'endurance."}
+            {!["FARTLEK", "SÉRIES", "FOOTING", "PROGRESSIF"].includes(
+              session.typeLabel,
+            ) &&
+              "Séance d'entraînement structurée pour améliorer la performance."}
+          </Text>
         </View>
 
         {/* Contact Card */}
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>CONTACT & INFORMATIONS</Text>
+          <View style={styles.groupsHeader}>
+            <Text style={styles.cardLabel}>CONTACT</Text>
+          </View>
 
-          {/* Coach Contact */}
-          <View style={styles.cardSection}>
-            <Text style={styles.infoLabelSmall}>Coach / Organisateur</Text>
-            <Text style={styles.infoValueSmall}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Organisateur</Text>
+            <Text style={styles.infoValue}>
               {session.coachName || "Équipe GRPD"}
             </Text>
           </View>
@@ -1329,6 +1316,11 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     marginTop: 4,
     fontStyle: "italic",
+  },
+  descriptionText: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    lineHeight: 20,
   },
   whatsappButton: {
     backgroundColor: "#25D366",

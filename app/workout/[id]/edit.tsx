@@ -312,9 +312,7 @@ function DualPacePickerModal({
           <View style={styles.pickerContainer}>
             <View style={styles.pickerSheet}>
               <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>
-                  AJUSTER MIN / MAX
-                </Text>
+                <Text style={styles.pickerTitle}>AJUSTER MIN / MAX</Text>
                 <TouchableOpacity
                   onPress={onClose}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
