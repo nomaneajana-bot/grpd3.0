@@ -578,10 +578,11 @@ type TestModalProps = {
   test: TestRecord | null;
   onClose: () => void;
   onSaveDraft: (test: TestRecord) => void;
+  isAdding?: boolean; // True when adding new test (even from template), false when editing existing
 };
 
-function TestModal({ visible, test, onClose, onSaveDraft }: TestModalProps) {
-  const isEditing = test !== null;
+function TestModal({ visible, test, onClose, onSaveDraft, isAdding = false }: TestModalProps) {
+  const isEditing = test !== null && !isAdding;
 
   const [kind, setKind] = useState<"distance" | "duration">("distance");
   const [mode, setMode] = useState<TestMode>("time_over_distance");
@@ -1044,9 +1045,7 @@ function TestModal({ visible, test, onClose, onSaveDraft }: TestModalProps) {
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {isEditing
-                  ? formatTestLabel(test, test.label)
-                  : "Nouveau PR"}
+                {isEditing ? formatTestLabel(test, test.label) : "Nouveau PR"}
               </Text>
               <TouchableOpacity
                 onPress={onClose}
@@ -1668,12 +1667,14 @@ export default function UpdateTestsScreen() {
           setNewTestData(null);
         }}
         onSaveDraft={handleSaveDraft}
+        isAdding={true}
       />
       <TestModal
         visible={editingTest !== null}
         test={editingTest}
         onClose={() => setEditingTest(null)}
         onSaveDraft={handleSaveDraft}
+        isAdding={false}
       />
       {/* Delete Confirmation Modal */}
       <Modal

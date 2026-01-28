@@ -1138,10 +1138,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  saveButtonDisabled: {
+    opacity: 0.5,
+  },
   saveButtonText: {
     color: colors.text.primary,
     fontSize: 16,
     fontWeight: "600",
+  },
+  membersOnlyHint: {
+    marginTop: 8,
+    color: colors.text.secondary,
+    fontSize: 12,
+    textAlign: "right",
   },
   leaveButton: {
     marginTop: 12,

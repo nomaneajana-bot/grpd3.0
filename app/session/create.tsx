@@ -1870,7 +1870,8 @@ export default function CreateSessionScreen() {
           groupConfigs: effectiveGroups,
           workoutId: sessionMode === "workout" ? selectedWorkoutId : null,
           visibility: sessionVisibility,
-          hostGroupName,
+          hostGroupName:
+            sessionVisibility === "members" ? hostGroupName : null,
         });
 
         // Update session (preserving id and isCustom)
@@ -1900,7 +1901,8 @@ export default function CreateSessionScreen() {
           groupConfigs: effectiveGroups,
           workoutId: sessionMode === "workout" ? selectedWorkoutId : null,
           visibility: sessionVisibility,
-          hostGroupName,
+          hostGroupName:
+            sessionVisibility === "members" ? hostGroupName : null,
         });
 
         // Save to persistent storage
@@ -2131,7 +2133,7 @@ export default function CreateSessionScreen() {
                     setHostGroupName(profile.groupName);
                   }
                 }}
-                trackColor={{ false: "#2a2f3a", true: colors.primary }}
+                trackColor={{ false: "#2a2f3a", true: colors.accent.primary }}
                 thumbColor="#ffffff"
               />
             </View>
