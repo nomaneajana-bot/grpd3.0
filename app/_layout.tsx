@@ -21,24 +21,30 @@ export default function RootLayout() {
   const { isLoading } = useAuthGate();
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.accent.primary} />
-        </View>
-      ) : (
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="run" options={{ headerShown: false }} />
-        </Stack>
-      )}
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <View style={styles.rootContainer}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.accent.primary} />
+          </View>
+        ) : (
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="run" options={{ headerShown: false }} />
+          </Stack>
+        )}
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  rootContainer: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
   loadingContainer: {
     flex: 1,
     backgroundColor: colors.background.primary,
