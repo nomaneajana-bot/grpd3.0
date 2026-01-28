@@ -1045,7 +1045,7 @@ function TestModal({ visible, test, onClose, onSaveDraft }: TestModalProps) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {isEditing
-                  ? `Mettre à jour — ${formatTestLabel(test, test.label)}`
+                  ? formatTestLabel(test, test.label)
                   : "Nouveau PR"}
               </Text>
               <TouchableOpacity

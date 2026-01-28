@@ -21,7 +21,12 @@ import {
     removeJoinedSession,
     upsertJoinedSession,
 } from "../../lib/joinedSessionsStore";
+import {
+    getRunnerProfile,
+    type RunnerProfile,
+} from "../../lib/profileStore";
 import { getSessionById, SESSION_MAP } from "../../lib/sessionData";
+import { canProfileJoinSession } from "../../lib/sessionVisibility";
 import { deleteSession } from "../../lib/sessionStore";
 import { getWorkoutSummary } from "../../lib/workoutHelpers";
 import { getWorkout, type WorkoutEntity } from "../../lib/workoutStore";
@@ -79,6 +84,7 @@ export default function SessionScreen() {
   const [session, setSession] = useState<
     (typeof SESSION_MAP)[string] | undefined
   >(undefined);
+  const [profile, setProfile] = useState<RunnerProfile | null>(null);
 
   // Load session from SESSION_MAP or stored sessions
   useEffect(() => {
@@ -107,6 +113,18 @@ export default function SessionScreen() {
     loadSession();
   }, [id]);
 
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const runner = await getRunnerProfile();
+        setProfile(runner);
+      } catch (error) {
+        console.warn("Failed to load profile for session:", error);
+      }
+    };
+    loadProfile();
+  }, []);
+
   // Initialize selected group state with recommended group as default
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
     session && "recommendedGroupId" in session
@@ -125,6 +143,7 @@ export default function SessionScreen() {
   const pulseAnim = useRef(new Animated.Value(0)).current;
   // Delete confirmation modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const canJoin = session ? canProfileJoinSession(session, profile) : false;
 
   useEffect(() => {
     if (session) {
@@ -749,12 +768,24 @@ export default function SessionScreen() {
         ) : (
           <View style={styles.footer}>
             <TouchableOpacity
-              style={styles.saveButton}
+              style={[
+                styles.saveButton,
+                !canJoin && styles.saveButtonDisabled,
+              ]}
               activeOpacity={0.8}
               onPress={handleSave}
+              disabled={!canJoin}
             >
-              <Text style={styles.saveButtonText}>Joindre</Text>
+              <Text style={styles.saveButtonText}>
+                {canJoin ? "Joindre" : "Membres seulement"}
+              </Text>
             </TouchableOpacity>
+            {!canJoin && (
+              <Text style={styles.membersOnlyHint}>
+                Cette séance est réservée aux membres
+                {session?.hostGroupName ? ` de ${session.hostGroupName}` : ""}.
+              </Text>
+            )}
             {hasStoredJoin && (
               <TouchableOpacity
                 style={styles.leaveButton}

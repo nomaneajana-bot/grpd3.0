@@ -32,7 +32,7 @@ import {
 } from "../../lib/joinedSessionsStore";
 import {
     getProfileSnapshot,
-    type ReferencePaces,
+    type ReferencePaces
 } from "../../lib/profileStore";
 import { getStoredRuns, type StoredRun } from "../../lib/runStore";
 import {
@@ -299,6 +299,7 @@ export default function HomeScreen() {
   const [referencePaces, setReferencePaces] = useState<ReferencePaces | null>(
     null,
   );
+  const [profile, setProfile] = useState<RunnerProfile | null>(null);
   const [filters, setFilters] = useState<FilterState>({});
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [pacePickerVisible, setPacePickerVisible] = useState(false);
@@ -364,6 +365,7 @@ export default function HomeScreen() {
     try {
       const snapshot = await getProfileSnapshot();
       setReferencePaces(snapshot.paces);
+      setProfile(snapshot.profile ?? null);
     } catch (e) {
       console.warn("Failed to load reference paces:", e);
     }
@@ -375,10 +377,16 @@ export default function HomeScreen() {
     }, [loadSessions]),
   );
 
+  const accessibleSessions = useMemo(() => {
+    return allSessions.filter((session) =>
+      isSessionVisibleToProfile(session, profile),
+    );
+  }, [allSessions, profile]);
+
   // Apply filters and sorting
   const visibleSessions = useMemo(() => {
     const sessions = applyFiltersAndSorting(
-      allSessions,
+      accessibleSessions,
       filters,
       referencePaces,
     );
@@ -387,7 +395,7 @@ export default function HomeScreen() {
       setHasAnimated(false);
     }
     return sessions;
-  }, [allSessions, filters, referencePaces]);
+  }, [accessibleSessions, filters, referencePaces]);
 
   const upcomingRuns = useMemo(() => {
     const now = Date.now();
@@ -425,9 +433,9 @@ export default function HomeScreen() {
 
   // Get unique values for filter options
   const uniqueSpots = useMemo(() => {
-    const spots = new Set(allSessions.map((s) => s.spot));
+    const spots = new Set(accessibleSessions.map((s) => s.spot));
     return Array.from(spots).sort();
-  }, [allSessions]);
+  }, [accessibleSessions]);
 
   // Get filter labels using helper
   const { typeLabel, dateLabel, paceLabel, spotLabel } =
@@ -646,7 +654,9 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.advancedFilterLabelContainer}>
-                  <Text style={styles.advancedFilterLabel}>Filles uniquement</Text>
+                  <Text style={styles.advancedFilterLabel}>
+                    Filles uniquement
+                  </Text>
                   <Text style={styles.advancedFilterSubtext}>
                     Séances réservées aux femmes
                   </Text>
@@ -684,7 +694,9 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.advancedFilterLabelContainer}>
-                  <Text style={styles.advancedFilterLabel}>Marche uniquement</Text>
+                  <Text style={styles.advancedFilterLabel}>
+                    Marche uniquement
+                  </Text>
                   <Text style={styles.advancedFilterSubtext}>
                     Afficher seulement les séances de marche
                   </Text>
