@@ -400,7 +400,13 @@ export default function SessionScreen() {
               "Sortie d'endurance à allure confortable pour développer la base aérobie."}
             {session.typeLabel === "PROGRESSIF" &&
               "Sortie progressive avec accélération graduelle pour améliorer l'endurance."}
-            {!["FARTLEK", "SÉRIES", "FOOTING", "PROGRESSIF"].includes(
+            {(session.typeLabel === "COURSE LIBRE" || session.typeLabel === "LIBRE") &&
+              "Course libre et conviviale. Pas de structure imposée, juste courir ensemble à votre rythme."}
+            {(session.typeLabel === "DÉCOUVERTE" || session.typeLabel === "DÉCOUVERTE") &&
+              "Sortie découverte pour explorer de nouveaux parcours en groupe. Allure libre et conviviale."}
+            {(session.typeLabel === "MARCHE" || session.typeLabel === "WALKING") &&
+              "Marche en groupe. Accessible à tous, parfait pour débuter ou se remettre en mouvement."}
+            {!["FARTLEK", "SÉRIES", "FOOTING", "PROGRESSIF", "COURSE LIBRE", "LIBRE", "DÉCOUVERTE", "MARCHE", "WALKING"].includes(
               session.typeLabel,
             ) &&
               "Séance d'entraînement structurée pour améliorer la performance."}

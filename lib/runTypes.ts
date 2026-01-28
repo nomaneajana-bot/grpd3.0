@@ -13,9 +13,15 @@ export type RunTypeId =
   | "long_run"
   | "hill_repeats"
   | "track_workout"
-  | "progressif";
+  | "progressif"
+  | "casual_run"
+  | "discovery_run"
+  | "walking";
 
 export const RUN_TYPE_OPTIONS: Array<{ id: RunTypeId; label: string }> = [
+  { id: "casual_run", label: "Course libre" },
+  { id: "discovery_run", label: "Découverte" },
+  { id: "walking", label: "Marche" },
   { id: "easy_run", label: "Footing facile" },
   { id: "recovery_run", label: "Récupération" },
   { id: "tempo_run", label: "Tempo" },
@@ -44,6 +50,9 @@ export function getRunTypeLabel(runType: RunTypeId): string {
  */
 export function getRunTypePillLabel(runType: RunTypeId): string {
   const labelMap: Record<RunTypeId, string> = {
+    casual_run: "LIBRE",
+    discovery_run: "DÉCOUVERTE",
+    walking: "MARCHE",
     easy_run: "FOOTING",
     recovery_run: "RÉCUP",
     tempo_run: "TEMPO",
@@ -148,6 +157,25 @@ export function mapTypeLabelToRunTypeId(
     return "track_workout";
   if (normalized.includes("fartlek")) return "fartlek";
   if (normalized.includes("progressif")) return "progressif";
+  if (
+    normalized.includes("casual run") ||
+    normalized.includes("casual") ||
+    normalized.includes("course libre") ||
+    normalized.includes("libre")
+  )
+    return "casual_run";
+  if (
+    normalized.includes("discovery run") ||
+    normalized.includes("discovery") ||
+    normalized.includes("découverte")
+  )
+    return "discovery_run";
+  if (
+    normalized.includes("walking") ||
+    normalized.includes("walk") ||
+    normalized.includes("marche")
+  )
+    return "walking";
 
   return null;
 }

@@ -208,11 +208,13 @@ export function getWorkoutBasePaceSeconds(
   const mainBlock = workout.workout.main;
   const mainSteps = mainBlock?.steps ?? [];
 
-  // Easy Run, Recovery Run, Long Run: use first step's pace or reference easyMin
+  // Easy Run, Recovery Run, Long Run, Casual Run, Discovery Run: use first step's pace or reference easyMin
   if (
     runType === "easy_run" ||
     runType === "recovery_run" ||
-    runType === "long_run"
+    runType === "long_run" ||
+    runType === "casual_run" ||
+    runType === "discovery_run"
   ) {
     const firstStepPace = mainSteps[0]?.targetPaceSecondsPerKm;
     if (firstStepPace !== undefined && firstStepPace !== null) {
@@ -241,6 +243,16 @@ export function getWorkoutBasePaceSeconds(
     const slowest = Math.max(...paces);
     const fastest = Math.min(...paces);
     return Math.round((slowest + fastest) / 2);
+  }
+
+  // Walking: use first step's pace or a very slow default (8:00/km = 480s/km)
+  if (runType === "walking") {
+    const firstStepPace = mainSteps[0]?.targetPaceSecondsPerKm;
+    if (firstStepPace !== undefined && firstStepPace !== null) {
+      return firstStepPace;
+    }
+    // Default walking pace: 8:00/km (480 seconds per km)
+    return 480;
   }
 
   // Intervals, Fartlek, Tempo, Threshold, Track: use median of all non-null paces

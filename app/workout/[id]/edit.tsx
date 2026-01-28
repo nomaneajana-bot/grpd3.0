@@ -707,6 +707,9 @@ export default function WorkoutEditScreen() {
 
   // Run type options (using centralized label helper)
   const RUN_TYPE_OPTIONS: Array<{ id: RunTypeId; label: string }> = [
+    { id: "casual_run", label: getRunTypeLabel("casual_run") },
+    { id: "discovery_run", label: getRunTypeLabel("discovery_run") },
+    { id: "walking", label: getRunTypeLabel("walking") },
     { id: "easy_run", label: getRunTypeLabel("easy_run") },
     { id: "recovery_run", label: getRunTypeLabel("recovery_run") },
     { id: "tempo_run", label: getRunTypeLabel("tempo_run") },
@@ -1298,7 +1301,10 @@ export default function WorkoutEditScreen() {
     if (
       (form.runType === "easy_run" ||
         form.runType === "recovery_run" ||
-        form.runType === "long_run") &&
+        form.runType === "long_run" ||
+        form.runType === "casual_run" ||
+        form.runType === "discovery_run" ||
+        form.runType === "walking") &&
       mainSteps.length === 0
     ) {
       errors.main = "Définissez la distance ou la durée avant d'enregistrer.";
@@ -1945,6 +1951,24 @@ export default function WorkoutEditScreen() {
       RunTypeId,
       { icon: string; title: string; description: string }
     > = {
+      casual_run: {
+        icon: "👥",
+        title: "Course libre",
+        description:
+          "Course conviviale sans structure imposée. Chacun à son rythme, l'important c'est de courir ensemble.",
+      },
+      discovery_run: {
+        icon: "🗺️",
+        title: "Découverte",
+        description:
+          "Sortie pour explorer de nouveaux parcours en groupe. Allure libre, convivialité et découverte.",
+      },
+      walking: {
+        icon: "🚶",
+        title: "Marche",
+        description:
+          "Marche en groupe. Accessible à tous, parfait pour débuter, se remettre en mouvement ou simplement marcher ensemble.",
+      },
       easy_run: {
         icon: "🏃",
         title: "Footing facile",
@@ -2339,7 +2363,10 @@ export default function WorkoutEditScreen() {
       !form ||
       (form.runType !== "easy_run" &&
         form.runType !== "recovery_run" &&
-        form.runType !== "long_run")
+        form.runType !== "long_run" &&
+        form.runType !== "casual_run" &&
+        form.runType !== "discovery_run" &&
+        form.runType !== "walking")
     )
       return null;
 
@@ -2348,7 +2375,13 @@ export default function WorkoutEditScreen() {
         ? "Footing facile"
         : form.runType === "recovery_run"
           ? "Récupération"
-          : "Sortie longue";
+          : form.runType === "long_run"
+            ? "Sortie longue"
+            : form.runType === "casual_run"
+              ? "Course libre"
+              : form.runType === "discovery_run"
+                ? "Découverte"
+                : "Marche";
 
     return (
       <View style={styles.section}>
@@ -2497,6 +2530,9 @@ export default function WorkoutEditScreen() {
       "easy_run",
       "recovery_run",
       "long_run",
+      "casual_run",
+      "discovery_run",
+      "walking",
       "interval_400m",
       "interval_800m",
       "interval_1000m",
