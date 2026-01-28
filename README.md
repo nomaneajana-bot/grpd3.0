@@ -1,50 +1,81 @@
-# Welcome to your Expo app 👋
+# GRPD 3.0
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native running group session management app built with Expo Router.
 
-## Get started
+## Overview
 
-1. Install dependencies
+GRPD 3.0 helps runners browse, join, and create training sessions. Users can manage workout templates, track personal records (PRs), and organize group running sessions with pace-based group assignments.
 
+## Key Features
+
+- **Browse Sessions**: Filter sessions by type, date, pace range, and location
+- **Join Sessions**: Register for sessions and select your pace group
+- **Create Custom Sessions**: Build your own sessions with group pace configurations
+- **Workout Templates**: Create and reuse workout structures (fartlek, series, progressif, etc.)
+- **PR Tracking**: Record and track personal records for various distances and durations
+- **Profile Management**: Store reference paces, VO₂max, weight, and training goals
+
+## Tech Stack
+
+- **Framework**: Expo Router (file-based routing)
+- **Language**: TypeScript (strict mode)
+- **Storage**: AsyncStorage (local persistence)
+- **UI**: React Native with custom design system
+- **Platform**: iOS, Android, Web
+
+## Project Structure
+
+```
+app/
+├── (tabs)/              # Tab navigation (Home, My Sessions, Workouts, Profile)
+├── session/             # Session detail and creation
+├── workout/             # Workout detail and editor
+└── profile/             # Profile settings and PR management
+
+lib/
+├── sessionStore.ts      # User-created sessions
+├── workoutStore.ts      # Workout templates
+├── profileStore.ts      # Runner profile and PRs
+├── sessionLogic.ts      # Session filtering/sorting logic
+├── sessionBuilder.ts    # Session construction from form
+├── runTypes.ts          # Unified run type definitions
+└── dateHelpers.ts       # Date parsing and formatting
+
+components/ui/           # Shared UI components (Card, Chip, etc.)
+constants/ui.ts         # Design tokens (colors, spacing, typography)
+```
+
+## Development
+
+### Setup
+
+1. Install dependencies:
    ```bash
    npm install
    ```
 
-2. Start the app
-
+2. Start the development server:
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+### Architecture
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+See `docs/architecture.md` for detailed architecture documentation.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Data Storage
 
-## Get a fresh project
+- All data is stored locally using AsyncStorage
+- Seed sessions are defined in `lib/sessionData.ts` (SESSION_MAP)
+- User-created sessions, workouts, and profile data persist across app restarts
 
-When you're ready, run:
+## Current Status
 
-```bash
-npm run reset-project
-```
+The app is functional but undergoing refactoring to:
+- Fix broken date filtering
+- Extract business logic from UI components
+- Implement design system
+- Add data validation
+- Remove dead routes
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+See `docs/architecture.md` and `docs/dead-routes.md` for more details.

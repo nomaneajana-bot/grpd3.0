@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Nous utilisons votre position pour proposer des groupes de course proches."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,6 +30,13 @@
     },
     "plugins": [
       "expo-router",
+      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Cette app utilise votre localisation pour trouver des groupes de course à proximité."
+        }
+      ],
       [
         "expo-splash-screen",
         {

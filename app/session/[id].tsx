@@ -1,0 +1,1103 @@
+import React, { useEffect, useState } from "react";
+
+import {
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { router, Stack, useLocalSearchParams } from "expo-router";
+
+import { colors } from "../../constants/ui";
+import {
+    getJoinedSession,
+    removeJoinedSession,
+    upsertJoinedSession,
+} from "../../lib/joinedSessionsStore";
+import { getSessionById, SESSION_MAP } from "../../lib/sessionData";
+import { deleteSession } from "../../lib/sessionStore";
+import { getWorkoutSummary } from "../../lib/workoutHelpers";
+import { getWorkout, type WorkoutEntity } from "../../lib/workoutStore";
+import type { WorkoutBlock, WorkoutStep } from "../../lib/workoutTypes";
+
+// Helper to format seconds to M:SS format
+function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  if (secs === 0) {
+    return `${minutes}:00`;
+  }
+  return `${minutes}:${secs.toString().padStart(2, "0")}`;
+}
+
+// Helper to format seconds to minutes with apostrophe (e.g. "12'", "3'")
+function formatMinutesShort(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}'`;
+}
+
+// Helper to format a workout step
+function formatWorkoutStep(step: WorkoutStep): string {
+  if (step.durationSeconds !== undefined) {
+    const duration = formatDuration(step.durationSeconds);
+    if (step.kind === "interval") {
+      return `${duration} effort`;
+    } else if (step.kind === "recovery") {
+      return `${duration} récup`;
+    } else if (
+      step.kind === "easy" ||
+      step.kind === "warmup" ||
+      step.kind === "cooldown"
+    ) {
+      return `${duration} facile`;
+    }
+    return step.description;
+  }
+  if (step.distanceKm !== undefined) {
+    return `${step.distanceKm} km`;
+  }
+  return step.description;
+}
+
+// Helper to format a workout block's total duration
+function getBlockTotalDuration(block: WorkoutBlock): number {
+  const totalSeconds = block.steps.reduce((sum, step) => {
+    return sum + (step.durationSeconds ?? 0);
+  }, 0);
+  return totalSeconds * (block.repeatCount ?? 1);
+}
+
+export default function SessionScreen() {
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const [session, setSession] = useState<
+    (typeof SESSION_MAP)[string] | undefined
+  >(undefined);
+
+  // Load session from SESSION_MAP or stored sessions
+  useEffect(() => {
+    if (!id) {
+      setSession(undefined);
+      return;
+    }
+
+    const loadSession = async () => {
+      // First check SESSION_MAP
+      if (SESSION_MAP[id]) {
+        setSession(SESSION_MAP[id]);
+        return;
+      }
+
+      // Then check stored sessions
+      try {
+        const storedSession = await getSessionById(id);
+        setSession(storedSession);
+      } catch (error) {
+        console.warn("Failed to load session:", error);
+        setSession(undefined);
+      }
+    };
+
+    loadSession();
+  }, [id]);
+
+  // Initialize selected group state with recommended group as default
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
+    session && "recommendedGroupId" in session
+      ? session.recommendedGroupId
+      : null,
+  );
+  // Track joined group ID
+  const [joinedGroupId, setJoinedGroupId] = useState<string | null>(null);
+  // Track whether a saved joined session exists in AsyncStorage
+  const [hasStoredJoin, setHasStoredJoin] = useState(false);
+  // Track linked workout
+  const [linkedWorkout, setLinkedWorkout] = useState<WorkoutEntity | null>(
+    null,
+  );
+  const [workoutLoadError, setWorkoutLoadError] = useState(false);
+  // Delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  useEffect(() => {
+    if (session) {
+      // Load saved group from async store
+      const loadJoinedSession = async () => {
+        const savedJoined = await getJoinedSession(session.id);
+        if (savedJoined) {
+          // Use saved group
+          setSelectedGroupId(savedJoined.groupId);
+          setJoinedGroupId(savedJoined.groupId);
+          setHasStoredJoin(true);
+        } else {
+          // Otherwise use recommended group, or first group if no recommended
+          const defaultId =
+            session.recommendedGroupId || session.paceGroups[0]?.id || null;
+          setSelectedGroupId(defaultId);
+          setJoinedGroupId(null);
+          setHasStoredJoin(false);
+        }
+      };
+      loadJoinedSession();
+    }
+  }, [session]);
+
+  // Load linked workout if session has workoutId
+  useEffect(() => {
+    if (!session) {
+      setLinkedWorkout(null);
+      setWorkoutLoadError(false);
+      return;
+    }
+
+    const loadLinkedWorkout = async () => {
+      if (!session.workoutId) {
+        setLinkedWorkout(null);
+        setWorkoutLoadError(false);
+        return;
+      }
+
+      try {
+        const workout = await getWorkout(session.workoutId);
+        if (workout) {
+          setLinkedWorkout(workout);
+          setWorkoutLoadError(false);
+        } else {
+          setLinkedWorkout(null);
+          setWorkoutLoadError(true);
+        }
+      } catch (error) {
+        console.warn("Failed to load linked workout:", error);
+        setLinkedWorkout(null);
+        setWorkoutLoadError(true);
+      }
+    };
+
+    loadLinkedWorkout();
+  }, [session]);
+
+  // Fallback for unknown session
+  if (!session) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backRow}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.backIcon}>←</Text>
+            <Text style={styles.backLabel}>Retour</Text>
+          </TouchableOpacity>
+          <Text style={styles.screenTitle}>Séance introuvable</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const joinedGroup = joinedGroupId
+    ? session.paceGroups.find((g) => g.id === joinedGroupId)
+    : null;
+
+  const recommendedGroup = session.paceGroups.find(
+    (g) => g.id === session.recommendedGroupId,
+  );
+
+  const handleSave = async () => {
+    // Use selected group, or fall back to recommended, or first group
+    const currentGroupId =
+      selectedGroupId ||
+      session.recommendedGroupId ||
+      session.paceGroups[0]?.id;
+    if (!currentGroupId) {
+      return;
+    }
+    try {
+      await upsertJoinedSession(session.id, currentGroupId);
+      setJoinedGroupId(currentGroupId);
+      // Navigate to "Mes séances" tab after saving
+      router.push("/(tabs)/my-sessions");
+    } catch (error) {
+      console.warn("Failed to save joined session:", error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!session?.isCustom || !session?.id) {
+      return;
+    }
+    try {
+      await deleteSession(session.id);
+      // Also remove from joined sessions if applicable
+      try {
+        await removeJoinedSession(session.id);
+      } catch (err) {
+        // Ignore if not joined
+      }
+      setShowDeleteModal(false);
+      router.back();
+    } catch (error) {
+      console.warn("Failed to delete session:", error);
+    }
+  };
+
+  const handleLeave = async () => {
+    try {
+      await removeJoinedSession(session.id);
+      setJoinedGroupId(null);
+      setHasStoredJoin(false);
+      // Reset selected group to recommended or first group
+      const defaultId =
+        session.recommendedGroupId || session.paceGroups[0]?.id || null;
+      setSelectedGroupId(defaultId);
+      // Navigate back to Mes séances
+      router.push("/(tabs)/my-sessions");
+    } catch (error) {
+      console.warn("Failed to remove joined session:", error);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <Stack.Screen options={{ headerShown: false }} />
+
+      {/* Fixed Header */}
+      <View style={styles.header}>
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backRow}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.backIcon}>←</Text>
+            <Text style={styles.backLabel}>Retour</Text>
+          </TouchableOpacity>
+
+          {/* Edit button - only show for user-created sessions */}
+          {session.isCustom === true && (
+            <TouchableOpacity
+              onPress={() => {
+                router.push({
+                  pathname: "/session/create",
+                  params: { sessionId: session.id },
+                });
+              }}
+              style={styles.editButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.editButtonText}>Modifier</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Header block: Workout name large, spot/date/time below */}
+        {linkedWorkout ? (
+          <>
+            <Text style={styles.workoutTitle}>{linkedWorkout.name}</Text>
+            <Text style={styles.headerSubtext}>
+              {session.spot} • {session.dateLabel}
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.workoutTitle}>{session.title}</Text>
+            <Text style={styles.headerSubtext}>
+              {session.spot} • {session.dateLabel}
+            </Text>
+          </>
+        )}
+
+        {/* Joined status line */}
+        {joinedGroupId !== null && joinedGroup && (
+          <Text style={styles.joinedStatus}>
+            Tu es inscrit à cette séance · {joinedGroup.label} ·{" "}
+            {joinedGroup.paceRange}
+          </Text>
+        )}
+      </View>
+
+      {/* Scrollable Content */}
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        {/* Workout Summary Card */}
+        {linkedWorkout && (
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>RÉSUMÉ DU WORKOUT</Text>
+            <Text style={styles.workoutSummaryText}>
+              {getWorkoutSummary(linkedWorkout)}
+            </Text>
+          </View>
+        )}
+
+        {/* Groups Section */}
+        {session.paceGroupsOverride && session.paceGroupsOverride.length > 0 ? (
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>GROUPES</Text>
+            {session.paceGroupsOverride
+              .filter((g) => g.isActive)
+              .map((groupOverride, index) => {
+                // Format pace helper
+                const formatPaceValue = (
+                  secondsPerKm: number | null,
+                ): string => {
+                  if (secondsPerKm === null) return "—";
+                  const minutes = Math.floor(secondsPerKm / 60);
+                  const secs = secondsPerKm % 60;
+                  return `${minutes}'${secs.toString().padStart(2, "0")}/km`;
+                };
+
+                // Format duration helper
+                const formatDurationValue = (
+                  seconds: number | null,
+                ): string => {
+                  if (seconds === null) return "—";
+                  const mins = Math.floor(seconds / 60);
+                  const secs = seconds % 60;
+                  if (secs === 0) {
+                    return `${mins}:00`;
+                  }
+                  return `${mins}:${secs.toString().padStart(2, "0")}`;
+                };
+
+                const isIntervalWorkout =
+                  linkedWorkout &&
+                  (linkedWorkout.runType === "fartlek" ||
+                    linkedWorkout.runType === "series");
+
+                // Calculate volume for intervals
+                let volumeText: string | null = null;
+                if (
+                  isIntervalWorkout &&
+                  groupOverride.reps !== null &&
+                  groupOverride.effortDurationSeconds !== null
+                ) {
+                  const totalEffort =
+                    groupOverride.reps * groupOverride.effortDurationSeconds;
+                  const totalRecovery = groupOverride.recoveryDurationSeconds
+                    ? (groupOverride.reps - 1) *
+                      groupOverride.recoveryDurationSeconds
+                    : 0;
+                  const totalSeconds = totalEffort + totalRecovery;
+                  volumeText = formatDurationValue(totalSeconds);
+                }
+
+                // Build interval line if applicable
+                let intervalLine: string | null = null;
+                if (
+                  isIntervalWorkout &&
+                  groupOverride.reps !== null &&
+                  groupOverride.effortDurationSeconds !== null &&
+                  groupOverride.recoveryDurationSeconds !== null
+                ) {
+                  intervalLine = `${groupOverride.reps} × ${formatDurationValue(groupOverride.effortDurationSeconds)} effort / ${formatDurationValue(groupOverride.recoveryDurationSeconds)} récup`;
+                }
+
+                return (
+                  <View key={groupOverride.id}>
+                    {index > 0 && <View style={styles.divider} />}
+                    <View style={styles.groupDetailCard}>
+                      <View style={styles.groupDetailHeader}>
+                        <View style={styles.groupBadge}>
+                          <Text style={styles.groupBadgeText}>
+                            {groupOverride.id}
+                          </Text>
+                        </View>
+                        <View style={styles.groupDetailHeaderText}>
+                          <Text style={styles.groupDetailCardTitle}>
+                            GROUPE {groupOverride.id}
+                          </Text>
+                          {groupOverride.paceSecondsPerKm !== null && (
+                            <Text style={styles.groupPaceValue}>
+                              {formatPaceValue(groupOverride.paceSecondsPerKm)}
+                            </Text>
+                          )}
+                          {intervalLine && (
+                            <Text style={styles.groupIntervalLine}>
+                              {intervalLine}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+          </View>
+        ) : (
+          /* Legacy: Pace groups card for backward compatibility */
+          <View style={styles.card}>
+            <View style={styles.groupsHeader}>
+              <Text style={styles.cardLabel}>GROUPES & ALLURES</Text>
+              <Text style={styles.groupsSubtext}>Coureurs déjà inscrits</Text>
+            </View>
+            {(() => {
+              const recommendedGroup = session.paceGroups.find(
+                (g) => g.id === session.recommendedGroupId,
+              );
+              return (
+                <>
+                  {recommendedGroup && (
+                    <View style={styles.compatStrip}>
+                      <Text style={styles.compatStripTitle}>
+                        TA COMPATIBILITÉ
+                      </Text>
+                      <Text style={styles.compatStripText}>
+                        Parfait pour toi ·{" "}
+                        <Text style={styles.compatStripTextStrong}>
+                          Groupe recommandé : {recommendedGroup.label} ·{" "}
+                          {recommendedGroup.paceRange}
+                        </Text>
+                      </Text>
+                    </View>
+                  )}
+                  {session.paceGroups.map((group, index) => {
+                    const isRecommended =
+                      group.id === session.recommendedGroupId;
+                    const isSelected = group.id === selectedGroupId;
+                    return (
+                      <View key={group.id}>
+                        {index > 0 && <View style={styles.divider} />}
+                        <TouchableOpacity
+                          style={[
+                            styles.groupRow,
+                            isSelected && styles.groupRowSelected,
+                          ]}
+                          activeOpacity={0.8}
+                          onPress={() => setSelectedGroupId(group.id)}
+                        >
+                          <View style={styles.groupLeft}>
+                            <View style={styles.groupLabelRow}>
+                              <Text style={styles.groupLabel}>
+                                {group.label}
+                              </Text>
+                              {isRecommended && (
+                                <View style={styles.recommendedTag}>
+                                  <Text style={styles.recommendedTagText}>
+                                    RECOMMANDÉ
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                            <Text style={styles.groupPace}>
+                              {group.paceRange}
+                            </Text>
+                          </View>
+                          <View style={styles.runnersBadge}>
+                            <Text style={styles.runnersBadgeText}>
+                              {group.runnersCount} coureurs
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </>
+              );
+            })()}
+            {/* Show saved status if already joined */}
+            {joinedGroup && (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.savedStatus}>
+                  <Text style={styles.savedStatusText}>
+                    Inscription enregistrée · {joinedGroup.label} ·{" "}
+                    {joinedGroup.paceRange}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+        )}
+
+        {/* Ton rendez-vous card - only shown if joined */}
+        {joinedGroupId !== null && (
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>TON RENDEZ-VOUS</Text>
+            <View style={styles.cardSection}>
+              <Text style={styles.infoLabelSmall}>Lieu</Text>
+              <Text style={styles.infoValueSmall}>Marina Casablanca</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.cardSection}>
+              <Text style={styles.infoLabelSmall}>Rendez-vous</Text>
+              <Text style={styles.infoValueSmall}>10 min avant le départ</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.cardSection}>
+              <Text style={styles.infoLabelSmall}>Conseil coach</Text>
+              <Text style={styles.infoValueSmall}>
+                Prends un tour de chauffe très léger + une petite couche si tu
+                as tendance à avoir froid.
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Footer with buttons */}
+        {session.isCustom ? (
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={styles.modifyButton}
+              activeOpacity={0.8}
+              onPress={() => {
+                router.push({
+                  pathname: "/session/create",
+                  params: { sessionId: session.id },
+                });
+              }}
+            >
+              <Text style={styles.modifyButtonText}>Modifier</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              activeOpacity={0.8}
+              onPress={() => setShowDeleteModal(true)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.deleteButtonText}>Supprimer la séance</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={styles.saveButton}
+              activeOpacity={0.8}
+              onPress={handleSave}
+            >
+              <Text style={styles.saveButtonText}>Enregistrer</Text>
+            </TouchableOpacity>
+            {hasStoredJoin && (
+              <TouchableOpacity
+                style={styles.leaveButton}
+                activeOpacity={0.8}
+                onPress={handleLeave}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.leaveButtonText}>Quitter cette séance</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowDeleteModal(false)}
+        >
+          <Pressable
+            style={styles.modalContent}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <Text style={styles.modalTitle}>Supprimer la séance</Text>
+            <Text style={styles.modalMessage}>
+              Es-tu sûr de vouloir supprimer cette séance ? Cette action est
+              irréversible.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowDeleteModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirmButton}
+                onPress={handleDelete}
+              >
+                <Text style={styles.modalConfirmText}>Supprimer</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 16,
+    backgroundColor: colors.background.primary,
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 48,
+    paddingBottom: 40,
+  },
+  backRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+  },
+  editButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  editButtonText: {
+    color: colors.text.accent,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  backIcon: {
+    color: colors.text.accent,
+    fontSize: 18,
+    marginRight: 4,
+  },
+  backLabel: {
+    color: colors.text.accent,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  screenTitle: {
+    color: colors.text.primary,
+    fontSize: 26,
+    fontWeight: "700",
+    marginBottom: 24,
+  },
+  workoutTitle: {
+    color: colors.text.primary,
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  headerSubtext: {
+    color: "#8A8A8A",
+    fontSize: 13,
+    fontWeight: "400",
+    marginBottom: 16,
+  },
+  joinedStatus: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  infoBlock: {
+    marginBottom: 0,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  infoLabel: {
+    color: colors.text.secondary,
+    fontSize: 14,
+  },
+  infoValue: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  infoLabelSmall: {
+    color: colors.text.secondary,
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  infoValueSmall: {
+    color: colors.text.primary,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  card: {
+    backgroundColor: colors.background.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.06)",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 16,
+  },
+  groupsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  compatStrip: {
+    marginTop: 8,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: "rgba(32, 129, 255, 0.15)",
+  },
+  compatStripTitle: {
+    color: colors.text.secondary,
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  compatStripText: {
+    color: colors.text.secondary,
+    fontSize: 13,
+  },
+  compatStripTextStrong: {
+    color: colors.text.primary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  cardLabel: {
+    color: colors.text.secondary,
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  groupsSubtext: {
+    color: colors.text.secondary,
+    fontSize: 12,
+  },
+  groupRow: {
+    backgroundColor: colors.background.card,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.06)",
+    marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  groupRowSelected: {
+    backgroundColor: "rgba(32, 129, 255, 0.15)",
+    borderColor: "#2081FF",
+  },
+  groupLeft: {
+    flexShrink: 1,
+    flex: 1,
+  },
+  groupLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 2,
+  },
+  groupLabel: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  recommendedTag: {
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: colors.accent.primary,
+  },
+  recommendedTagText: {
+    color: colors.text.primary,
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  groupPace: {
+    color: colors.text.secondary,
+    fontSize: 13,
+  },
+  runnersBadge: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  runnersBadgeText: {
+    color: colors.text.primary,
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  cardSection: {
+    marginBottom: 16,
+  },
+  workoutLabel: {
+    color: colors.text.secondary,
+    fontSize: 12,
+    marginBottom: 6,
+  },
+  cardValue: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    marginBottom: 16,
+  },
+  workoutLinkContainer: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: 4,
+  },
+  workoutLinkText: {
+    color: colors.text.accent,
+    fontSize: 13,
+    fontWeight: "500",
+    marginTop: 4,
+  },
+  workoutErrorText: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    fontStyle: "italic",
+  },
+  savedStatus: {
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: "rgba(32, 129, 255, 0.1)",
+  },
+  savedStatusText: {
+    color: colors.text.accent,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  footer: {
+    paddingTop: 16,
+    paddingBottom: 24,
+    alignItems: "flex-end",
+  },
+  saveButton: {
+    backgroundColor: colors.accent.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveButtonText: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  leaveButton: {
+    marginTop: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  leaveButtonText: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    fontWeight: "400",
+  },
+  modifyButton: {
+    backgroundColor: colors.accent.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  modifyButtonText: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  deleteButton: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButtonText: {
+    color: "#FF3B30",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  workoutSummaryText: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: "500",
+    marginTop: 8,
+  },
+  groupDetailCard: {
+    marginTop: 8,
+    padding: 16,
+    backgroundColor: "#1A1A1A",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  groupDetailHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  groupBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.accent.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  groupBadgeText: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  groupDetailHeaderText: {
+    flex: 1,
+  },
+  groupDetailCardTitle: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 6,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  groupPaceValue: {
+    color: colors.text.accent,
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  groupIntervalLine: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    fontWeight: "400",
+  },
+  groupDetailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  groupDetailLabel: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    fontWeight: "400",
+  },
+  groupDetailValue: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: colors.background.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.06)",
+    padding: 24,
+    width: "100%",
+    maxWidth: 400,
+  },
+  modalTitle: {
+    color: colors.text.primary,
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+  modalMessage: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "flex-end",
+  },
+  modalCancelButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.12)",
+  },
+  modalCancelText: {
+    color: colors.text.secondary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  modalConfirmButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: "#FF3B30",
+  },
+  modalConfirmText: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  workoutCardLabel: {
+    color: "#8A8A8A",
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    marginBottom: 16,
+  },
+  workoutDetailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  workoutDetailLabel: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  workoutDetailValue: {
+    color: "#D0D0D0",
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  groupDetailSection: {
+    paddingVertical: 12,
+  },
+  groupDetailTitle: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  groupDetailText: {
+    color: "#D0D0D0",
+    fontSize: 14,
+    fontWeight: "400",
+    marginBottom: 4,
+  },
+  groupDetailSubtext: {
+    color: "#8A8A8A",
+    fontSize: 12,
+    fontWeight: "400",
+    marginTop: 4,
+  },
+});
