@@ -21,8 +21,8 @@ export default function RootLayout() {
   const { isLoading } = useAuthGate();
 
   return (
-    <View style={styles.rootContainer}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <View style={styles.rootContainer}>
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.accent.primary} />
@@ -35,8 +35,8 @@ export default function RootLayout() {
           </Stack>
         )}
         <StatusBar style="auto" />
-      </ThemeProvider>
-    </View>
+      </View>
+    </ThemeProvider>
   );
 }
 

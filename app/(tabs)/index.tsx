@@ -849,6 +849,9 @@ export default function HomeScreen() {
                         {typeLabel && (
                           <Chip label={typeLabel} variant="default" />
                         )}
+                        {session.visibility === "members" && (
+                          <Chip label="🔒 MEMBRES" variant="custom" />
+                        )}
                         {isCustom && (
                           <Chip label="Créée par toi" variant="success" />
                         )}

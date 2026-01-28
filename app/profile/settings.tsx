@@ -25,6 +25,7 @@ export default function SettingsScreen() {
 
   // Form state
   const [firstName, setFirstName] = useState("");
+  const [clubName, setClubName] = useState("");
   const [weightKg, setWeightKg] = useState("");
   const [vo2max, setVo2max] = useState("");
 
@@ -38,6 +39,7 @@ export default function SettingsScreen() {
       const profile = await getRunnerProfile();
       if (profile) {
         setFirstName(profile.firstName ?? profile.name ?? "");
+        setClubName(profile.clubName ?? "");
         setWeightKg(profile.weightKg !== null ? String(profile.weightKg) : "");
         setVo2max(profile.vo2max !== null ? String(profile.vo2max) : "");
       }
@@ -72,11 +74,13 @@ export default function SettingsScreen() {
     setIsSaving(true);
     try {
       const existing = await getRunnerProfile();
+      const trimmedClubName = clubName.trim();
       const updated: RunnerProfile = {
         ...existing,
         name: firstName,
         firstName: firstName,
         groupName: existing.groupName ?? null,
+        clubName: trimmedClubName.length > 0 ? trimmedClubName : null,
         weightKg: weight,
         vo2max: vo2,
         mainGoal: existing.mainGoal ?? "5k", // Keep existing mainGoal (required field)
@@ -141,6 +145,19 @@ export default function SettingsScreen() {
               value={firstName}
               onChangeText={setFirstName}
               placeholder="Ton prénom"
+              placeholderTextColor="#666"
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.fieldRow}>
+            <Text style={styles.fieldLabel}>Club / Communauté</Text>
+            <TextInput
+              style={styles.textInput}
+              value={clubName}
+              onChangeText={setClubName}
+              placeholder="Ex: Jaime courir"
               placeholderTextColor="#666"
             />
           </View>

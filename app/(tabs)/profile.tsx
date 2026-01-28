@@ -77,6 +77,7 @@ export default function ProfileScreen() {
   const profileName = profile?.name ?? "Ton prénom";
   const groupLabel = profile?.groupName ?? "Groupe D";
   const groupDisplayLabel = profile?.groupName ?? "—";
+  const clubLabel = profile?.clubName ?? null;
   const vo2maxLabel =
     profile?.vo2max !== null && profile?.vo2max !== undefined
       ? String(profile.vo2max)
@@ -143,6 +144,12 @@ export default function ProfileScreen() {
                 <Text style={styles.profileSubtitle}>Coureur</Text>
                 <View style={styles.profileMetaDot} />
                 <Text style={styles.profileSubtitle}>{groupLabel}</Text>
+                {clubLabel && (
+                  <>
+                    <View style={styles.profileMetaDot} />
+                    <Text style={styles.profileSubtitle}>{clubLabel}</Text>
+                  </>
+                )}
               </View>
               {phoneNumber && (
                 <Text style={styles.profilePhone}>{phoneNumber}</Text>
@@ -169,6 +176,12 @@ export default function ProfileScreen() {
             <View style={styles.profileStat}>
               <Text style={styles.profileStatLabel}>Groupe</Text>
               <Text style={styles.profileStatValue}>{groupDisplayLabel}</Text>
+            </View>
+            <View style={styles.profileStat}>
+              <Text style={styles.profileStatLabel}>Club</Text>
+              <Text style={styles.profileStatValue}>
+                {clubLabel ?? "—"}
+              </Text>
             </View>
             <View style={styles.profileStat}>
               <Text style={styles.profileStatLabel}>Objectif</Text>
