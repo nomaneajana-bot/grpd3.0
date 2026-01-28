@@ -5,21 +5,13 @@ import {
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React from "react";
+import React, { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import "react-native-reanimated";
 
 import { colors } from "@/constants/ui";
 import { useAuthGate } from "@/hooks/use-auth-gate";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-
-// Set global web styles
-if (typeof document !== "undefined") {
-  document.documentElement.style.backgroundColor = colors.background.primary;
-  document.body.style.backgroundColor = colors.background.primary;
-  document.body.style.margin = "0";
-  document.body.style.padding = "0";
-}
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -61,6 +53,18 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { isLoading } = useAuthGate();
+
+  // Set global web styles
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.style.backgroundColor = colors.background.primary;
+      document.body.style.backgroundColor = colors.background.primary;
+      document.body.style.margin = "0";
+      document.body.style.padding = "0";
+      document.body.style.height = "100%";
+      document.documentElement.style.height = "100%";
+    }
+  }, []);
 
   return (
     <ErrorBoundary>
