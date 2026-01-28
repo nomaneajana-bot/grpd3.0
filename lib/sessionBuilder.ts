@@ -5,6 +5,7 @@ import type {
     PaceGroup,
     SessionData,
     SessionGroupOverride,
+    SessionVisibility,
 } from "./sessionData";
 
 export type SessionGroupConfig = {
@@ -51,9 +52,13 @@ export function buildSessionFromForm(params: {
   sessionType: string; // e.g. "FARTLEK", "SORTIE LONGUE", "SEUIL"
   groupConfigs: SessionGroupConfig[];
   workoutId?: string | null;
+  visibility?: SessionVisibility;
+  hostGroupName?: string | null;
 }): { id: string; session: SessionData; defaultGroupId: string } {
   const { spot, dateLabel, timeLabel, sessionType, groupConfigs, workoutId } =
     params;
+  const visibility = params.visibility ?? "public";
+  const hostGroupName = params.hostGroupName ?? null;
 
   // Generate unique ID
   const id = "custom-" + Date.now().toString();
@@ -123,6 +128,12 @@ export function buildSessionFromForm(params: {
     volume = "Séance seuil personnalisée";
   } else if (sessionType.includes("SORTIE")) {
     volume = "Sortie longue personnalisée";
+  } else if (sessionType.includes("COURSE LIBRE") || sessionType.includes("LIBRE")) {
+    volume = "Course libre - chacun à son rythme";
+  } else if (sessionType.includes("DÉCOUVERTE") || sessionType.includes("DÉCOUVERTE")) {
+    volume = "Sortie découverte - exploration en groupe";
+  } else if (sessionType.includes("MARCHE") || sessionType.includes("WALKING")) {
+    volume = "Marche en groupe - accessible à tous";
   }
 
   // Build pace groups from groupConfigs
@@ -226,6 +237,8 @@ export function buildSessionFromForm(params: {
     workoutId: workoutId ?? null, // Reference to workout template
     paceGroupsOverride:
       paceGroupsOverride.length > 0 ? paceGroupsOverride : undefined, // Full group overrides: explicit description of each active group
+    visibility,
+    hostGroupName,
     // workout is undefined for custom sessions (we use workoutId reference instead)
   };
 

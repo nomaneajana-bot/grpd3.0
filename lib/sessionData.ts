@@ -64,7 +64,11 @@ export type SessionData = {
   coachAdvice?: string; // Coach's advice for this session
   coachPhone?: string; // Coach/organizer phone number for WhatsApp
   coachName?: string; // Coach/organizer name
+  visibility?: SessionVisibility; // "public" | "members" (members-only sessions)
+  hostGroupName?: string | null; // Group/club name for members-only sessions
 };
+
+export type SessionVisibility = "public" | "members";
 
 export const SESSION_MAP: Record<string, SessionData> = {
   "marina-fartlek-long": {

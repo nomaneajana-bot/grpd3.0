@@ -6,6 +6,7 @@ import {
     Pressable,
     ScrollView,
     StyleSheet,
+    Switch,
     Text,
     TextInput,
     TouchableOpacity,
@@ -20,12 +21,16 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import { colors } from "../../constants/ui";
 import { upsertJoinedSession } from "../../lib/joinedSessionsStore";
-import { getProfileSnapshot } from "../../lib/profileStore";
+import {
+    getProfileSnapshot,
+    getRunnerProfile,
+    type RunnerProfile,
+} from "../../lib/profileStore";
 import {
     buildSessionFromForm,
     type SessionGroupConfig,
 } from "../../lib/sessionBuilder";
-import { getSessionById } from "../../lib/sessionData";
+import { getSessionById, type SessionVisibility } from "../../lib/sessionData";
 import { createSession, updateSession } from "../../lib/sessionStore";
 import {
     getWorkoutBasePaceSeconds,
@@ -52,6 +57,15 @@ const DATE_OPTIONS = [
 
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i); // 0-23
 const MINUTE_OPTIONS = [0, 15, 30, 45];
+
+// Session mode: structured workout or casual type
+type SessionMode = "workout" | "casual_run" | "discovery_run" | "walking";
+
+const CASUAL_TYPE_OPTIONS: Array<{ id: SessionMode; label: string }> = [
+  { id: "casual_run", label: "Course libre" },
+  { id: "discovery_run", label: "Découverte" },
+  { id: "walking", label: "Marche" },
+] as const;
 
 const SESSION_TYPE_OPTIONS = ["FARTLEK", "SORTIE LONGUE", "SEUIL"] as const;
 
@@ -1379,11 +1393,33 @@ export default function CreateSessionScreen() {
     loadSpots();
   }, []);
 
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const runner = await getRunnerProfile();
+        setProfile(runner);
+        if (!hasInitializedAudience && !isEditMode) {
+          if (runner?.groupName) {
+            setHostGroupName(runner.groupName);
+            setSessionVisibility("members");
+          }
+          setHasInitializedAudience(true);
+        }
+      } catch (error) {
+        console.warn("Failed to load profile for session audience:", error);
+      }
+    };
+
+    loadProfile();
+  }, [hasInitializedAudience, isEditMode]);
+
   // Date and time state
   const [dateLabel, setDateLabel] = useState<string>("LUNDI 10");
   const [selectedHour, setSelectedHour] = useState<number>(6);
   const [selectedMinute, setSelectedMinute] = useState<number>(0);
 
+  // Session mode: workout-based or casual type
+  const [sessionMode, setSessionMode] = useState<SessionMode>("workout");
   const [sessionType, setSessionType] = useState<
     "FARTLEK" | "SORTIE LONGUE" | "SEUIL"
   >("FARTLEK");
@@ -1468,7 +1504,11 @@ export default function CreateSessionScreen() {
   const [showSpotPicker, setShowSpotPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [showTypePicker, setShowTypePicker] = useState(false);
+  const [profile, setProfile] = useState<RunnerProfile | null>(null);
+  const [sessionVisibility, setSessionVisibility] =
+    useState<SessionVisibility>("public");
+  const [hostGroupName, setHostGroupName] = useState<string | null>(null);
+  const [hasInitializedAudience, setHasInitializedAudience] = useState(false);
 
   // Format time as HH:MM
   const timeLabel = `${selectedHour.toString().padStart(2, "0")}:${selectedMinute.toString().padStart(2, "0")}`;
@@ -1714,21 +1754,38 @@ export default function CreateSessionScreen() {
         // Set spot
         setSpot(existingSession.spot);
 
-        // Set session type from typeLabel
-        const typeMap: Record<string, "FARTLEK" | "SORTIE LONGUE" | "SEUIL"> = {
-          FARTLEK: "FARTLEK",
-          SORTIE: "SORTIE LONGUE",
-          SEUIL: "SEUIL",
-        };
-        const detectedType = Object.keys(typeMap).find((key) =>
-          existingSession.typeLabel.toUpperCase().includes(key),
-        );
-        if (detectedType) {
-          setSessionType(typeMap[detectedType]);
+        // Determine session mode based on workoutId and typeLabel
+        if (existingSession.workoutId) {
+          // Has workout = structured workout mode
+          setSessionMode("workout");
+          const typeMap: Record<string, "FARTLEK" | "SORTIE LONGUE" | "SEUIL"> = {
+            FARTLEK: "FARTLEK",
+            SORTIE: "SORTIE LONGUE",
+            SEUIL: "SEUIL",
+          };
+          const detectedType = Object.keys(typeMap).find((key) =>
+            existingSession.typeLabel.toUpperCase().includes(key),
+          );
+          if (detectedType) {
+            setSessionType(typeMap[detectedType]);
+          }
+          setSelectedWorkoutId(existingSession.workoutId);
+        } else {
+          // No workout = casual type mode
+          const typeLabelUpper = existingSession.typeLabel.toUpperCase();
+          if (typeLabelUpper.includes("COURSE LIBRE") || typeLabelUpper.includes("LIBRE")) {
+            setSessionMode("casual_run");
+          } else if (typeLabelUpper.includes("DÉCOUVERTE")) {
+            setSessionMode("discovery_run");
+          } else if (typeLabelUpper.includes("MARCHE") || typeLabelUpper.includes("WALKING")) {
+            setSessionMode("walking");
+          } else {
+            // Fallback to workout mode if type is unclear
+            setSessionMode("workout");
+            setSessionType("FARTLEK");
+          }
+          setSelectedWorkoutId(null);
         }
-
-        // Set workout ID
-        setSelectedWorkoutId(existingSession.workoutId ?? null);
 
         // Pre-fill group configs from paceGroupsOverride (new format) or paceGroups (legacy)
         // If paceGroupsOverride exists, use it; otherwise fall back to paceGroups
@@ -1764,6 +1821,9 @@ export default function CreateSessionScreen() {
         );
         setGroupConfigs(newGroupConfigs);
 
+        setSessionVisibility(existingSession.visibility ?? "public");
+        setHostGroupName(existingSession.hostGroupName ?? null);
+
         setHasLoadedExistingSession(true);
       } catch (error) {
         console.error("Failed to load existing session:", error);
@@ -1777,6 +1837,20 @@ export default function CreateSessionScreen() {
   const handlePublish = async () => {
     try {
       setIsPublishing(true);
+
+      // Map sessionMode to sessionType
+      let effectiveSessionType: string;
+      if (sessionMode === "workout") {
+        effectiveSessionType = sessionType;
+      } else if (sessionMode === "casual_run") {
+        effectiveSessionType = "COURSE LIBRE";
+      } else if (sessionMode === "discovery_run") {
+        effectiveSessionType = "DÉCOUVERTE";
+      } else if (sessionMode === "walking") {
+        effectiveSessionType = "MARCHE";
+      } else {
+        effectiveSessionType = sessionType;
+      }
 
       // Build effective groups from groupConfigs
       const effectiveGroups = groupConfigs
@@ -1792,9 +1866,11 @@ export default function CreateSessionScreen() {
           spot,
           dateLabel,
           timeLabel,
-          sessionType,
+          sessionType: effectiveSessionType,
           groupConfigs: effectiveGroups,
-          workoutId: selectedWorkoutId,
+          workoutId: sessionMode === "workout" ? selectedWorkoutId : null,
+          visibility: sessionVisibility,
+          hostGroupName,
         });
 
         // Update session (preserving id and isCustom)
@@ -1803,8 +1879,8 @@ export default function CreateSessionScreen() {
           id: editSessionId, // Preserve original ID
         });
 
-        // Mark workout as used if a workoutId is associated
-        if (selectedWorkoutId) {
+        // Mark workout as used if a workoutId is associated (only for structured workouts)
+        if (sessionMode === "workout" && selectedWorkoutId) {
           try {
             await markWorkoutUsed(selectedWorkoutId);
           } catch (error) {
@@ -1820,16 +1896,18 @@ export default function CreateSessionScreen() {
           spot,
           dateLabel,
           timeLabel,
-          sessionType,
+          sessionType: effectiveSessionType,
           groupConfigs: effectiveGroups,
-          workoutId: selectedWorkoutId,
+          workoutId: sessionMode === "workout" ? selectedWorkoutId : null,
+          visibility: sessionVisibility,
+          hostGroupName,
         });
 
         // Save to persistent storage
         await createSession(session);
 
-        // Mark workout as used if a workoutId is associated
-        if (selectedWorkoutId) {
+        // Mark workout as used if a workoutId is associated (only for structured workouts)
+        if (sessionMode === "workout" && selectedWorkoutId) {
           try {
             await markWorkoutUsed(selectedWorkoutId);
           } catch (error) {
@@ -1887,12 +1965,105 @@ export default function CreateSessionScreen() {
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
-        {/* Card 1 - Infos de base */}
+        {/* Card 1 - Type de séance */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>TYPE DE SÉANCE</Text>
+          <Text style={styles.cardSubtitle}>
+            Choisis si tu veux utiliser un workout structuré ou créer une séance libre.
+          </Text>
+          
+          {/* Mode selector */}
+          <View style={styles.modeSelector}>
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                sessionMode === "workout" && styles.modeButtonActive,
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setSessionMode("workout");
+                setSelectedWorkoutId(null);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  sessionMode === "workout" && styles.modeButtonTextActive,
+                ]}
+              >
+                Workout structuré
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                sessionMode === "casual_run" && styles.modeButtonActive,
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setSessionMode("casual_run");
+                setSelectedWorkoutId(null);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  sessionMode === "casual_run" && styles.modeButtonTextActive,
+                ]}
+              >
+                Course libre
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                sessionMode === "discovery_run" && styles.modeButtonActive,
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setSessionMode("discovery_run");
+                setSelectedWorkoutId(null);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  sessionMode === "discovery_run" && styles.modeButtonTextActive,
+                ]}
+              >
+                Découverte
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                sessionMode === "walking" && styles.modeButtonActive,
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setSessionMode("walking");
+                setSelectedWorkoutId(null);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  sessionMode === "walking" && styles.modeButtonTextActive,
+                ]}
+              >
+                Marche
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Card 2 - Infos de base */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>INFOS DE BASE</Text>
-          <Text style={styles.cardSubtitle}>
-            Choisis le spot, la date et le workout associé.
-          </Text>
           <TouchableOpacity
             style={styles.fieldRow}
             onPress={() => setShowSpotPicker(true)}
@@ -1919,24 +2090,28 @@ export default function CreateSessionScreen() {
             <Text style={styles.fieldLabel}>Heure</Text>
             <Text style={styles.fieldInput}>{timeLabel}</Text>
           </TouchableOpacity>
-          <View style={styles.divider} />
-          <TouchableOpacity
-            style={styles.fieldRow}
-            onPress={() => setShowWorkoutPicker(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.fieldLabel}>Workout associé</Text>
-            <View style={styles.fieldInputRow}>
-              <Text style={styles.fieldInput}>
-                {selectedWorkoutName ?? "Aucun workout associé"}
-              </Text>
-              <Text style={styles.fieldChevron}>›</Text>
-            </View>
-          </TouchableOpacity>
+          {sessionMode === "workout" && (
+            <>
+              <View style={styles.divider} />
+              <TouchableOpacity
+                style={styles.fieldRow}
+                onPress={() => setShowWorkoutPicker(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.fieldLabel}>Workout associé</Text>
+                <View style={styles.fieldInputRow}>
+                  <Text style={styles.fieldInput}>
+                    {selectedWorkoutName ?? "Aucun workout associé"}
+                  </Text>
+                  <Text style={styles.fieldChevron}>›</Text>
+                </View>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* Card 2 - Groupes & allures */}
-        {selectedWorkoutId && (
+        {(selectedWorkoutId || sessionMode !== "workout") && (
           <View style={[styles.card, styles.groupsCard]}>
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardTitle}>Groupes & allures</Text>
@@ -1949,10 +2124,11 @@ export default function CreateSessionScreen() {
                 ? formatPaceLabel(paceSeconds)
                 : "—";
 
-              // Check if workout is fartlek or series
+              // Check if workout is fartlek or series (only for structured workouts)
               const isIntervalWorkout =
-                selectedWorkoutEntity?.runType === "fartlek" ||
-                selectedWorkoutEntity?.runType === "series";
+                sessionMode === "workout" &&
+                (selectedWorkoutEntity?.runType === "fartlek" ||
+                  selectedWorkoutEntity?.runType === "series");
 
               // Format duration helper
               const formatDuration = (seconds: number | null): string => {
@@ -2125,16 +2301,6 @@ export default function CreateSessionScreen() {
           setSelectedHour(hour);
           setSelectedMinute(minute);
         }}
-      />
-      <OptionPicker
-        visible={showTypePicker}
-        title="Choisir un type"
-        options={[...SESSION_TYPE_OPTIONS]}
-        selectedValue={sessionType}
-        onClose={() => setShowTypePicker(false)}
-        onSelect={(value) =>
-          setSessionType(value as (typeof SESSION_TYPE_OPTIONS)[number])
-        }
       />
       {/* Group pace picker */}
       {groupPacePickerTargetId !== null && (
@@ -2353,6 +2519,38 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: "rgba(255, 255, 255, 0.08)",
     marginVertical: 8,
+  },
+  modeSelector: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+  },
+  modeButton: {
+    flex: 1,
+    minWidth: "45%",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: "#1A1A1A",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modeButtonActive: {
+    backgroundColor: "rgba(32, 129, 255, 0.15)",
+    borderColor: colors.accent.primary,
+  },
+  modeButtonText: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  modeButtonTextActive: {
+    color: colors.text.accent,
+    fontWeight: "600",
   },
   groupsCard: {
     marginBottom: 16,
