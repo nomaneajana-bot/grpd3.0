@@ -13,6 +13,14 @@ import { colors } from "@/constants/ui";
 import { useAuthGate } from "@/hooks/use-auth-gate";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
+// Set global web styles
+if (typeof document !== "undefined") {
+  document.documentElement.style.backgroundColor = colors.background.primary;
+  document.body.style.backgroundColor = colors.background.primary;
+  document.body.style.margin = "0";
+  document.body.style.padding = "0";
+}
+
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; error: Error | null }
