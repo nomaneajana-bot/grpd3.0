@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import {
+    Animated,
     Modal,
     Pressable,
     ScrollView,
@@ -11,8 +12,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { router, Stack, useLocalSearchParams } from "expo-router";
 import * as Linking from "expo-linking";
+import { router, Stack, useLocalSearchParams } from "expo-router";
 
 import { colors } from "../../constants/ui";
 import {
@@ -121,6 +122,7 @@ export default function SessionScreen() {
     null,
   );
   const [workoutLoadError, setWorkoutLoadError] = useState(false);
+  const pulseAnim = useRef(new Animated.Value(0)).current;
   // Delete confirmation modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -180,6 +182,26 @@ export default function SessionScreen() {
 
     loadLinkedWorkout();
   }, [session]);
+
+  useEffect(() => {
+    if (!session?.recommendedGroupId) return;
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [pulseAnim, session?.recommendedGroupId]);
 
   // Fallback for unknown session
   if (!session) {
@@ -337,39 +359,47 @@ export default function SessionScreen() {
         {/* Session Details Card - Professional Runner Info */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>DÉTAILS DE LA SÉANCE</Text>
-          
+
           {/* Workout Description */}
           <View style={styles.cardSection}>
             <Text style={styles.infoLabelSmall}>Description</Text>
             <Text style={styles.infoValueSmall}>
-              {session.typeLabel === "FARTLEK" && 
+              {session.typeLabel === "FARTLEK" &&
                 "Entraînement par intervalles avec variations de rythme. Le fartlek long combine des efforts soutenus avec des récupérations actives pour développer l'endurance et la vitesse."}
-              {session.typeLabel === "SÉRIES" && 
+              {session.typeLabel === "SÉRIES" &&
                 "Intervalles structurés sur piste ou route. Travail de vitesse et de résistance à l'effort."}
-              {session.typeLabel === "FOOTING" && 
+              {session.typeLabel === "FOOTING" &&
                 "Sortie d'endurance à allure confortable. Développement de la base aérobie."}
-              {session.typeLabel === "PROGRESSIF" && 
+              {session.typeLabel === "PROGRESSIF" &&
                 "Sortie progressive avec accélération graduelle. Développement de l'endurance et de la capacité à maintenir un effort croissant."}
-              {!["FARTLEK", "SÉRIES", "FOOTING", "PROGRESSIF"].includes(session.typeLabel) && 
+              {!["FARTLEK", "SÉRIES", "FOOTING", "PROGRESSIF"].includes(
+                session.typeLabel,
+              ) &&
                 "Séance d'entraînement structurée pour améliorer la performance."}
             </Text>
           </View>
-          
+
           <View style={styles.divider} />
-          
+
           {/* Meeting Point */}
           <View style={styles.cardSection}>
             <Text style={styles.infoLabelSmall}>Point de rendez-vous</Text>
             <Text style={styles.infoValueSmall}>
-              {session.spot === "Spot 1" ? "Marina Casablanca - Entrée principale" : session.spot}
+              {session.meetingPoint ||
+                (session.spot === "Spot 1"
+                  ? "Marina Casablanca - Entrée principale"
+                  : session.spot)}
             </Text>
+            {session.meetingPointGPS && (
+              <Text style={styles.infoSubtext}>{session.meetingPointGPS}</Text>
+            )}
             <Text style={styles.infoSubtext}>
               Arrive 10 minutes avant le départ pour l'échauffement
             </Text>
           </View>
-          
+
           <View style={styles.divider} />
-          
+
           {/* Total Distance/Duration */}
           <View style={styles.cardSection}>
             <Text style={styles.infoLabelSmall}>Distance estimée</Text>
@@ -377,17 +407,16 @@ export default function SessionScreen() {
               {session.estimatedDistanceKm} km
             </Text>
           </View>
-          
+
           <View style={styles.divider} />
-          
+
           {/* Equipment/Recommendations */}
           <View style={styles.cardSection}>
             <Text style={styles.infoLabelSmall}>Équipement recommandé</Text>
             <Text style={styles.infoValueSmall}>
-              • Chaussures de course adaptées{'\n'}
-              • Vêtements adaptés à la météo{'\n'}
-              • Eau ou boisson d'effort{'\n'}
-              • Lampe frontale si départ tôt le matin
+              • Chaussures de course adaptées{"\n"}• Vêtements adaptés à la
+              météo{"\n"}• Eau ou boisson d'effort{"\n"}• Lampe frontale si
+              départ tôt le matin
             </Text>
           </View>
         </View>
@@ -395,22 +424,24 @@ export default function SessionScreen() {
         {/* Contact Card */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>CONTACT & INFORMATIONS</Text>
-          
+
           {/* Coach Contact */}
           <View style={styles.cardSection}>
             <Text style={styles.infoLabelSmall}>Coach / Organisateur</Text>
-            <Text style={styles.infoValueSmall}>Équipe GRPD</Text>
+            <Text style={styles.infoValueSmall}>
+              {session.coachName || "Équipe GRPD"}
+            </Text>
           </View>
-          
+
           <View style={styles.divider} />
-          
+
           {/* WhatsApp Button */}
           <TouchableOpacity
             style={styles.whatsappButton}
             onPress={() => {
-              const phoneNumber = "+212708060337"; // Default coach number
+              const phoneNumber = session.coachPhone || "+212708060337";
               const message = encodeURIComponent(
-                `Bonjour, je souhaite rejoindre la séance "${session.title}" le ${session.dateLabel}`
+                `Bonjour, je souhaite rejoindre la séance "${session.title}" le ${session.dateLabel}`,
               );
               const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
               Linking.openURL(whatsappUrl).catch((err) => {
@@ -419,7 +450,9 @@ export default function SessionScreen() {
             }}
             activeOpacity={0.8}
           >
-            <Text style={styles.whatsappButtonText}>💬 Contacter via WhatsApp</Text>
+            <Text style={styles.whatsappButtonText}>
+              💬 Contacter via WhatsApp
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -521,8 +554,10 @@ export default function SessionScreen() {
           /* Legacy: Pace groups card for backward compatibility */
           <View style={styles.card}>
             <View style={styles.groupsHeader}>
-              <Text style={styles.cardLabel}>GROUPES & ALLURES</Text>
-              <Text style={styles.groupsSubtext}>Coureurs déjà inscrits</Text>
+              <Text style={styles.cardLabel}>Choisis ton groupe</Text>
+              <Text style={styles.groupsSubtext}>
+                Compare les allures et sélectionne ton groupe.
+              </Text>
             </View>
             {(() => {
               const recommendedGroup = session.paceGroups.find(
@@ -533,58 +568,83 @@ export default function SessionScreen() {
                   {recommendedGroup && (
                     <View style={styles.compatStrip}>
                       <Text style={styles.compatStripTitle}>
-                        TA COMPATIBILITÉ
+                        Ta compatibilité
                       </Text>
                       <Text style={styles.compatStripText}>
                         Parfait pour toi ·{" "}
                         <Text style={styles.compatStripTextStrong}>
-                          Groupe recommandé : {recommendedGroup.label} ·{" "}
+                          {recommendedGroup.label} ·{" "}
                           {recommendedGroup.paceRange}
                         </Text>
                       </Text>
                     </View>
                   )}
-                  {session.paceGroups.map((group, index) => {
-                    const isRecommended =
-                      group.id === session.recommendedGroupId;
-                    const isSelected = group.id === selectedGroupId;
-                    return (
-                      <View key={group.id}>
-                        {index > 0 && <View style={styles.divider} />}
-                        <TouchableOpacity
-                          style={[
-                            styles.groupRow,
-                            isSelected && styles.groupRowSelected,
-                          ]}
-                          activeOpacity={0.8}
-                          onPress={() => setSelectedGroupId(group.id)}
-                        >
-                          <View style={styles.groupLeft}>
-                            <View style={styles.groupLabelRow}>
-                              <Text style={styles.groupLabel}>
-                                {group.label}
-                              </Text>
-                              {isRecommended && (
-                                <View style={styles.recommendedTag}>
-                                  <Text style={styles.recommendedTagText}>
-                                    RECOMMANDÉ
+                  <View style={styles.groupsList}>
+                    {session.paceGroups.map((group, index) => {
+                      const isRecommended =
+                        group.id === session.recommendedGroupId;
+                      const isSelected = group.id === selectedGroupId;
+                      const animatedStyle = isRecommended
+                        ? {
+                            transform: [
+                              {
+                                scale: pulseAnim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: [1, 1.02],
+                                }),
+                              },
+                            ],
+                          }
+                        : undefined;
+                      return (
+                        <View key={group.id}>
+                          <Animated.View style={animatedStyle}>
+                            <TouchableOpacity
+                              style={[
+                                styles.groupRow,
+                                isSelected && styles.groupRowSelected,
+                                isRecommended && styles.groupRowRecommended,
+                              ]}
+                              activeOpacity={0.8}
+                              onPress={() => setSelectedGroupId(group.id)}
+                            >
+                              <View style={styles.groupLeft}>
+                                <View style={styles.groupLabelRow}>
+                                  <Text style={styles.groupLabel}>
+                                    {group.label}
+                                  </Text>
+                                  {isRecommended && (
+                                    <View style={styles.recommendedTag}>
+                                      <Text style={styles.recommendedTagText}>
+                                        Recommandé
+                                      </Text>
+                                    </View>
+                                  )}
+                                </View>
+                                <Text style={styles.groupPace}>
+                                  {group.paceRange}
+                                </Text>
+                              </View>
+                              <View style={styles.groupRight}>
+                                {isSelected && (
+                                  <View style={styles.selectedCheck}>
+                                    <Text style={styles.selectedCheckText}>
+                                      ✓
+                                    </Text>
+                                  </View>
+                                )}
+                                <View style={styles.runnersBadge}>
+                                  <Text style={styles.runnersBadgeText}>
+                                    {group.runnersCount} coureurs
                                   </Text>
                                 </View>
-                              )}
-                            </View>
-                            <Text style={styles.groupPace}>
-                              {group.paceRange}
-                            </Text>
-                          </View>
-                          <View style={styles.runnersBadge}>
-                            <Text style={styles.runnersBadgeText}>
-                              {group.runnersCount} coureurs
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      </View>
-                    );
-                  })}
+                              </View>
+                            </TouchableOpacity>
+                          </Animated.View>
+                        </View>
+                      );
+                    })}
+                  </View>
                 </>
               );
             })()}
@@ -610,17 +670,27 @@ export default function SessionScreen() {
             <View style={styles.cardSection}>
               <Text style={styles.infoLabelSmall}>Lieu exact</Text>
               <Text style={styles.infoValueSmall}>
-                {session.spot === "Spot 1" ? "Marina Casablanca - Entrée principale" : session.spot}
+                {session.meetingPoint ||
+                  (session.spot === "Spot 1"
+                    ? "Marina Casablanca - Entrée principale"
+                    : session.spot)}
               </Text>
-              <Text style={styles.infoSubtext}>
-                Coordonnées GPS disponibles sur demande
-              </Text>
+              {session.meetingPointGPS ? (
+                <Text style={styles.infoSubtext}>
+                  {session.meetingPointGPS}
+                </Text>
+              ) : (
+                <Text style={styles.infoSubtext}>
+                  Coordonnées GPS disponibles sur demande
+                </Text>
+              )}
             </View>
             <View style={styles.divider} />
             <View style={styles.cardSection}>
               <Text style={styles.infoLabelSmall}>Heure de rendez-vous</Text>
               <Text style={styles.infoValueSmall}>
-                {session.dateLabel.split(" ").slice(-1)[0]} - 10 min avant le départ
+                {session.dateLabel.split(" ").slice(-1)[0]} - 10 min avant le
+                départ
               </Text>
               <Text style={styles.infoSubtext}>
                 Échauffement collectif avant le départ
@@ -630,8 +700,8 @@ export default function SessionScreen() {
             <View style={styles.cardSection}>
               <Text style={styles.infoLabelSmall}>Conseil coach</Text>
               <Text style={styles.infoValueSmall}>
-                Prends un tour de chauffe très léger + une petite couche si tu
-                as tendance à avoir froid. Hydrate-toi bien avant et après.
+                {session.coachAdvice ||
+                  "Prends un tour de chauffe très léger. Hydrate-toi bien avant et après la séance. Vêtements adaptés à la météo."}
               </Text>
             </View>
             <View style={styles.divider} />
@@ -640,9 +710,9 @@ export default function SessionScreen() {
               <TouchableOpacity
                 style={styles.whatsappButton}
                 onPress={() => {
-                  const phoneNumber = "+212708060337";
+                  const phoneNumber = session.coachPhone || "+212708060337";
                   const message = encodeURIComponent(
-                    `Urgence - Séance ${session.title}`
+                    `Urgence - Séance ${session.title}`,
                   );
                   const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
                   Linking.openURL(whatsappUrl).catch((err) => {
@@ -651,7 +721,9 @@ export default function SessionScreen() {
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={styles.whatsappButtonText}>📱 Contacter le coach</Text>
+                <Text style={styles.whatsappButtonText}>
+                  📱 Contacter {session.coachName || "le coach"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -854,21 +926,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   groupsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 4,
     marginBottom: 12,
   },
   compatStrip: {
     marginTop: 8,
     marginBottom: 12,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "rgba(32, 129, 255, 0.15)",
+    backgroundColor: "rgba(32, 129, 255, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(32, 129, 255, 0.35)",
   },
   compatStripTitle: {
-    color: colors.text.secondary,
+    color: colors.text.accent,
     fontSize: 11,
     fontWeight: "600",
     letterSpacing: 0.5,
@@ -876,8 +950,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   compatStripText: {
-    color: colors.text.secondary,
+    color: colors.text.primary,
     fontSize: 13,
+    lineHeight: 18,
   },
   compatStripTextStrong: {
     color: colors.text.primary,
@@ -885,31 +960,54 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   cardLabel: {
-    color: colors.text.secondary,
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "700",
   },
   groupsSubtext: {
-    color: colors.text.secondary,
+    color: colors.text.tertiary,
     fontSize: 12,
   },
+  groupsList: {
+    gap: 10,
+  },
   groupRow: {
-    backgroundColor: colors.background.card,
+    backgroundColor: colors.background.elevated,
     borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
-    marginBottom: 8,
+    borderColor: "rgba(255, 255, 255, 0.08)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 12,
   },
   groupRowSelected: {
     backgroundColor: "rgba(32, 129, 255, 0.15)",
     borderColor: "#2081FF",
+  },
+  groupRowRecommended: {
+    borderColor: "rgba(41, 208, 126, 0.5)",
+  },
+  groupRight: {
+    alignItems: "flex-end",
+    gap: 6,
+  },
+  selectedCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "rgba(32, 129, 255, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(32, 129, 255, 0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  selectedCheckText: {
+    color: colors.text.accent,
+    fontSize: 12,
+    fontWeight: "700",
   },
   groupLeft: {
     flexShrink: 1,
@@ -918,39 +1016,44 @@ const styles = StyleSheet.create({
   groupLabelRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 2,
+    flexWrap: "wrap",
+    columnGap: 8,
+    rowGap: 4,
+    marginBottom: 4,
   },
   groupLabel: {
     color: colors.text.primary,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
   },
   recommendedTag: {
-    marginLeft: 8,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: colors.accent.primary,
+    backgroundColor: "rgba(41, 208, 126, 0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(41, 208, 126, 0.6)",
   },
   recommendedTagText: {
-    color: colors.text.primary,
+    color: colors.text.success,
     fontSize: 11,
     fontWeight: "600",
   },
   groupPace: {
-    color: colors.text.secondary,
+    color: colors.text.primary,
     fontSize: 13,
+    fontWeight: "500",
   },
   runnersBadge: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
   },
   runnersBadgeText: {
-    color: colors.text.primary,
+    color: colors.text.secondary,
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   cardSection: {
     marginBottom: 16,

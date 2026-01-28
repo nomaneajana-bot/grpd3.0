@@ -58,6 +58,12 @@ export type SessionData = {
   // Sessions should never overwrite the workout template.
   // When a workout is edited, existing sessions remain unchanged (they store their own overrides).
   paceGroupsOverride?: SessionGroupOverride[]; // Full group overrides: explicit description of each active group
+  // Meeting point and contact info
+  meetingPoint?: string; // Exact meeting location (e.g., "Marina Casablanca - Entrée principale")
+  meetingPointGPS?: string; // GPS coordinates if available
+  coachAdvice?: string; // Coach's advice for this session
+  coachPhone?: string; // Coach/organizer phone number for WhatsApp
+  coachName?: string; // Coach/organizer name
 };
 
 export const SESSION_MAP: Record<string, SessionData> = {
