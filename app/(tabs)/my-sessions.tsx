@@ -777,7 +777,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   detailsButton: {
-    alignSelf: "flex-start",
+    alignSelf: "flex-end",
     paddingVertical: 6,
     paddingHorizontal: 12,
   },

@@ -1257,7 +1257,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   detailsButton: {
-    alignSelf: "flex-start",
+    alignSelf: "flex-end",
   },
   detailsButtonText: {
     color: colors.text.accent,
