@@ -368,14 +368,18 @@ export default function WorkoutsScreen() {
       return;
     }
 
-    Alert.alert("Supprimer les workouts", `Supprimer ${selectedIds.size} workout(s) ?`, [
-      { text: "Annuler", style: "cancel" },
-      {
-        text: "Supprimer",
-        style: "destructive",
-        onPress: deleteSelected,
-      },
-    ]);
+    Alert.alert(
+      "Supprimer les workouts",
+      `Supprimer ${selectedIds.size} workout(s) ?`,
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: deleteSelected,
+        },
+      ],
+    );
   };
 
   // Filter and sort workouts
@@ -641,9 +645,6 @@ export default function WorkoutsScreen() {
                           label={getRunTypePillLabel(workout.runType)}
                           variant="default"
                         />
-                        {workout.isCustom && (
-                          <Chip label="CRÉÉ PAR TOI" variant="success" />
-                        )}
                       </View>
                       <Text style={styles.workoutLastUsed}>{lastUsedText}</Text>
                     </View>
