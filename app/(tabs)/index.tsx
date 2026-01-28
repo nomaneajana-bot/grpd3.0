@@ -32,7 +32,8 @@ import {
 } from "../../lib/joinedSessionsStore";
 import {
     getProfileSnapshot,
-    type ReferencePaces
+    type ReferencePaces,
+    type RunnerProfile,
 } from "../../lib/profileStore";
 import { getStoredRuns, type StoredRun } from "../../lib/runStore";
 import {
@@ -49,6 +50,7 @@ import {
     getSessionRunTypeId,
     type FilterState,
 } from "../../lib/sessionLogic";
+import { isSessionVisibleToProfile } from "../../lib/sessionVisibility";
 import { getRunTypePillLabel } from "../../lib/workoutHelpers";
 import {
     getWorkout,

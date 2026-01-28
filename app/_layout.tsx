@@ -57,7 +57,8 @@ export default function RootLayout() {
   // Set global web styles
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.documentElement.style.backgroundColor = colors.background.primary;
+      document.documentElement.style.backgroundColor =
+        colors.background.primary;
       document.body.style.backgroundColor = colors.background.primary;
       document.body.style.margin = "0";
       document.body.style.padding = "0";

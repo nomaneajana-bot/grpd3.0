@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import {
+    Alert,
     Animated,
     Modal,
     Pressable,
@@ -267,6 +268,32 @@ export default function SessionScreen() {
     } catch (error) {
       console.warn("Failed to save joined session:", error);
     }
+  };
+
+  const handleRequestJoin = async () => {
+    if (!session) return;
+    const coachPhone = session.coachPhone;
+    const clubLabel = profile?.clubName ? ` (${profile.clubName})` : "";
+    const message = encodeURIComponent(
+      `Bonjour, je souhaite rejoindre la séance "${session.title}" le ${session.dateLabel}${clubLabel}. Merci !`,
+    );
+
+    if (coachPhone) {
+      const whatsappUrl = `https://wa.me/${coachPhone.replace(/[^0-9]/g, "")}?text=${message}`;
+      Linking.openURL(whatsappUrl).catch((err) => {
+        console.warn("Failed to open WhatsApp:", err);
+        Alert.alert(
+          "Demande non envoyée",
+          "Impossible d'ouvrir WhatsApp pour l'instant.",
+        );
+      });
+      return;
+    }
+
+    Alert.alert(
+      "Demande envoyée",
+      "Le coach sera notifié. Nous te confirmerons dès que possible.",
+    );
   };
 
   const handleDelete = async () => {
@@ -767,22 +794,28 @@ export default function SessionScreen() {
           </View>
         ) : (
           <View style={styles.footer}>
-            <TouchableOpacity
-              style={[
-                styles.saveButton,
-                !canJoin && styles.saveButtonDisabled,
-              ]}
-              activeOpacity={0.8}
-              onPress={handleSave}
-              disabled={!canJoin}
-            >
-              <Text style={styles.saveButtonText}>
-                {canJoin ? "Joindre" : "Membres seulement"}
-              </Text>
-            </TouchableOpacity>
+            {canJoin ? (
+              <TouchableOpacity
+                style={styles.saveButton}
+                activeOpacity={0.8}
+                onPress={handleSave}
+              >
+                <Text style={styles.saveButtonText}>Joindre</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.requestButton}
+                activeOpacity={0.8}
+                onPress={handleRequestJoin}
+              >
+                <Text style={styles.requestButtonText}>
+                  Demander à rejoindre
+                </Text>
+              </TouchableOpacity>
+            )}
             {!canJoin && (
               <Text style={styles.membersOnlyHint}>
-                Cette séance est réservée aux membres
+                Séance réservée aux membres
                 {session?.hostGroupName ? ` de ${session.hostGroupName}` : ""}.
               </Text>
             )}
@@ -1138,12 +1171,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
   saveButtonText: {
     color: colors.text.primary,
     fontSize: 16,
+    fontWeight: "600",
+  },
+  requestButton: {
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.medium,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  requestButtonText: {
+    color: colors.text.primary,
+    fontSize: 15,
     fontWeight: "600",
   },
   membersOnlyHint: {

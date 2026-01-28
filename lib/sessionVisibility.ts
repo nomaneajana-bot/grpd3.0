@@ -8,17 +8,11 @@ const normalizeGroupName = (value?: string | null): string | null => {
 };
 
 export function isSessionVisibleToProfile(
-  session: SessionData,
-  profile: RunnerProfile | null,
+  _session: SessionData,
+  _profile: RunnerProfile | null,
 ): boolean {
-  if (session.visibility !== "members") return true;
-  if (session.isCustom) return true;
-
-  const sessionGroup = normalizeGroupName(session.hostGroupName);
-  if (!sessionGroup) return true;
-
-  const userGroup = normalizeGroupName(profile?.clubName ?? null);
-  return Boolean(userGroup && userGroup === sessionGroup);
+  // Members-only sessions are still visible; joining is gated separately.
+  return true;
 }
 
 export function canProfileJoinSession(
