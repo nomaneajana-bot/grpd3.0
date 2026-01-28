@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { router, Stack, useLocalSearchParams } from "expo-router";
+import * as Linking from "expo-linking";
 
 import { colors } from "../../constants/ui";
 import {
@@ -333,6 +334,95 @@ export default function SessionScreen() {
           </View>
         )}
 
+        {/* Session Details Card - Professional Runner Info */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>DÉTAILS DE LA SÉANCE</Text>
+          
+          {/* Workout Description */}
+          <View style={styles.cardSection}>
+            <Text style={styles.infoLabelSmall}>Description</Text>
+            <Text style={styles.infoValueSmall}>
+              {session.typeLabel === "FARTLEK" && 
+                "Entraînement par intervalles avec variations de rythme. Le fartlek long combine des efforts soutenus avec des récupérations actives pour développer l'endurance et la vitesse."}
+              {session.typeLabel === "SÉRIES" && 
+                "Intervalles structurés sur piste ou route. Travail de vitesse et de résistance à l'effort."}
+              {session.typeLabel === "FOOTING" && 
+                "Sortie d'endurance à allure confortable. Développement de la base aérobie."}
+              {session.typeLabel === "PROGRESSIF" && 
+                "Sortie progressive avec accélération graduelle. Développement de l'endurance et de la capacité à maintenir un effort croissant."}
+              {!["FARTLEK", "SÉRIES", "FOOTING", "PROGRESSIF"].includes(session.typeLabel) && 
+                "Séance d'entraînement structurée pour améliorer la performance."}
+            </Text>
+          </View>
+          
+          <View style={styles.divider} />
+          
+          {/* Meeting Point */}
+          <View style={styles.cardSection}>
+            <Text style={styles.infoLabelSmall}>Point de rendez-vous</Text>
+            <Text style={styles.infoValueSmall}>
+              {session.spot === "Spot 1" ? "Marina Casablanca - Entrée principale" : session.spot}
+            </Text>
+            <Text style={styles.infoSubtext}>
+              Arrive 10 minutes avant le départ pour l'échauffement
+            </Text>
+          </View>
+          
+          <View style={styles.divider} />
+          
+          {/* Total Distance/Duration */}
+          <View style={styles.cardSection}>
+            <Text style={styles.infoLabelSmall}>Distance estimée</Text>
+            <Text style={styles.infoValueSmall}>
+              {session.estimatedDistanceKm} km
+            </Text>
+          </View>
+          
+          <View style={styles.divider} />
+          
+          {/* Equipment/Recommendations */}
+          <View style={styles.cardSection}>
+            <Text style={styles.infoLabelSmall}>Équipement recommandé</Text>
+            <Text style={styles.infoValueSmall}>
+              • Chaussures de course adaptées{'\n'}
+              • Vêtements adaptés à la météo{'\n'}
+              • Eau ou boisson d'effort{'\n'}
+              • Lampe frontale si départ tôt le matin
+            </Text>
+          </View>
+        </View>
+
+        {/* Contact Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>CONTACT & INFORMATIONS</Text>
+          
+          {/* Coach Contact */}
+          <View style={styles.cardSection}>
+            <Text style={styles.infoLabelSmall}>Coach / Organisateur</Text>
+            <Text style={styles.infoValueSmall}>Équipe GRPD</Text>
+          </View>
+          
+          <View style={styles.divider} />
+          
+          {/* WhatsApp Button */}
+          <TouchableOpacity
+            style={styles.whatsappButton}
+            onPress={() => {
+              const phoneNumber = "+212708060337"; // Default coach number
+              const message = encodeURIComponent(
+                `Bonjour, je souhaite rejoindre la séance "${session.title}" le ${session.dateLabel}`
+              );
+              const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
+              Linking.openURL(whatsappUrl).catch((err) => {
+                console.warn("Failed to open WhatsApp:", err);
+              });
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.whatsappButtonText}>💬 Contacter via WhatsApp</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Groups Section */}
         {session.paceGroupsOverride && session.paceGroupsOverride.length > 0 ? (
           <View style={styles.card}>
@@ -518,21 +608,51 @@ export default function SessionScreen() {
           <View style={styles.card}>
             <Text style={styles.cardLabel}>TON RENDEZ-VOUS</Text>
             <View style={styles.cardSection}>
-              <Text style={styles.infoLabelSmall}>Lieu</Text>
-              <Text style={styles.infoValueSmall}>Marina Casablanca</Text>
+              <Text style={styles.infoLabelSmall}>Lieu exact</Text>
+              <Text style={styles.infoValueSmall}>
+                {session.spot === "Spot 1" ? "Marina Casablanca - Entrée principale" : session.spot}
+              </Text>
+              <Text style={styles.infoSubtext}>
+                Coordonnées GPS disponibles sur demande
+              </Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.cardSection}>
-              <Text style={styles.infoLabelSmall}>Rendez-vous</Text>
-              <Text style={styles.infoValueSmall}>10 min avant le départ</Text>
+              <Text style={styles.infoLabelSmall}>Heure de rendez-vous</Text>
+              <Text style={styles.infoValueSmall}>
+                {session.dateLabel.split(" ").slice(-1)[0]} - 10 min avant le départ
+              </Text>
+              <Text style={styles.infoSubtext}>
+                Échauffement collectif avant le départ
+              </Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.cardSection}>
               <Text style={styles.infoLabelSmall}>Conseil coach</Text>
               <Text style={styles.infoValueSmall}>
                 Prends un tour de chauffe très léger + une petite couche si tu
-                as tendance à avoir froid.
+                as tendance à avoir froid. Hydrate-toi bien avant et après.
               </Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.cardSection}>
+              <Text style={styles.infoLabelSmall}>En cas d'urgence</Text>
+              <TouchableOpacity
+                style={styles.whatsappButton}
+                onPress={() => {
+                  const phoneNumber = "+212708060337";
+                  const message = encodeURIComponent(
+                    `Urgence - Séance ${session.title}`
+                  );
+                  const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
+                  Linking.openURL(whatsappUrl).catch((err) => {
+                    console.warn("Failed to open WhatsApp:", err);
+                  });
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.whatsappButtonText}>📱 Contacter le coach</Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -568,7 +688,7 @@ export default function SessionScreen() {
               activeOpacity={0.8}
               onPress={handleSave}
             >
-              <Text style={styles.saveButtonText}>Enregistrer</Text>
+              <Text style={styles.saveButtonText}>Joindre</Text>
             </TouchableOpacity>
             {hasStoredJoin && (
               <TouchableOpacity
@@ -1099,5 +1219,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "400",
     marginTop: 4,
+  },
+  infoSubtext: {
+    color: "#8A8A8A",
+    fontSize: 11,
+    fontWeight: "400",
+    marginTop: 4,
+    fontStyle: "italic",
+  },
+  whatsappButton: {
+    backgroundColor: "#25D366",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  whatsappButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });
