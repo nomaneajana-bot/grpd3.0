@@ -311,6 +311,7 @@ export default function HomeScreen() {
   >(null);
   const [showSpotPicker, setShowSpotPicker] = useState(false);
   const [hasAnimated, setHasAnimated] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [workoutRunTypes, setWorkoutRunTypes] = useState<
     Record<string, WorkoutRunTypeId>
   >({});
@@ -609,6 +610,105 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Advanced Filters - Collapsible */}
+        <View style={styles.advancedFiltersContainer}>
+          <TouchableOpacity
+            style={styles.advancedFiltersHeader}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowAdvancedFilters(!showAdvancedFilters);
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.advancedFiltersTitle}>Filtres avancés</Text>
+            <Text style={styles.advancedFiltersChevron}>
+              {showAdvancedFilters ? "▼" : "▶"}
+            </Text>
+          </TouchableOpacity>
+
+          {showAdvancedFilters && (
+            <View style={styles.advancedFiltersContent}>
+              {/* Girls Only Toggle */}
+              <TouchableOpacity
+                style={styles.advancedFilterRow}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setFilters((prev) => ({
+                    ...prev,
+                    genderRestriction:
+                      prev.genderRestriction === "women_only"
+                        ? null
+                        : "women_only",
+                  }));
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.advancedFilterLabelContainer}>
+                  <Text style={styles.advancedFilterLabel}>Filles uniquement</Text>
+                  <Text style={styles.advancedFilterSubtext}>
+                    Séances réservées aux femmes
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.toggleSwitch,
+                    filters.genderRestriction === "women_only" &&
+                      styles.toggleSwitchActive,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.toggleSwitchThumb,
+                      filters.genderRestriction === "women_only" && [
+                        styles.toggleSwitchThumbActive,
+                        { alignSelf: "flex-end" },
+                      ],
+                      !filters.genderRestriction && { alignSelf: "flex-start" },
+                    ]}
+                  />
+                </View>
+              </TouchableOpacity>
+
+              {/* Walking Only Toggle */}
+              <TouchableOpacity
+                style={styles.advancedFilterRow}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setFilters((prev) => ({
+                    ...prev,
+                    walkingOnly: !prev.walkingOnly,
+                  }));
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.advancedFilterLabelContainer}>
+                  <Text style={styles.advancedFilterLabel}>Marche uniquement</Text>
+                  <Text style={styles.advancedFilterSubtext}>
+                    Afficher seulement les séances de marche
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.toggleSwitch,
+                    filters.walkingOnly && styles.toggleSwitchActive,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.toggleSwitchThumb,
+                      filters.walkingOnly && [
+                        styles.toggleSwitchThumbActive,
+                        { alignSelf: "flex-end" },
+                      ],
+                      !filters.walkingOnly && { alignSelf: "flex-start" },
+                    ]}
+                  />
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Empty State */}
@@ -1553,5 +1653,81 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     textAlign: "center",
+  },
+  // Advanced filters styles
+  advancedFiltersContainer: {
+    marginBottom: 16,
+    backgroundColor: colors.background.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    overflow: "hidden",
+  },
+  advancedFiltersHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  advancedFiltersTitle: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  advancedFiltersChevron: {
+    color: colors.text.secondary,
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  advancedFiltersContent: {
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.08)",
+    paddingVertical: 8,
+  },
+  advancedFilterRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  advancedFilterLabelContainer: {
+    flex: 1,
+    marginRight: 16,
+  },
+  advancedFilterLabel: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  advancedFilterSubtext: {
+    color: colors.text.secondary,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  toggleSwitch: {
+    width: 44,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#1A1A1A",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    paddingHorizontal: 2,
+  },
+  toggleSwitchActive: {
+    backgroundColor: colors.accent.primary,
+    borderColor: colors.accent.primary,
+  },
+  toggleSwitchThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#666",
+  },
+  toggleSwitchThumbActive: {
+    backgroundColor: colors.text.primary,
   },
 });

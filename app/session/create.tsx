@@ -2110,6 +2110,39 @@ export default function CreateSessionScreen() {
           )}
         </View>
 
+        {profile?.groupName && (
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>AUDIENCE</Text>
+            <Text style={styles.cardSubtitle}>
+              Session du groupe {profile.groupName}.
+            </Text>
+            <View style={styles.fieldRow}>
+              <View style={styles.audienceText}>
+                <Text style={styles.fieldLabel}>Membres seulement</Text>
+                <Text style={styles.fieldHint}>
+                  Par défaut pour les séances de groupe.
+                </Text>
+              </View>
+              <Switch
+                value={sessionVisibility === "members"}
+                onValueChange={(value) => {
+                  setSessionVisibility(value ? "members" : "public");
+                  if (value && !hostGroupName && profile.groupName) {
+                    setHostGroupName(profile.groupName);
+                  }
+                }}
+                trackColor={{ false: "#2a2f3a", true: colors.primary }}
+                thumbColor="#ffffff"
+              />
+            </View>
+            <Text style={styles.audienceNote}>
+              {sessionVisibility === "members"
+                ? `Visible uniquement aux membres de ${profile.groupName}.`
+                : "Visible à tous les coureurs."}
+            </Text>
+          </View>
+        )}
+
         {/* Card 2 - Groupes & allures */}
         {(selectedWorkoutId || sessionMode !== "workout") && (
           <View style={[styles.card, styles.groupsCard]}>
@@ -2491,6 +2524,15 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     flex: 1,
   },
+  fieldHint: {
+    color: colors.text.tertiary,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  audienceText: {
+    flex: 1,
+    paddingRight: 12,
+  },
   fieldInput: {
     color: colors.text.primary,
     fontSize: 15,
@@ -2512,6 +2554,11 @@ const styles = StyleSheet.create({
   },
   helperText: {
     color: colors.text.secondary,
+    fontSize: 12,
+    marginTop: 8,
+  },
+  audienceNote: {
+    color: colors.text.tertiary,
     fontSize: 12,
     marginTop: 8,
   },

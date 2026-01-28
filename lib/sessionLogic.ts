@@ -21,6 +21,8 @@ export type FilterState = {
     maxSecondsPerKm: number;
   } | null;
   spot?: string | null;
+  genderRestriction?: "women_only" | null; // Filter for girls-only runs
+  walkingOnly?: boolean; // Filter for walking sessions only
 };
 
 /**
@@ -140,6 +142,21 @@ export function matchesFilters(
   // Pace range filter
   if (!matchesPaceFilter(session, filters.paceRange)) {
     return false;
+  }
+
+  // Gender restriction filter
+  if (filters.genderRestriction === "women_only") {
+    if (session.genderRestriction !== "women_only") {
+      return false;
+    }
+  }
+
+  // Walking only filter
+  if (filters.walkingOnly) {
+    const sessionTypeId = getSessionRunTypeId(session);
+    if (sessionTypeId !== "walking") {
+      return false;
+    }
   }
 
   return true;

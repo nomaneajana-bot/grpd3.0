@@ -66,6 +66,7 @@ export type SessionData = {
   coachName?: string; // Coach/organizer name
   visibility?: SessionVisibility; // "public" | "members" (members-only sessions)
   hostGroupName?: string | null; // Group/club name for members-only sessions
+  genderRestriction?: "women_only" | null; // Optional gender restriction (e.g., girls-only runs)
 };
 
 export type SessionVisibility = "public" | "members";
