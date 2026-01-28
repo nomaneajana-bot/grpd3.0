@@ -512,8 +512,8 @@ function DualPacePickerModal({
                 </TouchableOpacity>
               </View>
             </View>
-          </TouchableWithoutFeedback>
-        </View>
+          </View>
+        </TouchableWithoutFeedback>
       </TouchableOpacity>
     </Modal>
   );
