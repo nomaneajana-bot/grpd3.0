@@ -36,17 +36,12 @@ const RACE_TYPE_OPTIONS = [
   { id: "other" as const, label: "Autre" },
 ];
 
-const GROUP_OPTIONS = ["A", "B", "C", "D"] as const;
-
 export default function SettingsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   // Form state
   const [firstName, setFirstName] = useState("");
-  const [defaultGroup, setDefaultGroup] = useState<
-    "A" | "B" | "C" | "D" | null
-  >(null);
   const [weightKg, setWeightKg] = useState("");
   const [vo2max, setVo2max] = useState("");
   const [mainGoal, setMainGoal] = useState("");
@@ -70,16 +65,6 @@ export default function SettingsScreen() {
       const profile = await getRunnerProfile();
       if (profile) {
         setFirstName(profile.firstName ?? profile.name ?? "");
-        setDefaultGroup(
-          profile.defaultGroup ??
-            (profile.groupName
-              ? (profile.groupName.replace("Groupe ", "") as
-                  | "A"
-                  | "B"
-                  | "C"
-                  | "D")
-              : null),
-        );
         setWeightKg(profile.weightKg !== null ? String(profile.weightKg) : "");
         setVo2max(profile.vo2max !== null ? String(profile.vo2max) : "");
         setMainGoal(profile.mainGoal ? GOAL_LABELS[profile.mainGoal] : "");
@@ -148,8 +133,7 @@ export default function SettingsScreen() {
         ...existing,
         name: firstName,
         firstName: firstName,
-        groupName: defaultGroup ? `Groupe ${defaultGroup}` : "Groupe D",
-        defaultGroup: defaultGroup,
+        groupName: existing.groupName ?? null,
         weightKg: weight,
         vo2max: vo2,
         mainGoal: mainGoalValue,
@@ -221,40 +205,6 @@ export default function SettingsScreen() {
               placeholder="Ton prénom"
               placeholderTextColor="#666"
             />
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Groupe par défaut</Text>
-            <View style={styles.pillRow}>
-              {GROUP_OPTIONS.map((group) => {
-                const isSelected = defaultGroup === group;
-                return (
-                  <Pressable
-                    key={group}
-                    style={({ pressed }) => [
-                      styles.pill,
-                      isSelected && styles.pillSelected,
-                      pressed && styles.pillPressed,
-                    ]}
-                    onPress={() => {
-                      setDefaultGroup(group);
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.pillText,
-                        isSelected && styles.pillTextSelected,
-                      ]}
-                    >
-                      {group}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
           </View>
         </View>
 

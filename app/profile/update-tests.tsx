@@ -581,7 +581,13 @@ type TestModalProps = {
   isAdding?: boolean; // True when adding new test (even from template), false when editing existing
 };
 
-function TestModal({ visible, test, onClose, onSaveDraft, isAdding = false }: TestModalProps) {
+function TestModal({
+  visible,
+  test,
+  onClose,
+  onSaveDraft,
+  isAdding = false,
+}: TestModalProps) {
   const isEditing = test !== null && !isAdding;
 
   const [kind, setKind] = useState<"distance" | "duration">("distance");
