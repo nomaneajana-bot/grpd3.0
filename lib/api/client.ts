@@ -1,5 +1,7 @@
 import type { ApiEnvelope, ApiErrorPayload } from "../../types/api";
 import { getAccessToken as getStoredAccessToken } from "../authStore";
+import { ApiError } from "./errors";
+import { isMockEnabled, mockApiRequest } from "./mock";
 
 type ApiClientOptions = {
   baseUrl?: string;
@@ -10,24 +12,6 @@ type ApiClientOptions = {
 type RequestOptions = {
   auth?: boolean;
 };
-
-export class ApiError extends Error {
-  status: number;
-  code?: string;
-  details?: unknown;
-
-  constructor(
-    status: number,
-    message: string,
-    code?: string,
-    details?: unknown,
-  ) {
-    super(message);
-    this.status = status;
-    this.code = code;
-    this.details = details;
-  }
-}
 
 function getDefaultBaseUrl(): string {
   return process.env.EXPO_PUBLIC_API_URL ?? "";
@@ -73,6 +57,8 @@ export class ApiClient {
     const url = joinUrl(this.baseUrl, path);
     const headers = new Headers(init.headers);
 
+    const useMock = isMockEnabled(this.baseUrl);
+
     if (options.auth !== false && this.getAccessToken) {
       const token = await this.getAccessToken();
       if (token) {
@@ -80,7 +66,11 @@ export class ApiClient {
       }
     }
 
-    if (init.body && !headers.has("Content-Type")) {
+    if (useMock) {
+      return await mockApiRequest<T>(path, { ...init, headers });
+    }
+
+if (init.body && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
 

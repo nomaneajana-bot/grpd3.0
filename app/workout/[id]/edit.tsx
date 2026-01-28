@@ -300,17 +300,27 @@ function DualPacePickerModal({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.modalBackdrop}>
-          <TouchableWithoutFeedback>
-            <View style={styles.dualPacePickerCard}>
-              <View style={styles.dualPacePickerHeader}>
-                <Text style={styles.dualPacePickerTitle}>
+      <TouchableOpacity
+        style={styles.pickerBackdrop}
+        activeOpacity={1}
+        onPress={onClose}
+      >
+        <TouchableWithoutFeedback>
+          <View style={styles.pickerContainer}>
+            <View style={styles.pickerSheet}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>
                   AJUSTER MIN / MAX
                 </Text>
+                <TouchableOpacity
+                  onPress={onClose}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Text style={styles.pickerHeaderAction}>Fermer</Text>
+                </TouchableOpacity>
               </View>
 
               <View style={styles.dualPacePickerContainer}>
@@ -487,24 +497,24 @@ function DualPacePickerModal({
 
               <View style={styles.wheelPickerActions}>
                 <TouchableOpacity
-                  style={styles.wheelPickerCancelButton}
+                  style={styles.pickerSecondaryButton}
                   onPress={onClose}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.wheelPickerCancelText}>Annuler</Text>
+                  <Text style={styles.pickerSecondaryButtonText}>Annuler</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.wheelPickerConfirmButton}
+                  style={styles.pickerPrimaryButton}
                   onPress={handleConfirm}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.wheelPickerConfirmText}>Confirmer</Text>
+                  <Text style={styles.pickerPrimaryButtonText}>Confirmer</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </TouchableWithoutFeedback>
         </View>
-      </TouchableWithoutFeedback>
+      </TouchableOpacity>
     </Modal>
   );
 }
@@ -3628,45 +3638,11 @@ const styles = StyleSheet.create({
     color: "#2081FF",
     fontWeight: "600",
   },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  dualPacePickerCard: {
-    backgroundColor: "#131313",
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
-    paddingTop: 24,
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    width: "90%",
-    maxWidth: 500,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 16,
-  },
-  dualPacePickerHeader: {
-    marginBottom: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.08)",
-  },
-  dualPacePickerTitle: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "600",
-    textAlign: "center",
-    letterSpacing: 0.5,
-  },
   dualPacePickerContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
     gap: 24,
+    marginTop: 8,
   },
   dualPacePickerSection: {
     flex: 1,
@@ -3748,38 +3724,11 @@ const styles = StyleSheet.create({
   },
   wheelPickerActions: {
     flexDirection: "row",
-    justifyContent: "center",
+    justifyContent: "space-between",
     gap: 12,
     marginTop: 24,
     paddingTop: 20,
     borderTopWidth: 1,
     borderTopColor: "rgba(255, 255, 255, 0.08)",
-  },
-  wheelPickerConfirmButton: {
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 26,
-    backgroundColor: "#2081FF",
-    minWidth: 120,
-    alignItems: "center",
-  },
-  wheelPickerConfirmText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  wheelPickerCancelButton: {
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    minWidth: 120,
-    alignItems: "center",
-  },
-  wheelPickerCancelText: {
-    color: "#BFBFBF",
-    fontSize: 16,
-    fontWeight: "500",
   },
 });
