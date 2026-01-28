@@ -79,6 +79,7 @@ export default function SettingsScreen() {
         groupName: existing.groupName ?? null,
         weightKg: weight,
         vo2max: vo2,
+        mainGoal: existing.mainGoal ?? "5k", // Keep existing mainGoal (required field)
       };
 
       await saveRunnerProfile(updated);

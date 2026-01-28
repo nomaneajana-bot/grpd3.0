@@ -1399,8 +1399,8 @@ export default function CreateSessionScreen() {
         const runner = await getRunnerProfile();
         setProfile(runner);
         if (!hasInitializedAudience && !isEditMode) {
-          if (runner?.groupName) {
-            setHostGroupName(runner.groupName);
+          if (runner?.clubName) {
+            setHostGroupName(runner.clubName);
             setSessionVisibility("members");
           }
           setHasInitializedAudience(true);
@@ -2112,11 +2112,11 @@ export default function CreateSessionScreen() {
           )}
         </View>
 
-        {profile?.groupName && (
+        {profile?.clubName && (
           <View style={styles.card}>
             <Text style={styles.cardLabel}>AUDIENCE</Text>
             <Text style={styles.cardSubtitle}>
-              Session du groupe {profile.groupName}.
+              Session du club {profile.clubName}.
             </Text>
             <View style={styles.fieldRow}>
               <View style={styles.audienceText}>
@@ -2129,8 +2129,8 @@ export default function CreateSessionScreen() {
                 value={sessionVisibility === "members"}
                 onValueChange={(value) => {
                   setSessionVisibility(value ? "members" : "public");
-                  if (value && !hostGroupName && profile.groupName) {
-                    setHostGroupName(profile.groupName);
+                  if (value && !hostGroupName && profile.clubName) {
+                    setHostGroupName(profile.clubName);
                   }
                 }}
                 trackColor={{ false: "#2a2f3a", true: colors.accent.primary }}
@@ -2139,7 +2139,7 @@ export default function CreateSessionScreen() {
             </View>
             <Text style={styles.audienceNote}>
               {sessionVisibility === "members"
-                ? `Visible uniquement aux membres de ${profile.groupName}.`
+                ? `Visible uniquement aux membres de ${profile.clubName}.`
                 : "Visible à tous les coureurs."}
             </Text>
           </View>

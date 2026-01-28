@@ -14,6 +14,7 @@ export type DistanceGoal = "5k" | "10k" | "21k" | "42k" | "other";
 export type RunnerProfile = {
   name: string;
   groupName: string; // e.g. "Groupe D"
+  clubName?: string | null; // e.g. "Jaime courir"
   vo2max: number | null; // nullable for now
   weightKg: number | null;
   mainGoal: DistanceGoal;

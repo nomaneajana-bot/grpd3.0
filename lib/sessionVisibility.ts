@@ -17,7 +17,7 @@ export function isSessionVisibleToProfile(
   const sessionGroup = normalizeGroupName(session.hostGroupName);
   if (!sessionGroup) return true;
 
-  const userGroup = normalizeGroupName(profile?.groupName ?? null);
+  const userGroup = normalizeGroupName(profile?.clubName ?? null);
   return Boolean(userGroup && userGroup === sessionGroup);
 }
 
@@ -31,6 +31,6 @@ export function canProfileJoinSession(
   const sessionGroup = normalizeGroupName(session.hostGroupName);
   if (!sessionGroup) return true;
 
-  const userGroup = normalizeGroupName(profile?.groupName ?? null);
+  const userGroup = normalizeGroupName(profile?.clubName ?? null);
   return Boolean(userGroup && userGroup === sessionGroup);
 }
