@@ -1,5 +1,6 @@
 import type {
   Club,
+  ClubCreateInput,
   ClubApproveInput,
   ClubApproveResult,
   ClubDetail,
@@ -42,6 +43,29 @@ function normalizeClubDetail(payload: ClubDetailPayload): ClubDetail {
     club: payload,
     pendingMembers: [],
   };
+}
+
+function slugify(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export async function createClub(
+  client: ApiClient,
+  input: ClubCreateInput,
+): Promise<Club> {
+  const name = input.name.trim();
+  const slug = slugify(name);
+  const city = input.city?.trim() ? input.city.trim() : undefined;
+  return await client.request<Club>("/api/v1/clubs", {
+    method: "POST",
+    body: JSON.stringify({ name, slug, city }),
+  });
 }
 
 export async function getMyMemberships(

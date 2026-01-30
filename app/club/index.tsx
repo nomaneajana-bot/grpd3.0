@@ -180,9 +180,25 @@ export default function ClubScreen() {
               </Text>
             </>
           ) : (
-            <Text style={styles.cardValue}>
-              Pas de club — ce n’est pas obligatoire.
-            </Text>
+            <>
+              <Text style={styles.cardValue}>
+                Pas de club — ce n’est pas obligatoire.
+              </Text>
+              {!isApprovedMember && (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.createButton,
+                    pressed && styles.createButtonPressed,
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push("/club/create");
+                  }}
+                >
+                  <Text style={styles.createButtonText}>Créer un club</Text>
+                </Pressable>
+              )}
+            </>
           )}
         </Card>
 
@@ -409,6 +425,22 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.text.primary,
     fontSize: 15,
+    fontWeight: "600",
+  },
+  createButton: {
+    marginTop: spacing.sm,
+    borderColor: colors.border.medium,
+    borderWidth: 1,
+    paddingVertical: 10,
+    borderRadius: 999,
+    alignItems: "center",
+  },
+  createButtonPressed: {
+    opacity: 0.8,
+  },
+  createButtonText: {
+    color: colors.text.primary,
+    fontSize: 14,
     fontWeight: "600",
   },
   secondaryButton: {

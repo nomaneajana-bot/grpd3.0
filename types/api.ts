@@ -211,6 +211,11 @@ export type ClubMembershipsResult = {
   memberships: ClubMembership[];
 };
 
+export type ClubCreateInput = {
+  name: string;
+  city?: string | null;
+};
+
 export type ClubJoinByCodeInput = {
   code: string;
 };

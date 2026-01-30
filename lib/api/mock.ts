@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
   AuthUser,
   Club,
+  ClubCreateInput,
   ClubApproveInput,
   ClubApproveResult,
   ClubDetail,
@@ -79,6 +80,22 @@ function randomId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function slugify(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function makeInviteCode(slug: string): string {
+  const base = slug.replace(/[^a-z0-9]/g, '').toUpperCase();
+  if (base.length >= 6) return base.slice(0, 8);
+  return `CLUB${Math.floor(Math.random() * 900 + 100)}`;
+}
+
 async function readJson<T>(key: string, fallback: T): Promise<T> {
   try {
     const raw = await AsyncStorage.getItem(key);
@@ -111,6 +128,41 @@ async function ensureSeedClub(): Promise<Club & { code: string }> {
   };
   clubs[club.id] = club;
   await writeJson(MOCK_CLUBS_KEY, clubs);
+  return club;
+}
+
+async function mockCreateClub(
+  input: ClubCreateInput & { slug?: string },
+): Promise<Club> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+
+  const clubs = await readClubs();
+  const name = input.name?.trim();
+  if (!name) throw new ApiError(400, 'Name required');
+  const slug = input.slug?.trim() || slugify(name);
+  const id = randomId('club');
+  const club: Club & { code: string } = {
+    id,
+    name,
+    slug,
+    city: input.city?.trim() || null,
+    description: null,
+    visibility: 'public',
+    createdAt: new Date().toISOString(),
+    createdById: user.id,
+    code: makeInviteCode(slug),
+  };
+
+  clubs[club.id] = club;
+  await writeJson(MOCK_CLUBS_KEY, clubs);
+  await upsertMembership({
+    userId: user.id,
+    clubId: club.id,
+    status: 'approved',
+    role: 'admin',
+  });
+
   return club;
 }
 
@@ -668,6 +720,9 @@ export async function mockApiRequest<T>(
   }
   if (path === '/api/v1/me/prs' && method === 'POST') {
     return (await mockUpdateMyPrs(body as UpdateMyPrsInput)) as T;
+  }
+  if (path === '/api/v1/clubs' && method === 'POST') {
+    return (await mockCreateClub(body as ClubCreateInput & { slug?: string })) as T;
   }
   if (path === '/api/v1/clubs/join-by-code' && method === 'POST') {
     return (await mockJoinByCode(body as ClubJoinByCodeInput)) as T;
