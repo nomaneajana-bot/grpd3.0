@@ -20,6 +20,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import type { TextStyle, ViewStyle } from "react-native";
 
 import * as Haptics from "expo-haptics";
 
@@ -751,11 +752,11 @@ export default function HomeScreen() {
             <View style={styles.workoutsList}>
               {upcomingRuns.map((entry) => (
                 <Card key={entry.run.id} style={styles.sessionCard}>
-                  <View style={styles.sessionHeaderRow}>
-                    <Text style={styles.spotText}>
+                  <View style={styles.cardHeaderTopRow}>
+                    <Text style={styles.spotName}>
                       {entry.run.location.placeName || "Course"}
                     </Text>
-                    <Text style={styles.dateText}>
+                    <Text style={styles.date}>
                       {formatRunDate(entry.run.startTimeISO)}
                     </Text>
                   </View>
@@ -812,7 +813,7 @@ export default function HomeScreen() {
               const typeLabel = workoutRunType
                 ? getRunTypePillLabel(workoutRunType)
                 : sessionTypeId
-                  ? getRunTypePillLabelFromModule(sessionTypeId)
+                  ? getRunTypePillLabelFromModule(sessionTypeId as RunTypeId)
                   : "PERSONNALISÉ";
 
               return (
@@ -1049,10 +1050,10 @@ export default function HomeScreen() {
         onRequestClose={() => setShowCustomDatePicker(false)}
       >
         <KeyboardAvoidingView
-          style={styles.pickerModalOverlay}
+          style={styles.pickerBackdrop}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View style={styles.pickerModalContent}>
+          <View style={styles.pickerSheet}>
             <Text style={styles.pickerTitle}>Date personnalisée</Text>
 
             <View style={styles.customDateRow}>
@@ -1156,7 +1157,7 @@ export default function HomeScreen() {
               />
             )}
 
-            <View style={styles.pickerButtonRow}>
+            <View style={styles.pickerHeader}>
               <TouchableOpacity
                 style={styles.pickerSecondaryButton}
                 onPress={() => {
@@ -1202,7 +1203,107 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+type HomeStyles = {
+  container: ViewStyle;
+  scrollView: ViewStyle;
+  scrollContent: ViewStyle;
+  header: ViewStyle;
+  headerTitle: TextStyle;
+  headerSubtitle: TextStyle;
+  filterPillsContainer: ViewStyle;
+  filterPillsRow: ViewStyle;
+  filterPill: ViewStyle;
+  filterPillActive: ViewStyle;
+  filterPillText: TextStyle;
+  filterPillTextActive: TextStyle;
+  sectionBlock: ViewStyle;
+  sectionTitle: TextStyle;
+  workoutsList: ViewStyle;
+  sessionsList: ViewStyle;
+  sessionCard: ViewStyle;
+  cardHeader: ViewStyle;
+  cardHeaderTopRow: ViewStyle;
+  pillsContainer: ViewStyle;
+  typePill: ViewStyle;
+  typePillText: TextStyle;
+  customPill: ViewStyle;
+  customPillText: TextStyle;
+  statusPill: ViewStyle;
+  statusPillText: TextStyle;
+  spotName: TextStyle;
+  date: TextStyle;
+  title: TextStyle;
+  description: TextStyle;
+  allure: TextStyle;
+  detailsButton: ViewStyle;
+  detailsButtonText: TextStyle;
+  createButtonsRow: ViewStyle;
+  createButtonContainer: ViewStyle;
+  createButtonHalf: ViewStyle;
+  createButton: ViewStyle;
+  findRunButton: ViewStyle;
+  createButtonText: TextStyle;
+  pickerBackdrop: ViewStyle;
+  pickerContainer: ViewStyle;
+  pickerCard: ViewStyle;
+  pickerSheet: ViewStyle;
+  pickerHeader: ViewStyle;
+  pickerTitle: TextStyle;
+  pickerHeaderAction: TextStyle;
+  pickerCloseText: TextStyle;
+  pickerOptionsList: ViewStyle;
+  pickerOptionsContent: ViewStyle;
+  optionRow: ViewStyle;
+  optionRowSelected: ViewStyle;
+  optionRowPressed: ViewStyle;
+  optionRadio: ViewStyle;
+  optionRadioSelected: ViewStyle;
+  optionLabel: TextStyle;
+  paceFormScrollView: ViewStyle;
+  paceFormScrollContent: ViewStyle;
+  paceFormSection: ViewStyle;
+  paceFormLabel: TextStyle;
+  paceRow: ViewStyle;
+  paceInputGroup: ViewStyle;
+  paceInputLabel: TextStyle;
+  paceInput: TextStyle;
+  paceColon: TextStyle;
+  pickerButtonsContainer: ViewStyle;
+  pickerPrimaryButton: ViewStyle;
+  pickerPrimaryButtonText: TextStyle;
+  pickerSecondaryButton: ViewStyle;
+  pickerSecondaryButtonText: TextStyle;
+  emptyStateContainer: ViewStyle;
+  emptyStateEmoji: TextStyle;
+  emptyStateTitle: TextStyle;
+  emptyStateSubtitle: TextStyle;
+  emptyStatePrimaryButton: ViewStyle;
+  emptyStatePrimaryButtonText: TextStyle;
+  emptyStateSecondaryButton: ViewStyle;
+  emptyStateSecondaryButtonText: TextStyle;
+  customDateRow: ViewStyle;
+  customDateField: ViewStyle;
+  customDateLabel: TextStyle;
+  customDateButton: ViewStyle;
+  customDateButtonText: TextStyle;
+  datePickerContainer: ViewStyle;
+  datePickerLabel: TextStyle;
+  advancedFiltersContainer: ViewStyle;
+  advancedFiltersHeader: ViewStyle;
+  advancedFiltersTitle: TextStyle;
+  advancedFiltersChevron: TextStyle;
+  advancedFiltersContent: ViewStyle;
+  advancedFilterRow: ViewStyle;
+  advancedFilterLabelContainer: ViewStyle;
+  advancedFilterLabel: TextStyle;
+  advancedFilterSubtext: TextStyle;
+  toggleSwitch: ViewStyle;
+  toggleSwitchActive: ViewStyle;
+  toggleSwitchThumb: ViewStyle;
+  toggleSwitchThumbActive: ViewStyle;
+};
+
+const styles = StyleSheet.create<HomeStyles>({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
@@ -1408,7 +1509,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: colors.text.primary,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
   // Picker styles
   pickerBackdrop: {
@@ -1640,7 +1741,7 @@ const styles = StyleSheet.create({
   customDateLabel: {
     color: colors.text.secondary,
     fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
     marginBottom: spacing.sm,
     textTransform: "uppercase",
   },
