@@ -54,6 +54,11 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "excludeFromBundling": [
+        "app/api"
+      ]
     }
   }
 }

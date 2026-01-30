@@ -1,0 +1,172 @@
+// Prisma schema for Grp D - Clubs & Memberships
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model (from Auth.js - reference only, not managed by Prisma)
+// In Auth.js, users are typically in a separate auth schema
+// We'll reference by userId string
+
+model Club {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  city        String?
+  description String?  @db.Text
+  visibility  ClubVisibility @default(public)
+  createdById String  // Auth.js user ID
+  createdAt   DateTime @default(now())
+
+  // Relations
+  memberships ClubMembership[]
+  invites     ClubInvite[]
+  sessions    Session[]
+
+  @@index([slug])
+  @@index([createdById])
+  @@map("clubs")
+}
+
+model ClubMembership {
+  id        String   @id @default(cuid())
+  userId    String   // Auth.js user ID
+  clubId    String
+  role      MembershipRole @default(member)
+  status    MembershipStatus @default(pending)
+  displayName String?
+  sharePrs  Boolean  @default(true)
+  prSummary Json?
+  createdAt DateTime @default(now())
+
+  // Relations
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clubId])
+  @@index([userId])
+  @@index([clubId])
+  @@index([clubId, status])
+  @@map("club_memberships")
+}
+
+model ClubInvite {
+  id           String    @id @default(cuid())
+  clubId       String
+  code         String    @unique
+  invitedPhone String?
+  invitedEmail String?
+  role         MembershipRole?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  // Relations
+  club         Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@index([code])
+  @@index([clubId])
+  @@index([expiresAt])
+  @@map("club_invites")
+}
+
+model Session {
+  id               String   @id @default(cuid())
+  title            String
+  spot             String
+  dateLabel        String
+  dateISO          String?
+  timeMinutes      Int?
+  typeLabel        String
+  volume           String
+  targetPace       String
+  estimatedDistanceKm Float
+  recommendedGroupId String
+  clubId           String?
+  visibility       SessionVisibility @default(public)
+  genderRestriction GenderRestriction @default(mixed)
+  hostUserId       String   // Auth.js user ID
+  createdAt        DateTime @default(now())
+  workoutId        String?
+  isCustom         Boolean  @default(false)
+
+  club             Club?    @relation(fields: [clubId], references: [id], onDelete: SetNull)
+  attendance       SessionAttendance[]
+  sessionTags      SessionTag[]
+
+  @@index([clubId])
+  @@index([hostUserId])
+  @@index([dateISO])
+  @@map("sessions")
+}
+
+model SessionAttendance {
+  id        String   @id @default(cuid())
+  sessionId String
+  userId    String   // Auth.js user ID
+  status    AttendanceStatus @default(requested)
+  groupId   String?  // Pace group (A, B, C, D)
+  createdAt DateTime @default(now())
+
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([sessionId, status])
+  @@map("session_attendance")
+}
+
+model SessionTag {
+  id             String   @id @default(cuid())
+  sessionId      String
+  taggedUserId   String   // Auth.js user ID
+  taggedByUserId String   // Auth.js user ID
+  createdAt      DateTime @default(now())
+
+  session        Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, taggedUserId])
+  @@index([sessionId])
+  @@index([taggedUserId])
+  @@map("session_tags")
+}
+
+enum ClubVisibility {
+  public
+  members
+}
+
+enum MembershipRole {
+  member
+  coach
+  admin
+}
+
+enum MembershipStatus {
+  pending
+  approved
+  rejected
+  banned
+}
+
+enum SessionVisibility {
+  public
+  members
+}
+
+enum GenderRestriction {
+  mixed
+  women
+  men
+}
+
+enum AttendanceStatus {
+  joined
+  requested
+  waitlisted
+  declined // kept for DB compatibility; prefer joined|requested|waitlisted in API
+}

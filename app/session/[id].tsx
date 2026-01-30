@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import {
-    Alert,
     Animated,
     Modal,
     Pressable,
@@ -22,15 +21,19 @@ import {
     removeJoinedSession,
     upsertJoinedSession,
 } from "../../lib/joinedSessionsStore";
+import { Toast } from "../../components/ui/Toast";
+import { useToast } from "../../hooks/useToast";
 import {
-    getRunnerProfile,
-    type RunnerProfile,
-} from "../../lib/profileStore";
+    createApiClient,
+    getMyMemberships,
+    requestSessionJoin,
+} from "../../lib/api";
+import { getRunnerProfile, type RunnerProfile } from "../../lib/profileStore";
 import { getSessionById, SESSION_MAP } from "../../lib/sessionData";
-import { canProfileJoinSession } from "../../lib/sessionVisibility";
 import { deleteSession } from "../../lib/sessionStore";
 import { getWorkoutSummary } from "../../lib/workoutHelpers";
 import { getWorkout, type WorkoutEntity } from "../../lib/workoutStore";
+import type { ClubMembership } from "../../types/api";
 import type { WorkoutBlock, WorkoutStep } from "../../lib/workoutTypes";
 
 // Helper to format seconds to M:SS format
@@ -86,6 +89,8 @@ export default function SessionScreen() {
     (typeof SESSION_MAP)[string] | undefined
   >(undefined);
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
+  const [memberships, setMemberships] = useState<ClubMembership[]>([]);
+  const { toast, showToast, hideToast } = useToast();
 
   // Load session from SESSION_MAP or stored sessions
   useEffect(() => {
@@ -126,6 +131,20 @@ export default function SessionScreen() {
     loadProfile();
   }, []);
 
+  useEffect(() => {
+    const loadMemberships = async () => {
+      try {
+        const client = createApiClient();
+        const result = await getMyMemberships(client);
+        setMemberships(result.memberships ?? []);
+      } catch (error) {
+        console.warn("Failed to load memberships:", error);
+      } finally {
+      }
+    };
+    loadMemberships();
+  }, []);
+
   // Initialize selected group state with recommended group as default
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
     session && "recommendedGroupId" in session
@@ -144,7 +163,26 @@ export default function SessionScreen() {
   const pulseAnim = useRef(new Animated.Value(0)).current;
   // Delete confirmation modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const canJoin = session ? canProfileJoinSession(session, profile) : false;
+  const normalizedHost = session?.hostGroupName
+    ? session.hostGroupName.toLowerCase().trim()
+    : null;
+  const matchingMembership = normalizedHost
+    ? memberships.find((membership) => {
+        const clubName = membership.club?.name?.toLowerCase().trim();
+        return clubName === normalizedHost;
+      })
+    : null;
+  const membershipStatus = matchingMembership?.status ?? null;
+  const profileClubMatch =
+    normalizedHost &&
+    profile?.clubName?.toLowerCase().trim() === normalizedHost;
+  const isApprovedMember =
+    membershipStatus === "approved" ||
+    (membershipStatus === null && Boolean(profileClubMatch));
+  const isPendingMember = membershipStatus === "pending";
+  const canJoin = session
+    ? session.visibility !== "members" || Boolean(isApprovedMember)
+    : false;
 
   useEffect(() => {
     if (session) {
@@ -272,28 +310,29 @@ export default function SessionScreen() {
 
   const handleRequestJoin = async () => {
     if (!session) return;
-    const coachPhone = session.coachPhone;
-    const clubLabel = profile?.clubName ? ` (${profile.clubName})` : "";
-    const message = encodeURIComponent(
-      `Bonjour, je souhaite rejoindre la séance "${session.title}" le ${session.dateLabel}${clubLabel}. Merci !`,
-    );
+    try {
+      const client = createApiClient();
+      await requestSessionJoin(client, session.id);
+      showToast("Demande envoyée. Le coach sera notifié.", "success");
+    } catch (error) {
+      console.warn("Failed to request join:", error);
+      const coachPhone = session.coachPhone;
+      const clubLabel = profile?.clubName ? ` (${profile.clubName})` : "";
+      const message = encodeURIComponent(
+        `Bonjour, je souhaite rejoindre la séance "${session.title}" le ${session.dateLabel}${clubLabel}. Merci !`,
+      );
 
-    if (coachPhone) {
-      const whatsappUrl = `https://wa.me/${coachPhone.replace(/[^0-9]/g, "")}?text=${message}`;
-      Linking.openURL(whatsappUrl).catch((err) => {
-        console.warn("Failed to open WhatsApp:", err);
-        Alert.alert(
-          "Demande non envoyée",
-          "Impossible d'ouvrir WhatsApp pour l'instant.",
-        );
-      });
-      return;
+      if (coachPhone) {
+        const whatsappUrl = `https://wa.me/${coachPhone.replace(/[^0-9]/g, "")}?text=${message}`;
+        Linking.openURL(whatsappUrl).catch((err) => {
+          console.warn("Failed to open WhatsApp:", err);
+          showToast("Impossible d'ouvrir WhatsApp.", "error");
+        });
+        return;
+      }
+
+      showToast("Impossible d'envoyer la demande.", "error");
     }
-
-    Alert.alert(
-      "Demande envoyée",
-      "Le coach sera notifié. Nous te confirmerons dès que possible.",
-    );
   };
 
   const handleDelete = async () => {
@@ -334,6 +373,14 @@ export default function SessionScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={hideToast}
+        />
+      )}
 
       {/* Fixed Header */}
       <View style={styles.header}>
@@ -411,9 +458,11 @@ export default function SessionScreen() {
           {/* Compact info rows */}
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Distance</Text>
-            <Text style={styles.infoValue}>{session.estimatedDistanceKm} km</Text>
+            <Text style={styles.infoValue}>
+              {session.estimatedDistanceKm} km
+            </Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Rendez-vous</Text>
             <Text style={styles.infoValue}>
@@ -434,7 +483,7 @@ export default function SessionScreen() {
           <View style={styles.divider} />
 
           {/* Description - more compact */}
-          <Text style={styles.infoLabelSmall} style={{ marginBottom: 8 }}>
+          <Text style={[styles.infoLabelSmall, { marginBottom: 8 }]}>
             À propos de cette séance
           </Text>
           <Text style={styles.descriptionText}>
@@ -446,15 +495,26 @@ export default function SessionScreen() {
               "Sortie d'endurance à allure confortable pour développer la base aérobie."}
             {session.typeLabel === "PROGRESSIF" &&
               "Sortie progressive avec accélération graduelle pour améliorer l'endurance."}
-            {(session.typeLabel === "COURSE LIBRE" || session.typeLabel === "LIBRE") &&
+            {(session.typeLabel === "COURSE LIBRE" ||
+              session.typeLabel === "LIBRE") &&
               "Course libre et conviviale. Pas de structure imposée, juste courir ensemble à votre rythme."}
-            {(session.typeLabel === "DÉCOUVERTE" || session.typeLabel === "DÉCOUVERTE") &&
+            {(session.typeLabel === "DÉCOUVERTE" ||
+              session.typeLabel === "DÉCOUVERTE") &&
               "Sortie découverte pour explorer de nouveaux parcours en groupe. Allure libre et conviviale."}
-            {(session.typeLabel === "MARCHE" || session.typeLabel === "WALKING") &&
+            {(session.typeLabel === "MARCHE" ||
+              session.typeLabel === "WALKING") &&
               "Marche en groupe. Accessible à tous, parfait pour débuter ou se remettre en mouvement."}
-            {!["FARTLEK", "SÉRIES", "FOOTING", "PROGRESSIF", "COURSE LIBRE", "LIBRE", "DÉCOUVERTE", "MARCHE", "WALKING"].includes(
-              session.typeLabel,
-            ) &&
+            {![
+              "FARTLEK",
+              "SÉRIES",
+              "FOOTING",
+              "PROGRESSIF",
+              "COURSE LIBRE",
+              "LIBRE",
+              "DÉCOUVERTE",
+              "MARCHE",
+              "WALKING",
+            ].includes(session.typeLabel) &&
               "Séance d'entraînement structurée pour améliorer la performance."}
           </Text>
         </View>
@@ -702,6 +762,67 @@ export default function SessionScreen() {
           </View>
         )}
 
+        {/* Join/Leave Button - Right after group selection */}
+        {!session.isCustom && (
+          <View style={styles.actionButtonContainer}>
+            {hasStoredJoin ? (
+              <TouchableOpacity
+                style={styles.leaveButton}
+                activeOpacity={0.8}
+                onPress={handleLeave}
+              >
+                <Text style={styles.leaveButtonText}>Quitter cette séance</Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                {canJoin ? (
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    activeOpacity={0.8}
+                    onPress={handleSave}
+                  >
+                    <Text style={styles.saveButtonText}>Joindre</Text>
+                  </TouchableOpacity>
+                ) : isPendingMember ? (
+                  <>
+                    <View style={styles.requestButtonDisabled}>
+                      <Text style={styles.requestButtonText}>
+                        Demande en attente
+                      </Text>
+                    </View>
+                    <Text style={styles.membersOnlyHint}>
+                      Séance réservée aux membres
+                      {session?.hostGroupName
+                        ? ` de ${session.hostGroupName}`
+                        : ""}
+                      .
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      style={styles.requestButton}
+                      activeOpacity={0.8}
+                      onPress={handleRequestJoin}
+                    >
+                      <Text style={styles.requestButtonText}>
+                        Demander à rejoindre
+                      </Text>
+                    </TouchableOpacity>
+                    <Text style={styles.membersOnlyHint}>
+                      Séance réservée aux membres
+                      {session?.hostGroupName
+                        ? ` de ${session.hostGroupName}`
+                        : ""}
+                      .
+                    </Text>
+                  </>
+                )}
+              </>
+            )}
+          </View>
+        )}
+
         {/* Ton rendez-vous card - only shown if joined */}
         {joinedGroupId !== null && (
           <View style={styles.card}>
@@ -794,40 +915,49 @@ export default function SessionScreen() {
           </View>
         ) : (
           <View style={styles.footer}>
-            {canJoin ? (
-              <TouchableOpacity
-                style={styles.saveButton}
-                activeOpacity={0.8}
-                onPress={handleSave}
-              >
-                <Text style={styles.saveButtonText}>Joindre</Text>
-              </TouchableOpacity>
+            {hasStoredJoin ? (
+              <View style={styles.footerButtonGroup}>
+                <TouchableOpacity
+                  style={styles.leaveButton}
+                  activeOpacity={0.8}
+                  onPress={handleLeave}
+                >
+                  <Text style={styles.leaveButtonText}>
+                    Quitter cette séance
+                  </Text>
+                </TouchableOpacity>
+              </View>
             ) : (
-              <TouchableOpacity
-                style={styles.requestButton}
-                activeOpacity={0.8}
-                onPress={handleRequestJoin}
-              >
-                <Text style={styles.requestButtonText}>
-                  Demander à rejoindre
-                </Text>
-              </TouchableOpacity>
-            )}
-            {!canJoin && (
-              <Text style={styles.membersOnlyHint}>
-                Séance réservée aux membres
-                {session?.hostGroupName ? ` de ${session.hostGroupName}` : ""}.
-              </Text>
-            )}
-            {hasStoredJoin && (
-              <TouchableOpacity
-                style={styles.leaveButton}
-                activeOpacity={0.8}
-                onPress={handleLeave}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={styles.leaveButtonText}>Quitter cette séance</Text>
-              </TouchableOpacity>
+              <View style={styles.footerButtonGroup}>
+                {canJoin ? (
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    activeOpacity={0.8}
+                    onPress={handleSave}
+                  >
+                    <Text style={styles.saveButtonText}>Joindre</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      style={styles.requestButton}
+                      activeOpacity={0.8}
+                      onPress={handleRequestJoin}
+                    >
+                      <Text style={styles.requestButtonText}>
+                        Demander à rejoindre
+                      </Text>
+                    </TouchableOpacity>
+                    <Text style={styles.membersOnlyHint}>
+                      Séance réservée aux membres
+                      {session?.hostGroupName
+                        ? ` de ${session.hostGroupName}`
+                        : ""}
+                      .
+                    </Text>
+                  </>
+                )}
+              </View>
             )}
           </View>
         )}
@@ -1158,18 +1288,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
   },
+  actionButtonContainer: {
+    marginTop: 8,
+    marginBottom: 24,
+    alignItems: "stretch",
+    gap: 12,
+  },
   footer: {
-    paddingTop: 16,
-    paddingBottom: 24,
-    alignItems: "flex-end",
+    paddingTop: 24,
+    paddingBottom: 32,
+    alignItems: "stretch",
+  },
+  footerButtonGroup: {
+    alignItems: "stretch",
+    gap: 12,
   },
   saveButton: {
     backgroundColor: colors.accent.primary,
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 50,
   },
   saveButtonText: {
     color: colors.text.primary,
@@ -1181,10 +1322,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border.medium,
     paddingHorizontal: 22,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 50,
+  },
+  requestButtonDisabled: {
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.medium,
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 50,
+    opacity: 0.6,
   },
   requestButtonText: {
     color: colors.text.primary,
@@ -1192,20 +1346,27 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   membersOnlyHint: {
-    marginTop: 8,
+    marginTop: 4,
     color: colors.text.secondary,
     fontSize: 12,
-    textAlign: "right",
+    textAlign: "center",
+    lineHeight: 16,
   },
   leaveButton: {
-    marginTop: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 50,
   },
   leaveButtonText: {
     color: colors.text.secondary,
-    fontSize: 14,
-    fontWeight: "400",
+    fontSize: 15,
+    fontWeight: "500",
   },
   modifyButton: {
     backgroundColor: colors.accent.primary,

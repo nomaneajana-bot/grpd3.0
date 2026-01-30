@@ -3,15 +3,17 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": [
+    "backend/**/*",
+    "app/api/**/*",
+    "lib/server/**/*",
+    "lib/api/prisma.ts",
+    "lib/api/auth-helpers.ts",
+    "lib/api/role-checks.ts",
+    "node_modules"
   ]
 }

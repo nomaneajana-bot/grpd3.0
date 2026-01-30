@@ -8,16 +8,20 @@ import {
     StyleSheet,
     Text,
     TextInput,
+    Switch,
     TouchableOpacity,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { createApiClient, updateMyPrs } from "../../lib/api";
 import {
     getRunnerProfile,
+    getTestRecords,
     saveRunnerProfile,
     type RunnerProfile,
 } from "../../lib/profileStore";
+import type { PrSummary } from "../../types/api";
 
 export default function SettingsScreen() {
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +32,8 @@ export default function SettingsScreen() {
   const [clubName, setClubName] = useState("");
   const [weightKg, setWeightKg] = useState("");
   const [vo2max, setVo2max] = useState("");
+  const [sharePrsWithCoach, setSharePrsWithCoach] = useState(true);
+  const [isSyncingPrs, setIsSyncingPrs] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -42,6 +48,7 @@ export default function SettingsScreen() {
         setClubName(profile.clubName ?? "");
         setWeightKg(profile.weightKg !== null ? String(profile.weightKg) : "");
         setVo2max(profile.vo2max !== null ? String(profile.vo2max) : "");
+        setSharePrsWithCoach(profile.sharePrsWithCoach !== false);
       }
     } catch (error) {
       console.warn("Failed to load profile:", error);
@@ -84,10 +91,13 @@ export default function SettingsScreen() {
         weightKg: weight,
         vo2max: vo2,
         mainGoal: existing.mainGoal ?? "5k", // Keep existing mainGoal (required field)
+        sharePrsWithCoach: sharePrsWithCoach,
       };
 
       await saveRunnerProfile(updated);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      await syncPrsIfNeeded(updated);
 
       Alert.alert("Succès", "Profil mis à jour", [
         { text: "OK", onPress: () => router.back() },
@@ -97,6 +107,59 @@ export default function SettingsScreen() {
       Alert.alert("Erreur", "Impossible de sauvegarder le profil");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const buildPrSummary = async (): Promise<PrSummary> => {
+    const tests = await getTestRecords();
+    return {
+      updatedAt: new Date().toISOString(),
+      records: tests.map((test) => ({
+        label: test.label,
+        paceSecondsPerKm: test.paceSecondsPerKm ?? null,
+        testDate: test.testDate ?? null,
+        distanceMeters: test.distanceMeters ?? null,
+        durationSeconds: test.durationSeconds ?? null,
+      })),
+    };
+  };
+
+  const syncPrsIfNeeded = async (profile: RunnerProfile) => {
+    const shouldShare = profile.sharePrsWithCoach !== false;
+    const displayName = profile.firstName ?? profile.name;
+
+    try {
+      setIsSyncingPrs(true);
+      const client = createApiClient();
+      if (!shouldShare) {
+        await updateMyPrs(client, {
+          sharePrs: false,
+          displayName,
+          prSummary: null,
+        });
+        return;
+      }
+      const prSummary = await buildPrSummary();
+      await updateMyPrs(client, { sharePrs: true, displayName, prSummary });
+    } catch (error) {
+      console.warn("Failed to sync PRs:", error);
+    } finally {
+      setIsSyncingPrs(false);
+    }
+  };
+
+  const handleSyncPrs = async () => {
+    const profile = await getRunnerProfile();
+    if (!profile) return;
+    if (profile.sharePrsWithCoach === false) {
+      Alert.alert("Info", "Active le partage pour synchroniser tes PR.");
+      return;
+    }
+    try {
+      await syncPrsIfNeeded(profile);
+      Alert.alert("Succès", "PR synchronisés avec le coach.");
+    } catch (error) {
+      Alert.alert("Erreur", "Impossible de synchroniser les PR.");
     }
   };
 
@@ -193,6 +256,39 @@ export default function SettingsScreen() {
             />
           </View>
         </View>
+
+        {/* Section 3: PRs & coach */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>PR & COACH</Text>
+          <Text style={styles.cardHint}>
+            Partage tes PR avec ton coach pour recevoir des groupes adaptés.
+          </Text>
+
+          <View style={styles.toggleRow}>
+            <Text style={styles.fieldLabel}>Partager mes PR</Text>
+            <Switch
+              value={sharePrsWithCoach}
+              onValueChange={setSharePrsWithCoach}
+              trackColor={{ false: "#333", true: "#1f7aff" }}
+              thumbColor={sharePrsWithCoach ? "#fff" : "#aaa"}
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.syncButton,
+              (pressed || isSyncingPrs) && styles.syncButtonPressed,
+            ]}
+            onPress={handleSyncPrs}
+            disabled={isSyncingPrs}
+          >
+            <Text style={styles.syncButtonText}>
+              {isSyncingPrs ? "Synchronisation..." : "Synchroniser maintenant"}
+            </Text>
+          </Pressable>
+        </View>
       </ScrollView>
 
       {/* Save Button */}
@@ -271,8 +367,20 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginBottom: 16,
   },
+  cardHint: {
+    color: "#8E8E8E",
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
   fieldRow: {
     marginBottom: 16,
+  },
+  toggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
   },
   fieldLabel: {
     color: "#BFBFBF",
@@ -306,6 +414,20 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: "rgba(255, 255, 255, 0.08)",
     marginVertical: 16,
+  },
+  syncButton: {
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: "center",
+    backgroundColor: "#1f7aff",
+  },
+  syncButtonPressed: {
+    opacity: 0.8,
+  },
+  syncButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
   footer: {
     position: "absolute",

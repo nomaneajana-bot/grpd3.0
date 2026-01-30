@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Card } from "../../components/ui/Card";
 import { borderRadius, colors, spacing, typography } from "../../constants/ui";
+import { createApiClient, getMyMemberships } from "../../lib/api";
 import { clearAuthData, getAuthUser } from "../../lib/authStore";
 import {
     getProfileSnapshot,
@@ -22,6 +23,7 @@ import {
     type TestRecord,
 } from "../../lib/profileStore";
 import { formatDateForList, formatPace } from "../../lib/testHelpers";
+import type { ClubMembership } from "../../types/api";
 
 const GOAL_LABELS: Record<DistanceGoal, string> = {
   "5k": "5 km",
@@ -37,6 +39,7 @@ export default function ProfileScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [memberships, setMemberships] = useState<ClubMembership[]>([]);
 
   const loadProfile = async () => {
     setIsLoading(true);
@@ -58,6 +61,16 @@ export default function ProfileScreen() {
       } catch (error) {
         console.warn("Failed to load phone number:", error);
       }
+
+      // Load memberships from API
+      try {
+        const client = createApiClient();
+        const membershipsResult = await getMyMemberships(client);
+        setMemberships(membershipsResult.memberships ?? []);
+      } catch (error) {
+        console.warn("Failed to load memberships:", error);
+        setMemberships([]);
+      }
     } catch (error) {
       console.warn("PROFILE_LOAD_ERROR", error);
     } finally {
@@ -77,7 +90,22 @@ export default function ProfileScreen() {
   const profileName = profile?.name ?? "Ton prénom";
   const groupLabel = profile?.groupName ?? "Groupe D";
   const groupDisplayLabel = profile?.groupName ?? "—";
-  const clubLabel = profile?.clubName ?? null;
+  const primaryMembership =
+    memberships.find((m) => m.status === "approved") ?? memberships[0] ?? null;
+  const clubLabel = primaryMembership?.club?.name ?? profile?.clubName ?? null;
+  const membershipStatusLabel = primaryMembership
+    ? primaryMembership.status === "approved"
+      ? "Membre"
+      : primaryMembership.status === "pending"
+        ? "En attente"
+        : "Non actif"
+    : profile?.clubName
+      ? "Non vérifié"
+      : "Aucun club";
+  const hasAdminAccess = memberships.some(
+    (m) =>
+      m.status === "approved" && (m.role === "admin" || m.role === "coach"),
+  );
   const vo2maxLabel =
     profile?.vo2max !== null && profile?.vo2max !== undefined
       ? String(profile.vo2max)
@@ -86,6 +114,8 @@ export default function ProfileScreen() {
     profile?.weightKg !== null && profile?.weightKg !== undefined
       ? `${profile.weightKg} kg`
       : "—";
+  const prShareLabel =
+    profile?.sharePrsWithCoach === false ? "Privés" : "Partagés";
   const goalLabel = profile?.mainGoal
     ? (GOAL_LABELS[profile.mainGoal] ?? profile.mainGoal)
     : "Objectif principal";
@@ -184,10 +214,64 @@ export default function ProfileScreen() {
               </Text>
             </View>
             <View style={styles.profileStat}>
+              <Text style={styles.profileStatLabel}>Statut club</Text>
+              <Text style={styles.profileStatValue}>
+                {membershipStatusLabel}
+              </Text>
+            </View>
+            <View style={styles.profileStat}>
+              <Text style={styles.profileStatLabel}>PR coach</Text>
+              <Text style={styles.profileStatValue}>{prShareLabel}</Text>
+            </View>
+            <View style={styles.profileStat}>
               <Text style={styles.profileStatLabel}>Objectif</Text>
               <Text style={styles.profileStatValue}>{goalLabel}</Text>
             </View>
           </View>
+        </Card>
+
+        <Card style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardLabel}>COMMUNAUTÉ</Text>
+            <Text style={styles.cardSubtitle}>
+              Gère ton club et tes demandes.
+            </Text>
+          </View>
+          <Pressable
+            style={({ pressed }) => [
+              styles.testRow,
+              pressed && styles.testRowPressed,
+            ]}
+            onPress={() => router.push("/club")}
+          >
+            <View style={styles.testRowLeft}>
+              <Text style={styles.testName}>Club / Communauté</Text>
+              <Text style={styles.testDate}>
+                {clubLabel ?? "Aucun club"}
+              </Text>
+            </View>
+            <Text style={styles.testValue}>›</Text>
+          </Pressable>
+          {hasAdminAccess && (
+            <>
+              <View style={styles.testDivider} />
+              <Pressable
+                style={({ pressed }) => [
+                  styles.testRow,
+                  pressed && styles.testRowPressed,
+                ]}
+                onPress={() => router.push("/club/admin")}
+              >
+                <View style={styles.testRowLeft}>
+                  <Text style={styles.testName}>Admin club</Text>
+                  <Text style={styles.testDate}>
+                    Demandes en attente
+                  </Text>
+                </View>
+                <Text style={styles.testValue}>›</Text>
+              </Pressable>
+            </>
+          )}
         </Card>
 
         <Card style={styles.card}>

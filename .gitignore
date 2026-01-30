@@ -43,3 +43,6 @@ app-example
 /ios
 /android
 .vercel
+
+# Backend API routes (Next.js - separate from Expo app)
+# These are kept in the repo but excluded from Expo bundling

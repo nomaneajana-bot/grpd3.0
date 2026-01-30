@@ -55,6 +55,23 @@ export type OtpVerifyResult = {
   tokens: TokenBundle;
 };
 
+export type PinRegisterInput = {
+  phone: string;
+  pin: string;
+  deviceId?: string;
+};
+
+export type PinLoginInput = {
+  phone: string;
+  pin: string;
+  deviceId?: string;
+};
+
+export type PinAuthResult = {
+  user: AuthUser;
+  tokens: TokenBundle;
+};
+
 export type RefreshInput = {
   refreshToken: string;
   deviceId: string;
@@ -141,4 +158,149 @@ export type DeviceRegistrationInput = {
 
 export type DeviceRegistrationResult = {
   ok: true;
+};
+
+export type ClubVisibility = "public" | "members";
+
+export type ClubRole = "member" | "coach" | "admin";
+
+export type ClubMembershipStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "banned";
+
+export type Club = {
+  id: string;
+  name: string;
+  slug?: string | null;
+  city?: string | null;
+  description?: string | null;
+  visibility: ClubVisibility;
+  createdAt?: string;
+  createdById?: string | null;
+};
+
+export type PrSummaryRecord = {
+  label: string;
+  paceSecondsPerKm: number | null;
+  testDate?: string | null;
+  distanceMeters?: number | null;
+  durationSeconds?: number | null;
+};
+
+export type PrSummary = {
+  updatedAt: string;
+  records: PrSummaryRecord[];
+};
+
+export type ClubMembership = {
+  id: string;
+  clubId: string;
+  userId: string;
+  role: ClubRole;
+  status: ClubMembershipStatus;
+  displayName?: string | null;
+  sharePrs?: boolean;
+  prSummary?: PrSummary | null;
+  createdAt?: string;
+  club?: Club;
+};
+
+export type ClubMembershipsResult = {
+  memberships: ClubMembership[];
+};
+
+export type ClubJoinByCodeInput = {
+  code: string;
+};
+
+export type ClubJoinByCodeResult = {
+  membership: ClubMembership;
+};
+
+export type ClubRequestInput = {
+  message?: string;
+};
+
+export type ClubRequestResult = {
+  membership: ClubMembership;
+};
+
+export type ClubApproveInput = {
+  membershipId: string;
+};
+
+export type ClubApproveResult = {
+  membership: ClubMembership;
+};
+
+export type ClubMemberSummary = {
+  id: string;
+  userId: string;
+  displayName?: string;
+  phone?: string;
+  status: ClubMembershipStatus;
+  role?: ClubRole;
+  requestedAt?: string;
+};
+
+export type ClubDetail = {
+  club: Club;
+  pendingMembers: ClubMemberSummary[];
+};
+
+export type SessionJoinRequestResult = {
+  ok: true;
+};
+
+export type ClubRosterMember = {
+  membershipId: string;
+  userId: string;
+  displayName?: string | null;
+  role: ClubRole;
+  status: ClubMembershipStatus;
+  sharePrs: boolean;
+  prSummary?: PrSummary | null;
+};
+
+export type ClubRosterResult = {
+  clubId: string;
+  members: ClubRosterMember[];
+};
+
+export type UpdateMyPrsInput = {
+  clubId?: string;
+  sharePrs?: boolean;
+  displayName?: string;
+  prSummary?: PrSummary | null;
+};
+
+export type UpdateMyPrsResult = {
+  membership: ClubMembership;
+};
+
+export type ClubSessionSummary = {
+  id: string;
+  title: string;
+  dateLabel: string;
+  dateISO: string | null;
+  spot: string;
+};
+
+export type ClubSessionsResult = {
+  sessions: ClubSessionSummary[];
+};
+
+export type SessionAssignInput = {
+  userId: string;
+  groupId: string;
+};
+
+export type SessionAssignResult = {
+  id: string;
+  sessionId: string;
+  userId: string;
+  groupId: string | null;
+  status: string;
 };

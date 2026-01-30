@@ -18,6 +18,7 @@ export type RunnerProfile = {
   vo2max: number | null; // nullable for now
   weightKg: number | null;
   mainGoal: DistanceGoal;
+  sharePrsWithCoach?: boolean; // default true
   // Extended fields (backward compatible - all optional)
   firstName?: string;
   defaultGroup?: "A" | "B" | "C" | "D" | null;

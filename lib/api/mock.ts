@@ -2,6 +2,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type {
   AuthUser,
+  Club,
+  ClubApproveInput,
+  ClubApproveResult,
+  ClubDetail,
+  ClubJoinByCodeInput,
+  ClubJoinByCodeResult,
+  ClubMemberSummary,
+  ClubMembership,
+  ClubMembershipsResult,
+  ClubMembershipStatus,
+  ClubRequestInput,
+  ClubRequestResult,
+  ClubRosterResult,
   DeviceRegistrationInput,
   DeviceRegistrationResult,
   LogoutInput,
@@ -10,6 +23,9 @@ import type {
   OtpRequestResult,
   OtpVerifyInput,
   OtpVerifyResult,
+  PinAuthResult,
+  PinLoginInput,
+  PinRegisterInput,
   RefreshInput,
   RefreshResult,
   Run,
@@ -19,6 +35,9 @@ import type {
   RunMatchResult,
   RunMember,
   UpcomingRunsResult,
+  SessionJoinRequestResult,
+  UpdateMyPrsInput,
+  UpdateMyPrsResult,
 } from '../../types/api';
 import { getAuthUser } from '../authStore';
 import {
@@ -37,9 +56,15 @@ type MockOtpRecord = {
 };
 
 type MockUserMap = Record<string, AuthUser>;
+type MockPinMap = Record<string, string>;
+type MockClubMap = Record<string, Club & { code: string }>;
+type MockMembershipMap = Record<string, ClubMembership>;
 
 const MOCK_OTP_KEY = 'mock:otp';
 const MOCK_USERS_KEY = 'mock:users';
+const MOCK_PINS_KEY = 'mock:pins';
+const MOCK_CLUBS_KEY = 'mock:clubs';
+const MOCK_MEMBERSHIPS_KEY = 'mock:club_memberships';
 
 const ACCESS_TOKEN_TTL = 60 * 60; // 1h
 const REFRESH_TOKEN_TTL = 60 * 60 * 24 * 30; // 30d
@@ -68,6 +93,40 @@ async function writeJson<T>(key: string, value: T): Promise<void> {
   await AsyncStorage.setItem(key, JSON.stringify(value));
 }
 
+async function ensureSeedClub(): Promise<Club & { code: string }> {
+  const clubs = await readJson<MockClubMap>(MOCK_CLUBS_KEY, {});
+  const existing = Object.values(clubs)[0];
+  if (existing) return existing;
+
+  const club: Club & { code: string } = {
+    id: 'club_jaime',
+    name: 'Jaime courir',
+    slug: 'jaime-courir',
+    city: 'Casablanca',
+    description: 'Club de course',
+    visibility: 'members',
+    createdAt: new Date().toISOString(),
+    createdById: 'seed',
+    code: 'JAIME123',
+  };
+  clubs[club.id] = club;
+  await writeJson(MOCK_CLUBS_KEY, clubs);
+  return club;
+}
+
+async function readClubs(): Promise<MockClubMap> {
+  await ensureSeedClub();
+  return await readJson<MockClubMap>(MOCK_CLUBS_KEY, {});
+}
+
+async function readMemberships(): Promise<MockMembershipMap> {
+  return await readJson<MockMembershipMap>(MOCK_MEMBERSHIPS_KEY, {});
+}
+
+async function writeMemberships(value: MockMembershipMap): Promise<void> {
+  await writeJson(MOCK_MEMBERSHIPS_KEY, value);
+}
+
 async function getOrCreateUser(phone: string): Promise<AuthUser> {
   const users = await readJson<MockUserMap>(MOCK_USERS_KEY, {});
   if (users[phone]) return users[phone];
@@ -79,6 +138,54 @@ async function getOrCreateUser(phone: string): Promise<AuthUser> {
   users[phone] = user;
   await writeJson(MOCK_USERS_KEY, users);
   return user;
+}
+
+async function readPins(): Promise<MockPinMap> {
+  return await readJson<MockPinMap>(MOCK_PINS_KEY, {});
+}
+
+async function writePins(value: MockPinMap): Promise<void> {
+  await writeJson(MOCK_PINS_KEY, value);
+}
+
+async function upsertMembership(params: {
+  userId: string;
+  clubId: string;
+  status: ClubMembershipStatus;
+  role?: ClubMembership["role"];
+  displayName?: string;
+  sharePrs?: boolean;
+  prSummary?: unknown | null;
+}): Promise<ClubMembership> {
+  const memberships = await readMemberships();
+  const existing = Object.values(memberships).find(
+    (m) => m.userId === params.userId && m.clubId === params.clubId,
+  );
+
+  const next: ClubMembership = existing
+    ? {
+        ...existing,
+        status: params.status,
+        displayName: params.displayName ?? existing.displayName,
+        sharePrs: params.sharePrs ?? existing.sharePrs ?? true,
+        prSummary:
+          params.prSummary !== undefined ? params.prSummary : existing.prSummary,
+      }
+    : {
+        id: randomId('membership'),
+        clubId: params.clubId,
+        userId: params.userId,
+        role: params.role ?? 'member',
+        status: params.status,
+        displayName: params.displayName,
+        sharePrs: params.sharePrs ?? true,
+        prSummary: params.prSummary ?? null,
+        createdAt: new Date().toISOString(),
+      };
+
+  memberships[next.id] = next;
+  await writeMemberships(memberships);
+  return next;
 }
 
 function createTokens() {
@@ -165,6 +272,51 @@ async function mockOtpVerify(input: OtpVerifyInput): Promise<OtpVerifyResult> {
     throw new ApiError(400, 'Code invalide');
   }
   const user = await getOrCreateUser(input.phone);
+  return {
+    user,
+    tokens: createTokens(),
+  };
+}
+
+async function mockPinRegister(
+  input: PinRegisterInput,
+): Promise<PinAuthResult> {
+  const normalizedPhone = input.phone.replace(/\s/g, "");
+  const pins = await readPins();
+  if (pins[normalizedPhone]) {
+    throw new ApiError(409, "Compte déjà existant");
+  }
+  if (!/^\d{6}$/.test(input.pin)) {
+    throw new ApiError(400, "Le code doit contenir 6 chiffres");
+  }
+  pins[normalizedPhone] = input.pin;
+  await writePins(pins);
+
+  const user = await getOrCreateUser(
+    normalizedPhone.startsWith("+")
+      ? normalizedPhone
+      : `+${normalizedPhone}`,
+  );
+  return {
+    user,
+    tokens: createTokens(),
+  };
+}
+
+async function mockPinLogin(input: PinLoginInput): Promise<PinAuthResult> {
+  const normalizedPhone = input.phone.replace(/\s/g, "");
+  const pins = await readPins();
+  if (!pins[normalizedPhone]) {
+    throw new ApiError(404, "Compte introuvable");
+  }
+  if (pins[normalizedPhone] !== input.pin) {
+    throw new ApiError(401, "Code incorrect");
+  }
+  const user = await getOrCreateUser(
+    normalizedPhone.startsWith("+")
+      ? normalizedPhone
+      : `+${normalizedPhone}`,
+  );
   return {
     user,
     tokens: createTokens(),
@@ -297,6 +449,172 @@ async function mockUpcomingRuns(): Promise<UpcomingRunsResult> {
   return { runs };
 }
 
+async function mockGetMemberships(): Promise<ClubMembershipsResult> {
+  const user = await getAuthUser();
+  if (!user) {
+    return { memberships: [] };
+  }
+  const clubs = await readClubs();
+  const memberships = await readMemberships();
+  const list = Object.values(memberships)
+    .filter((m) => m.userId === user.id)
+    .map((m) => ({
+      ...m,
+      club: clubs[m.clubId],
+    }));
+  return { memberships: list };
+}
+
+async function mockJoinByCode(
+  input: ClubJoinByCodeInput,
+): Promise<ClubJoinByCodeResult> {
+  const user = await getAuthUser();
+  if (!user) {
+    throw new ApiError(401, 'Unauthorized');
+  }
+  const clubs = await readClubs();
+  const club = Object.values(clubs).find(
+    (c) => c.code.toLowerCase() === input.code.trim().toLowerCase(),
+  );
+  if (!club) {
+    throw new ApiError(404, 'Club not found');
+  }
+  const memberships = await readMemberships();
+  const hasAdmin = Object.values(memberships).some(
+    (m) => m.clubId === club.id && m.role === 'admin',
+  );
+  const membership = await upsertMembership({
+    userId: user.id,
+    clubId: club.id,
+    status: 'approved',
+    role: hasAdmin ? 'member' : 'admin',
+  });
+  return { membership: { ...membership, club } };
+}
+
+async function mockRequestJoin(
+  clubId: string,
+  _input: ClubRequestInput,
+): Promise<ClubRequestResult> {
+  const user = await getAuthUser();
+  if (!user) {
+    throw new ApiError(401, 'Unauthorized');
+  }
+  const clubs = await readClubs();
+  const normalized = clubId.trim().toLowerCase();
+  const club =
+    clubs[clubId] ||
+    Object.values(clubs).find(
+      (c) =>
+        c.slug?.toLowerCase() === normalized ||
+        c.name.toLowerCase() === normalized,
+    );
+  if (!club) {
+    throw new ApiError(404, 'Club not found');
+  }
+  const membership = await upsertMembership({
+    userId: user.id,
+    clubId: club.id,
+    status: 'pending',
+  });
+  return { membership: { ...membership, club } };
+}
+
+async function mockGetClubDetail(clubId: string): Promise<ClubDetail> {
+  const clubs = await readClubs();
+  const club = clubs[clubId];
+  if (!club) {
+    throw new ApiError(404, 'Club not found');
+  }
+  const memberships = await readMemberships();
+  const users = await readJson<MockUserMap>(MOCK_USERS_KEY, {});
+  const pending: ClubMemberSummary[] = Object.values(memberships)
+    .filter((m) => m.clubId === clubId && m.status === 'pending')
+    .map((m) => ({
+      id: m.id,
+      userId: m.userId,
+      displayName:
+        Object.values(users).find((u) => u.id === m.userId)?.phone ?? m.userId,
+      status: m.status,
+      role: m.role,
+      requestedAt: m.createdAt,
+    }));
+  return { club, pendingMembers: pending };
+}
+
+async function mockApproveMember(
+  clubId: string,
+  input: ClubApproveInput,
+): Promise<ClubApproveResult> {
+  const memberships = await readMemberships();
+  const membership = memberships[input.membershipId];
+  if (!membership || membership.clubId !== clubId) {
+    throw new ApiError(404, 'Membership not found');
+  }
+  membership.status = 'approved';
+  memberships[membership.id] = membership;
+  await writeMemberships(memberships);
+  const clubs = await readClubs();
+  return { membership: { ...membership, club: clubs[clubId] } };
+}
+
+async function mockGetClubRoster(clubId: string): Promise<ClubRosterResult> {
+  const memberships = await readMemberships();
+  const members = Object.values(memberships)
+    .filter((m) => m.clubId === clubId && m.status === 'approved')
+    .map((m) => ({
+      membershipId: m.id,
+      userId: m.userId,
+      displayName: m.displayName ?? null,
+      role: m.role,
+      status: m.status,
+      sharePrs: m.sharePrs ?? true,
+      prSummary: m.sharePrs === false ? null : (m.prSummary ?? null),
+    }));
+  return { clubId, members };
+}
+
+async function mockUpdateMyPrs(
+  input: UpdateMyPrsInput,
+): Promise<UpdateMyPrsResult> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Non authentifié');
+
+  const memberships = await readMemberships();
+  let membership: ClubMembership | undefined;
+
+  if (input.clubId) {
+    membership = Object.values(memberships).find(
+      (m) => m.userId === user.id && m.clubId === input.clubId,
+    );
+  } else {
+    membership =
+      Object.values(memberships).find(
+        (m) => m.userId === user.id && m.status === 'approved',
+      ) ??
+      Object.values(memberships).find((m) => m.userId === user.id);
+  }
+
+  if (!membership) throw new ApiError(404, 'Membership introuvable');
+
+  membership.sharePrs =
+    input.sharePrs !== undefined ? input.sharePrs : membership.sharePrs ?? true;
+  if (input.displayName) membership.displayName = input.displayName;
+  if ('prSummary' in input) membership.prSummary = input.prSummary ?? null;
+
+  memberships[membership.id] = membership;
+  await writeMemberships(memberships);
+
+  const clubs = await readClubs();
+  return { membership: { ...membership, club: clubs[membership.clubId] } };
+}
+
+async function mockRequestSessionJoin(
+  _sessionId: string,
+): Promise<SessionJoinRequestResult> {
+  return { ok: true };
+}
+
 export async function mockApiRequest<T>(
   path: string,
   init: RequestInit = {},
@@ -311,6 +629,12 @@ export async function mockApiRequest<T>(
   }
   if (path === '/api/v1/auth/otp/verify' && method === 'POST') {
     return (await mockOtpVerify(body as OtpVerifyInput)) as T;
+  }
+  if (path === '/api/v1/auth/pin/register' && method === 'POST') {
+    return (await mockPinRegister(body as PinRegisterInput)) as T;
+  }
+  if (path === '/api/v1/auth/pin/login' && method === 'POST') {
+    return (await mockPinLogin(body as PinLoginInput)) as T;
   }
   if (path === '/api/v1/auth/token/refresh' && method === 'POST') {
     return (await mockRefresh(body as RefreshInput)) as T;
@@ -338,6 +662,34 @@ export async function mockApiRequest<T>(
   }
   if (path === '/api/v1/devices' && method === 'POST') {
     return (await mockRegisterDevice(body as DeviceRegistrationInput)) as T;
+  }
+  if (path === '/api/v1/me/memberships' && method === 'GET') {
+    return (await mockGetMemberships()) as T;
+  }
+  if (path === '/api/v1/me/prs' && method === 'POST') {
+    return (await mockUpdateMyPrs(body as UpdateMyPrsInput)) as T;
+  }
+  if (path === '/api/v1/clubs/join-by-code' && method === 'POST') {
+    return (await mockJoinByCode(body as ClubJoinByCodeInput)) as T;
+  }
+  if (path.startsWith('/api/v1/clubs/') && path.endsWith('/request')) {
+    const clubId = path.split('/api/v1/clubs/')[1]?.split('/')[0];
+    return (await mockRequestJoin(clubId, body as ClubRequestInput)) as T;
+  }
+  if (path.startsWith('/api/v1/clubs/') && path.endsWith('/approve')) {
+    const clubId = path.split('/api/v1/clubs/')[1]?.split('/')[0];
+    return (await mockApproveMember(clubId, body as ClubApproveInput)) as T;
+  }
+  if (path.startsWith('/api/v1/clubs/') && path.endsWith('/roster')) {
+    const clubId = path.split('/api/v1/clubs/')[1]?.split('/')[0];
+    return (await mockGetClubRoster(clubId)) as T;
+  }
+  if (path.startsWith('/api/v1/clubs/') && method === 'GET') {
+    const clubId = path.split('/api/v1/clubs/')[1];
+    return (await mockGetClubDetail(clubId)) as T;
+  }
+  if (path.startsWith('/api/v1/sessions/') && path.endsWith('/request')) {
+    return (await mockRequestSessionJoin('')) as T;
   }
 
   throw new ApiError(404, 'Not found');
