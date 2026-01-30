@@ -97,7 +97,7 @@ export default function ClubScreen() {
 
   const handleRequestJoin = async () => {
     if (!clubId.trim()) {
-      showToast("Ajoute l'identifiant du club.", "error");
+      showToast("Ajoute le code du club.", "error");
       return;
     }
     setIsSubmitting(true);
@@ -180,14 +180,18 @@ export default function ClubScreen() {
               </Text>
             </>
           ) : (
-            <Text style={styles.cardValue}>Aucun club pour l’instant.</Text>
+            <Text style={styles.cardValue}>
+              Pas de club — ce n’est pas obligatoire.
+            </Text>
           )}
         </Card>
 
         <Card style={styles.card}>
           <Text style={styles.cardLabel}>REJOINDRE AVEC CODE</Text>
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Code d’invitation</Text>
+            <Text style={styles.fieldLabel}>
+              Code d’invitation (optionnel)
+            </Text>
             <TextInput
               style={styles.textInput}
               value={inviteCode}
@@ -221,16 +225,21 @@ export default function ClubScreen() {
         <Card style={styles.card}>
           <Text style={styles.cardLabel}>DEMANDER À REJOINDRE</Text>
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Identifiant du club</Text>
+            <Text style={styles.fieldLabel}>
+              Code du club ou code d’invitation
+            </Text>
             <TextInput
               style={styles.textInput}
               value={clubId}
               onChangeText={setClubId}
-              placeholder="ID ou slug"
+              placeholder="Code du club"
               placeholderTextColor="#666"
               autoCapitalize="none"
               editable={!isInClub}
             />
+            <Text style={styles.helperText}>
+              Demande-le à un responsable du club (WhatsApp).
+            </Text>
           </View>
           <View style={styles.fieldRow}>
             <Text style={styles.fieldLabel}>Message (optionnel)</Text>
@@ -262,12 +271,12 @@ export default function ClubScreen() {
           </Pressable>
           {isPendingMember && (
             <Text style={styles.helperText}>
-              Un admin doit valider ta demande.
+              Un responsable du club doit valider ta demande.
             </Text>
           )}
           {isApprovedMember && (
             <Text style={styles.helperText}>
-              Pour changer de club, contacte ton admin.
+              Pour changer de club, contacte un responsable du club.
             </Text>
           )}
         </Card>

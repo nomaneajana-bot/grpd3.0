@@ -25,6 +25,8 @@ import { Toast } from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
 import {
     createApiClient,
+    assignSessionGroup,
+    getClubRoster,
     getMyMemberships,
     requestSessionJoin,
 } from "../../lib/api";
@@ -33,7 +35,7 @@ import { getSessionById, SESSION_MAP } from "../../lib/sessionData";
 import { deleteSession } from "../../lib/sessionStore";
 import { getWorkoutSummary } from "../../lib/workoutHelpers";
 import { getWorkout, type WorkoutEntity } from "../../lib/workoutStore";
-import type { ClubMembership } from "../../types/api";
+import type { ClubMembership, ClubRosterMember } from "../../types/api";
 import type { WorkoutBlock, WorkoutStep } from "../../lib/workoutTypes";
 
 // Helper to format seconds to M:SS format
@@ -145,6 +147,27 @@ export default function SessionScreen() {
     loadMemberships();
   }, []);
 
+  useEffect(() => {
+    const loadRoster = async () => {
+      if (!isCoachOrAdmin || !clubId) {
+        setClubRoster([]);
+        return;
+      }
+      setIsCoachLoading(true);
+      try {
+        const client = createApiClient();
+        const result = await getClubRoster(client, clubId);
+        setClubRoster(result.members ?? []);
+      } catch (error) {
+        console.warn("Failed to load club roster:", error);
+        setClubRoster([]);
+      } finally {
+        setIsCoachLoading(false);
+      }
+    };
+    loadRoster();
+  }, [isCoachOrAdmin, clubId]);
+
   // Initialize selected group state with recommended group as default
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
     session && "recommendedGroupId" in session
@@ -180,9 +203,26 @@ export default function SessionScreen() {
     membershipStatus === "approved" ||
     (membershipStatus === null && Boolean(profileClubMatch));
   const isPendingMember = membershipStatus === "pending";
+  const isCoachOrAdmin =
+    membershipStatus === "approved" &&
+    (matchingMembership?.role === "coach" ||
+      matchingMembership?.role === "admin");
+  const clubId = matchingMembership?.clubId ?? null;
   const canJoin = session
     ? session.visibility !== "members" || Boolean(isApprovedMember)
     : false;
+
+  const [clubRoster, setClubRoster] = useState<ClubRosterMember[]>([]);
+  const [isCoachLoading, setIsCoachLoading] = useState(false);
+  const [assignMember, setAssignMember] = useState<ClubRosterMember | null>(
+    null,
+  );
+  const [assignModalVisible, setAssignModalVisible] = useState(false);
+  const [assignGroupId, setAssignGroupId] = useState<string | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [coachAssignments, setCoachAssignments] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     if (session) {
@@ -313,7 +353,7 @@ export default function SessionScreen() {
     try {
       const client = createApiClient();
       await requestSessionJoin(client, session.id);
-      showToast("Demande envoyée. Le coach sera notifié.", "success");
+      showToast("Demande envoyée. Le responsable du club sera notifié.", "success");
     } catch (error) {
       console.warn("Failed to request join:", error);
       const coachPhone = session.coachPhone;
@@ -332,6 +372,49 @@ export default function SessionScreen() {
       }
 
       showToast("Impossible d'envoyer la demande.", "error");
+    }
+  };
+
+  const groupOptions = session?.paceGroups?.map((group) => ({
+    id: group.id,
+    label: group.label ?? `Groupe ${group.id}`,
+  })) ?? [];
+
+  const openAssignModal = (member: ClubRosterMember) => {
+    setAssignMember(member);
+    setAssignGroupId(coachAssignments[member.userId] ?? null);
+    setAssignModalVisible(true);
+  };
+
+  const closeAssignModal = () => {
+    setAssignModalVisible(false);
+    setAssignMember(null);
+    setAssignGroupId(null);
+  };
+
+  const handleAssignSubmit = async () => {
+    if (!assignMember || !assignGroupId || !session) {
+      showToast("Choisis un groupe.", "error");
+      return;
+    }
+    setIsAssigning(true);
+    try {
+      const client = createApiClient();
+      await assignSessionGroup(client, session.id, {
+        userId: assignMember.userId,
+        groupId: assignGroupId,
+      });
+      setCoachAssignments((prev) => ({
+        ...prev,
+        [assignMember.userId]: assignGroupId,
+      }));
+      showToast("Groupe assigné.", "success");
+      closeAssignModal();
+    } catch (error) {
+      console.warn("Failed to assign group:", error);
+      showToast("Impossible d'assigner le groupe.", "error");
+    } finally {
+      setIsAssigning(false);
     }
   };
 
@@ -653,9 +736,11 @@ export default function SessionScreen() {
           /* Legacy: Pace groups card for backward compatibility */
           <View style={styles.card}>
             <View style={styles.groupsHeader}>
-              <Text style={styles.cardLabel}>Choisis ton groupe</Text>
+              <Text style={styles.cardLabel}>
+                Choisis ton groupe (tu peux changer ensuite)
+              </Text>
               <Text style={styles.groupsSubtext}>
-                Compare les allures et sélectionne ton groupe.
+                Choisis l’allure qui te convient aujourd’hui.
               </Text>
             </View>
             {(() => {
@@ -791,11 +876,7 @@ export default function SessionScreen() {
                       </Text>
                     </View>
                     <Text style={styles.membersOnlyHint}>
-                      Séance réservée aux membres
-                      {session?.hostGroupName
-                        ? ` de ${session.hostGroupName}`
-                        : ""}
-                      .
+                      Séance réservée au club. Demande l’accès si tu es membre.
                     </Text>
                   </>
                 ) : (
@@ -810,15 +891,59 @@ export default function SessionScreen() {
                       </Text>
                     </TouchableOpacity>
                     <Text style={styles.membersOnlyHint}>
-                      Séance réservée aux membres
-                      {session?.hostGroupName
-                        ? ` de ${session.hostGroupName}`
-                        : ""}
-                      .
+                      Séance réservée au club. Demande l’accès si tu es membre.
                     </Text>
                   </>
                 )}
               </>
+            )}
+          </View>
+        )}
+
+        {isCoachOrAdmin && (
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>ESPACE COACH</Text>
+            <Text style={styles.cardSubtitle}>
+              Assigne un groupe pour cette séance.
+            </Text>
+            {isCoachLoading ? (
+              <Text style={styles.coachEmptyText}>Chargement...</Text>
+            ) : clubRoster.length === 0 ? (
+              <Text style={styles.coachEmptyText}>
+                Aucun membre disponible.
+              </Text>
+            ) : (
+              <View style={styles.coachList}>
+                {clubRoster.map((member, index) => (
+                  <View key={member.membershipId}>
+                    {index > 0 && <View style={styles.divider} />}
+                    <View style={styles.coachRow}>
+                      <View style={styles.coachRowLeft}>
+                        <Text style={styles.coachMemberName}>
+                          {member.displayName || member.userId || "—"}
+                        </Text>
+                        <Text style={styles.coachMemberMeta}>
+                          {member.role} ·{" "}
+                          {member.sharePrs ? "PRs partagés" : "PRs privés"}
+                        </Text>
+                        {coachAssignments[member.userId] && (
+                          <Text style={styles.coachAssignedLabel}>
+                            Assigné : Groupe {coachAssignments[member.userId]}
+                          </Text>
+                        )}
+                      </View>
+                      <Pressable
+                        style={styles.coachAssignButton}
+                        onPress={() => openAssignModal(member)}
+                      >
+                        <Text style={styles.coachAssignButtonText}>
+                          Assigner
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ))}
+              </View>
             )}
           </View>
         )}
@@ -882,7 +1007,7 @@ export default function SessionScreen() {
                 activeOpacity={0.8}
               >
                 <Text style={styles.whatsappButtonText}>
-                  📱 Contacter {session.coachName || "le coach"}
+                  📱 Contacter {session.coachName || "le responsable"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -949,11 +1074,7 @@ export default function SessionScreen() {
                       </Text>
                     </TouchableOpacity>
                     <Text style={styles.membersOnlyHint}>
-                      Séance réservée aux membres
-                      {session?.hostGroupName
-                        ? ` de ${session.hostGroupName}`
-                        : ""}
-                      .
+                      Séance réservée au club. Demande l’accès si tu es membre.
                     </Text>
                   </>
                 )}
@@ -962,6 +1083,77 @@ export default function SessionScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Coach assign modal */}
+      <Modal
+        visible={assignModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeAssignModal}
+      >
+        <Pressable style={styles.modalOverlay} onPress={closeAssignModal}>
+          <Pressable
+            style={styles.modalContent}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <Text style={styles.modalTitle}>Assigner un groupe</Text>
+            {assignMember && (
+              <Text style={styles.modalMessage}>
+                {assignMember.displayName || assignMember.userId || "—"}
+              </Text>
+            )}
+            {groupOptions.length === 0 ? (
+              <Text style={styles.coachEmptyText}>
+                Aucun groupe défini pour cette séance.
+              </Text>
+            ) : (
+              <View style={styles.coachGroupPillRow}>
+                {groupOptions.map((group) => (
+                  <Pressable
+                    key={group.id}
+                    style={[
+                      styles.coachGroupPill,
+                      assignGroupId === group.id &&
+                        styles.coachGroupPillActive,
+                    ]}
+                    onPress={() => setAssignGroupId(group.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.coachGroupPillText,
+                        assignGroupId === group.id &&
+                          styles.coachGroupPillTextActive,
+                      ]}
+                    >
+                      {group.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={closeAssignModal}
+              >
+                <Text style={styles.modalCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.coachConfirmButton,
+                  (!assignGroupId || isAssigning) && styles.modalButtonDisabled,
+                ]}
+                onPress={handleAssignSubmit}
+                disabled={!assignGroupId || isAssigning}
+              >
+                <Text style={styles.coachConfirmText}>
+                  {isAssigning ? "Envoi..." : "Assigner"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -1150,6 +1342,55 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: 15,
     fontWeight: "700",
+  },
+  cardSubtitle: {
+    color: colors.text.tertiary,
+    fontSize: 12,
+    marginTop: 6,
+    marginBottom: 12,
+  },
+  coachList: {
+    gap: 12,
+  },
+  coachRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  coachRowLeft: {
+    flex: 1,
+  },
+  coachMemberName: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  coachMemberMeta: {
+    color: colors.text.tertiary,
+    fontSize: 12,
+  },
+  coachAssignedLabel: {
+    color: colors.text.secondary,
+    fontSize: 12,
+    marginTop: 4,
+  },
+  coachAssignButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  coachAssignButtonText: {
+    color: colors.text.accent,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  coachEmptyText: {
+    color: colors.text.tertiary,
+    fontSize: 13,
   },
   groupsSubtext: {
     color: colors.text.tertiary,
@@ -1512,10 +1753,49 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#FF3B30",
   },
+  modalButtonDisabled: {
+    opacity: 0.6,
+  },
   modalConfirmText: {
     color: colors.text.primary,
     fontSize: 15,
     fontWeight: "600",
+  },
+  coachConfirmButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: colors.accent.primary,
+  },
+  coachConfirmText: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  coachGroupPillRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 20,
+  },
+  coachGroupPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border.medium,
+  },
+  coachGroupPillActive: {
+    borderColor: colors.accent.primary,
+    backgroundColor: "rgba(32, 129, 255, 0.15)",
+  },
+  coachGroupPillText: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  coachGroupPillTextActive: {
+    color: colors.text.accent,
   },
   workoutCardLabel: {
     color: "#8A8A8A",

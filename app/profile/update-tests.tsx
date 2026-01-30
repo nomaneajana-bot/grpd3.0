@@ -34,16 +34,19 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { borderRadius, colors, spacing, typography } from "../../constants/ui";
+import { createApiClient, updateMyPrs } from "../../lib/api";
 import type { TestMode } from "../../lib/profileStore";
 import {
     addCustomPrModel,
     getCustomPrModels,
+    getRunnerProfile,
     getTestRecords,
     replaceAllTestRecords,
     updateCustomPrModelUsage,
     type CustomPrModel,
     type TestRecord,
 } from "../../lib/profileStore";
+import type { PrSummary } from "../../types/api";
 import {
     calculateDistanceFromTimeAndPace,
     calculatePaceSecondsPerKmSafe,
@@ -1429,9 +1432,37 @@ export default function UpdateTestsScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  const syncPrsWithCoach = async (tests: TestRecord[]) => {
+    const profile = await getRunnerProfile();
+    if (!profile || profile.sharePrsWithCoach === false) return;
+
+    const prSummary: PrSummary = {
+      updatedAt: new Date().toISOString(),
+      records: tests.map((test) => ({
+        label: test.label,
+        paceSecondsPerKm: test.paceSecondsPerKm ?? null,
+        testDate: test.testDate ?? null,
+        distanceMeters: test.distanceMeters ?? null,
+        durationSeconds: test.durationSeconds ?? null,
+      })),
+    };
+
+    const client = createApiClient();
+    await updateMyPrs(client, {
+      sharePrs: true,
+      displayName: profile.firstName ?? profile.name,
+      prSummary,
+    });
+  };
+
   const handleSaveAll = async () => {
     try {
       await replaceAllTestRecords(draftTests);
+      try {
+        await syncPrsWithCoach(draftTests);
+      } catch (syncError) {
+        console.warn("Failed to sync PRs:", syncError);
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch (error) {

@@ -1,7 +1,6 @@
 import { router, Stack } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,17 +17,14 @@ import { Toast } from "../../components/ui/Toast";
 import { colors, spacing } from "../../constants/ui";
 import { useToast } from "../../hooks/useToast";
 import {
-  assignSessionGroup,
   createApiClient,
   getClubRoster,
-  getClubSessions,
   getMyMemberships,
 } from "../../lib/api";
 import type {
   ClubRosterMember,
   ClubRosterResult,
   ClubRole,
-  ClubSessionSummary,
 } from "../../types/api";
 import type { PrSummaryRecord } from "../../types/api";
 
@@ -37,15 +33,6 @@ const ROLE_OPTIONS: { value: "all" | ClubRole; label: string }[] = [
   { value: "member", label: "Membre" },
   { value: "coach", label: "Coach" },
   { value: "admin", label: "Admin" },
-];
-
-const GROUP_OPTIONS: { id: string; label: string }[] = [
-  { id: "A", label: "A" },
-  { id: "B", label: "B" },
-  { id: "C", label: "C" },
-  { id: "D", label: "D" },
-  { id: "Femme", label: "Femme" },
-  { id: "Homme", label: "Homme" },
 ];
 
 function formatPace(secondsPerKm: number | null): string {
@@ -69,15 +56,7 @@ function formatDate(iso?: string | null): string {
   }
 }
 
-function MemberRow({
-  member,
-  assignedGroup,
-  onAssignGroup,
-}: {
-  member: ClubRosterMember;
-  assignedGroup?: string;
-  onAssignGroup: (member: ClubRosterMember) => void;
-}) {
+function MemberRow({ member }: { member: ClubRosterMember }) {
   const records = member.prSummary?.records ?? [];
   const hasPrs = member.sharePrs && records.length > 0;
 
@@ -92,11 +71,6 @@ function MemberRow({
             <Text style={styles.rolePillText}>{member.role}</Text>
           </View>
         </View>
-        {assignedGroup && (
-          <Text style={styles.assignedGroupLabel}>
-            Assigné : Groupe {assignedGroup}
-          </Text>
-        )}
         {!member.sharePrs && (
           <Text style={styles.prPrivateLabel}>PRs privés</Text>
         )}
@@ -120,24 +94,9 @@ function MemberRow({
           )}
         </View>
       )}
-      <Pressable
-        style={({ pressed }) => [
-          styles.assignButton,
-          pressed && styles.assignButtonPressed,
-        ]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onAssignGroup(member);
-        }}
-      >
-        <Text style={styles.assignButtonText}>Assigner groupe</Text>
-      </Pressable>
     </View>
   );
 }
-
-// assignments[userId][sessionId] = groupId
-type AssignmentsMap = Record<string, Record<string, string>>;
 
 export default function RosterScreen() {
   const [clubId, setClubId] = useState<string | null>(null);
@@ -146,13 +105,6 @@ export default function RosterScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | ClubRole>("all");
-  const [upcomingSessions, setUpcomingSessions] = useState<ClubSessionSummary[]>([]);
-  const [assignments, setAssignments] = useState<AssignmentsMap>({});
-  const [assignMember, setAssignMember] = useState<ClubRosterMember | null>(null);
-  const [assignModalVisible, setAssignModalVisible] = useState(false);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [isSubmittingAssign, setIsSubmittingAssign] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   const loadRoster = useCallback(async () => {
@@ -185,7 +137,7 @@ export default function RosterScreen() {
       console.warn("Failed to load roster:", error);
       setRoster(null);
       setClubId(null);
-      showToast("Impossible de charger le roster.", "error");
+      showToast("Impossible de charger les membres.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -194,22 +146,6 @@ export default function RosterScreen() {
   useEffect(() => {
     loadRoster();
   }, [loadRoster]);
-
-  const loadUpcomingSessions = useCallback(async () => {
-    if (!clubId) return;
-    try {
-      const client = createApiClient();
-      const result = await getClubSessions(client, clubId);
-      setUpcomingSessions(result.sessions ?? []);
-    } catch (e) {
-      console.warn("Failed to load club sessions:", e);
-      setUpcomingSessions([]);
-    }
-  }, [clubId]);
-
-  useEffect(() => {
-    if (clubId) loadUpcomingSessions();
-  }, [clubId, loadUpcomingSessions]);
 
   const filteredMembers = useMemo(() => {
     if (!roster?.members) return [];
@@ -227,72 +163,6 @@ export default function RosterScreen() {
     }
     return list;
   }, [roster?.members, roleFilter, searchQuery]);
-
-  const openAssignModal = useCallback(
-    (member: ClubRosterMember) => {
-      if (upcomingSessions.length === 0) {
-        showToast("Aucune séance à venir pour ce club.", "error");
-        return;
-      }
-      setAssignMember(member);
-      setSelectedSessionId(upcomingSessions[0]?.id ?? null);
-      setSelectedGroupId(null);
-      setAssignModalVisible(true);
-    },
-    [upcomingSessions, showToast],
-  );
-
-  const closeAssignModal = useCallback(() => {
-    setAssignModalVisible(false);
-    setAssignMember(null);
-    setSelectedGroupId(null);
-  }, []);
-
-  const handleAssignSubmit = useCallback(async () => {
-    if (!assignMember || !selectedSessionId || !selectedGroupId) {
-      showToast("Choisis une séance et un groupe.", "error");
-      return;
-    }
-    setIsSubmittingAssign(true);
-    try {
-      const client = createApiClient();
-      await assignSessionGroup(client, selectedSessionId, {
-        userId: assignMember.userId,
-        groupId: selectedGroupId,
-      });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToast("Groupe assigné.", "success");
-      setAssignments((prev) => ({
-        ...prev,
-        [assignMember.userId]: {
-          ...(prev[assignMember.userId] ?? {}),
-          [selectedSessionId]: selectedGroupId,
-        },
-      }));
-      closeAssignModal();
-    } catch (e) {
-      console.warn("Assign group failed:", e);
-      showToast("Impossible d'assigner le groupe.", "error");
-    } finally {
-      setIsSubmittingAssign(false);
-    }
-  }, [
-    assignMember,
-    selectedSessionId,
-    selectedGroupId,
-    showToast,
-    closeAssignModal,
-  ]);
-
-  const assignedGroupForMember = useCallback(
-    (member: ClubRosterMember, sessionId: string | null) => {
-      if (!sessionId) return undefined;
-      return assignments[member.userId]?.[sessionId];
-    },
-    [assignments],
-  );
-
-  const defaultSessionId = upcomingSessions[0]?.id ?? null;
 
   const noPrsShared = useMemo(
     () =>
@@ -320,7 +190,7 @@ export default function RosterScreen() {
           <Text style={styles.backLabel}>Retour</Text>
         </Pressable>
         <View style={styles.headerRow}>
-          <Text style={styles.screenTitle}>Roster</Text>
+          <Text style={styles.screenTitle}>Membres (coach)</Text>
           <Pressable
             onPress={loadRoster}
             style={({ pressed }) => [
@@ -346,13 +216,20 @@ export default function RosterScreen() {
           <Card style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>Accès limité</Text>
             <Text style={styles.emptyText}>
-              Tu dois être coach ou admin d’un club pour voir le roster.
+              Espace réservé aux coachs — tu peux ignorer cet espace si tu cours en solo.
             </Text>
           </Card>
         ) : isLoading ? (
           <Text style={styles.emptyText}>Chargement...</Text>
         ) : (
           <>
+            <Card style={styles.introCard}>
+              <Text style={styles.introTitle}>Vue coach</Text>
+              <Text style={styles.introText}>
+                Vue coach: membres + PR partagés.
+              </Text>
+            </Card>
+
             <View style={styles.searchRow}>
               <TextInput
                 style={styles.searchInput}
@@ -399,7 +276,7 @@ export default function RosterScreen() {
                 <Text style={styles.emptyText}>
                   {roster?.members?.length
                     ? "Modifie la recherche ou le filtre."
-                    : "Le roster est vide."}
+                    : "Le club est vide."}
                 </Text>
               </Card>
             ) : (
@@ -415,11 +292,6 @@ export default function RosterScreen() {
                   <MemberRow
                     key={member.membershipId}
                     member={member}
-                    assignedGroup={assignedGroupForMember(
-                      member,
-                      defaultSessionId,
-                    )}
-                    onAssignGroup={openAssignModal}
                   />
                 ))}
               </>
@@ -427,124 +299,6 @@ export default function RosterScreen() {
           </>
         )}
       </ScrollView>
-
-      <Modal
-        visible={assignModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={closeAssignModal}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={closeAssignModal}
-        >
-          <Pressable
-            style={styles.modalContent}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <Text style={styles.modalTitle}>Assigner groupe</Text>
-            {assignMember && (
-              <Text style={styles.modalMemberName} numberOfLines={1}>
-                {assignMember.displayName || assignMember.userId || "—"}
-              </Text>
-            )}
-
-            {upcomingSessions.length > 1 ? (
-              <View style={styles.modalSection}>
-                <Text style={styles.modalLabel}>Séance</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.sessionPickerScroll}
-                >
-                  {upcomingSessions.map((s) => (
-                    <Pressable
-                      key={s.id}
-                      style={[
-                        styles.sessionChip,
-                        selectedSessionId === s.id && styles.sessionChipActive,
-                      ]}
-                      onPress={() => setSelectedSessionId(s.id)}
-                    >
-                      <Text
-                        style={[
-                          styles.sessionChipText,
-                          selectedSessionId === s.id &&
-                            styles.sessionChipTextActive,
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {s.dateLabel}
-                      </Text>
-                      <Text
-                        style={styles.sessionChipSubtext}
-                        numberOfLines={1}
-                      >
-                        {s.title}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </View>
-            ) : upcomingSessions.length === 1 && (
-              <View style={styles.modalSection}>
-                <Text style={styles.modalLabel}>Séance</Text>
-                <Text style={styles.modalSessionSingle}>
-                  {upcomingSessions[0].dateLabel} – {upcomingSessions[0].title}
-                </Text>
-              </View>
-            )}
-
-            <View style={styles.modalSection}>
-              <Text style={styles.modalLabel}>Groupe</Text>
-              <View style={styles.groupPillRow}>
-                {GROUP_OPTIONS.map((g) => (
-                  <Pressable
-                    key={g.id}
-                    style={[
-                      styles.groupPill,
-                      selectedGroupId === g.id && styles.groupPillActive,
-                    ]}
-                    onPress={() => setSelectedGroupId(g.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.groupPillText,
-                        selectedGroupId === g.id && styles.groupPillTextActive,
-                      ]}
-                    >
-                      {g.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.modalActions}>
-              <Pressable
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={closeAssignModal}
-              >
-                <Text style={styles.modalButtonCancelText}>Annuler</Text>
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.modalButton,
-                  styles.modalButtonConfirm,
-                  (!selectedGroupId || isSubmittingAssign) &&
-                    styles.modalButtonDisabled,
-                ]}
-                onPress={handleAssignSubmit}
-                disabled={!selectedGroupId || isSubmittingAssign}
-              >
-                <Text style={styles.modalButtonConfirmText}>
-                  {isSubmittingAssign ? "Envoi..." : "Assigner"}
-                </Text>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -603,6 +357,22 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontSize: 14,
     marginTop: 4,
+  },
+  introCard: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+  },
+  introTitle: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  introText: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    lineHeight: 18,
   },
   content: {
     paddingHorizontal: spacing.lg,
@@ -699,11 +469,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textTransform: "capitalize",
   },
-  assignedGroupLabel: {
-    color: colors.text.secondary,
-    fontSize: 12,
-    marginTop: 4,
-  },
   prPrivateLabel: {
     color: colors.text.tertiary,
     fontSize: 12,
@@ -756,22 +521,5 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     fontSize: 13,
     textAlign: "center",
-  },
-  assignButton: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border.medium,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-  },
-  assignButtonPressed: {
-    opacity: 0.8,
-  },
-  assignButtonText: {
-    color: colors.text.accent,
-    fontSize: 13,
-    fontWeight: "600",
   },
 });

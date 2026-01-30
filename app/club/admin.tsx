@@ -109,7 +109,7 @@ export default function ClubAdminScreen() {
           <Text style={styles.backLabel}>Retour</Text>
         </Pressable>
         <View style={styles.headerRow}>
-          <Text style={styles.screenTitle}>Admin club</Text>
+          <Text style={styles.screenTitle}>Responsable du club</Text>
           <View style={styles.headerActions}>
             <Pressable
               onPress={() => {
@@ -121,7 +121,7 @@ export default function ClubAdminScreen() {
                 pressed && styles.rosterButtonPressed,
               ]}
             >
-              <Text style={styles.rosterButtonText}>Roster</Text>
+              <Text style={styles.rosterButtonText}>Affectations (coach)</Text>
             </Pressable>
             <Pressable
               onPress={loadPending}
@@ -143,7 +143,7 @@ export default function ClubAdminScreen() {
           <Card style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>Accès limité</Text>
             <Text style={styles.emptyText}>
-              Tu dois être admin ou coach pour voir les demandes.
+              Espace réservé aux coachs — tu peux ignorer cet espace si tu cours en solo.
             </Text>
           </Card>
         ) : pendingGroups.length === 0 ? (

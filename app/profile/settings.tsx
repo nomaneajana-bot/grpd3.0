@@ -33,7 +33,6 @@ export default function SettingsScreen() {
   const [weightKg, setWeightKg] = useState("");
   const [vo2max, setVo2max] = useState("");
   const [sharePrsWithCoach, setSharePrsWithCoach] = useState(true);
-  const [isSyncingPrs, setIsSyncingPrs] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -129,7 +128,6 @@ export default function SettingsScreen() {
     const displayName = profile.firstName ?? profile.name;
 
     try {
-      setIsSyncingPrs(true);
       const client = createApiClient();
       if (!shouldShare) {
         await updateMyPrs(client, {
@@ -143,25 +141,9 @@ export default function SettingsScreen() {
       await updateMyPrs(client, { sharePrs: true, displayName, prSummary });
     } catch (error) {
       console.warn("Failed to sync PRs:", error);
-    } finally {
-      setIsSyncingPrs(false);
     }
   };
 
-  const handleSyncPrs = async () => {
-    const profile = await getRunnerProfile();
-    if (!profile) return;
-    if (profile.sharePrsWithCoach === false) {
-      Alert.alert("Info", "Active le partage pour synchroniser tes PR.");
-      return;
-    }
-    try {
-      await syncPrsIfNeeded(profile);
-      Alert.alert("Succès", "PR synchronisés avec le coach.");
-    } catch (error) {
-      Alert.alert("Erreur", "Impossible de synchroniser les PR.");
-    }
-  };
 
   if (isLoading) {
     return (
@@ -215,12 +197,14 @@ export default function SettingsScreen() {
           <View style={styles.divider} />
 
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Club / Communauté</Text>
+            <Text style={styles.fieldLabel}>
+              Club / Communauté (optionnel)
+            </Text>
             <TextInput
               style={styles.textInput}
               value={clubName}
               onChangeText={setClubName}
-              placeholder="Ex: Jaime courir"
+              placeholder="Ex: Groupe D / AS Rabat Running"
               placeholderTextColor="#666"
             />
           </View>
@@ -259,13 +243,15 @@ export default function SettingsScreen() {
 
         {/* Section 3: PRs & coach */}
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>PR & COACH</Text>
+          <Text style={styles.cardLabel}>PR & coach (optionnel)</Text>
           <Text style={styles.cardHint}>
-            Partage tes PR avec ton coach pour recevoir des groupes adaptés.
+            Utile si tu as un coach. Sinon, laisse désactivé.
           </Text>
 
           <View style={styles.toggleRow}>
-            <Text style={styles.fieldLabel}>Partager mes PR</Text>
+            <Text style={styles.fieldLabel}>
+              Partager mes PR au coach (optionnel)
+            </Text>
             <Switch
               value={sharePrsWithCoach}
               onValueChange={setSharePrsWithCoach}
@@ -275,19 +261,6 @@ export default function SettingsScreen() {
           </View>
 
           <View style={styles.divider} />
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.syncButton,
-              (pressed || isSyncingPrs) && styles.syncButtonPressed,
-            ]}
-            onPress={handleSyncPrs}
-            disabled={isSyncingPrs}
-          >
-            <Text style={styles.syncButtonText}>
-              {isSyncingPrs ? "Synchronisation..." : "Synchroniser maintenant"}
-            </Text>
-          </Pressable>
         </View>
       </ScrollView>
 
@@ -414,20 +387,6 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: "rgba(255, 255, 255, 0.08)",
     marginVertical: 16,
-  },
-  syncButton: {
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: "center",
-    backgroundColor: "#1f7aff",
-  },
-  syncButtonPressed: {
-    opacity: 0.8,
-  },
-  syncButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
   },
   footer: {
     position: "absolute",

@@ -376,7 +376,9 @@ export default function MySessionsScreen() {
           pastRuns.length === 0 && (
           <View style={styles.emptyStateContainer}>
             <Text style={styles.emptyStateEmoji}>😕</Text>
-            <Text style={styles.emptyStateTitle}>Aucune séance encore</Text>
+            <Text style={styles.emptyStateTitle}>
+              Rien de prévu — rejoins une séance ou crée-en une.
+            </Text>
             <Text style={styles.emptyStateSubtitle}>
               Crée ta première séance depuis l'onglet Home.
             </Text>

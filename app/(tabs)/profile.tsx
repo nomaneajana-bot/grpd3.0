@@ -98,10 +98,10 @@ export default function ProfileScreen() {
       ? "Membre"
       : primaryMembership.status === "pending"
         ? "En attente"
-        : "Non actif"
+        : "Accès club inactif"
     : profile?.clubName
-      ? "Non vérifié"
-      : "Aucun club";
+      ? "En attente de validation"
+      : "Sans club (optionnel)";
   const hasAdminAccess = memberships.some(
     (m) =>
       m.status === "approved" && (m.role === "admin" || m.role === "coach"),
@@ -214,13 +214,13 @@ export default function ProfileScreen() {
               </Text>
             </View>
             <View style={styles.profileStat}>
-              <Text style={styles.profileStatLabel}>Statut club</Text>
+              <Text style={styles.profileStatLabel}>Accès club</Text>
               <Text style={styles.profileStatValue}>
                 {membershipStatusLabel}
               </Text>
             </View>
             <View style={styles.profileStat}>
-              <Text style={styles.profileStatLabel}>PR coach</Text>
+              <Text style={styles.profileStatLabel}>PR partagés</Text>
               <Text style={styles.profileStatValue}>{prShareLabel}</Text>
             </View>
             <View style={styles.profileStat}>
@@ -232,9 +232,9 @@ export default function ProfileScreen() {
 
         <Card style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardLabel}>COMMUNAUTÉ</Text>
+            <Text style={styles.cardLabel}>CLUB (optionnel)</Text>
             <Text style={styles.cardSubtitle}>
-              Gère ton club et tes demandes.
+              Si tu as un club, gère tes accès ici.
             </Text>
           </View>
           <Pressable
@@ -247,7 +247,7 @@ export default function ProfileScreen() {
             <View style={styles.testRowLeft}>
               <Text style={styles.testName}>Club / Communauté</Text>
               <Text style={styles.testDate}>
-                {clubLabel ?? "Aucun club"}
+                {clubLabel ?? "Sans club (optionnel)"}
               </Text>
             </View>
             <Text style={styles.testValue}>›</Text>
@@ -263,7 +263,7 @@ export default function ProfileScreen() {
                 onPress={() => router.push("/club/admin")}
               >
                 <View style={styles.testRowLeft}>
-                  <Text style={styles.testName}>Admin club</Text>
+                  <Text style={styles.testName}>Responsable du club</Text>
                   <Text style={styles.testDate}>
                     Demandes en attente
                   </Text>
@@ -276,14 +276,16 @@ export default function ProfileScreen() {
 
         <Card style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardLabel}>PR & RECORDS</Text>
+            <Text style={styles.cardLabel}>PR (records personnels)</Text>
             <Text style={styles.cardSubtitle}>
-              Ces PR servent à calculer tes allures et prédictions.
+              Tes PR aident à ajuster les allures. Optionnel si tu débutes.
             </Text>
           </View>
           {tests.length === 0 ? (
             <View style={styles.emptyTestsState}>
-              <Text style={styles.emptyTestsText}>Aucun PR enregistré</Text>
+              <Text style={styles.emptyTestsText}>
+                Pas de PR pour l’instant — tu peux continuer sans.
+              </Text>
             </View>
           ) : (
             <View style={styles.testsList}>
