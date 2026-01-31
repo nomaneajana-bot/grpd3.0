@@ -28,10 +28,12 @@ import {
     assignSessionGroup,
     getClubRoster,
     getMyMemberships,
-    requestSessionJoin,
+    getSession as getSessionApi,
+    joinSession as joinSessionApi,
+    requestSessionAccess,
 } from "../../lib/api";
 import { getRunnerProfile, type RunnerProfile } from "../../lib/profileStore";
-import { getSessionById, SESSION_MAP } from "../../lib/sessionData";
+import { getSessionById, SESSION_MAP, apiSessionToSessionData, type SessionData } from "../../lib/sessionData";
 import { deleteSession } from "../../lib/sessionStore";
 import { getWorkoutSummary } from "../../lib/workoutHelpers";
 import { getWorkout, type WorkoutEntity } from "../../lib/workoutStore";
@@ -87,14 +89,12 @@ function getBlockTotalDuration(block: WorkoutBlock): number {
 
 export default function SessionScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const [session, setSession] = useState<
-    (typeof SESSION_MAP)[string] | undefined
-  >(undefined);
+  const [session, setSession] = useState<SessionData | undefined>(undefined);
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
   const { toast, showToast, hideToast } = useToast();
 
-  // Load session from SESSION_MAP or stored sessions
+  // Load session: API first, then SESSION_MAP, then stored sessions
   useEffect(() => {
     if (!id) {
       setSession(undefined);
@@ -102,16 +102,23 @@ export default function SessionScreen() {
     }
 
     const loadSession = async () => {
-      // First check SESSION_MAP
+      try {
+        const client = createApiClient();
+        const apiSession = await getSessionApi(client, id);
+        if (apiSession) {
+          setSession(apiSessionToSessionData(apiSession));
+          return;
+        }
+      } catch (err) {
+        console.warn("API get session failed, trying local:", err);
+      }
       if (SESSION_MAP[id]) {
         setSession(SESSION_MAP[id]);
         return;
       }
-
-      // Then check stored sessions
       try {
         const storedSession = await getSessionById(id);
-        setSession(storedSession);
+        setSession(storedSession ?? undefined);
       } catch (error) {
         console.warn("Failed to load session:", error);
         setSession(undefined);
@@ -189,12 +196,14 @@ export default function SessionScreen() {
   const normalizedHost = session?.hostGroupName
     ? session.hostGroupName.toLowerCase().trim()
     : null;
-  const matchingMembership = normalizedHost
-    ? memberships.find((membership) => {
-        const clubName = membership.club?.name?.toLowerCase().trim();
-        return clubName === normalizedHost;
-      })
-    : null;
+  const matchingMembership = session?.clubId
+    ? memberships.find((m) => m.clubId === session.clubId)
+    : normalizedHost
+      ? memberships.find((membership) => {
+          const clubName = membership.club?.name?.toLowerCase().trim();
+          return clubName === normalizedHost;
+        })
+      : null;
   const membershipStatus = matchingMembership?.status ?? null;
   const profileClubMatch =
     normalizedHost &&
@@ -330,21 +339,28 @@ export default function SessionScreen() {
   );
 
   const handleSave = async () => {
-    // Use selected group, or fall back to recommended, or first group
     const currentGroupId =
       selectedGroupId ||
       session.recommendedGroupId ||
       session.paceGroups[0]?.id;
     if (!currentGroupId) {
+      showToast("Choisis un groupe.", "error");
       return;
     }
     try {
+      const client = createApiClient();
+      try {
+        await joinSessionApi(client, session.id, { groupId: currentGroupId });
+      } catch (apiErr) {
+        console.warn("API join failed, saving locally:", apiErr);
+      }
       await upsertJoinedSession(session.id, currentGroupId);
       setJoinedGroupId(currentGroupId);
-      // Navigate to "Mes séances" tab after saving
+      showToast("Groupe enregistré.", "success");
       router.push("/(tabs)/my-sessions");
     } catch (error) {
       console.warn("Failed to save joined session:", error);
+      showToast("Impossible d'enregistrer le groupe.", "error");
     }
   };
 
@@ -352,7 +368,12 @@ export default function SessionScreen() {
     if (!session) return;
     try {
       const client = createApiClient();
-      await requestSessionJoin(client, session.id);
+      const groupId =
+        selectedGroupId ||
+        session.recommendedGroupId ||
+        session.paceGroups[0]?.id ??
+        null;
+      await requestSessionAccess(client, session.id, groupId);
       showToast("Demande envoyée. Le responsable du club sera notifié.", "success");
     } catch (error) {
       console.warn("Failed to request join:", error);

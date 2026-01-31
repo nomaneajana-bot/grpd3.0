@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import type { TextStyle, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
@@ -353,7 +354,55 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+type ProfileStyles = {
+  safeArea: ViewStyle;
+  header: ViewStyle;
+  screenTitle: TextStyle;
+  scroll: ViewStyle;
+  content: ViewStyle;
+  profileCard: ViewStyle;
+  profileHeaderRow: ViewStyle;
+  profileHeaderLeft: ViewStyle;
+  profileName: TextStyle;
+  profileMetaRow: ViewStyle;
+  profileMetaDot: ViewStyle;
+  profileSettings: TextStyle;
+  settingsButton: ViewStyle;
+  profileSubtitle: TextStyle;
+  profileStatsDivider: ViewStyle;
+  profileStatsGrid: ViewStyle;
+  profileStat: ViewStyle;
+  profileStatLabel: TextStyle;
+  profileStatValue: TextStyle;
+  card: ViewStyle;
+  cardHeader: ViewStyle;
+  cardLabel: TextStyle;
+  cardSubtitle: TextStyle;
+  cardDivider: ViewStyle;
+  linkButton: ViewStyle;
+  linkButtonPressed: ViewStyle;
+  linkButtonText: TextStyle;
+  testsList: ViewStyle;
+  testRow: ViewStyle;
+  testRowPressed: ViewStyle;
+  testRowLeft: ViewStyle;
+  testDivider: ViewStyle;
+  testName: TextStyle;
+  testValue: TextStyle;
+  testDate: TextStyle;
+  emptyTestsState: ViewStyle;
+  emptyTestsText: TextStyle;
+  loadingState: ViewStyle;
+  loadingText: TextStyle;
+  historyLink: ViewStyle;
+  historyLinkText: TextStyle;
+  profilePhone: TextStyle;
+  logoutButton: ViewStyle;
+  logoutButtonDisabled: ViewStyle;
+  logoutButtonText: TextStyle;
+};
+
+const styles = StyleSheet.create<ProfileStyles>({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background.primary,
@@ -395,7 +444,7 @@ const styles = StyleSheet.create({
   profileName: {
     color: colors.text.primary,
     fontSize: typography.sizes["2xl"],
-    fontWeight: typography.weights.bold as const,
+    fontWeight: typography.weights.bold as TextStyle["fontWeight"],
     marginBottom: spacing.xs,
   },
   profileMetaRow: {
@@ -413,7 +462,7 @@ const styles = StyleSheet.create({
   profileSettings: {
     color: colors.text.accent,
     fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
   settingsButton: {
     paddingVertical: spacing.xs,
@@ -440,7 +489,7 @@ const styles = StyleSheet.create({
   profileStatLabel: {
     color: colors.text.tertiary,
     fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
     letterSpacing: 0.5,
     textTransform: "uppercase",
     marginBottom: spacing.xs,
@@ -448,7 +497,7 @@ const styles = StyleSheet.create({
   profileStatValue: {
     color: colors.text.primary,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.medium as const,
+    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
   },
   card: {
     // Card component handles base styles
@@ -463,7 +512,7 @@ const styles = StyleSheet.create({
   cardLabel: {
     color: colors.text.secondary,
     fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
     letterSpacing: 0.5,
     textTransform: "uppercase",
     marginBottom: spacing.xs,
@@ -489,7 +538,7 @@ const styles = StyleSheet.create({
   linkButtonText: {
     color: colors.text.accent,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
   testsList: {
     marginTop: spacing.xs,
@@ -515,20 +564,20 @@ const styles = StyleSheet.create({
   testName: {
     color: colors.text.primary,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.medium as const,
+    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
     marginBottom: spacing.xs / 2,
   },
   testValue: {
     color: colors.text.accent,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
     minWidth: 80,
     textAlign: "right",
   },
   testDate: {
     color: colors.text.tertiary,
     fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.normal as const,
+    fontWeight: typography.weights.normal as TextStyle["fontWeight"],
   },
   emptyTestsState: {
     paddingVertical: spacing.lg,
@@ -580,6 +629,6 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     color: colors.text.error,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
 });

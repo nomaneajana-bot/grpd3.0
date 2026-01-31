@@ -18,14 +18,19 @@ import * as Haptics from "expo-haptics";
 
 import { Card } from "../../components/ui/Card";
 import { Chip } from "../../components/ui/Chip";
-import { getStoredRuns, type StoredRun } from "../../lib/runStore";
+import { createApiClient, getMySessions } from "../../lib/api";
 import {
     getJoinedSessions,
     type JoinedSession,
 } from "../../lib/joinedSessionsStore";
-import { getRunTypePillLabel as getRunTypePillLabelFromModule } from "../../lib/runTypes";
+import { getStoredRuns, type StoredRun } from "../../lib/runStore";
+import {
+    getRunTypePillLabel as getRunTypePillLabelFromModule,
+    type RunTypeId as RunTypeIdFromRunTypes,
+} from "../../lib/runTypes";
 import {
     getAllSessionsIncludingStored,
+    apiSessionToSessionData,
     type SessionData,
 } from "../../lib/sessionData";
 import {
@@ -117,11 +122,23 @@ export default function MySessionsScreen() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Load all sessions (including stored user sessions)
-      const sessions = await getAllSessionsIncludingStored();
+      let sessions: SessionData[] = await getAllSessionsIncludingStored();
+      try {
+        const client = createApiClient();
+        const apiResult = await getMySessions(client);
+        const apiSessions = (apiResult.sessions ?? []).map(apiSessionToSessionData);
+        const localIds = new Set(sessions.map((s) => s.id));
+        for (const apiSession of apiSessions) {
+          if (!localIds.has(apiSession.id)) {
+            sessions = [...sessions, apiSession];
+            localIds.add(apiSession.id);
+          }
+        }
+      } catch (apiErr) {
+        console.warn("API my-sessions failed, using local only:", apiErr);
+      }
       setAllSessions(sessions);
 
-      // Load workout runTypes for sessions with workoutId
       const runTypeMap: Record<string, RunTypeId> = {};
       await Promise.all(
         sessions
@@ -133,17 +150,15 @@ export default function MySessionsScreen() {
                 runTypeMap[session.id] = workout.runType;
               }
             } catch {
-              // Ignore errors - workout might not exist
+              // ignore
             }
           }),
       );
       setWorkoutRunTypes(runTypeMap);
 
-      // Load joined sessions
       const joined = await getJoinedSessions();
       setJoinedSessions(joined);
 
-      // Load stored runs
       const runs = await getStoredRuns();
       setStoredRuns(runs);
     } catch (error) {
@@ -466,7 +481,9 @@ export default function MySessionsScreen() {
                             const typeLabel = workoutRunType
                               ? getRunTypePillLabel(workoutRunType)
                               : sessionTypeId
-                                ? getRunTypePillLabelFromModule(sessionTypeId)
+                                ? getRunTypePillLabelFromModule(
+                                      sessionTypeId as RunTypeIdFromRunTypes,
+                                    )
                                 : "PERSONNALISÉ";
                             return typeLabel ? (
                               <Chip label={typeLabel} variant="default" />
@@ -536,7 +553,9 @@ export default function MySessionsScreen() {
                         const typeLabel = workoutRunType
                           ? getRunTypePillLabel(workoutRunType)
                           : sessionTypeId
-                            ? getRunTypePillLabelFromModule(sessionTypeId)
+                            ? getRunTypePillLabelFromModule(
+                                  sessionTypeId as RunTypeIdFromRunTypes,
+                                )
                             : "PERSONNALISÉ";
                         return typeLabel ? (
                           <Chip label={typeLabel} variant="default" />

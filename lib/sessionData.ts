@@ -67,9 +67,77 @@ export type SessionData = {
   visibility?: SessionVisibility; // "public" | "members" (members-only sessions)
   hostGroupName?: string | null; // Group/club name for members-only sessions
   genderRestriction?: "women_only" | null; // Optional gender restriction (e.g., girls-only runs)
+  /** Set when session is from API (club-linked). Used for matching membership. */
+  clubId?: string | null;
 };
 
 export type SessionVisibility = "public" | "members";
+
+/** Map API session to SessionData for UI. Used by session detail and my-sessions. */
+export function apiSessionToSessionData(api: {
+  id: string;
+  title: string;
+  spot: string;
+  dateLabel: string;
+  dateISO?: string | null;
+  timeMinutes?: number | null;
+  typeLabel: string;
+  volume: string;
+  targetPace: string;
+  estimatedDistanceKm: number;
+  recommendedGroupId: string;
+  clubId?: string | null;
+  visibility?: string;
+  hostGroupName?: string | null;
+  meetingPoint?: string | null;
+  coachAdvice?: string | null;
+  coachPhone?: string | null;
+  coachName?: string | null;
+  workoutId?: string | null;
+  isCustom?: boolean;
+  paceGroups?: { id: string; label: string; paceRange: string; runnersCount?: number; avgPaceSecondsPerKm?: number }[];
+}): SessionData {
+  const paceGroups = api.paceGroups?.length
+    ? api.paceGroups.map((g) => ({
+        id: g.id,
+        label: g.label,
+        paceRange: g.paceRange,
+        runnersCount: g.runnersCount ?? 0,
+        avgPaceSecondsPerKm: g.avgPaceSecondsPerKm ?? 300,
+      }))
+    : [
+        {
+          id: api.recommendedGroupId || "C",
+          label: `Groupe ${api.recommendedGroupId || "C"}`,
+          paceRange: api.targetPace,
+          runnersCount: 0,
+          avgPaceSecondsPerKm: 300,
+        },
+      ];
+  return {
+    id: api.id,
+    title: api.title,
+    spot: api.spot,
+    dateLabel: api.dateLabel,
+    dateISO: api.dateISO ?? undefined,
+    timeMinutes: api.timeMinutes ?? undefined,
+    typeLabel: api.typeLabel,
+    volume: api.volume,
+    targetPace: api.targetPace,
+    paceGroups,
+    recommendedGroupId: api.recommendedGroupId,
+    estimatedDistanceKm: api.estimatedDistanceKm,
+    workoutId: api.workoutId ?? undefined,
+    isCustom: api.isCustom ?? true,
+    visibility: (api.visibility as SessionVisibility) ?? "public",
+    hostGroupName: api.hostGroupName ?? null,
+    meetingPoint: api.meetingPoint ?? undefined,
+    coachAdvice: api.coachAdvice ?? undefined,
+    coachPhone: api.coachPhone ?? undefined,
+    coachName: api.coachName ?? undefined,
+    clubId: api.clubId ?? null,
+  };
+}
 
 export const SESSION_MAP: Record<string, SessionData> = {
   "marina-fartlek-long": {

@@ -85,10 +85,16 @@ model Session {
   targetPace       String
   estimatedDistanceKm Float
   recommendedGroupId String
+  paceGroups       Json?
   clubId           String?
   visibility       SessionVisibility @default(public)
   genderRestriction GenderRestriction @default(mixed)
   hostUserId       String   // Auth.js user ID
+  hostGroupName    String?
+  meetingPoint     String?
+  coachAdvice      String?
+  coachPhone       String?
+  coachName        String?
   createdAt        DateTime @default(now())
   workoutId        String?
   isCustom         Boolean  @default(false)

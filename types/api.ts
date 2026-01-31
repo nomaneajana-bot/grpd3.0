@@ -309,3 +309,63 @@ export type SessionAssignResult = {
   groupId: string | null;
   status: string;
 };
+
+// API Session (matches backend/Prisma shape; paceGroups may be computed client-side or returned by API)
+export type ApiSession = {
+  id: string;
+  title: string;
+  spot: string;
+  dateLabel: string;
+  dateISO: string | null;
+  timeMinutes: number | null;
+  typeLabel: string;
+  volume: string;
+  targetPace: string;
+  estimatedDistanceKm: number;
+  recommendedGroupId: string;
+  clubId: string | null;
+  visibility: "public" | "members";
+  genderRestriction: string;
+  hostUserId: string;
+  workoutId: string | null;
+  isCustom: boolean;
+  createdAt?: string;
+  paceGroups?: { id: string; label: string; paceRange: string; runnersCount?: number; avgPaceSecondsPerKm?: number }[];
+  hostGroupName?: string | null;
+  meetingPoint?: string | null;
+  coachAdvice?: string | null;
+  coachPhone?: string | null;
+  coachName?: string | null;
+};
+
+export type SessionCreateInput = {
+  title: string;
+  spot: string;
+  dateLabel: string;
+  dateISO?: string | null;
+  timeMinutes?: number | null;
+  typeLabel: string;
+  volume: string;
+  targetPace: string;
+  estimatedDistanceKm: number;
+  recommendedGroupId: string;
+  paceGroups?: { id: string; label: string; paceRange: string; runnersCount?: number; avgPaceSecondsPerKm?: number }[];
+  clubId?: string | null;
+  visibility?: "public" | "members";
+  genderRestriction?: string;
+  workoutId?: string | null;
+  isCustom?: boolean;
+  hostGroupName?: string | null;
+  meetingPoint?: string | null;
+  coachAdvice?: string | null;
+  coachPhone?: string | null;
+  coachName?: string | null;
+};
+
+export type SessionCreateResult = ApiSession;
+
+export type SessionJoinInput = { groupId: string };
+
+export type SessionJoinResult = { id: string; sessionId: string; userId: string; groupId: string | null; status: string };
+
+export type MySessionsResult = { sessions: ApiSession[] };

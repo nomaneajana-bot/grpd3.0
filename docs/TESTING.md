@@ -62,3 +62,24 @@ Use your Vercel URL and, for protected routes, add an `Authorization: Bearer <to
 | Full stack (Vercel+Neon)| Vercel URL          | `npx expo start -c`  |
 
 After changing `.env`, restart Expo (`npx expo start -c`) so the new values are used.
+
+---
+
+## 4. End-to-end manual test (real API)
+
+Use this with **EXPO_PUBLIC_API_URL** set to your Vercel URL. Two users: one admin (e.g. you), one joiner (e.g. partner / second device or simulator).
+
+| Step | Action | Where | Verify |
+|------|--------|--------|--------|
+| 1 | Create a club (or use existing). | Club screen / create flow | Club exists; you are admin. |
+| 2 | Generate invite code. | Club screen → admin-only “Générer un code d’invitation” | Code is shown; copy or note it. |
+| 3 | Second user: join with code. | Club screen → “Rejoindre avec code” → paste code | Success state; user is pending or approved per backend. |
+| 4 | (Or) Second user: request by slug. | Club screen → “Demander à rejoindre” → enter club slug/name | Request sent; pending state. |
+| 5 | Admin: approve member. | Club → Admin → pending list → Approve | Member moves off pending; roster updates. |
+| 6 | Roster: confirm approved members. | Club → Roster | Approved members listed; PR visibility reflects share toggle. |
+| 7 | Create a session (club-linked). | Session → Create → enable “réservé aux membres” → save | POST /api/v1/sessions; redirect to session detail by returned id. |
+| 8 | Join session (approved member). | Session detail → Join / choose group | POST /sessions/:id/join; session appears in My Sessions. |
+| 9 | (If club-only) Request access. | Session detail as non-member → “Demander l’accès” | POST /sessions/:id/request. Coach: assign group via POST /sessions/:id/assign. |
+| 10 | My Sessions from API. | (tabs) My Sessions | List includes joined sessions from GET /api/v1/me/sessions (or equivalent); no 404. |
+
+**Quick checklist:** Club join by code ✓ · Request by slug ✓ · Generate code ✓ · Pending list ✓ · Approve ✓ · Roster ✓ · PR share ✓ · Create session (API) ✓ · Join/request/assign (API) ✓ · My Sessions from API ✓

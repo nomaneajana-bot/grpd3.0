@@ -19,6 +19,12 @@ import type {
   SessionJoinRequestResult,
   SessionAssignInput,
   SessionAssignResult,
+  ApiSession,
+  SessionCreateInput,
+  SessionCreateResult,
+  SessionJoinInput,
+  SessionJoinResult,
+  MySessionsResult,
 } from "../../types/api";
 import type { ApiClient } from "./client";
 
@@ -66,6 +72,17 @@ export async function createClub(
     method: "POST",
     body: JSON.stringify({ name, slug, city }),
   });
+}
+
+export async function createClubInvite(
+  client: ApiClient,
+  clubId: string,
+): Promise<{ code: string }> {
+  const payload = await client.request<{ code?: string } | { code: string }>(
+    `/api/v1/clubs/${clubId}/invite`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+  return { code: (payload as { code?: string }).code ?? "" };
 }
 
 export async function getMyMemberships(
@@ -122,6 +139,35 @@ export async function getClubDetail(
     },
   );
   return normalizeClubDetail(payload);
+}
+
+/** Resolve club by slug (human-readable). Backend must expose GET /api/v1/clubs/by-slug/:slug */
+export async function getClubBySlug(
+  client: ApiClient,
+  slug: string,
+): Promise<Club | null> {
+  const normalized = slug.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  if (!normalized) return null;
+  try {
+    const club = await client.request<Club>(
+      `/api/v1/clubs/by-slug/${encodeURIComponent(normalized)}`,
+      { method: "GET" },
+    );
+    return club ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Request to join a club by slug (calls getClubBySlug then requestClubJoin). */
+export async function requestClubJoinBySlug(
+  client: ApiClient,
+  slug: string,
+  input: ClubRequestInput = {},
+): Promise<ClubRequestResult> {
+  const club = await getClubBySlug(client, slug);
+  if (!club) throw new Error("Club introuvable. Vérifie le nom ou le slug.");
+  return requestClubJoin(client, club.id, input);
 }
 
 export async function approveClubMember(
@@ -184,6 +230,73 @@ export async function assignSessionGroup(
       body: JSON.stringify(input),
     },
   );
+}
+
+/** Create session (POST /api/v1/sessions). Backend must expose this route. */
+export async function createSession(
+  client: ApiClient,
+  input: SessionCreateInput,
+): Promise<SessionCreateResult> {
+  return await client.request<SessionCreateResult>("/api/v1/sessions", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+/** Get session by id (GET /api/v1/sessions/:id). Backend must expose this route. */
+export async function getSession(
+  client: ApiClient,
+  sessionId: string,
+): Promise<ApiSession | null> {
+  try {
+    return await client.request<ApiSession>(
+      `/api/v1/sessions/${sessionId}`,
+      { method: "GET" },
+    );
+  } catch {
+    return null;
+  }
+}
+
+/** Join session with group (POST /api/v1/sessions/:id/join). Backend must expose this route. */
+export async function joinSession(
+  client: ApiClient,
+  sessionId: string,
+  input: SessionJoinInput,
+): Promise<SessionJoinResult> {
+  return await client.request<SessionJoinResult>(
+    `/api/v1/sessions/${sessionId}/join`,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+/** Request access to members-only session (POST /api/v1/sessions/:id/request). */
+export async function requestSessionAccess(
+  client: ApiClient,
+  sessionId: string,
+  groupId?: string | null,
+): Promise<SessionJoinRequestResult> {
+  return await client.request<SessionJoinRequestResult>(
+    `/api/v1/sessions/${sessionId}/request`,
+    {
+      method: "POST",
+      body: JSON.stringify(groupId != null ? { groupId } : {}),
+    },
+  );
+}
+
+/** Get my joined sessions (GET /api/v1/me/sessions). Backend must expose this route. */
+export async function getMySessions(
+  client: ApiClient,
+): Promise<MySessionsResult> {
+  const payload = await client.request<{ sessions?: ApiSession[] }>(
+    "/api/v1/me/sessions",
+    { method: "GET" },
+  );
+  return { sessions: payload.sessions ?? [] };
 }
 
 export async function updateMyPrs(

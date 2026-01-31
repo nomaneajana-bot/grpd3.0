@@ -572,6 +572,20 @@ async function mockRequestJoin(
   return { membership: { ...membership, club } };
 }
 
+async function mockCreateInvite(clubId: string): Promise<{ code: string }> {
+  const clubs = await readClubs();
+  const club = clubs[clubId];
+  if (!club) {
+    throw new ApiError(404, 'Club not found');
+  }
+  if (!club.code) {
+    club.code = makeInviteCode(club.slug ?? club.name);
+    clubs[club.id] = club;
+    await writeJson(MOCK_CLUBS_KEY, clubs);
+  }
+  return { code: club.code };
+}
+
 async function mockGetClubDetail(clubId: string): Promise<ClubDetail> {
   const clubs = await readClubs();
   const club = clubs[clubId];
@@ -730,6 +744,10 @@ export async function mockApiRequest<T>(
   if (path.startsWith('/api/v1/clubs/') && path.endsWith('/request')) {
     const clubId = path.split('/api/v1/clubs/')[1]?.split('/')[0];
     return (await mockRequestJoin(clubId, body as ClubRequestInput)) as T;
+  }
+  if (path.startsWith('/api/v1/clubs/') && path.endsWith('/invite')) {
+    const clubId = path.split('/api/v1/clubs/')[1]?.split('/')[0];
+    return (await mockCreateInvite(clubId)) as T;
   }
   if (path.startsWith('/api/v1/clubs/') && path.endsWith('/approve')) {
     const clubId = path.split('/api/v1/clubs/')[1]?.split('/')[0];

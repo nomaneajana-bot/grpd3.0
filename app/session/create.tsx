@@ -20,6 +20,12 @@ import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 
 import { colors } from "../../constants/ui";
+import {
+    createSession as createSessionApi,
+    createApiClient,
+    getMyMemberships,
+    joinSession,
+} from "../../lib/api";
 import { upsertJoinedSession } from "../../lib/joinedSessionsStore";
 import {
     getProfileSnapshot,
@@ -31,7 +37,8 @@ import {
     type SessionGroupConfig,
 } from "../../lib/sessionBuilder";
 import { getSessionById, type SessionVisibility } from "../../lib/sessionData";
-import { createSession, updateSession } from "../../lib/sessionStore";
+import { createSession as createSessionLocal, updateSession } from "../../lib/sessionStore";
+import type { SessionCreateInput } from "../../types/api";
 import {
     getWorkoutBasePaceSeconds,
     getWorkoutIntervalDefaults,
@@ -1413,6 +1420,20 @@ export default function CreateSessionScreen() {
     loadProfile();
   }, [hasInitializedAudience, isEditMode]);
 
+  useEffect(() => {
+    const loadMemberships = async () => {
+      try {
+        const client = createApiClient();
+        const result = await getMyMemberships(client);
+        const approved = (result.memberships ?? []).find((m) => m.status === "approved");
+        setPrimaryClubId(approved?.clubId ?? null);
+      } catch {
+        setPrimaryClubId(null);
+      }
+    };
+    loadMemberships();
+  }, []);
+
   // Date and time state
   const [dateLabel, setDateLabel] = useState<string>("LUNDI 10");
   const [selectedHour, setSelectedHour] = useState<number>(6);
@@ -1505,6 +1526,7 @@ export default function CreateSessionScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
+  const [primaryClubId, setPrimaryClubId] = useState<string | null>(null);
   const [sessionVisibility, setSessionVisibility] =
     useState<SessionVisibility>("public");
   const [hostGroupName, setHostGroupName] = useState<string | null>(null);
@@ -1892,7 +1914,7 @@ export default function CreateSessionScreen() {
         // Navigate back to session detail or my-sessions
         router.back();
       } else {
-        // Create new session
+        // Create new session (API first; fallback to local if API unavailable)
         const { id, session, defaultGroupId } = buildSessionFromForm({
           spot,
           dateLabel,
@@ -1905,32 +1927,59 @@ export default function CreateSessionScreen() {
             sessionVisibility === "members" ? hostGroupName : null,
         });
 
-        // Save to persistent storage
-        await createSession(session);
+        const apiPayload: SessionCreateInput = {
+          title: session.title,
+          spot: session.spot,
+          dateLabel: session.dateLabel,
+          dateISO: session.dateISO ?? null,
+          timeMinutes: session.timeMinutes ?? null,
+          typeLabel: session.typeLabel,
+          volume: session.volume,
+          targetPace: session.targetPace,
+          estimatedDistanceKm: session.estimatedDistanceKm,
+          recommendedGroupId: session.recommendedGroupId,
+          clubId: sessionVisibility === "members" ? primaryClubId ?? null : null,
+          visibility: sessionVisibility,
+          genderRestriction: session.genderRestriction ?? "mixed",
+          workoutId: session.workoutId ?? null,
+          isCustom: true,
+          hostGroupName: session.hostGroupName ?? null,
+          meetingPoint: session.meetingPoint ?? null,
+          coachAdvice: session.coachAdvice ?? null,
+          coachPhone: session.coachPhone ?? null,
+          coachName: session.coachName ?? null,
+        };
 
-        // Mark workout as used if a workoutId is associated (only for structured workouts)
+        let createdId: string = id;
+        try {
+          const client = createApiClient();
+          const created = await createSessionApi(client, apiPayload);
+          createdId = created.id;
+          // Auto-join the user to the session via API
+          try {
+            await joinSession(client, createdId, { groupId: defaultGroupId });
+          } catch (joinErr) {
+            console.warn("Failed to join session via API:", joinErr);
+          }
+        } catch (apiErr) {
+          console.warn("API session create failed, saving locally:", apiErr);
+          await createSessionLocal(session);
+          try {
+            await upsertJoinedSession(id, defaultGroupId);
+          } catch (joinErr) {
+            console.warn("Failed to join session:", joinErr);
+          }
+        }
+
         if (sessionMode === "workout" && selectedWorkoutId) {
           try {
             await markWorkoutUsed(selectedWorkoutId);
           } catch (error) {
             console.warn("Failed to mark workout as used:", error);
-            // Continue even if this fails
           }
         }
 
-        // Auto-join the user to the session
-        try {
-          await upsertJoinedSession(id, defaultGroupId);
-        } catch (error) {
-          console.warn("Failed to join session:", error);
-          // Continue navigation even if join fails
-        }
-
-        // Log for debugging
-        console.log("NEW_SESSION_CREATED", { id, session });
-
-        // Navigate to "Mes séances" tab
-        router.push("/(tabs)/my-sessions");
+        router.push(`/session/${createdId}`);
       }
     } catch (error) {
       console.error("Failed to publish session:", error);

@@ -39,8 +39,12 @@ export async function POST(
 
     if (session.visibility === SessionVisibility.members && session.clubId) {
       const hasAccess = await hasClubPermission(userId, session.clubId, "view");
-      if (!hasAccess) {
-        return jsonError("This session is members-only", "FORBIDDEN", 403);
+      if (hasAccess) {
+        return jsonError(
+          "Already a member of this club",
+          "VALIDATION_ERROR",
+          409,
+        );
       }
     }
 

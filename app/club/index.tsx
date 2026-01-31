@@ -1,4 +1,4 @@
-import { router, Stack } from "expo-router";
+import { type Href, router, Stack } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Pressable,
@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
+import * as Clipboard from "expo-clipboard";
 
 import { Card } from "../../components/ui/Card";
 import { Toast } from "../../components/ui/Toast";
@@ -18,9 +19,10 @@ import { colors, spacing } from "../../constants/ui";
 import { useToast } from "../../hooks/useToast";
 import {
   createApiClient,
+  createClubInvite,
   getMyMemberships,
   joinClubByCode,
-  requestClubJoin,
+  requestClubJoinBySlug,
 } from "../../lib/api";
 import type { ClubMembership } from "../../types/api";
 
@@ -28,9 +30,13 @@ export default function ClubScreen() {
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [inviteCode, setInviteCode] = useState("");
-  const [clubId, setClubId] = useState("");
+  const [generatedInviteCode, setGeneratedInviteCode] = useState<string | null>(
+    null,
+  );
+  const [clubSlug, setClubSlug] = useState("");
   const [requestMessage, setRequestMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   const loadMemberships = useCallback(async () => {
@@ -62,6 +68,9 @@ export default function ClubScreen() {
   const isApprovedMember = primaryMembership?.status === "approved";
   const isPendingMember = primaryMembership?.status === "pending";
   const isInClub = isApprovedMember || isPendingMember;
+  const isCoachOrAdmin =
+    isApprovedMember &&
+    (primaryMembership?.role === "admin" || primaryMembership?.role === "coach");
   const roleLabel =
     primaryMembership?.role === "admin"
       ? "Admin"
@@ -96,30 +105,58 @@ export default function ClubScreen() {
   };
 
   const handleRequestJoin = async () => {
-    if (!clubId.trim()) {
-      showToast("Ajoute le code du club.", "error");
+    if (!clubSlug.trim()) {
+      showToast("Saisis le nom du club ou son slug.", "error");
       return;
     }
     setIsSubmitting(true);
     try {
       const client = createApiClient();
-      await requestClubJoin(client, clubId.trim(), {
+      await requestClubJoinBySlug(client, clubSlug.trim(), {
         message: requestMessage.trim() || undefined,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast("Demande envoyée.", "success");
-      setClubId("");
+      setClubSlug("");
       setRequestMessage("");
       await loadMemberships();
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn("Request join failed:", error);
-      showToast(
-        "Impossible d'envoyer la demande. Vérifie l'API.",
-        "error",
-      );
+      const msg = error instanceof Error ? error.message : "Impossible d'envoyer la demande.";
+      showToast(msg, "error");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleGenerateInvite = async () => {
+    const approvedClubId = primaryMembership?.clubId;
+    if (!approvedClubId) {
+      showToast("Club introuvable.", "error");
+      return;
+    }
+    setIsGeneratingInvite(true);
+    try {
+      const client = createApiClient();
+      const result = await createClubInvite(client, approvedClubId);
+      if (!result.code) {
+        showToast("Impossible de générer le code. Réessaie.", "error");
+        return;
+      }
+      setGeneratedInviteCode(result.code);
+      showToast("Code généré", "success");
+    } catch (error) {
+      console.warn("Generate invite failed:", error);
+      showToast("Impossible de générer le code. Réessaie.", "error");
+    } finally {
+      setIsGeneratingInvite(false);
+    }
+  };
+
+  const handleCopyInvite = async () => {
+    if (!generatedInviteCode) return;
+    await Clipboard.setStringAsync(generatedInviteCode);
+    showToast("Code copié", "success");
   };
 
   return (
@@ -192,7 +229,7 @@ export default function ClubScreen() {
                   ]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push("/club/create");
+                    router.push("/club/create" as Href);
                   }}
                 >
                   <Text style={styles.createButtonText}>Créer un club</Text>
@@ -201,6 +238,39 @@ export default function ClubScreen() {
             </>
           )}
         </Card>
+
+        {isCoachOrAdmin && (
+          <Card style={styles.card}>
+            <Text style={styles.cardLabel}>RESPONSABLE</Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                (pressed || isGeneratingInvite) &&
+                  styles.secondaryButtonPressed,
+              ]}
+              onPress={handleGenerateInvite}
+              disabled={isGeneratingInvite}
+            >
+              <Text style={styles.secondaryButtonText}>
+                Générer un code d’invitation
+              </Text>
+            </Pressable>
+            {generatedInviteCode && (
+              <View style={styles.inviteRow}>
+                <Text style={styles.inviteCode}>{generatedInviteCode}</Text>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.copyButton,
+                    pressed && styles.copyButtonPressed,
+                  ]}
+                  onPress={handleCopyInvite}
+                >
+                  <Text style={styles.copyButtonText}>Copier</Text>
+                </Pressable>
+              </View>
+            )}
+          </Card>
+        )}
 
         <Card style={styles.card}>
           <Text style={styles.cardLabel}>REJOINDRE AVEC CODE</Text>
@@ -241,20 +311,18 @@ export default function ClubScreen() {
         <Card style={styles.card}>
           <Text style={styles.cardLabel}>DEMANDER À REJOINDRE</Text>
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>
-              Code du club ou code d’invitation
-            </Text>
+            <Text style={styles.fieldLabel}>Nom du club ou slug</Text>
             <TextInput
               style={styles.textInput}
-              value={clubId}
-              onChangeText={setClubId}
-              placeholder="Code du club"
+              value={clubSlug}
+              onChangeText={setClubSlug}
+              placeholder="Ex: jaime-courir"
               placeholderTextColor="#666"
               autoCapitalize="none"
               editable={!isInClub}
             />
             <Text style={styles.helperText}>
-              Demande-le à un responsable du club (WhatsApp).
+              Si tu n'as pas de code, entre le nom du club (ex: jaime-courir).
             </Text>
           </View>
           <View style={styles.fieldRow}>
@@ -457,6 +525,37 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: colors.text.primary,
     fontSize: 15,
+    fontWeight: "600",
+  },
+  inviteRow: {
+    marginTop: spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: colors.background.input,
+  },
+  inviteCode: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+  copyButton: {
+    borderWidth: 1,
+    borderColor: colors.border.medium,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  copyButtonPressed: {
+    opacity: 0.8,
+  },
+  copyButtonText: {
+    color: colors.text.primary,
+    fontSize: 12,
     fontWeight: "600",
   },
   helperText: {

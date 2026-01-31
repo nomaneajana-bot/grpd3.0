@@ -23,26 +23,44 @@ export async function GET(
 
     const club = await prisma.club.findUnique({
       where: { id: clubId },
-      include: {
-        memberships: {
-          where: { status: "approved" },
-          select: { id: true, userId: true, role: true, createdAt: true },
-        },
-        _count: {
-          select: {
-            memberships: { where: { status: "approved" } },
-            sessions: true,
-          },
-        },
-      },
     });
 
     if (!club) return jsonError("Club not found", "NOT_FOUND", 404);
 
+    const [membersCount, sessionsCount, pendingMembers] =
+      await prisma.$transaction([
+        prisma.clubMembership.count({
+          where: { clubId, status: "approved" },
+        }),
+        prisma.session.count({ where: { clubId } }),
+        prisma.clubMembership.findMany({
+          where: { clubId, status: "pending" },
+          select: {
+            id: true,
+            userId: true,
+            displayName: true,
+            status: true,
+            role: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "asc" },
+        }),
+      ]);
+
     return jsonOk({
-      ...club,
-      membersCount: club._count.memberships,
-      sessionsCount: club._count.sessions,
+      club: {
+        ...club,
+        membersCount,
+        sessionsCount,
+      },
+      pendingMembers: pendingMembers.map((m) => ({
+        id: m.id,
+        userId: m.userId,
+        displayName: m.displayName ?? null,
+        status: m.status,
+        role: m.role,
+        requestedAt: m.createdAt,
+      })),
     });
   } catch (e) {
     console.error("Get club:", e);
