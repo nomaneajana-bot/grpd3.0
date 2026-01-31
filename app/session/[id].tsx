@@ -371,9 +371,10 @@ export default function SessionScreen() {
     try {
       const client = createApiClient();
       const groupId =
-        (selectedGroupId ||
-          session.recommendedGroupId ||
-          session.paceGroups[0]?.id) ?? null;
+        selectedGroupId ||
+        session.recommendedGroupId ||
+        session.paceGroups[0]?.id ||
+        null;
       await requestSessionAccess(client, session.id, groupId);
       showToast("Demande envoyée. Le responsable du club sera notifié.", "success");
     } catch (error) {
