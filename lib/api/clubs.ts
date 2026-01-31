@@ -141,33 +141,15 @@ export async function getClubDetail(
   return normalizeClubDetail(payload);
 }
 
-/** Resolve club by slug (human-readable). Backend must expose GET /api/v1/clubs/by-slug/:slug */
-export async function getClubBySlug(
-  client: ApiClient,
-  slug: string,
-): Promise<Club | null> {
-  const normalized = slug.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-  if (!normalized) return null;
-  try {
-    const club = await client.request<Club>(
-      `/api/v1/clubs/by-slug/${encodeURIComponent(normalized)}`,
-      { method: "GET" },
-    );
-    return club ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/** Request to join a club by slug (calls getClubBySlug then requestClubJoin). */
+/** Request to join a club by name or slug (backend resolves the input). */
 export async function requestClubJoinBySlug(
   client: ApiClient,
   slug: string,
   input: ClubRequestInput = {},
 ): Promise<ClubRequestResult> {
-  const club = await getClubBySlug(client, slug);
-  if (!club) throw new Error("Club introuvable. Vérifie le nom ou le slug.");
-  return requestClubJoin(client, club.id, input);
+  const raw = slug.trim();
+  if (!raw) throw new Error("Club introuvable.");
+  return requestClubJoin(client, raw, input);
 }
 
 export async function approveClubMember(

@@ -22,10 +22,36 @@ export async function POST(
         400,
       );
     }
-    const clubId = parsed.data.id;
+    const rawId = parsed.data.id.trim();
 
-    const club = await prisma.club.findUnique({ where: { id: clubId } });
-    if (!club) return jsonError("Club not found", "NOT_FOUND", 404);
+    let club = await prisma.club.findUnique({ where: { id: rawId } });
+    if (!club) {
+      const normalized = rawId.toLowerCase();
+      const matches = await prisma.club.findMany({
+        where: {
+          OR: [
+            { slug: normalized },
+            { name: { equals: rawId, mode: "insensitive" } },
+            { name: { contains: rawId, mode: "insensitive" } },
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+        take: 2,
+      });
+      if (matches.length === 0) {
+        return jsonError("Club not found", "NOT_FOUND", 404);
+      }
+      if (matches.length > 1) {
+        return jsonError(
+          "Plusieurs clubs trouvés. Utilise le code.",
+          "AMBIGUOUS",
+          409,
+        );
+      }
+      club = matches[0];
+    }
+
+    const clubId = club.id;
 
     const existing = await prisma.clubMembership.findUnique({
       where: { userId_clubId: { userId, clubId } },

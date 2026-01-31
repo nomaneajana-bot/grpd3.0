@@ -106,7 +106,7 @@ export default function ClubScreen() {
 
   const handleRequestJoin = async () => {
     if (!clubSlug.trim()) {
-      showToast("Saisis le nom du club ou son slug.", "error");
+      showToast("Saisis le nom du club.", "error");
       return;
     }
     setIsSubmitting(true);
@@ -311,18 +311,18 @@ export default function ClubScreen() {
         <Card style={styles.card}>
           <Text style={styles.cardLabel}>DEMANDER À REJOINDRE</Text>
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Nom du club ou slug</Text>
+            <Text style={styles.fieldLabel}>Nom du club</Text>
             <TextInput
               style={styles.textInput}
               value={clubSlug}
               onChangeText={setClubSlug}
-              placeholder="Ex: jaime-courir"
+              placeholder="Ex: Jaime courir"
               placeholderTextColor="#666"
               autoCapitalize="none"
               editable={!isInClub}
             />
             <Text style={styles.helperText}>
-              Si tu n'as pas de code, entre le nom du club (ex: jaime-courir).
+              Si tu n'as pas de code, entre le nom du club.
             </Text>
           </View>
           <View style={styles.fieldRow}>
