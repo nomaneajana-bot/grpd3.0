@@ -214,14 +214,14 @@ async function upsertMembership(params: {
     (m) => m.userId === params.userId && m.clubId === params.clubId,
   );
 
-  const next: ClubMembership = existing
+  const next = (existing
     ? {
         ...existing,
         status: params.status,
-        displayName: params.displayName ?? existing.displayName,
+        displayName: params.displayName ?? existing.displayName ?? null,
         sharePrs: params.sharePrs ?? existing.sharePrs ?? true,
         prSummary:
-          params.prSummary !== undefined ? params.prSummary : existing.prSummary,
+          params.prSummary !== undefined ? params.prSummary : existing.prSummary ?? null,
       }
     : {
         id: randomId('membership'),
@@ -229,11 +229,11 @@ async function upsertMembership(params: {
         userId: params.userId,
         role: params.role ?? 'member',
         status: params.status,
-        displayName: params.displayName,
+        displayName: params.displayName ?? null,
         sharePrs: params.sharePrs ?? true,
         prSummary: params.prSummary ?? null,
         createdAt: new Date().toISOString(),
-      };
+      }) as ClubMembership;
 
   memberships[next.id] = next;
   await writeMemberships(memberships);

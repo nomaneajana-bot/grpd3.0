@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import type { TextStyle, ViewStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
 import { Card } from '../../components/ui/Card';
@@ -378,7 +379,44 @@ export default function RunConfirmScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+type ConfirmStyles = {
+  container: ViewStyle;
+  scrollView: ViewStyle;
+  scrollContent: ViewStyle;
+  loadingContainer: ViewStyle;
+  loadingText: TextStyle;
+  successCard: ViewStyle;
+  successIcon: TextStyle;
+  successTitle: TextStyle;
+  successSubtitle: TextStyle;
+  errorCard: ViewStyle;
+  errorText: TextStyle;
+  retryButton: ViewStyle;
+  retryButtonText: TextStyle;
+  runCard: ViewStyle;
+  runHeader: ViewStyle;
+  runTitle: TextStyle;
+  runDetails: ViewStyle;
+  detailRow: ViewStyle;
+  detailLabel: TextStyle;
+  detailValue: TextStyle;
+  participantsCard: ViewStyle;
+  participantsTitle: TextStyle;
+  participantRow: ViewStyle;
+  participantName: TextStyle;
+  participantPace: TextStyle;
+  emptyParticipantsCard: ViewStyle;
+  emptyParticipantsText: TextStyle;
+  actions: ViewStyle;
+  actionButton: ViewStyle;
+  joinButton: ViewStyle;
+  leaveButton: ViewStyle;
+  backButton: ViewStyle;
+  actionButtonText: TextStyle;
+  backButtonText: TextStyle;
+};
+
+const styles = StyleSheet.create<ConfirmStyles>({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
@@ -415,7 +453,7 @@ const styles = StyleSheet.create({
   successTitle: {
     color: colors.text.primary,
     fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.bold as const,
+    fontWeight: typography.weights.bold as TextStyle['fontWeight'],
     marginBottom: spacing.xs,
   },
   successSubtitle: {
@@ -440,7 +478,7 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: colors.text.accent,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle['fontWeight'],
   },
   runCard: {
     marginBottom: spacing.md,
@@ -454,7 +492,7 @@ const styles = StyleSheet.create({
   runTitle: {
     color: colors.text.primary,
     fontSize: typography.sizes['2xl'],
-    fontWeight: typography.weights.bold as const,
+    fontWeight: typography.weights.bold as TextStyle['fontWeight'],
     textTransform: 'uppercase',
   },
   runDetails: {
@@ -473,7 +511,7 @@ const styles = StyleSheet.create({
   detailValue: {
     color: colors.text.primary,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.medium as const,
+    fontWeight: typography.weights.medium as TextStyle['fontWeight'],
     flex: 2,
     textAlign: 'right',
   },
@@ -483,7 +521,7 @@ const styles = StyleSheet.create({
   participantsTitle: {
     color: colors.text.primary,
     fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold as const,
+    fontWeight: typography.weights.bold as TextStyle['fontWeight'],
     marginBottom: spacing.md,
   },
   participantRow: {
@@ -538,7 +576,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: colors.text.primary,
     fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle['fontWeight'],
   },
   backButtonText: {
     color: colors.text.secondary,

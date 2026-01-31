@@ -2,6 +2,7 @@
 
 import React from "react";
 import { StyleSheet, Text, View, ViewStyle } from "react-native";
+import type { TextStyle } from "react-native";
 import { colors, spacing, typography } from "../../constants/ui";
 
 type SectionHeaderProps = {
@@ -20,14 +21,21 @@ export function SectionHeader({ title, subtitle, style }: SectionHeaderProps) {
   );
 }
 
-const styles = StyleSheet.create({
+type SectionHeaderStyles = {
+  container: ViewStyle;
+  title: TextStyle;
+  subtitle: TextStyle;
+  divider: ViewStyle;
+};
+
+const styles = StyleSheet.create<SectionHeaderStyles>({
   container: {
     marginBottom: spacing.md,
   },
   title: {
     color: colors.text.secondary,
     fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: spacing.sm,

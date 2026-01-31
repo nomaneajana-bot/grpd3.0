@@ -57,7 +57,7 @@ describe("sessionLogic", () => {
     });
 
     it("should not match when type filter does not match", () => {
-      expect(matchesTypeFilter(mockSession, "series")).toBe(false);
+      expect(matchesTypeFilter(mockSession, "series" as Parameters<typeof matchesTypeFilter>[1])).toBe(false);
     });
 
     it("should match when filter is null/undefined", () => {

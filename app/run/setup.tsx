@@ -14,6 +14,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import type { TextStyle, ViewStyle } from "react-native";
 
 import { Card } from "../../components/ui/Card";
 import { borderRadius, colors, spacing, typography } from "../../constants/ui";
@@ -24,7 +25,7 @@ import { RUN_TYPE_OPTIONS, type RunTypeId } from "../../lib/runTypes";
 import type { RunCreateInput, RunMatchResult } from "../../types/api";
 
 export default function RunSetupScreen() {
-  const [runType, setRunType] = useState<RunTypeId>("footing");
+  const [runType, setRunType] = useState<RunTypeId>("easy_run");
   const [distanceKm, setDistanceKm] = useState("");
   const [paceMin, setPaceMin] = useState("5");
   const [paceSec, setPaceSec] = useState("30");
@@ -250,24 +251,21 @@ export default function RunSetupScreen() {
         return min ?? max ?? null;
       };
 
-      if (
-        runType === "footing" ||
-        runType === "footing_relachement" ||
-        runType === "footing_simple"
-      ) {
+      const rt = runType as string;
+      if (rt === "footing" || rt === "footing_relachement" || rt === "footing_simple") {
         addSuggestion("Facile", midpoint(easyMin, easyMax));
         addSuggestion("Endurance", midpoint(tempoMin, tempoMax));
       } else if (runType === "progressif") {
         addSuggestion("Début", midpoint(easyMin, easyMax));
         addSuggestion("Tempo", midpoint(tempoMin, tempoMax));
         addSuggestion("Seuil", midpoint(thresholdMin, thresholdMax));
-      } else if (runType === "series") {
+      } else if (rt === "series") {
         addSuggestion("Intervalles", midpoint(intervalsMin, intervalsMax));
         addSuggestion("Seuil", midpoint(thresholdMin, thresholdMax));
       } else if (runType === "fartlek") {
         addSuggestion("Modéré", midpoint(tempoMin, tempoMax));
         addSuggestion("Rapide", midpoint(intervalsMin, intervalsMax));
-      } else if (runType === "course") {
+      } else if (rt === "course") {
         addSuggestion("Allure course", midpoint(thresholdMin, thresholdMax));
         addSuggestion("Tempo", midpoint(tempoMin, tempoMax));
       }
@@ -660,7 +658,60 @@ export default function RunSetupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+type SetupStyles = {
+  container: ViewStyle;
+  scrollView: ViewStyle;
+  scrollContent: ViewStyle;
+  header: ViewStyle;
+  title: TextStyle;
+  subtitle: TextStyle;
+  errorCard: ViewStyle;
+  errorText: TextStyle;
+  formCard: ViewStyle;
+  field: ViewStyle;
+  label: TextStyle;
+  input: TextStyle;
+  pickerButton: ViewStyle;
+  pickerButtonText: TextStyle;
+  pickerArrow: TextStyle;
+  paceRow: ViewStyle;
+  paceInput: TextStyle;
+  paceSeparator: TextStyle;
+  paceSuggestions: ViewStyle;
+  paceChip: ViewStyle;
+  paceChipLabel: TextStyle;
+  paceChipValue: TextStyle;
+  locationButton: ViewStyle;
+  locationButtonDisabled: ViewStyle;
+  locationButtonText: TextStyle;
+  locationInfo: ViewStyle;
+  locationInfoText: TextStyle;
+  locationSuggestions: ViewStyle;
+  locationChip: ViewStyle;
+  locationChipText: TextStyle;
+  submitButton: ViewStyle;
+  submitButtonDisabled: ViewStyle;
+  submitButtonText: TextStyle;
+  modalOverlay: ViewStyle;
+  modalContent: ViewStyle;
+  modalTitle: TextStyle;
+  modalOption: ViewStyle;
+  modalOptionSelected: ViewStyle;
+  modalOptionText: TextStyle;
+  modalOptionTextSelected: TextStyle;
+  modalCloseButton: ViewStyle;
+  modalCloseButtonText: TextStyle;
+  pickerModalOverlay: ViewStyle;
+  pickerModalContent: ViewStyle;
+  pickerModalHeader: ViewStyle;
+  pickerModalCancel: ViewStyle;
+  pickerModalCancelText: TextStyle;
+  pickerModalTitle: TextStyle;
+  pickerModalDone: ViewStyle;
+  pickerModalDoneText: TextStyle;
+};
+
+const styles = StyleSheet.create<SetupStyles>({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
@@ -679,7 +730,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text.primary,
     fontSize: typography.sizes["2xl"],
-    fontWeight: typography.weights.bold as const,
+    fontWeight: typography.weights.bold as TextStyle["fontWeight"],
     marginBottom: spacing.sm,
   },
   subtitle: {
@@ -704,7 +755,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.text.secondary,
     fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
     marginBottom: spacing.sm,
     textTransform: "uppercase",
   },
@@ -772,7 +823,7 @@ const styles = StyleSheet.create({
   paceChipValue: {
     color: colors.text.primary,
     fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
   locationButton: {
     backgroundColor: colors.accent.primary + "20",
@@ -791,7 +842,7 @@ const styles = StyleSheet.create({
   locationButtonText: {
     color: colors.text.accent,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
   locationInfo: {
     marginTop: spacing.sm,
@@ -834,7 +885,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: colors.text.primary,
     fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
   modalOverlay: {
     position: "absolute",
@@ -856,7 +907,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: colors.text.primary,
     fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.bold as const,
+    fontWeight: typography.weights.bold as TextStyle["fontWeight"],
     marginBottom: spacing.md,
   },
   modalOption: {
@@ -874,7 +925,7 @@ const styles = StyleSheet.create({
   },
   modalOptionTextSelected: {
     color: colors.text.accent,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
   modalCloseButton: {
     marginTop: spacing.md,
@@ -884,7 +935,7 @@ const styles = StyleSheet.create({
   modalCloseButtonText: {
     color: colors.text.accent,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
   pickerModalOverlay: {
     position: "absolute",
@@ -920,7 +971,7 @@ const styles = StyleSheet.create({
   pickerModalTitle: {
     color: colors.text.primary,
     fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
   pickerModalDone: {
     paddingVertical: spacing.sm,
@@ -928,6 +979,6 @@ const styles = StyleSheet.create({
   pickerModalDoneText: {
     color: colors.text.accent,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
 });

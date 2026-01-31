@@ -1,7 +1,10 @@
 // Helper functions for workout display and formatting
 
 import type { ReferencePaces } from "./profileStore";
-import { getRunTypePillLabel as getRunTypePillLabelFromRunTypes } from "./runTypes";
+import {
+  getRunTypePillLabel as getRunTypePillLabelFromRunTypes,
+  type RunTypeId as RunTypeIdFromRunTypes,
+} from "./runTypes";
 import type { RunTypeId, WorkoutEntity } from "./workoutStore";
 import type { WorkoutBlock } from "./workoutTypes";
 
@@ -79,10 +82,10 @@ export function getWorkoutSummary(workout: WorkoutEntity): string {
 
   // Interval types (400m, 800m, 1000m, 1600m)
   if (
-    runType === "interval_400m" ||
-    runType === "interval_800m" ||
-    runType === "interval_1000m" ||
-    runType === "interval_1600m"
+    (runType as string) === "interval_400m" ||
+    (runType as string) === "interval_800m" ||
+    (runType as string) === "interval_1000m" ||
+    (runType as string) === "interval_1600m"
   ) {
     if (mainBlock && mainSteps.length > 0) {
       const intervalStep = mainSteps.find((s) => s.kind === "interval");
@@ -107,7 +110,7 @@ export function getWorkoutSummary(workout: WorkoutEntity): string {
       interval_1000m: "Séries 1000m",
       interval_1600m: "Séries 1600m",
     };
-    return distanceMap[runType] || "Séries";
+    return distanceMap[runType as string] || "Séries";
   }
 
   if (runType === "progressif") {
@@ -123,9 +126,9 @@ export function getWorkoutSummary(workout: WorkoutEntity): string {
   }
 
   if (
-    runType === "easy_run" ||
-    runType === "recovery_run" ||
-    runType === "long_run"
+    (runType as string) === "easy_run" ||
+    (runType as string) === "recovery_run" ||
+    (runType as string) === "long_run"
   ) {
     const step = mainSteps[0];
     if (step) {
@@ -156,18 +159,18 @@ export function getWorkoutSummary(workout: WorkoutEntity): string {
       recovery_run: "Récupération",
       long_run: "Sortie longue",
     };
-    return labelMap[runType] || "Footing facile";
+    return labelMap[runType as string] || "Footing facile";
   }
 
-  if (runType === "tempo_run" || runType === "threshold_run") {
-    return runType === "tempo_run" ? "Tempo" : "Seuil";
+  if ((runType as string) === "tempo_run" || (runType as string) === "threshold_run") {
+    return (runType as string) === "tempo_run" ? "Tempo" : "Seuil";
   }
 
-  if (runType === "hill_repeats") {
+  if ((runType as string) === "hill_repeats") {
     return "Côtes";
   }
 
-  if (runType === "track_workout") {
+  if ((runType as string) === "track_workout") {
     return "Piste";
   }
 
@@ -196,7 +199,7 @@ export function formatLastUsed(lastUsedAt?: number): string {
 // Get run type pill label (uppercase)
 // Re-export from runTypes.ts for backward compatibility
 export function getRunTypePillLabel(runType: RunTypeId): string {
-  return getRunTypePillLabelFromRunTypes(runType);
+  return getRunTypePillLabelFromRunTypes(runType as RunTypeIdFromRunTypes);
 }
 
 // Compute base workout pace in seconds per km
@@ -210,11 +213,11 @@ export function getWorkoutBasePaceSeconds(
 
   // Easy Run, Recovery Run, Long Run, Casual Run, Discovery Run: use first step's pace or reference easyMin
   if (
-    runType === "easy_run" ||
-    runType === "recovery_run" ||
-    runType === "long_run" ||
-    runType === "casual_run" ||
-    runType === "discovery_run"
+    (runType as string) === "easy_run" ||
+    (runType as string) === "recovery_run" ||
+    (runType as string) === "long_run" ||
+    (runType as string) === "casual_run" ||
+    (runType as string) === "discovery_run"
   ) {
     const firstStepPace = mainSteps[0]?.targetPaceSecondsPerKm;
     if (firstStepPace !== undefined && firstStepPace !== null) {
@@ -246,7 +249,7 @@ export function getWorkoutBasePaceSeconds(
   }
 
   // Walking: use first step's pace or a very slow default (8:00/km = 480s/km)
-  if (runType === "walking") {
+  if ((runType as string) === "walking") {
     const firstStepPace = mainSteps[0]?.targetPaceSecondsPerKm;
     if (firstStepPace !== undefined && firstStepPace !== null) {
       return firstStepPace;
@@ -284,12 +287,13 @@ export function getWorkoutIntervalDefaults(workout: WorkoutEntity): {
   const repeatCount = mainBlock?.repeatCount ?? 1;
 
   // Only for fartlek and series
+  const rt = workout.runType as string;
   if (
     workout.runType !== "fartlek" &&
-    workout.runType !== "interval_400m" &&
-    workout.runType !== "interval_800m" &&
-    workout.runType !== "interval_1000m" &&
-    workout.runType !== "interval_1600m"
+    rt !== "interval_400m" &&
+    rt !== "interval_800m" &&
+    rt !== "interval_1000m" &&
+    rt !== "interval_1600m"
   ) {
     return {
       reps: null,

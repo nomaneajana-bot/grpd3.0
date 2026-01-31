@@ -10,7 +10,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { Workout } from './workoutTypes';
 import { validateWorkoutEntity } from './storageSchemas';
-import { getRunTypeLabel as getRunTypeLabelFromModule } from './runTypes';
+import {
+  getRunTypeLabel as getRunTypeLabelFromModule,
+  type RunTypeId as RunTypeIdFromRunTypes,
+} from './runTypes';
 
 // Run type IDs matching the session filter types
 export type RunTypeId =
@@ -133,6 +136,6 @@ export async function markWorkoutUsed(workoutId: string): Promise<void> {
 // Get human-readable label for a run type
 // Re-export from runTypes.ts for backward compatibility
 export function getRunTypeLabel(runType: RunTypeId): string {
-  return getRunTypeLabelFromModule(runType);
+  return getRunTypeLabelFromModule(runType as RunTypeIdFromRunTypes);
 }
 

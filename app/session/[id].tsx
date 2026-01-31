@@ -154,6 +154,32 @@ export default function SessionScreen() {
     loadMemberships();
   }, []);
 
+  // Derived from session, memberships, profile (must be before useEffect that uses them)
+  const normalizedHost = session?.hostGroupName
+    ? session.hostGroupName.toLowerCase().trim()
+    : null;
+  const matchingMembership = session?.clubId
+    ? memberships.find((m) => m.clubId === session.clubId)
+    : normalizedHost
+      ? memberships.find((membership) => {
+          const clubName = membership.club?.name?.toLowerCase().trim();
+          return clubName === normalizedHost;
+        })
+      : null;
+  const membershipStatus = matchingMembership?.status ?? null;
+  const profileClubMatch =
+    normalizedHost &&
+    profile?.clubName?.toLowerCase().trim() === normalizedHost;
+  const isApprovedMember =
+    membershipStatus === "approved" ||
+    (membershipStatus === null && Boolean(profileClubMatch));
+  const isPendingMember = membershipStatus === "pending";
+  const isCoachOrAdmin =
+    membershipStatus === "approved" &&
+    (matchingMembership?.role === "coach" ||
+      matchingMembership?.role === "admin");
+  const clubId = matchingMembership?.clubId ?? null;
+
   useEffect(() => {
     const loadRoster = async () => {
       if (!isCoachOrAdmin || !clubId) {
@@ -193,30 +219,6 @@ export default function SessionScreen() {
   const pulseAnim = useRef(new Animated.Value(0)).current;
   // Delete confirmation modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const normalizedHost = session?.hostGroupName
-    ? session.hostGroupName.toLowerCase().trim()
-    : null;
-  const matchingMembership = session?.clubId
-    ? memberships.find((m) => m.clubId === session.clubId)
-    : normalizedHost
-      ? memberships.find((membership) => {
-          const clubName = membership.club?.name?.toLowerCase().trim();
-          return clubName === normalizedHost;
-        })
-      : null;
-  const membershipStatus = matchingMembership?.status ?? null;
-  const profileClubMatch =
-    normalizedHost &&
-    profile?.clubName?.toLowerCase().trim() === normalizedHost;
-  const isApprovedMember =
-    membershipStatus === "approved" ||
-    (membershipStatus === null && Boolean(profileClubMatch));
-  const isPendingMember = membershipStatus === "pending";
-  const isCoachOrAdmin =
-    membershipStatus === "approved" &&
-    (matchingMembership?.role === "coach" ||
-      matchingMembership?.role === "admin");
-  const clubId = matchingMembership?.clubId ?? null;
   const canJoin = session
     ? session.visibility !== "members" || Boolean(isApprovedMember)
     : false;
@@ -369,10 +371,9 @@ export default function SessionScreen() {
     try {
       const client = createApiClient();
       const groupId =
-        selectedGroupId ||
-        session.recommendedGroupId ||
-        session.paceGroups[0]?.id ??
-        null;
+        (selectedGroupId ||
+          session.recommendedGroupId ||
+          session.paceGroups[0]?.id) ?? null;
       await requestSessionAccess(client, session.id, groupId);
       showToast("Demande envoyée. Le responsable du club sera notifié.", "success");
     } catch (error) {

@@ -80,6 +80,10 @@ export default function SettingsScreen() {
     setIsSaving(true);
     try {
       const existing = await getRunnerProfile();
+      if (!existing) {
+        Alert.alert("Erreur", "Profil introuvable");
+        return;
+      }
       const trimmedClubName = clubName.trim();
       const updated: RunnerProfile = {
         ...existing,

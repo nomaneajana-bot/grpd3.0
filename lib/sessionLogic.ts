@@ -59,7 +59,10 @@ export function matchesDateFilter(
       sessionDate.setHours(0, 0, 0, 0);
       return sessionDate >= startDate && sessionDate <= endDate;
     }
-    return isDateInRange(session.dateISO, dateFilter);
+    return isDateInRange(
+      session.dateISO,
+      dateFilter as "today" | "thisWeek" | "thisMonth",
+    );
   }
 
   // Legacy: if no dateISO, assume it matches (will be migrated on next load)

@@ -6,10 +6,10 @@ import type { SessionData } from '../sessionData';
 
 describe('sessionBuilder', () => {
   const mockGroupConfigs: SessionGroupConfig[] = [
-    { id: 'A', isActive: true, paceSecondsPerKm: 255, reps: null, effortDurationSeconds: null, recoveryDurationSeconds: null },
-    { id: 'B', isActive: true, paceSecondsPerKm: 285, reps: null, effortDurationSeconds: null, recoveryDurationSeconds: null },
-    { id: 'C', isActive: false, paceSecondsPerKm: null, reps: null, effortDurationSeconds: null, recoveryDurationSeconds: null },
-    { id: 'D', isActive: false, paceSecondsPerKm: null, reps: null, effortDurationSeconds: null, recoveryDurationSeconds: null },
+    { id: 'A', isActive: true, paceSecondsPerKm: 255, reps: null, effortDurationSeconds: null, effortDistanceKm: null, recoveryDurationSeconds: null },
+    { id: 'B', isActive: true, paceSecondsPerKm: 285, reps: null, effortDurationSeconds: null, effortDistanceKm: null, recoveryDurationSeconds: null },
+    { id: 'C', isActive: false, paceSecondsPerKm: null, reps: null, effortDurationSeconds: null, effortDistanceKm: null, recoveryDurationSeconds: null },
+    { id: 'D', isActive: false, paceSecondsPerKm: null, reps: null, effortDurationSeconds: null, effortDistanceKm: null, recoveryDurationSeconds: null },
   ];
 
   it('should create session with correct structure', () => {

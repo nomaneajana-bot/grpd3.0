@@ -1380,6 +1380,7 @@ export default function CreateSessionScreen() {
   // Spots are loaded from persistent storage
   const [spots, setSpots] = useState<string[]>(["Marina", "Parc", "Piste"]);
   const [spot, setSpot] = useState<string>("Marina");
+  const [hasInitializedAudience, setHasInitializedAudience] = useState(false);
 
   // Load spots from storage on mount
   useEffect(() => {
@@ -1530,7 +1531,6 @@ export default function CreateSessionScreen() {
   const [sessionVisibility, setSessionVisibility] =
     useState<SessionVisibility>("public");
   const [hostGroupName, setHostGroupName] = useState<string | null>(null);
-  const [hasInitializedAudience, setHasInitializedAudience] = useState(false);
 
   // Format time as HH:MM
   const timeLabel = `${selectedHour.toString().padStart(2, "0")}:${selectedMinute.toString().padStart(2, "0")}`;
@@ -1701,10 +1701,10 @@ export default function CreateSessionScreen() {
                     : g.effortDurationSeconds,
                 effortDistanceKm:
                   (workout.runType === "fartlek" ||
-                    workout.runType === "interval_400m" ||
-                    workout.runType === "interval_800m" ||
-                    workout.runType === "interval_1000m" ||
-                    workout.runType === "interval_1600m") &&
+                    (workout.runType as string) === "interval_400m" ||
+                    (workout.runType as string) === "interval_800m" ||
+                    (workout.runType as string) === "interval_1000m" ||
+                    (workout.runType as string) === "interval_1600m") &&
                   workoutChanged &&
                   !hasOverrideValues
                     ? intervalDefaults.effortDistanceKm
@@ -1823,6 +1823,7 @@ export default function CreateSessionScreen() {
                 paceSecondsPerKm: override.paceSecondsPerKm,
                 reps: override.reps ?? null,
                 effortDurationSeconds: override.effortDurationSeconds ?? null,
+                effortDistanceKm: override.effortDistanceKm ?? null,
                 recoveryDurationSeconds:
                   override.recoveryDurationSeconds ?? null,
               };
@@ -1835,8 +1836,9 @@ export default function CreateSessionScreen() {
               id: groupId as "A" | "B" | "C" | "D",
               isActive: paceGroup !== undefined,
               paceSecondsPerKm: paceGroup?.avgPaceSecondsPerKm ?? null,
-              reps: null, // These will be loaded from workout if available
+              reps: null,
               effortDurationSeconds: null,
+              effortDistanceKm: null,
               recoveryDurationSeconds: null,
             };
           },

@@ -114,7 +114,7 @@ export default function ClubAdminScreen() {
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push("/club/roster");
+                router.push("/club/roster" as import("expo-router").Href);
               }}
               style={({ pressed }) => [
                 styles.rosterButton,

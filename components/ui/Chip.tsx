@@ -42,7 +42,20 @@ export function Chip({
   );
 }
 
-const styles = StyleSheet.create({
+type ChipStyles = {
+  chip: ViewStyle;
+  chipDefault: ViewStyle;
+  chipActive: ViewStyle;
+  chipSuccess: ViewStyle;
+  chipCustom: ViewStyle;
+  chipText: TextStyle;
+  chipTextDefault: TextStyle;
+  chipTextActive: TextStyle;
+  chipTextSuccess: TextStyle;
+  chipTextCustom: TextStyle;
+};
+
+const styles = StyleSheet.create<ChipStyles>({
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -67,7 +80,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
     textTransform: "uppercase",
   },
   chipTextDefault: {

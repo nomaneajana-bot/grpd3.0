@@ -31,6 +31,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import type { TextStyle, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { borderRadius, colors, spacing, typography } from "../../constants/ui";
@@ -1751,7 +1752,132 @@ export default function UpdateTestsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+// Explicit style types so View gets ViewStyle and Text gets TextStyle
+type UpdateTestsStyles = {
+  safeArea: ViewStyle;
+  header: ViewStyle;
+  backRow: ViewStyle;
+  backIcon: TextStyle;
+  backLabel: TextStyle;
+  screenTitle: TextStyle;
+  subtitle: TextStyle;
+  scroll: ViewStyle;
+  content: ViewStyle;
+  card: ViewStyle;
+  testRow: ViewStyle;
+  testRowPressed: ViewStyle;
+  testRowLeft: ViewStyle;
+  testRowRight: ViewStyle;
+  testName: TextStyle;
+  testPace: TextStyle;
+  testDate: TextStyle;
+  deleteButton: ViewStyle;
+  deleteButtonText: TextStyle;
+  testDivider: ViewStyle;
+  actionButtonsContainer: ViewStyle;
+  addButton: ViewStyle;
+  addButtonPressed: ViewStyle;
+  addButtonText: TextStyle;
+  saveAllButton: ViewStyle;
+  saveAllButtonDisabled: ViewStyle;
+  saveAllButtonPressed: ViewStyle;
+  saveAllButtonText: TextStyle;
+  saveAllButtonTextDisabled: TextStyle;
+  loadingState: ViewStyle;
+  loadingText: TextStyle;
+  emptyState: ViewStyle;
+  emptyStateIcon: TextStyle;
+  emptyStateText: TextStyle;
+  emptyStateSubtext: TextStyle;
+  modalBackdrop: ViewStyle;
+  modalCard: ViewStyle;
+  modalHeader: ViewStyle;
+  modalTitle: TextStyle;
+  modalCloseButton: TextStyle;
+  modalScroll: ViewStyle;
+  modalScrollContent: ViewStyle;
+  section: ViewStyle;
+  sectionLabel: TextStyle;
+  helperText: TextStyle;
+  errorText: TextStyle;
+  inputError: TextStyle;
+  modeRow: ViewStyle;
+  modePill: ViewStyle;
+  modePillSelected: ViewStyle;
+  modePillPressed: ViewStyle;
+  modePillText: TextStyle;
+  modePillTextSelected: TextStyle;
+  durationRow: ViewStyle;
+  durationInputGroup: ViewStyle;
+  durationInput: TextStyle;
+  durationLabel: TextStyle;
+  dateRow: ViewStyle;
+  dateInput: TextStyle;
+  todayChip: ViewStyle;
+  todayChipText: TextStyle;
+  dateShortcutsRow: ViewStyle;
+  dateShortcut: ViewStyle;
+  dateShortcutText: TextStyle;
+  readOnlyRow: ViewStyle;
+  readOnlyValue: TextStyle;
+  paceValue: TextStyle;
+  valueButton: ViewStyle;
+  valueButtonText: TextStyle;
+  distanceRow: ViewStyle;
+  distanceInput: TextStyle;
+  unitRow: ViewStyle;
+  unitPill: ViewStyle;
+  unitPillSelected: ViewStyle;
+  unitPillPressed: ViewStyle;
+  unitPillText: TextStyle;
+  unitPillTextSelected: TextStyle;
+  dateInputRow: ViewStyle;
+  dateTextInput: TextStyle;
+  dateButton: ViewStyle;
+  dateButtonText: TextStyle;
+  datePickerButton: ViewStyle;
+  datePickerButtonText: TextStyle;
+  sectionLabelRow: ViewStyle;
+  calculatedBadge: TextStyle;
+  paceInputRow: ViewStyle;
+  paceInput: TextStyle;
+  calculatedInput: TextStyle;
+  paceUnit: TextStyle;
+  divider: ViewStyle;
+  modalActions: ViewStyle;
+  cancelButton: ViewStyle;
+  cancelButtonText: TextStyle;
+  saveButton: ViewStyle;
+  saveButtonDisabled: ViewStyle;
+  saveButtonText: TextStyle;
+  templateRow: ViewStyle;
+  templateRowPressed: ViewStyle;
+  templateRowCustom: ViewStyle;
+  templateRowText: TextStyle;
+  templateRowTextCustom: TextStyle;
+  templateSectionLabel: TextStyle;
+  manageModelsButton: ViewStyle;
+  manageModelsButtonPressed: ViewStyle;
+  manageModelsButtonText: TextStyle;
+  modalHeaderTypeSelection: ViewStyle;
+  modalSubtitle: TextStyle;
+  pillRow: ViewStyle;
+  bigPill: ViewStyle;
+  bigPillPressed: ViewStyle;
+  bigPillIcon: TextStyle;
+  bigPillText: TextStyle;
+  bigPillDescription: TextStyle;
+  deleteModalCard: ViewStyle;
+  deleteModalTitle: TextStyle;
+  deleteModalSubtitle: TextStyle;
+  deleteModalActions: ViewStyle;
+  deleteCancelButton: ViewStyle;
+  deleteCancelText: TextStyle;
+  deleteConfirmButton: ViewStyle;
+  deleteConfirmText: TextStyle;
+};
+
+const styles = StyleSheet.create<UpdateTestsStyles>({
   safeArea: {
     flex: 1,
     backgroundColor: "#0B0B0B",
@@ -1960,13 +2086,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: colors.text.primary,
     fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.bold as const,
+    fontWeight: typography.weights.bold as TextStyle["fontWeight"],
     flex: 1,
   },
   modalCloseButton: {
     color: colors.text.accent,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.medium as const,
+    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
   },
   modalScroll: {
     maxHeight: 500,
@@ -2237,7 +2363,7 @@ const styles = StyleSheet.create({
   calculatedBadge: {
     color: colors.text.accent,
     fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
     backgroundColor: colors.pill.active,
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
@@ -2267,7 +2393,7 @@ const styles = StyleSheet.create({
   paceUnit: {
     color: colors.text.secondary,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.medium as const,
+    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
   },
   divider: {
     height: StyleSheet.hairlineWidth,
@@ -2400,7 +2526,7 @@ const styles = StyleSheet.create({
   bigPillText: {
     color: colors.text.primary,
     fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold as const,
+    fontWeight: typography.weights.bold as TextStyle["fontWeight"],
     marginBottom: spacing.xs,
   },
   bigPillDescription: {

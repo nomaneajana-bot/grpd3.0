@@ -15,7 +15,7 @@ export function useAuthGate(): {
 
   useEffect(() => {
     let isMounted = true;
-    let timeoutId: NodeJS.Timeout | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     async function checkAuth() {
       try {

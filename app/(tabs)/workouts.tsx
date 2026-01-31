@@ -14,7 +14,10 @@ import {
 
 import { Chip } from "../../components/ui/Chip";
 import { borderRadius, colors } from "../../constants/ui";
-import { RUN_TYPE_OPTIONS } from "../../lib/runTypes";
+import {
+    RUN_TYPE_OPTIONS,
+    type RunTypeId as FilterRunTypeId,
+} from "../../lib/runTypes";
 import {
     formatDistanceKm,
     formatLastUsed,
@@ -212,7 +215,7 @@ const TEMPLATE_WORKOUTS: WorkoutEntity[] = [
     },
     createdAt: Date.now(),
     isCustom: false,
-    runType: "easy_run",
+    runType: "footing_simple",
   },
 ];
 
@@ -233,7 +236,7 @@ export default function WorkoutsScreen() {
   const [allWorkouts, setAllWorkouts] = useState<WorkoutEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRunType, setSelectedRunType] = useState<RunTypeId | null>(
+  const [selectedRunType, setSelectedRunType] = useState<FilterRunTypeId | null>(
     null,
   );
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -389,15 +392,17 @@ export default function WorkoutsScreen() {
     // Apply type filter
     if (selectedRunType) {
       // Handle 'footing' filter to include both 'footing' and 'footing_simple'
-      if (selectedRunType === "footing") {
+      if ((selectedRunType as string) === "footing") {
         filtered = filtered.filter(
           (w) =>
-            w.runType === "easy_run" ||
-            w.runType === "recovery_run" ||
-            w.runType === "long_run",
+            (w.runType as string) === "easy_run" ||
+            (w.runType as string) === "recovery_run" ||
+            (w.runType as string) === "long_run",
         );
       } else {
-        filtered = filtered.filter((w) => w.runType === selectedRunType);
+        filtered = filtered.filter(
+          (w) => (w.runType as string) === (selectedRunType as string),
+        );
       }
     }
 

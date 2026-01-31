@@ -16,6 +16,7 @@ import {
     TouchableWithoutFeedback,
     View,
 } from "react-native";
+import type { TextStyle, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
@@ -707,21 +708,21 @@ export default function WorkoutEditScreen() {
 
   // Run type options (using centralized label helper)
   const RUN_TYPE_OPTIONS: Array<{ id: RunTypeId; label: string }> = [
-    { id: "casual_run", label: getRunTypeLabel("casual_run") },
-    { id: "discovery_run", label: getRunTypeLabel("discovery_run") },
-    { id: "walking", label: getRunTypeLabel("walking") },
-    { id: "easy_run", label: getRunTypeLabel("easy_run") },
-    { id: "recovery_run", label: getRunTypeLabel("recovery_run") },
-    { id: "tempo_run", label: getRunTypeLabel("tempo_run") },
-    { id: "threshold_run", label: getRunTypeLabel("threshold_run") },
-    { id: "interval_400m", label: getRunTypeLabel("interval_400m") },
-    { id: "interval_800m", label: getRunTypeLabel("interval_800m") },
-    { id: "interval_1000m", label: getRunTypeLabel("interval_1000m") },
-    { id: "interval_1600m", label: getRunTypeLabel("interval_1600m") },
+    { id: "casual_run" as RunTypeId, label: getRunTypeLabel("casual_run" as RunTypeId) },
+    { id: "discovery_run" as RunTypeId, label: getRunTypeLabel("discovery_run" as RunTypeId) },
+    { id: "walking" as RunTypeId, label: getRunTypeLabel("walking" as RunTypeId) },
+    { id: "easy_run" as RunTypeId, label: getRunTypeLabel("easy_run" as RunTypeId) },
+    { id: "recovery_run" as RunTypeId, label: getRunTypeLabel("recovery_run" as RunTypeId) },
+    { id: "tempo_run" as RunTypeId, label: getRunTypeLabel("tempo_run" as RunTypeId) },
+    { id: "threshold_run" as RunTypeId, label: getRunTypeLabel("threshold_run" as RunTypeId) },
+    { id: "interval_400m" as RunTypeId, label: getRunTypeLabel("interval_400m" as RunTypeId) },
+    { id: "interval_800m" as RunTypeId, label: getRunTypeLabel("interval_800m" as RunTypeId) },
+    { id: "interval_1000m" as RunTypeId, label: getRunTypeLabel("interval_1000m" as RunTypeId) },
+    { id: "interval_1600m" as RunTypeId, label: getRunTypeLabel("interval_1600m" as RunTypeId) },
     { id: "fartlek", label: getRunTypeLabel("fartlek") },
-    { id: "long_run", label: getRunTypeLabel("long_run") },
-    { id: "hill_repeats", label: getRunTypeLabel("hill_repeats") },
-    { id: "track_workout", label: getRunTypeLabel("track_workout") },
+    { id: "long_run" as RunTypeId, label: getRunTypeLabel("long_run" as RunTypeId) },
+    { id: "hill_repeats" as RunTypeId, label: getRunTypeLabel("hill_repeats" as RunTypeId) },
+    { id: "track_workout" as RunTypeId, label: getRunTypeLabel("track_workout" as RunTypeId) },
     { id: "progressif", label: getRunTypeLabel("progressif") },
   ];
 
@@ -758,7 +759,7 @@ export default function WorkoutEditScreen() {
           );
 
           // Initialize run-type specific state from existing workout
-          if (cloned.runType === "progressif") {
+          if ((cloned.runType as string) === "progressif") {
             // Try to infer progressif params from main block steps
             const mainSteps = cloned.workout.main?.steps ?? [];
             if (mainSteps.length > 0 && mainSteps[0].distanceKm === 1) {
@@ -814,9 +815,9 @@ export default function WorkoutEditScreen() {
               setProgressifPaceFast("");
             }
           } else if (
-            cloned.runType === "easy_run" ||
-            cloned.runType === "recovery_run" ||
-            cloned.runType === "long_run"
+            (cloned.runType as string) === "easy_run" ||
+            (cloned.runType as string) === "recovery_run" ||
+            (cloned.runType as string) === "long_run"
           ) {
             // Try to infer footing params from main block
             const mainStep = cloned.workout.main?.steps?.[0];
@@ -850,10 +851,10 @@ export default function WorkoutEditScreen() {
               setFootingPace("");
             }
           } else if (
-            cloned.runType === "interval_400m" ||
-            cloned.runType === "interval_800m" ||
-            cloned.runType === "interval_1000m" ||
-            cloned.runType === "interval_1600m"
+            (cloned.runType as string) === "interval_400m" ||
+            (cloned.runType as string) === "interval_800m" ||
+            (cloned.runType as string) === "interval_1000m" ||
+            (cloned.runType as string) === "interval_1600m"
           ) {
             // Try to infer interval params from main block
             const intervalStep = cloned.workout.main?.steps?.find(
@@ -930,13 +931,13 @@ export default function WorkoutEditScreen() {
 
       const specializedRunTypes: RunTypeId[] = [
         "progressif",
-        "easy_run",
-        "recovery_run",
-        "long_run",
-        "interval_400m",
-        "interval_800m",
-        "interval_1000m",
-        "interval_1600m",
+        "easy_run" as RunTypeId,
+        "recovery_run" as RunTypeId,
+        "long_run" as RunTypeId,
+        "interval_400m" as RunTypeId,
+        "interval_800m" as RunTypeId,
+        "interval_1000m" as RunTypeId,
+        "interval_1600m" as RunTypeId,
       ];
       const isSwitchingToSpecialized = specializedRunTypes.includes(newRunType);
       const isSwitchingFromSpecialized = specializedRunTypes.includes(
@@ -944,7 +945,7 @@ export default function WorkoutEditScreen() {
       );
 
       // Clear specialized state when switching away from specialized runTypes
-      if (prev.runType === "progressif" && newRunType !== "progressif") {
+      if ((prev.runType as string) === "progressif" && (newRunType as string) !== "progressif") {
         setProgressifMode("ajustement");
         setProgressifDistanceKm("");
         setProgressifStartPace("");
@@ -953,12 +954,12 @@ export default function WorkoutEditScreen() {
         setProgressifMaxPace("");
       }
       if (
-        (prev.runType === "easy_run" ||
-          prev.runType === "recovery_run" ||
-          prev.runType === "long_run") &&
-        newRunType !== "easy_run" &&
-        newRunType !== "recovery_run" &&
-        newRunType !== "long_run"
+        ((prev.runType as string) === "easy_run" ||
+          (prev.runType as string) === "recovery_run" ||
+          (prev.runType as string) === "long_run") &&
+        (newRunType as string) !== "easy_run" &&
+        (newRunType as string) !== "recovery_run" &&
+        (newRunType as string) !== "long_run"
       ) {
         setFootingDistanceKm("");
         setFootingDistanceUnit("km");
@@ -966,14 +967,14 @@ export default function WorkoutEditScreen() {
         setFootingPace("");
       }
       if (
-        (prev.runType === "interval_400m" ||
-          prev.runType === "interval_800m" ||
-          prev.runType === "interval_1000m" ||
-          prev.runType === "interval_1600m") &&
-        newRunType !== "interval_400m" &&
-        newRunType !== "interval_800m" &&
-        newRunType !== "interval_1000m" &&
-        newRunType !== "interval_1600m"
+        ((prev.runType as string) === "interval_400m" ||
+          (prev.runType as string) === "interval_800m" ||
+          (prev.runType as string) === "interval_1000m" ||
+          (prev.runType as string) === "interval_1600m") &&
+        (newRunType as string) !== "interval_400m" &&
+        (newRunType as string) !== "interval_800m" &&
+        (newRunType as string) !== "interval_1000m" &&
+        (newRunType as string) !== "interval_1600m"
       ) {
         setIntervalPace("");
         setIntervalRecoveryMinutes("");
@@ -986,7 +987,7 @@ export default function WorkoutEditScreen() {
         isSwitchingToSpecialized &&
         prev.runType !== newRunType
       ) {
-        if (prev.runType === "progressif") {
+        if ((prev.runType as string) === "progressif") {
           setProgressifMode("ajustement");
           setProgressifDistanceKm("");
           setProgressifStartPace("");
@@ -995,9 +996,9 @@ export default function WorkoutEditScreen() {
           setProgressifMaxPace("");
         }
         if (
-          prev.runType === "easy_run" ||
-          prev.runType === "recovery_run" ||
-          prev.runType === "long_run"
+          (prev.runType as string) === "easy_run" ||
+          (prev.runType as string) === "recovery_run" ||
+          (prev.runType as string) === "long_run"
         ) {
           setFootingDistanceKm("");
           setFootingDistanceUnit("km");
@@ -1005,10 +1006,10 @@ export default function WorkoutEditScreen() {
           setFootingPace("");
         }
         if (
-          prev.runType === "interval_400m" ||
-          prev.runType === "interval_800m" ||
-          prev.runType === "interval_1000m" ||
-          prev.runType === "interval_1600m"
+          (prev.runType as string) === "interval_400m" ||
+          (prev.runType as string) === "interval_800m" ||
+          (prev.runType as string) === "interval_1000m" ||
+          (prev.runType as string) === "interval_1600m"
         ) {
           setIntervalPace("");
           setIntervalRecoveryMinutes("");
@@ -1286,25 +1287,25 @@ export default function WorkoutEditScreen() {
     const mainSteps = form.workout.main?.steps ?? [];
     if (
       mainSteps.length === 0 &&
-      form.runType !== "progressif" &&
-      form.runType !== "easy_run" &&
-      form.runType !== "recovery_run" &&
-      form.runType !== "long_run"
+      (form.runType as string) !== "progressif" &&
+      (form.runType as string) !== "easy_run" &&
+      (form.runType as string) !== "recovery_run" &&
+      (form.runType as string) !== "long_run"
     ) {
       errors.main = "Ajoutez au moins une étape dans la séance principale.";
     }
 
     // Additional validation for run-type specific builders
-    if (form.runType === "progressif" && mainSteps.length === 0) {
+    if ((form.runType as string) === "progressif" && mainSteps.length === 0) {
       errors.main = "Générez la structure du progressif avant d'enregistrer.";
     }
     if (
-      (form.runType === "easy_run" ||
-        form.runType === "recovery_run" ||
-        form.runType === "long_run" ||
-        form.runType === "casual_run" ||
-        form.runType === "discovery_run" ||
-        form.runType === "walking") &&
+      ((form.runType as string) === "easy_run" ||
+        (form.runType as string) === "recovery_run" ||
+        (form.runType as string) === "long_run" ||
+        (form.runType as string) === "casual_run" ||
+        (form.runType as string) === "discovery_run" ||
+        (form.runType as string) === "walking") &&
       mainSteps.length === 0
     ) {
       errors.main = "Définissez la distance ou la durée avant d'enregistrer.";
@@ -1518,7 +1519,7 @@ export default function WorkoutEditScreen() {
   useEffect(() => {
     if (
       !form ||
-      (form.runType !== "footing" && form.runType !== "footing_relachement")
+      ((form.runType as string) !== "footing" && (form.runType as string) !== "footing_relachement")
     ) {
       return;
     }
@@ -1578,7 +1579,7 @@ export default function WorkoutEditScreen() {
   ]);
 
   const renderProgressifBuilder = () => {
-    if (!form || form.runType !== "progressif") return null;
+    if (!form || (form.runType as string) !== "progressif") return null;
 
     const mainSteps = form.workout.main?.steps ?? [];
 
@@ -1948,7 +1949,7 @@ export default function WorkoutEditScreen() {
     if (!form) return null;
 
     const descriptions: Record<
-      RunTypeId,
+      string,
       { icon: string; title: string; description: string }
     > = {
       casual_run: {
@@ -2049,7 +2050,7 @@ export default function WorkoutEditScreen() {
       },
     };
 
-    const info = descriptions[form.runType];
+    const info = descriptions[form.runType as string];
     if (!info) return null;
 
     return (
@@ -2067,22 +2068,22 @@ export default function WorkoutEditScreen() {
   useEffect(() => {
     if (
       !form ||
-      (form.runType !== "interval_400m" &&
-        form.runType !== "interval_800m" &&
-        form.runType !== "interval_1000m" &&
-        form.runType !== "interval_1600m")
+      ((form.runType as string) !== "interval_400m" &&
+        (form.runType as string) !== "interval_800m" &&
+        (form.runType as string) !== "interval_1000m" &&
+        (form.runType as string) !== "interval_1600m")
     ) {
       return;
     }
 
     // Get the distance in km based on interval type
-    const distanceMap: Record<RunTypeId, number> = {
+    const distanceMap: Record<string, number> = {
       interval_400m: 0.4,
       interval_800m: 0.8,
       interval_1000m: 1.0,
       interval_1600m: 1.6,
     };
-    const distanceKm = distanceMap[form.runType];
+    const distanceKm = distanceMap[form.runType as string];
     const paceSeconds = parsePaceInput(intervalPace);
 
     // Check if interval step already exists with correct distance
@@ -2207,21 +2208,22 @@ export default function WorkoutEditScreen() {
   const renderIntervalBuilder = () => {
     if (
       !form ||
-      (form.runType !== "interval_400m" &&
-        form.runType !== "interval_800m" &&
-        form.runType !== "interval_1000m" &&
-        form.runType !== "interval_1600m")
+      ((form.runType as string) !== "interval_400m" &&
+        (form.runType as string) !== "interval_800m" &&
+        (form.runType as string) !== "interval_1000m" &&
+        (form.runType as string) !== "interval_1600m")
     ) {
       return null;
     }
 
-    const distanceMap: Record<RunTypeId, { value: number; label: string }> = {
+    const distanceMap: Record<string, { value: number; label: string }> = {
       interval_400m: { value: 0.4, label: "400m" },
       interval_800m: { value: 0.8, label: "800m" },
       interval_1000m: { value: 1.0, label: "1000m" },
       interval_1600m: { value: 1.6, label: "1600m" },
     };
-    const intervalInfo = distanceMap[form.runType];
+    const intervalInfo = distanceMap[form.runType as string];
+    if (!intervalInfo) return null;
     const intervalStep = form.workout.main?.steps?.find(
       (s) => s.kind === "interval",
     );
@@ -2342,10 +2344,10 @@ export default function WorkoutEditScreen() {
   const renderIntervalWarmupCooldown = () => {
     if (
       !form ||
-      (form.runType !== "interval_400m" &&
-        form.runType !== "interval_800m" &&
-        form.runType !== "interval_1000m" &&
-        form.runType !== "interval_1600m")
+      ((form.runType as string) !== "interval_400m" &&
+        (form.runType as string) !== "interval_800m" &&
+        (form.runType as string) !== "interval_1000m" &&
+        (form.runType as string) !== "interval_1600m")
     ) {
       return null;
     }
@@ -2361,25 +2363,25 @@ export default function WorkoutEditScreen() {
   const renderFootingBuilder = () => {
     if (
       !form ||
-      (form.runType !== "easy_run" &&
-        form.runType !== "recovery_run" &&
-        form.runType !== "long_run" &&
-        form.runType !== "casual_run" &&
-        form.runType !== "discovery_run" &&
-        form.runType !== "walking")
+      ((form.runType as string) !== "easy_run" &&
+        (form.runType as string) !== "recovery_run" &&
+        (form.runType as string) !== "long_run" &&
+        (form.runType as string) !== "casual_run" &&
+        (form.runType as string) !== "discovery_run" &&
+        (form.runType as string) !== "walking")
     )
       return null;
 
     const sectionTitle =
-      form.runType === "easy_run"
+      (form.runType as string) === "easy_run"
         ? "Footing facile"
-        : form.runType === "recovery_run"
+        : (form.runType as string) === "recovery_run"
           ? "Récupération"
-          : form.runType === "long_run"
+          : (form.runType as string) === "long_run"
             ? "Sortie longue"
-            : form.runType === "casual_run"
+            : (form.runType as string) === "casual_run"
               ? "Course libre"
-              : form.runType === "discovery_run"
+              : (form.runType as string) === "discovery_run"
                 ? "Découverte"
                 : "Marche";
 
@@ -2489,7 +2491,7 @@ export default function WorkoutEditScreen() {
             }
             return null;
           })()}
-          {form.runType === "recovery_run" && (
+          {(form.runType as string) === "recovery_run" && (
             <Text style={styles.helperText}>
               Récupération ≈ 20–40s/km plus lent que ton footing facile.
             </Text>
@@ -2527,24 +2529,24 @@ export default function WorkoutEditScreen() {
     // Note: Intervals allow warmup/cooldown through renderIntervalWarmupCooldown
     const specializedRunTypes: RunTypeId[] = [
       "progressif",
-      "easy_run",
-      "recovery_run",
-      "long_run",
-      "casual_run",
-      "discovery_run",
-      "walking",
-      "interval_400m",
-      "interval_800m",
-      "interval_1000m",
-      "interval_1600m",
+      "easy_run" as RunTypeId,
+      "recovery_run" as RunTypeId,
+      "long_run" as RunTypeId,
+      "casual_run" as RunTypeId,
+      "discovery_run" as RunTypeId,
+      "walking" as RunTypeId,
+      "interval_400m" as RunTypeId,
+      "interval_800m" as RunTypeId,
+      "interval_1000m" as RunTypeId,
+      "interval_1600m" as RunTypeId,
     ];
     // For intervals, only hide main block (warmup/cooldown are shown separately)
     if (specializedRunTypes.includes(form.runType)) {
       if (
-        (form.runType === "interval_400m" ||
-          form.runType === "interval_800m" ||
-          form.runType === "interval_1000m" ||
-          form.runType === "interval_1600m") &&
+        ((form.runType as string) === "interval_400m" ||
+          (form.runType as string) === "interval_800m" ||
+          (form.runType as string) === "interval_1000m" ||
+          (form.runType as string) === "interval_1600m") &&
         (blockKey === "warmup" || blockKey === "cooldown")
       ) {
         // Allow warmup/cooldown for intervals (handled by renderIntervalWarmupCooldown)
@@ -3023,7 +3025,145 @@ export default function WorkoutEditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+type EditStyles = {
+  safeArea: ViewStyle;
+  header: ViewStyle;
+  headerTopRow: ViewStyle;
+  backRow: ViewStyle;
+  backIcon: TextStyle;
+  backLabel: TextStyle;
+  screenTitle: TextStyle;
+  scroll: ViewStyle;
+  content: ViewStyle;
+  section: ViewStyle;
+  sectionTitle: TextStyle;
+  card: ViewStyle;
+  runTypeInfoCard: ViewStyle;
+  runTypeInfoHeader: ViewStyle;
+  runTypeInfoIcon: TextStyle;
+  runTypeInfoTitle: TextStyle;
+  runTypeInfoDescription: TextStyle;
+  inputGroup: ViewStyle;
+  inputLabel: TextStyle;
+  textInput: TextStyle;
+  multilineInput: TextStyle;
+  addStepEmpty: ViewStyle;
+  addStepEmptyText: TextStyle;
+  stepDivider: ViewStyle;
+  stepRow: ViewStyle;
+  stepInfo: ViewStyle;
+  stepLabel: TextStyle;
+  stepSubLabel: TextStyle;
+  stepActions: ViewStyle;
+  stepActionButton: ViewStyle;
+  stepActionText: TextStyle;
+  deleteStepButton: ViewStyle;
+  deleteStepText: TextStyle;
+  addStepRow: ViewStyle;
+  addStepRowText: TextStyle;
+  footer: ViewStyle;
+  primaryButton: ViewStyle;
+  primaryButtonDisabled: ViewStyle;
+  primaryButtonText: TextStyle;
+  secondaryButton: ViewStyle;
+  secondaryButtonText: TextStyle;
+  loadingState: ViewStyle;
+  loadingText: TextStyle;
+  errorText: TextStyle;
+  stepModalBackdrop: ViewStyle;
+  stepModalDismissArea: ViewStyle;
+  stepModalKeyboardContainer: ViewStyle;
+  stepModalSheet: ViewStyle;
+  stepModalContent: ViewStyle;
+  modalHeader: ViewStyle;
+  modalTitle: TextStyle;
+  modalSection: ViewStyle;
+  modalDivider: ViewStyle;
+  modalLabel: TextStyle;
+  segmentedGroup: ViewStyle;
+  segmentedButton: ViewStyle;
+  segmentedButtonActive: ViewStyle;
+  segmentedButtonSpacing: ViewStyle;
+  segmentedButtonText: TextStyle;
+  segmentedButtonTextActive: TextStyle;
+  inlineInputs: ViewStyle;
+  inlineInputGroup: ViewStyle;
+  inlineInputLabel: TextStyle;
+  inlineInputGroupSpacing: ViewStyle;
+  modalActions: ViewStyle;
+  modalActionSpacing: ViewStyle;
+  errorContainer: ViewStyle;
+  pickerBackdrop: ViewStyle;
+  pickerContainer: ViewStyle;
+  pickerSheet: ViewStyle;
+  pickerHeader: ViewStyle;
+  pickerTitle: TextStyle;
+  pickerHeaderAction: TextStyle;
+  pickerOptionsList: ViewStyle;
+  pickerOptionsContent: ViewStyle;
+  optionRow: ViewStyle;
+  optionRowSelected: ViewStyle;
+  optionRowPressed: ViewStyle;
+  optionRadio: ViewStyle;
+  optionRadioSelected: ViewStyle;
+  optionLabel: TextStyle;
+  pickerButtonsContainer: ViewStyle;
+  pickerPrimaryButton: ViewStyle;
+  pickerPrimaryButtonText: TextStyle;
+  pickerSecondaryButton: ViewStyle;
+  pickerSecondaryButtonText: TextStyle;
+  pickerRow: ViewStyle;
+  pickerRowText: TextStyle;
+  pickerRowArrow: TextStyle;
+  helperText: TextStyle;
+  footingPreview: TextStyle;
+  progressifKmTable: ViewStyle;
+  progressifKmHeader: ViewStyle;
+  progressifKmExpandIcon: TextStyle;
+  progressifKmRow: ViewStyle;
+  progressifKmLabel: TextStyle;
+  progressifKmPaceInput: TextStyle;
+  footingStepsContainer: ViewStyle;
+  footingStepRow: ViewStyle;
+  footingStepLabel: TextStyle;
+  footingStepPace: TextStyle;
+  intervalDistanceDisplay: TextStyle;
+  intervalPreviewContainer: ViewStyle;
+  intervalPreviewLabel: TextStyle;
+  intervalStepRow: ViewStyle;
+  intervalStepLabel: TextStyle;
+  modifyButton: ViewStyle;
+  modifyButtonText: TextStyle;
+  distanceInputRow: ViewStyle;
+  distanceInput: TextStyle;
+  unitRow: ViewStyle;
+  unitPill: ViewStyle;
+  unitPillSelected: ViewStyle;
+  unitPillText: TextStyle;
+  unitPillTextSelected: TextStyle;
+  modeToggleContainer: ViewStyle;
+  modeToggleButton: ViewStyle;
+  modeToggleButtonActive: ViewStyle;
+  modeToggleText: TextStyle;
+  modeToggleTextActive: TextStyle;
+  dualPacePickerContainer: ViewStyle;
+  dualPacePickerSection: ViewStyle;
+  dualPacePickerSectionLabel: TextStyle;
+  dualPacePickerWheels: ViewStyle;
+  wheelPickerColumn: ViewStyle;
+  wheelPickerColumnLabel: TextStyle;
+  wheelPickerWheelContainer: ViewStyle;
+  wheelPickerCenterHighlight: ViewStyle;
+  wheelPickerWheel: ViewStyle;
+  wheelPickerListContent: ViewStyle;
+  wheelPickerItemWrapper: ViewStyle;
+  wheelPickerItemText: TextStyle;
+  wheelPickerItemTextSelected: TextStyle;
+  wheelPickerItemTextDimmed: TextStyle;
+  wheelPickerActions: ViewStyle;
+};
+
+const styles = StyleSheet.create<EditStyles>({
   safeArea: {
     flex: 1,
     backgroundColor: "#0B0B0B",
@@ -3104,7 +3244,7 @@ const styles = StyleSheet.create({
   runTypeInfoTitle: {
     color: colors.text.accent,
     fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
   runTypeInfoDescription: {
     color: colors.text.secondary,
@@ -3117,7 +3257,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     color: colors.text.secondary,
     fontSize: typography.sizes.md,
-    fontWeight: typography.weights.medium as const,
+    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
     marginBottom: spacing.sm,
   },
   textInput: {
@@ -3232,7 +3372,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.text.primary,
     fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
   secondaryButton: {
     flex: 1,
@@ -3243,13 +3383,11 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
-    justifyContent: "center",
   },
   secondaryButtonText: {
     color: colors.text.secondary,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.medium as const,
+    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
   },
   loadingState: {
     flex: 1,
@@ -3293,7 +3431,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: colors.text.primary,
     fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.bold as const,
+    fontWeight: typography.weights.bold as TextStyle["fontWeight"],
   },
   modalSection: {
     marginBottom: spacing.md,
@@ -3306,7 +3444,7 @@ const styles = StyleSheet.create({
   modalLabel: {
     color: colors.text.secondary,
     fontSize: typography.sizes.md,
-    fontWeight: typography.weights.medium as const,
+    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
     marginBottom: spacing.sm,
   },
   segmentedGroup: {
@@ -3332,11 +3470,11 @@ const styles = StyleSheet.create({
   segmentedButtonText: {
     color: colors.text.secondary,
     fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium as const,
+    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
   },
   segmentedButtonTextActive: {
     color: colors.text.accent,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
   inlineInputs: {
     flexDirection: "row",
@@ -3344,6 +3482,11 @@ const styles = StyleSheet.create({
   },
   inlineInputGroup: {
     flex: 1,
+  },
+  inlineInputLabel: {
+    color: colors.text.secondary,
+    fontSize: typography.sizes.sm,
+    marginBottom: spacing.xs,
   },
   inlineInputGroupSpacing: {
     marginRight: 0,
@@ -3572,7 +3715,7 @@ const styles = StyleSheet.create({
   intervalDistanceDisplay: {
     color: colors.text.accent,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
     marginTop: spacing.xs,
   },
   intervalPreviewContainer: {
@@ -3584,7 +3727,7 @@ const styles = StyleSheet.create({
   intervalPreviewLabel: {
     color: colors.text.secondary,
     fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium as const,
+    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
     marginBottom: spacing.sm,
   },
   intervalStepRow: {
@@ -3609,7 +3752,7 @@ const styles = StyleSheet.create({
   modifyButtonText: {
     color: colors.text.accent,
     fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium as const,
+    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
   },
   distanceInputRow: {
     flexDirection: "row",
@@ -3638,11 +3781,11 @@ const styles = StyleSheet.create({
   unitPillText: {
     color: colors.text.secondary,
     fontSize: typography.sizes.base,
-    fontWeight: typography.weights.medium as const,
+    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
   },
   unitPillTextSelected: {
     color: colors.text.accent,
-    fontWeight: typography.weights.semibold as const,
+    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
   modeToggleContainer: {
     flexDirection: "row",
