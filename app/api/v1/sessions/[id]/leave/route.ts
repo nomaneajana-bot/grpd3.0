@@ -1,25 +1,18 @@
-// POST /api/v1/sessions/:id/assign – coach/admin assigns group to a runner
+// POST /api/v1/sessions/:id/leave – runner leaves session (sets status to left)
 
 import { NextRequest } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/server/prisma";
 import { jsonOk, jsonError } from "@/lib/server/api-response";
 import { requireAuth } from "@/lib/server/auth-helpers";
-import { requireClubPermission } from "@/lib/server/role-checks";
 import { sessionIdParamSchema } from "@/lib/server/validators";
-import { getAssignUpdateData } from "@/lib/attendanceStatusLogic";
-
-const bodySchema = z.object({
-  userId: z.string().min(1, "userId is required"),
-  groupId: z.string().min(1, "groupId is required"),
-});
+import { getLeaveUpdateData } from "@/lib/attendanceStatusLogic";
 
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const coachId = requireAuth(req);
+    const userId = requireAuth(req);
     const params = await context.params;
     const parsedParams = sessionIdParamSchema.safeParse(params);
     if (!parsedParams.success) {
@@ -30,50 +23,41 @@ export async function POST(
       );
     }
 
-    const body = await req.json().catch(() => null);
-    const parsedBody = bodySchema.safeParse(body ?? {});
-    if (!parsedBody.success) {
-      return jsonError(
-        parsedBody.error.errors[0]?.message ?? "Invalid payload",
-        "VALIDATION_ERROR",
-        400,
-      );
-    }
-
     const sessionId = parsedParams.data.id;
-    const { userId, groupId } = parsedBody.data;
 
-    const session = await prisma.session.findUnique({ where: { id: sessionId } });
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+    });
     if (!session) return jsonError("Session not found", "NOT_FOUND", 404);
-
-    if (session.clubId) {
-      try {
-        await requireClubPermission(coachId, session.clubId, "manage_club");
-      } catch {
-        return jsonError("Forbidden", "FORBIDDEN", 403);
-      }
-    }
 
     const existingAttendance = await prisma.sessionAttendance.findUnique({
       where: { sessionId_userId: { sessionId, userId } },
     });
 
-    const updateData = getAssignUpdateData(existingAttendance?.status ?? null, groupId);
+    const leaveData = getLeaveUpdateData();
     const attendance = existingAttendance
       ? await prisma.sessionAttendance.update({
           where: { sessionId_userId: { sessionId, userId } },
-          data: updateData,
+          data: leaveData,
         })
       : await prisma.sessionAttendance.create({
-          data: { sessionId, userId, groupId, status: "suggested" },
+          data: { sessionId, userId, ...leaveData },
         });
 
-    return jsonOk(attendance);
+    return jsonOk({
+      attendance: {
+        id: attendance.id,
+        sessionId: attendance.sessionId,
+        userId: attendance.userId,
+        status: attendance.status,
+        groupId: attendance.groupId,
+      },
+    });
   } catch (e) {
     if (e instanceof Error && e.message === "UNAUTHORIZED") {
       return jsonError("Unauthorized", "UNAUTHORIZED", 401);
     }
-    console.error("Assign group:", e);
+    console.error("Leave session:", e);
     return jsonError("Internal server error", "INTERNAL_ERROR", 500);
   }
 }

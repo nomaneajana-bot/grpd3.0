@@ -89,7 +89,7 @@ export default function SettingsScreen() {
         ...existing,
         name: firstName,
         firstName: firstName,
-        groupName: existing.groupName ?? null,
+        groupName: existing.groupName ?? undefined,
         clubName: trimmedClubName.length > 0 ? trimmedClubName : null,
         weightKg: weight,
         vo2max: vo2,
@@ -208,7 +208,7 @@ export default function SettingsScreen() {
               style={styles.textInput}
               value={clubName}
               onChangeText={setClubName}
-              placeholder="Ex: Groupe D / AS Rabat Running"
+              placeholder="Ex: AS Rabat Running"
               placeholderTextColor="#666"
             />
           </View>

@@ -706,6 +706,29 @@ export default function WorkoutEditScreen() {
   const [intervalRecoveryMinutes, setIntervalRecoveryMinutes] = useState("");
   const [intervalRecoverySeconds, setIntervalRecoverySeconds] = useState("");
 
+  /** Name field label based on run type (e.g. "Nom du fartlek", "Nom des séries") */
+  const getWorkoutNameLabel = (runType: RunTypeId): string => {
+    const map: Partial<Record<RunTypeId, string>> = {
+      fartlek: "Nom du fartlek",
+      progressif: "Nom du progressif",
+      casual_run: "Nom de la course libre",
+      discovery_run: "Nom de la découverte",
+      walking: "Nom de la marche",
+      easy_run: "Nom du footing",
+      recovery_run: "Nom de la récupération",
+      long_run: "Nom de la sortie longue",
+      tempo_run: "Nom du tempo",
+      threshold_run: "Nom du seuil",
+      hill_repeats: "Nom des côtes",
+      track_workout: "Nom du workout piste",
+      interval_400m: "Nom des séries",
+      interval_800m: "Nom des séries",
+      interval_1000m: "Nom des séries",
+      interval_1600m: "Nom des séries",
+    };
+    return map[runType] ?? "Nom du workout";
+  };
+
   // Run type options (using centralized label helper)
   const RUN_TYPE_OPTIONS: Array<{ id: RunTypeId; label: string }> = [
     { id: "casual_run" as RunTypeId, label: getRunTypeLabel("casual_run" as RunTypeId) },
@@ -2244,6 +2267,21 @@ export default function WorkoutEditScreen() {
           </View>
 
           <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Nombre de répétitions</Text>
+            <TextInput
+              style={styles.textInput}
+              value={repeatCountInput}
+              onChangeText={handleChangeRepeatCount}
+              placeholder="Ex: 8"
+              placeholderTextColor="#6F6F6F"
+              keyboardType="number-pad"
+            />
+            <Text style={styles.helperText}>
+              Nombre de fois à enchaîner effort + récupération.
+            </Text>
+          </View>
+
+          <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Allure cible (optionnel)</Text>
             <TextInput
               style={styles.textInput}
@@ -2673,7 +2711,7 @@ export default function WorkoutEditScreen() {
             <Text style={styles.sectionTitle}>Infos de base</Text>
             <View style={styles.card}>
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Nom du workout</Text>
+                <Text style={styles.inputLabel}>{getWorkoutNameLabel(form.runType)}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={form.name}

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import {
+    Alert,
     FlatList,
     Modal,
     Pressable,
@@ -1450,6 +1451,8 @@ export default function CreateSessionScreen() {
   const [hasLoadedExistingSession, setHasLoadedExistingSession] =
     useState(false);
 
+  const [usePaceGroups, setUsePaceGroups] = useState(true);
+
   // Group pace configuration state
   const [groupConfigs, setGroupConfigs] = useState<SessionGroupConfig[]>([
     {
@@ -1844,6 +1847,10 @@ export default function CreateSessionScreen() {
           },
         );
         setGroupConfigs(newGroupConfigs);
+        const hasEnabledGroups =
+          overrideGroups.some((g) => g.isActive) ||
+          (existingSession.paceGroups ?? []).length > 0;
+        setUsePaceGroups(hasEnabledGroups);
 
         setSessionVisibility(existingSession.visibility ?? "public");
         setHostGroupName(existingSession.hostGroupName ?? null);
@@ -1861,6 +1868,15 @@ export default function CreateSessionScreen() {
   const handlePublish = async () => {
     try {
       setIsPublishing(true);
+
+      if (sessionVisibility === "members" && !primaryClubId) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert(
+          "Club requis",
+          "Pour publier une séance réservée aux membres, tu dois avoir un club actif (clubId). Vérifie ta connexion à l’API et ton adhésion, ou passe en Public.",
+        );
+        return;
+      }
 
       // Map sessionMode to sessionType
       let effectiveSessionType: string;
@@ -1883,6 +1899,7 @@ export default function CreateSessionScreen() {
           ...g,
           effectivePaceSecondsPerKm: g.paceSecondsPerKm! as number,
         }));
+      const submittedGroups = usePaceGroups ? effectiveGroups : [];
 
       if (isEditMode && editSessionId) {
         // Update existing session
@@ -1891,16 +1908,20 @@ export default function CreateSessionScreen() {
           dateLabel,
           timeLabel,
           sessionType: effectiveSessionType,
-          groupConfigs: effectiveGroups,
+          groupConfigs: submittedGroups,
           workoutId: sessionMode === "workout" ? selectedWorkoutId : null,
           visibility: sessionVisibility,
           hostGroupName:
             sessionVisibility === "members" ? hostGroupName : null,
         });
+        const sessionWithAudience = {
+          ...session,
+          clubId: sessionVisibility === "members" ? primaryClubId : null,
+        };
 
         // Update session (preserving id and isCustom)
         await updateSession(editSessionId, {
-          ...session,
+          ...sessionWithAudience,
           id: editSessionId, // Preserve original ID
         });
 
@@ -1922,7 +1943,7 @@ export default function CreateSessionScreen() {
           dateLabel,
           timeLabel,
           sessionType: effectiveSessionType,
-          groupConfigs: effectiveGroups,
+          groupConfigs: submittedGroups,
           workoutId: sessionMode === "workout" ? selectedWorkoutId : null,
           visibility: sessionVisibility,
           hostGroupName:
@@ -1940,7 +1961,8 @@ export default function CreateSessionScreen() {
           targetPace: session.targetPace,
           estimatedDistanceKm: session.estimatedDistanceKm,
           recommendedGroupId: session.recommendedGroupId,
-          clubId: sessionVisibility === "members" ? primaryClubId ?? null : null,
+          paceGroups: usePaceGroups ? session.paceGroups : [],
+          clubId: sessionVisibility === "members" ? primaryClubId : null,
           visibility: sessionVisibility,
           genderRestriction: session.genderRestriction ?? "mixed",
           workoutId: session.workoutId ?? null,
@@ -1964,6 +1986,18 @@ export default function CreateSessionScreen() {
             console.warn("Failed to join session via API:", joinErr);
           }
         } catch (apiErr) {
+          if (sessionVisibility === "members") {
+            console.warn(
+              "API session create failed for members-only session:",
+              apiErr,
+            );
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert(
+              "API requise",
+              "Cette séance est réservée aux membres. Connexion à l’API requise pour la publier.",
+            );
+            return;
+          }
           console.warn("API session create failed, saving locally:", apiErr);
           await createSessionLocal(session);
           try {
@@ -2202,7 +2236,16 @@ export default function CreateSessionScreen() {
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardTitle}>Groupes & allures</Text>
             </View>
-            {groupConfigs.map((group, index) => {
+            <View style={styles.fieldRow}>
+              <Text style={styles.fieldLabel}>Utiliser des groupes d'allure</Text>
+              <Switch
+                value={usePaceGroups}
+                onValueChange={setUsePaceGroups}
+                trackColor={{ false: "#2a2f3a", true: colors.accent.primary }}
+                thumbColor="#ffffff"
+              />
+            </View>
+            {usePaceGroups && groupConfigs.map((group, index) => {
               const paceSeconds = group.paceSecondsPerKm ?? null;
 
               // Display pace

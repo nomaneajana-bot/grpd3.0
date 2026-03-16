@@ -97,8 +97,10 @@ export function apiSessionToSessionData(api: {
   isCustom?: boolean;
   paceGroups?: { id: string; label: string; paceRange: string; runnersCount?: number; avgPaceSecondsPerKm?: number }[];
 }): SessionData {
-  const paceGroups = api.paceGroups?.length
-    ? api.paceGroups.map((g) => ({
+  const apiPaceGroups = api.paceGroups ?? null;
+  const hasPaceGroupsField = Array.isArray(apiPaceGroups);
+  const paceGroups = hasPaceGroupsField
+    ? apiPaceGroups.map((g) => ({
         id: g.id,
         label: g.label,
         paceRange: g.paceRange,

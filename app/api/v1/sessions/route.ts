@@ -27,7 +27,7 @@ const createSchema = z.object({
   targetPace: z.string().min(1),
   estimatedDistanceKm: z.number().nonnegative(),
   recommendedGroupId: z.string().min(1),
-  clubId: z.string().nullable().optional(),
+  clubId: z.string().min(1).nullable().optional(),
   visibility: z.enum(["public", "members"]).optional(),
   genderRestriction: z.enum(["mixed", "women", "men"]).optional(),
   workoutId: z.string().nullable().optional(),
@@ -121,6 +121,13 @@ export async function POST(req: NextRequest) {
 
     const visibility =
       data.visibility ?? (data.clubId ? "members" : "public");
+    if (visibility === "members" && !data.clubId) {
+      return jsonError(
+        "clubId is required for members-only sessions",
+        "VALIDATION_ERROR",
+        400,
+      );
+    }
 
     const session = await prisma.session.create({
       data: {

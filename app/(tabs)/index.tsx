@@ -31,6 +31,7 @@ import {
     getJoinedSessions,
     type JoinedSession,
 } from "../../lib/joinedSessionsStore";
+import { createApiClient, listSessions } from "../../lib/api";
 import {
     getProfileSnapshot,
     type ReferencePaces,
@@ -44,6 +45,7 @@ import {
 } from "../../lib/runTypes";
 import {
     getAllSessionsIncludingStored,
+    apiSessionToSessionData,
     type SessionData,
 } from "../../lib/sessionData";
 import {
@@ -326,8 +328,25 @@ export default function HomeScreen() {
   const [maxSeconds, setMaxSeconds] = useState("30");
 
   const loadSessions = useCallback(async () => {
-    // Load all sessions (including stored user sessions)
-    const sessions = await getAllSessionsIncludingStored();
+    // Load all sessions (seed + local) and merge API sessions (API wins on id collision)
+    const [localSessions, apiSessions] = await Promise.all([
+      getAllSessionsIncludingStored(),
+      (async () => {
+        try {
+          const client = createApiClient();
+          const apiResult = await listSessions(client);
+          return (apiResult.sessions ?? []).map(apiSessionToSessionData);
+        } catch (apiErr) {
+          console.warn("API sessions list failed, using local only:", apiErr);
+          return [] as SessionData[];
+        }
+      })(),
+    ]);
+
+    const sessionMap = new Map<string, SessionData>();
+    localSessions.forEach((s) => sessionMap.set(s.id, s));
+    apiSessions.forEach((s) => sessionMap.set(s.id, s));
+    const sessions = Array.from(sessionMap.values());
     setAllSessions(sessions);
 
     // Load workout runTypes for sessions with workoutId

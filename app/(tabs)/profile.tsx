@@ -89,8 +89,6 @@ export default function ProfileScreen() {
   );
 
   const profileName = profile?.name ?? "Ton prénom";
-  const groupLabel = profile?.groupName ?? "Groupe D";
-  const groupDisplayLabel = profile?.groupName ?? "—";
   const primaryMembership =
     memberships.find((m) => m.status === "approved") ?? memberships[0] ?? null;
   const clubLabel = primaryMembership?.club?.name ?? profile?.clubName ?? null;
@@ -173,8 +171,6 @@ export default function ProfileScreen() {
               <Text style={styles.profileName}>{profileName}</Text>
               <View style={styles.profileMetaRow}>
                 <Text style={styles.profileSubtitle}>Coureur</Text>
-                <View style={styles.profileMetaDot} />
-                <Text style={styles.profileSubtitle}>{groupLabel}</Text>
                 {clubLabel && (
                   <>
                     <View style={styles.profileMetaDot} />
@@ -203,10 +199,6 @@ export default function ProfileScreen() {
             <View style={styles.profileStat}>
               <Text style={styles.profileStatLabel}>Poids</Text>
               <Text style={styles.profileStatValue}>{weightLabel}</Text>
-            </View>
-            <View style={styles.profileStat}>
-              <Text style={styles.profileStatLabel}>Groupe</Text>
-              <Text style={styles.profileStatValue}>{groupDisplayLabel}</Text>
             </View>
             <View style={styles.profileStat}>
               <Text style={styles.profileStatLabel}>Club</Text>

@@ -141,7 +141,7 @@ export function buildSessionFromForm(params: {
     .filter((g) => g.isActive && g.paceSecondsPerKm !== null)
     .map((g) => {
       const avgPaceSecondsPerKm = g.paceSecondsPerKm!;
-      const paceRange = formatPaceRange(avgPaceSecondsPerKm);
+      const paceRange = formatPaceLabel(avgPaceSecondsPerKm);
 
       return {
         id: g.id,

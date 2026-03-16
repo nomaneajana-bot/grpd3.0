@@ -24,9 +24,12 @@ import type {
   SessionCreateResult,
   SessionJoinInput,
   SessionJoinResult,
+  SessionLeaveResult,
+  SessionParticipantsResult,
   MySessionsResult,
 } from "../../types/api";
 import type { ApiClient } from "./client";
+import { ApiError } from "./errors";
 
 type MembershipsPayload = ClubMembership[] | ClubMembershipsResult;
 type ClubDetailPayload =
@@ -225,6 +228,24 @@ export async function createSession(
   });
 }
 
+/** List sessions (GET /api/v1/sessions). Backend must expose this route. */
+export async function listSessions(
+  client: ApiClient,
+  options: { clubId?: string | null; from?: string | null } = {},
+): Promise<{ sessions: ApiSession[] }> {
+  const params = new URLSearchParams();
+  if (options.clubId) params.set("clubId", options.clubId);
+  if (options.from) params.set("from", options.from);
+  const query = params.toString();
+  const path = query ? `/api/v1/sessions?${query}` : "/api/v1/sessions";
+  const payload = await client.request<{ sessions?: ApiSession[] }>(
+    path,
+    { method: "GET" },
+    { auth: false },
+  );
+  return { sessions: payload.sessions ?? [] };
+}
+
 /** Get session by id (GET /api/v1/sessions/:id). Backend must expose this route. */
 export async function getSession(
   client: ApiClient,
@@ -255,6 +276,17 @@ export async function joinSession(
   );
 }
 
+/** Leave session (POST /api/v1/sessions/:id/leave). Sets attendance status to left. */
+export async function leaveSession(
+  client: ApiClient,
+  sessionId: string,
+): Promise<SessionLeaveResult> {
+  return await client.request<SessionLeaveResult>(
+    `/api/v1/sessions/${sessionId}/leave`,
+    { method: "POST" },
+  );
+}
+
 /** Request access to members-only session (POST /api/v1/sessions/:id/request). */
 export async function requestSessionAccess(
   client: ApiClient,
@@ -268,6 +300,26 @@ export async function requestSessionAccess(
       body: JSON.stringify(groupId != null ? { groupId } : {}),
     },
   );
+}
+
+/** Get session participants (GET /api/v1/sessions/:id/participants). Permission-gated for members-only. */
+export async function getSessionParticipants(
+  client: ApiClient,
+  sessionId: string,
+  options?: { auth?: boolean },
+): Promise<SessionParticipantsResult | { error: "forbidden" } | { error: "unavailable" }> {
+  try {
+    return await client.request<SessionParticipantsResult>(
+      `/api/v1/sessions/${sessionId}/participants`,
+      { method: "GET" },
+      options?.auth === false ? { auth: false } : {},
+    );
+  } catch (e: unknown) {
+    if (e instanceof ApiError && e.status === 403) {
+      return { error: "forbidden" };
+    }
+    return { error: "unavailable" };
+  }
 }
 
 /** Get my joined sessions (GET /api/v1/me/sessions). Backend must expose this route. */

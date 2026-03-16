@@ -29,7 +29,9 @@ import {
     getClubRoster,
     getMyMemberships,
     getSession as getSessionApi,
+    getSessionParticipants,
     joinSession as joinSessionApi,
+    leaveSession as leaveSessionApi,
     requestSessionAccess,
 } from "../../lib/api";
 import { getRunnerProfile, type RunnerProfile } from "../../lib/profileStore";
@@ -37,7 +39,7 @@ import { getSessionById, SESSION_MAP, apiSessionToSessionData, type SessionData 
 import { deleteSession } from "../../lib/sessionStore";
 import { getWorkoutSummary } from "../../lib/workoutHelpers";
 import { getWorkout, type WorkoutEntity } from "../../lib/workoutStore";
-import type { ClubMembership, ClubRosterMember } from "../../types/api";
+import type { ClubMembership, ClubRosterMember, SessionParticipantsResult } from "../../types/api";
 import type { WorkoutBlock, WorkoutStep } from "../../lib/workoutTypes";
 
 // Helper to format seconds to M:SS format
@@ -231,6 +233,10 @@ export default function SessionScreen() {
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [assignGroupId, setAssignGroupId] = useState<string | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [showParticipants, setShowParticipants] = useState(false);
+  const [participantsData, setParticipantsData] = useState<SessionParticipantsResult | null>(null);
+  const [participantsError, setParticipantsError] = useState<"forbidden" | "unavailable" | null>(null);
+  const [participantsLoading, setParticipantsLoading] = useState(false);
   const [coachAssignments, setCoachAssignments] = useState<
     Record<string, string>
   >({});
@@ -461,18 +467,60 @@ export default function SessionScreen() {
   };
 
   const handleLeave = async () => {
+    const sessionId = session.id;
+    const isServerSession = !session.isCustom && sessionId;
+    let apiSucceeded = false;
     try {
-      await removeJoinedSession(session.id);
+      if (isServerSession) {
+        try {
+          const client = createApiClient();
+          await leaveSessionApi(client, sessionId);
+          apiSucceeded = true;
+        } catch (apiErr) {
+          console.warn("API leave failed:", apiErr);
+        }
+      }
+      await removeJoinedSession(sessionId);
       setJoinedGroupId(null);
       setHasStoredJoin(false);
-      // Reset selected group to recommended or first group
       const defaultId =
         session.recommendedGroupId || session.paceGroups[0]?.id || null;
       setSelectedGroupId(defaultId);
-      // Navigate back to Mes séances
+      showToast(
+        isServerSession && !apiSucceeded
+          ? "Séance quittée localement."
+          : "Tu as quitté la séance.",
+        "success",
+      );
       router.push("/(tabs)/my-sessions");
     } catch (error) {
-      console.warn("Failed to remove joined session:", error);
+      console.warn("Failed to leave session:", error);
+      showToast("Impossible de quitter la séance.", "error");
+    }
+  };
+
+  const handleToggleParticipants = async () => {
+    const next = !showParticipants;
+    setShowParticipants(next);
+    if (next && participantsData === null && participantsError === null) {
+      try {
+        const client = createApiClient();
+        const result = await getSessionParticipants(
+          client,
+          session.id,
+          session.visibility === "public" ? { auth: false } : {},
+        );
+        if (result && "error" in result) {
+          setParticipantsError(result.error);
+        } else if (result) {
+          setParticipantsData(result);
+          setParticipantsError(null);
+        } else {
+          setParticipantsError("unavailable");
+        }
+      } catch {
+        setParticipantsError("unavailable");
+      }
     }
   };
 
@@ -545,21 +593,19 @@ export default function SessionScreen() {
 
       {/* Scrollable Content */}
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        {/* Workout Summary Card */}
-        {linkedWorkout && (
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>RÉSUMÉ DU WORKOUT</Text>
-            <Text style={styles.workoutSummaryText}>
-              {getWorkoutSummary(linkedWorkout)}
-            </Text>
-          </View>
-        )}
-
-        {/* Session Details Card - Professional Runner Info */}
+        {/* Session Details Card - on top (Type de course first) */}
         <View style={styles.card}>
           <View style={styles.groupsHeader}>
             <Text style={styles.cardLabel}>INFORMATIONS</Text>
           </View>
+
+          {/* Type de course — first row */}
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Type de course</Text>
+            <Text style={styles.infoValue}>{session.typeLabel} ›</Text>
+          </View>
+
+          <View style={styles.divider} />
 
           {/* Compact info rows */}
           <View style={styles.infoRow}>
@@ -625,6 +671,16 @@ export default function SessionScreen() {
           </Text>
         </View>
 
+        {/* Workout Summary Card */}
+        {linkedWorkout && (
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>RÉSUMÉ DU WORKOUT</Text>
+            <Text style={styles.workoutSummaryText}>
+              {getWorkoutSummary(linkedWorkout)}
+            </Text>
+          </View>
+        )}
+
         {/* Contact Card */}
         <View style={styles.card}>
           <View style={styles.groupsHeader}>
@@ -660,6 +716,113 @@ export default function SessionScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Qui court ? — Participants (collapsed by default) */}
+        {!session.isCustom && (
+          <View style={styles.card}>
+            <View style={styles.groupsHeader}>
+              <Text style={styles.cardLabel}>QUI COURT ?</Text>
+              <TouchableOpacity
+                onPress={async () => {
+                  if (showParticipants) {
+                    setShowParticipants(false);
+                    return;
+                  }
+                  setShowParticipants(true);
+                  if (participantsData !== null || participantsError !== null) return;
+                  setParticipantsLoading(true);
+                  setParticipantsError(null);
+                  try {
+                    const client = createApiClient();
+                    const result = await getSessionParticipants(
+                      client,
+                      session.id,
+                      session.visibility !== "members" ? { auth: false } : undefined,
+                    );
+                    if ("error" in result) {
+                      setParticipantsError(result.error);
+                    } else {
+                      setParticipantsData(result);
+                    }
+                  } catch {
+                    setParticipantsError("unavailable");
+                  } finally {
+                    setParticipantsLoading(false);
+                  }
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.infoValue}>
+                  {showParticipants ? "Masquer" : "Afficher"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {showParticipants && (
+              <>
+                {participantsLoading && (
+                  <Text style={styles.descriptionText}>Chargement…</Text>
+                )}
+                {!participantsLoading && participantsError === "forbidden" && (
+                  <Text style={styles.descriptionText}>
+                    Réservé aux membres du club.
+                  </Text>
+                )}
+                {!participantsLoading && participantsError === "unavailable" && (
+                  <Text style={styles.descriptionText}>
+                    Participants indisponibles (hors ligne).
+                  </Text>
+                )}
+                {!participantsLoading &&
+                  participantsError === null &&
+                  participantsData !== null && (
+                    <>
+                      <Text style={[styles.infoLabelSmall, { marginBottom: 8 }]}>
+                        Total: {participantsData.counts.total} · Inscrits:{" "}
+                        {participantsData.counts.joined} · Suggérés:{" "}
+                        {participantsData.counts.suggested} · Demandés:{" "}
+                        {participantsData.counts.requested}
+                      </Text>
+                      {participantsData.groups.map((gr) => (
+                        <View key={gr.groupId ?? "sans-groupe"} style={{ marginBottom: 12 }}>
+                          <Text style={styles.infoLabel}>
+                            {gr.groupId === null
+                              ? "Sans groupe"
+                              : `Groupe ${gr.groupId}`}{" "}
+                            ({gr.count})
+                          </Text>
+                          {gr.participants.map((p) => (
+                            <View
+                              key={p.userId}
+                              style={[styles.infoRow, { marginLeft: 8, marginTop: 4 }]}
+                            >
+                              <Text style={styles.infoValue}>{p.displayName}</Text>
+                              {p.status !== "joined" && (
+                                <Text
+                                  style={[
+                                    styles.infoLabelSmall,
+                                    {
+                                      color: colors.text.secondary,
+                                      marginLeft: 8,
+                                    },
+                                  ]}
+                                >
+                                  {p.status === "suggested"
+                                    ? "Suggéré"
+                                    : p.status === "requested"
+                                      ? "Demande"
+                                      : ""}
+                                </Text>
+                              )}
+                            </View>
+                          ))}
+                        </View>
+                      ))}
+                    </>
+                  )}
+              </>
+            )}
+          </View>
+        )}
 
         {/* Groups Section */}
         {session.paceGroupsOverride && session.paceGroupsOverride.length > 0 ? (
@@ -755,7 +918,7 @@ export default function SessionScreen() {
                 );
               })}
           </View>
-        ) : (
+        ) : session.paceGroups.length > 0 ? (
           /* Legacy: Pace groups card for backward compatibility */
           <View style={styles.card}>
             <View style={styles.groupsHeader}>
@@ -868,7 +1031,7 @@ export default function SessionScreen() {
               </>
             )}
           </View>
-        )}
+        ) : null}
 
         {/* Join/Leave Button - Right after group selection */}
         {!session.isCustom && (
@@ -916,6 +1079,77 @@ export default function SessionScreen() {
                     <Text style={styles.membersOnlyHint}>
                       Séance réservée au club. Demande l’accès si tu es membre.
                     </Text>
+                  </>
+                )}
+              </>
+            )}
+          </View>
+        )}
+
+        {/* Qui court ? — participants (collapsed by default) */}
+        {!session.isCustom && (
+          <View style={styles.card}>
+            <View style={styles.cardHeaderRow}>
+              <Text style={styles.cardLabel}>Qui court ?</Text>
+              <TouchableOpacity
+                onPress={handleToggleParticipants}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.participantsToggle}>
+                  {showParticipants ? "Masquer" : "Afficher"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {showParticipants && (
+              <>
+                {participantsError === "forbidden" && (
+                  <Text style={styles.membersOnlyHint}>
+                    Réservé aux membres du club.
+                  </Text>
+                )}
+                {participantsError === "unavailable" && (
+                  <Text style={styles.membersOnlyHint}>
+                    Participants indisponibles (hors ligne).
+                  </Text>
+                )}
+                {participantsData && !participantsError && (
+                  <>
+                    <Text style={styles.cardSubtitle}>
+                      Total: {participantsData.counts.total} · Inscrits:{" "}
+                      {participantsData.counts.joined} · Suggérés:{" "}
+                      {participantsData.counts.suggested} · Demandés:{" "}
+                      {participantsData.counts.requested}
+                    </Text>
+                    {participantsData.groups.map((gr) => {
+                      if (gr.count === 0) return null;
+                      const groupLabel =
+                        gr.groupId == null
+                          ? "Sans groupe"
+                          : `Groupe ${gr.groupId}`;
+                      return (
+                        <View key={gr.groupId ?? "null"} style={styles.participantsGroup}>
+                          <Text style={styles.participantsGroupTitle}>
+                            {groupLabel} ({gr.count})
+                          </Text>
+                          {gr.participants.map((p) => (
+                            <View key={p.userId} style={styles.participantsRow}>
+                              <Text style={styles.participantsName}>
+                                {p.displayName}
+                              </Text>
+                              {p.status !== "joined" && (
+                                <View style={styles.participantsPill}>
+                                  <Text style={styles.participantsPillText}>
+                                    {p.status === "suggested"
+                                      ? "Suggéré"
+                                      : "Demande"}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                          ))}
+                        </View>
+                      );
+                    })}
                   </>
                 )}
               </>
@@ -1889,6 +2123,49 @@ const styles = StyleSheet.create({
   whatsappButtonText: {
     color: "#FFFFFF",
     fontSize: 15,
+    fontWeight: "600",
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  participantsToggle: {
+    color: colors.text.accent,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  participantsGroup: {
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  participantsGroupTitle: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  participantsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
+  },
+  participantsName: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  participantsPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+  },
+  participantsPillText: {
+    color: colors.text.secondary,
+    fontSize: 11,
     fontWeight: "600",
   },
 });

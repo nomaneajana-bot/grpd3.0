@@ -302,12 +302,20 @@ export type SessionAssignInput = {
   groupId: string;
 };
 
+export type AttendanceStatus =
+  | "joined"
+  | "suggested"
+  | "left"
+  | "requested"
+  | "waitlisted"
+  | "declined";
+
 export type SessionAssignResult = {
   id: string;
   sessionId: string;
   userId: string;
   groupId: string | null;
-  status: string;
+  status: AttendanceStatus;
 };
 
 // API Session (matches backend/Prisma shape; paceGroups may be computed client-side or returned by API)
@@ -366,6 +374,48 @@ export type SessionCreateResult = ApiSession;
 
 export type SessionJoinInput = { groupId: string };
 
-export type SessionJoinResult = { id: string; sessionId: string; userId: string; groupId: string | null; status: string };
+export type SessionJoinResult = {
+  id: string;
+  sessionId: string;
+  userId: string;
+  groupId: string | null;
+  status: AttendanceStatus;
+};
 
 export type MySessionsResult = { sessions: ApiSession[] };
+
+export type SessionLeaveAttendance = {
+  id: string;
+  sessionId: string;
+  userId: string;
+  status: AttendanceStatus;
+  groupId: string | null;
+};
+
+export type SessionLeaveResult = { attendance: SessionLeaveAttendance };
+
+export type SessionParticipantsGroupId = "A" | "B" | "C" | "D" | null;
+
+export type SessionParticipant = {
+  userId: string;
+  displayName: string;
+  groupId: SessionParticipantsGroupId;
+  status: AttendanceStatus;
+};
+
+export type SessionParticipantsResult = {
+  sessionId: string;
+  visibility: "public" | "members";
+  clubId: string | null;
+  counts: {
+    total: number;
+    joined: number;
+    suggested: number;
+    requested: number;
+  };
+  groups: Array<{
+    groupId: "A" | "B" | "C" | "D" | null;
+    count: number;
+    participants: SessionParticipant[];
+  }>;
+};

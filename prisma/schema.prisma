@@ -172,6 +172,8 @@ enum GenderRestriction {
 
 enum AttendanceStatus {
   joined
+  suggested
+  left
   requested
   waitlisted
   declined // kept for DB compatibility; prefer joined|requested|waitlisted in API

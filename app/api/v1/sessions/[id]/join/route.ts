@@ -7,6 +7,7 @@ import { hasClubPermission } from "@/lib/server/role-checks";
 import { prisma } from "@/lib/server/prisma";
 import { jsonOk, jsonError } from "@/lib/server/api-response";
 import { sessionIdParamSchema } from "@/lib/server/validators";
+import { getJoinUpdateData } from "@/lib/attendanceStatusLogic";
 
 const bodySchema = z.object({
   groupId: z.string().min(1, "groupId is required"),
@@ -53,11 +54,19 @@ export async function POST(
       }
     }
 
-    const attendance = await prisma.sessionAttendance.upsert({
+    const existingAttendance = await prisma.sessionAttendance.findUnique({
       where: { sessionId_userId: { sessionId, userId } },
-      update: { groupId, status: "joined" },
-      create: { sessionId, userId, groupId, status: "joined" },
     });
+
+    const updateData = getJoinUpdateData(existingAttendance?.status ?? null, groupId);
+    const attendance = existingAttendance
+      ? await prisma.sessionAttendance.update({
+          where: { sessionId_userId: { sessionId, userId } },
+          data: updateData,
+        })
+      : await prisma.sessionAttendance.create({
+          data: { sessionId, userId, groupId, status: "joined" },
+        });
 
     return jsonOk(attendance);
   } catch (e) {

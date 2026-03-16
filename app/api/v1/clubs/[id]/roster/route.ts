@@ -3,6 +3,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/server/prisma";
 import { jsonOk, jsonError } from "@/lib/server/api-response";
+import { requireAuth } from "@/lib/server/auth-helpers";
+import { requireClubPermission } from "@/lib/server/role-checks";
 import { clubIdParamSchema } from "@/lib/server/validators";
 
 export async function GET(
@@ -10,6 +12,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
+    const userId = requireAuth(req);
     const params = await context.params;
     const parsed = clubIdParamSchema.safeParse(params);
     if (!parsed.success) {
@@ -26,6 +29,12 @@ export async function GET(
       select: { id: true },
     });
     if (!club) return jsonError("Club not found", "NOT_FOUND", 404);
+
+    try {
+      await requireClubPermission(userId, clubId, "manage_club");
+    } catch {
+      return jsonError("Forbidden", "FORBIDDEN", 403);
+    }
 
     const memberships = await prisma.clubMembership.findMany({
       where: { clubId, status: "approved" },
@@ -53,6 +62,9 @@ export async function GET(
 
     return jsonOk({ clubId, members });
   } catch (e) {
+    if (e instanceof Error && e.message === "UNAUTHORIZED") {
+      return jsonError("Unauthorized", "UNAUTHORIZED", 401);
+    }
     console.error("Get roster:", e);
     return jsonError("Internal server error", "INTERNAL_ERROR", 500);
   }
