@@ -216,6 +216,18 @@ export type ClubCreateInput = {
   city?: string | null;
 };
 
+export type ClubUpdateInput = {
+  name?: string;
+  description?: string | null;
+  visibility?: ClubVisibility;
+  accessCode?: string;
+};
+
+export type ClubMemberGroupInput = {
+  userId: string;
+  groupId: "A" | "B" | "C" | "D";
+};
+
 export type ClubJoinByCodeInput = {
   code: string;
 };
@@ -344,6 +356,8 @@ export type ApiSession = {
   coachAdvice?: string | null;
   coachPhone?: string | null;
   coachName?: string | null;
+  attendanceStatus?: AttendanceStatus | null;
+  attendanceGroupId?: string | null;
 };
 
 export type SessionCreateInput = {

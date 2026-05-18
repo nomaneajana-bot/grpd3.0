@@ -10,23 +10,23 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
 
-import { Card } from "../../components/ui/Card";
-import { Toast } from "../../components/ui/Toast";
-import { colors, spacing } from "../../constants/ui";
-import { useToast } from "../../hooks/useToast";
+import { Card } from "@/components/ui/Card";
+import { Toast } from "@/components/ui/Toast";
+import { colors, spacing } from "@/constants/ui";
+import { useToast } from "@/hooks/useToast";
 import {
   createApiClient,
   createClubInvite,
   getMyMemberships,
   joinClubByCode,
   requestClubJoinBySlug,
-} from "../../lib/api";
-import type { ClubMembership } from "../../types/api";
+} from "@/lib/api";
+import type { ClubMembership } from "@/types/api";
 
-export default function ClubScreen() {
+export default function ClubAccessScreen() {
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [inviteCode, setInviteCode] = useState("");
@@ -48,10 +48,6 @@ export default function ClubScreen() {
     } catch (error) {
       console.warn("Failed to load memberships:", error);
       setMemberships([]);
-      showToast(
-        "Impossible de charger tes clubs. Vérifie l'API.",
-        "error",
-      );
     } finally {
       setIsLoading(false);
     }
@@ -71,14 +67,6 @@ export default function ClubScreen() {
   const isCoachOrAdmin =
     isApprovedMember &&
     (primaryMembership?.role === "admin" || primaryMembership?.role === "coach");
-  const roleLabel =
-    primaryMembership?.role === "admin"
-      ? "Admin"
-      : primaryMembership?.role === "coach"
-        ? "Coach"
-        : primaryMembership?.role === "member"
-          ? "Membre"
-          : null;
 
   const handleJoinByCode = async () => {
     if (!inviteCode.trim()) {
@@ -122,7 +110,8 @@ export default function ClubScreen() {
       await loadMemberships();
     } catch (error: unknown) {
       console.warn("Request join failed:", error);
-      const msg = error instanceof Error ? error.message : "Impossible d'envoyer la demande.";
+      const msg =
+        error instanceof Error ? error.message : "Impossible d'envoyer la demande.";
       showToast(msg, "error");
     } finally {
       setIsSubmitting(false);
@@ -162,7 +151,6 @@ export default function ClubScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
-
       {toast && (
         <Toast
           message={toast.message}
@@ -172,76 +160,35 @@ export default function ClubScreen() {
       )}
 
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backRow}>
-          <Text style={styles.backIcon}>←</Text>
-          <Text style={styles.backLabel}>Retour</Text>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backRow}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={styles.backIcon}>‹</Text>
+          <Text style={styles.backLabel}>Club</Text>
         </Pressable>
-        <View style={styles.headerRow}>
-          <Text style={styles.screenTitle}>Club / Communauté</Text>
-          <Pressable
-            onPress={loadMemberships}
-            style={({ pressed }) => [
-              styles.refreshButton,
-              pressed && styles.refreshButtonPressed,
-            ]}
-          >
-            <Text style={styles.refreshButtonText}>Rafraîchir</Text>
-          </Pressable>
-        </View>
+        <Text style={styles.title}>Accès club</Text>
+        <Text style={styles.subtitle}>
+          Invitations, demandes et administration.
+        </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Card style={styles.card}>
-          <Text style={styles.cardLabel}>CLUB ACTUEL</Text>
-          {isLoading ? (
-            <Text style={styles.cardValue}>Chargement...</Text>
-          ) : primaryMembership?.club?.name ? (
-            <>
-              <View style={styles.clubHeaderRow}>
-                <Text style={styles.cardValue}>
-                  {primaryMembership.club.name}
-                </Text>
-                {roleLabel && (
-                  <View style={styles.rolePill}>
-                    <Text style={styles.rolePillText}>{roleLabel}</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.cardSubtext}>
-                Statut :{" "}
-                {isApprovedMember
-                  ? "Membre"
-                  : isPendingMember
-                    ? "En attente"
-                    : "Non actif"}
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.cardValue}>
-                Pas de club — ce n’est pas obligatoire.
-              </Text>
-              {!isApprovedMember && (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.createButton,
-                    pressed && styles.createButtonPressed,
-                  ]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push("/club/create" as Href);
-                  }}
-                >
-                  <Text style={styles.createButtonText}>Créer un club</Text>
-                </Pressable>
-              )}
-            </>
-          )}
-        </Card>
-
         {isCoachOrAdmin && (
           <Card style={styles.card}>
             <Text style={styles.cardLabel}>RESPONSABLE</Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pressed && styles.secondaryButtonPressed,
+              ]}
+              onPress={() => router.push("/(tabs)/club/admin" as Href)}
+            >
+              <Text style={styles.secondaryButtonText}>
+                Demandes en attente
+              </Text>
+            </Pressable>
             <Pressable
               style={({ pressed }) => [
                 styles.secondaryButton,
@@ -252,7 +199,7 @@ export default function ClubScreen() {
               disabled={isGeneratingInvite}
             >
               <Text style={styles.secondaryButtonText}>
-                Générer un code d’invitation
+                Générer un code d&apos;invitation
               </Text>
             </Pressable>
             {generatedInviteCode && (
@@ -275,15 +222,13 @@ export default function ClubScreen() {
         <Card style={styles.card}>
           <Text style={styles.cardLabel}>REJOINDRE AVEC CODE</Text>
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>
-              Code d’invitation (optionnel)
-            </Text>
+            <Text style={styles.fieldLabel}>Code d&apos;invitation</Text>
             <TextInput
               style={styles.textInput}
               value={inviteCode}
               onChangeText={setInviteCode}
-              placeholder="Ex: JAIME123"
-              placeholderTextColor="#666"
+              placeholder="Ex: CRC2026"
+              placeholderTextColor={colors.text.tertiary}
               autoCapitalize="characters"
               editable={!isApprovedMember}
             />
@@ -303,7 +248,7 @@ export default function ClubScreen() {
           </Pressable>
           {isApprovedMember && (
             <Text style={styles.helperText}>
-              Tu es déjà membre d’un club.
+              Tu es déjà membre d&apos;un club.
             </Text>
           )}
         </Card>
@@ -316,13 +261,13 @@ export default function ClubScreen() {
               style={styles.textInput}
               value={clubSlug}
               onChangeText={setClubSlug}
-              placeholder="Ex: Jaime courir"
-              placeholderTextColor="#666"
+              placeholder="Ex: Casablanca Running Club"
+              placeholderTextColor={colors.text.tertiary}
               autoCapitalize="none"
               editable={!isInClub}
             />
             <Text style={styles.helperText}>
-              Si tu n'as pas de code, entre le nom du club.
+              Si tu n&apos;as pas de code, entre le nom du club.
             </Text>
           </View>
           <View style={styles.fieldRow}>
@@ -332,7 +277,7 @@ export default function ClubScreen() {
               value={requestMessage}
               onChangeText={setRequestMessage}
               placeholder="Pourquoi tu veux rejoindre ?"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.text.tertiary}
               autoCapitalize="sentences"
               editable={!isInClub}
             />
@@ -358,12 +303,29 @@ export default function ClubScreen() {
               Un responsable du club doit valider ta demande.
             </Text>
           )}
-          {isApprovedMember && (
-            <Text style={styles.helperText}>
-              Pour changer de club, contacte un responsable du club.
-            </Text>
-          )}
         </Card>
+
+        {!isApprovedMember && (
+          <Card style={styles.card}>
+            <Text style={styles.cardLabel}>CRÉER UN CLUB</Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.createButton,
+                pressed && styles.createButtonPressed,
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/(tabs)/club/create" as Href);
+              }}
+            >
+              <Text style={styles.createButtonText}>Créer un club</Text>
+            </Pressable>
+          </Card>
+        )}
+
+        {isLoading ? (
+          <Text style={styles.helperText}>Chargement…</Text>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -375,52 +337,39 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   header: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingHorizontal: 14,
+    paddingTop: 6,
+    paddingBottom: 10,
   },
   backRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: spacing.md,
+    marginBottom: 8,
   },
   backIcon: {
-    color: colors.text.accent,
-    fontSize: 18,
-    marginRight: 6,
+    color: colors.text.primary,
+    fontSize: 28,
+    fontWeight: "300",
+    marginRight: 4,
   },
   backLabel: {
-    color: colors.text.accent,
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  screenTitle: {
-    color: colors.text.primary,
-    fontSize: 22,
-    fontWeight: "700",
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  refreshButton: {
-    borderWidth: 1,
-    borderColor: colors.border.medium,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  refreshButtonPressed: {
-    opacity: 0.8,
-  },
-  refreshButtonText: {
     color: colors.text.secondary,
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: "600",
   },
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: colors.text.primary,
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginTop: 4,
+  },
   content: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 14,
     paddingBottom: spacing.xl,
   },
   card: {
@@ -435,34 +384,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 8,
     textTransform: "uppercase",
-  },
-  cardValue: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  cardSubtext: {
-    color: colors.text.secondary,
-    fontSize: 13,
-    marginTop: 6,
-  },
-  clubHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  rolePill: {
-    borderWidth: 1,
-    borderColor: colors.border.medium,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  rolePillText: {
-    color: colors.text.secondary,
-    fontSize: 11,
-    fontWeight: "600",
   },
   fieldRow: {
     marginBottom: spacing.sm,
@@ -495,22 +416,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
-  createButton: {
-    marginTop: spacing.sm,
-    borderColor: colors.border.medium,
-    borderWidth: 1,
-    paddingVertical: 10,
-    borderRadius: 999,
-    alignItems: "center",
-  },
-  createButtonPressed: {
-    opacity: 0.8,
-  },
-  createButtonText: {
-    color: colors.text.primary,
-    fontSize: 14,
-    fontWeight: "600",
-  },
   secondaryButton: {
     marginTop: spacing.sm,
     borderColor: colors.border.medium,
@@ -525,6 +430,22 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: colors.text.primary,
     fontSize: 15,
+    fontWeight: "600",
+  },
+  createButton: {
+    marginTop: spacing.sm,
+    borderColor: colors.border.medium,
+    borderWidth: 1,
+    paddingVertical: 10,
+    borderRadius: 999,
+    alignItems: "center",
+  },
+  createButtonPressed: {
+    opacity: 0.8,
+  },
+  createButtonText: {
+    color: colors.text.primary,
+    fontSize: 14,
     fontWeight: "600",
   },
   inviteRow: {

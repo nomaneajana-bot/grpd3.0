@@ -69,6 +69,15 @@ export type SessionData = {
   genderRestriction?: "women_only" | null; // Optional gender restriction (e.g., girls-only runs)
   /** Set when session is from API (club-linked). Used for matching membership. */
   clubId?: string | null;
+  attendanceStatus?:
+    | "joined"
+    | "suggested"
+    | "left"
+    | "requested"
+    | "waitlisted"
+    | "declined"
+    | null;
+  attendanceGroupId?: string | null;
 };
 
 export type SessionVisibility = "public" | "members";
@@ -88,6 +97,7 @@ export function apiSessionToSessionData(api: {
   recommendedGroupId: string;
   clubId?: string | null;
   visibility?: string;
+  genderRestriction?: string | null;
   hostGroupName?: string | null;
   meetingPoint?: string | null;
   coachAdvice?: string | null;
@@ -96,6 +106,15 @@ export function apiSessionToSessionData(api: {
   workoutId?: string | null;
   isCustom?: boolean;
   paceGroups?: { id: string; label: string; paceRange: string; runnersCount?: number; avgPaceSecondsPerKm?: number }[];
+  attendanceStatus?:
+    | "joined"
+    | "suggested"
+    | "left"
+    | "requested"
+    | "waitlisted"
+    | "declined"
+    | null;
+  attendanceGroupId?: string | null;
 }): SessionData {
   const apiPaceGroups = api.paceGroups ?? null;
   const hasPaceGroupsField = Array.isArray(apiPaceGroups);
@@ -138,10 +157,60 @@ export function apiSessionToSessionData(api: {
     coachPhone: api.coachPhone ?? undefined,
     coachName: api.coachName ?? undefined,
     clubId: api.clubId ?? null,
+    genderRestriction:
+      api.genderRestriction === "women" || api.genderRestriction === "women_only"
+        ? "women_only"
+        : null,
+    attendanceStatus: api.attendanceStatus ?? null,
+    attendanceGroupId: api.attendanceGroupId ?? null,
   };
 }
 
 export const SESSION_MAP: Record<string, SessionData> = {
+  "reprise-femmes-corniche": {
+    id: "reprise-femmes-corniche",
+    title: "REPRISE 100% FEMMES",
+    spot: "Corniche El Hank",
+    dateLabel: "MERCREDI 12 NOVEMBRE · 19:00",
+    dateISO: "2025-11-12",
+    timeMinutes: 19 * 60,
+    typeLabel: "FOOTING",
+    volume: "45 min · allure facile",
+    targetPace: "5:30–6:30/km",
+    estimatedDistanceKm: 8,
+    genderRestriction: "women_only",
+    paceGroups: [
+      {
+        id: "A",
+        label: "Groupe A",
+        paceRange: "4'00–4'30/km",
+        runnersCount: 2,
+        avgPaceSecondsPerKm: 255,
+      },
+      {
+        id: "B",
+        label: "Groupe B",
+        paceRange: "4'30–5'30/km",
+        runnersCount: 3,
+        avgPaceSecondsPerKm: 285,
+      },
+      {
+        id: "C",
+        label: "Groupe C",
+        paceRange: "5'30–6'30/km",
+        runnersCount: 3,
+        avgPaceSecondsPerKm: 330,
+      },
+      {
+        id: "D",
+        label: "Groupe D",
+        paceRange: "6'30+/km",
+        runnersCount: 6,
+        avgPaceSecondsPerKm: 390,
+      },
+    ],
+    recommendedGroupId: "C",
+  },
   "marina-fartlek-long": {
     id: "marina-fartlek-long",
     title: "FARTLEK LONG",

@@ -1,292 +1,102 @@
-import { router } from "expo-router";
-import React, { useState } from "react";
-import {
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    type TextStyle,
-    type ViewStyle,
-} from "react-native";
+import { type Href, router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text } from "react-native";
 
-import { borderRadius, colors, spacing, typography } from "../../constants/ui";
-import { createApiClient, loginWithPin, registerWithPin, registerDevice } from "../../lib/api";
-import { getOrCreateDeviceId, storeAuthData } from "../../lib/authStore";
-import { registerForPushNotificationsAsync } from "../../lib/notifications";
+import { AuthFlowLayout } from "@/components/auth/AuthFlowLayout";
+import { ReturningDeviceBanner } from "@/components/auth/ReturningDeviceBanner";
+import { CountryPhoneInput } from "@/components/onboarding/CountryPhoneInput";
+import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
+import { OnboardingTitle } from "@/components/onboarding/OnboardingTitle";
+import { authTheme } from "@/constants/authTheme";
+import { colors, typography } from "@/constants/ui";
+import { createApiClient, requestOtp } from "@/lib/api";
+import { getAuthData, getDeviceId, setUseMockApi } from "@/lib/authStore";
+import { setLoginOtpRequest, setLoginPhone } from "@/lib/loginFlowStore";
+
+const DEMO_PHONE = "0708060337";
+
+function isDemoPhone(digits: string): boolean {
+  const d = digits.replace(/\D/g, "");
+  return d === DEMO_PHONE || d === DEMO_PHONE.slice(1);
+}
 
 export default function PhoneScreen() {
-  const [phone, setPhone] = useState("");
-  const [pin, setPin] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [action, setAction] = useState<"login" | "register" | null>(null);
+  const [digits, setDigits] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [deviceRecognized, setDeviceRecognized] = useState(true);
 
-  const completeAuth = async (
-    result: { tokens: { accessToken: string; refreshToken: string; expiresInSeconds: number; refreshExpiresInSeconds: number }; user: { id: string; phone: string; profileComplete: boolean } },
-    deviceId: string,
-  ) => {
-    await storeAuthData({
-      tokens: result.tokens,
-      user: result.user,
-      deviceId,
-    });
+  useEffect(() => {
+    void (async () => {
+      const [auth, deviceId] = await Promise.all([getAuthData(), getDeviceId()]);
+      setDeviceRecognized(!!auth || !!deviceId);
+    })();
+  }, []);
 
-    try {
-      const pushToken = await registerForPushNotificationsAsync();
-      if (pushToken) {
-        const client = createApiClient();
-        await registerDevice(client, {
-          deviceId,
-          platform:
-            Platform.OS === "ios"
-              ? "ios"
-              : Platform.OS === "android"
-                ? "android"
-                : "web",
-          pushToken,
-        });
-      }
-    } catch (deviceError) {
-      console.warn("Device registration failed:", deviceError);
+  const handleReceiveCode = async () => {
+    const local = digits.replace(/\D/g, "");
+    if (local.length < 9) {
+      setError("Entre un numéro valide.");
+      return;
     }
-  };
-
-  const validateInputs = (): boolean => {
-    if (!phone.trim()) {
-      setError("Veuillez entrer un numéro de téléphone");
-      return false;
-    }
-
-    // Basic phone validation (you can enhance this)
-    const phoneRegex =
-      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
-    if (!phoneRegex.test(phone.trim())) {
-      setError("Numéro de téléphone invalide");
-      return false;
-    }
-
-    if (!pin.trim()) {
-      setError("Veuillez entrer un code à 6 chiffres");
-      return false;
-    }
-
-    if (!/^\d{6}$/.test(pin.trim())) {
-      setError("Le code doit contenir 6 chiffres");
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleLogin = async () => {
-    if (!validateInputs()) return;
-    setIsLoading(true);
-    setAction("login");
     setError(null);
+    setLoading(true);
+    const phone = local.startsWith("0") ? `+212${local.slice(1)}` : `+212${local}`;
+    const useMock = isDemoPhone(local);
     try {
-      const deviceId = await getOrCreateDeviceId();
-      const client = createApiClient();
-      const result = await loginWithPin(client, {
-        phone: phone.trim(),
-        pin: pin.trim(),
-        deviceId,
-      });
-      await completeAuth(result, deviceId);
-      router.replace("/(tabs)");
+      await setUseMockApi(useMock);
+      await setLoginPhone(phone);
+      const client = createApiClient(useMock ? { baseUrl: "" } : undefined);
+      try {
+        const otp = await requestOtp(client, { phone, channel: "sms" });
+        await setLoginOtpRequest({ phone, requestId: otp.requestId });
+      } catch {
+        // PIN-only backends: verify screen falls back to loginWithPin.
+      }
+      router.push("/(auth)/verify" as Href);
     } catch (err: unknown) {
-      console.error("Login failed:", err);
       if (err instanceof Error) {
-        setError(err.message || "Erreur lors de la connexion");
+        setError(err.message || "Impossible d'envoyer le code.");
       } else {
-        setError("Erreur lors de la connexion");
+        setError("Impossible d'envoyer le code.");
       }
     } finally {
-      setIsLoading(false);
-      setAction(null);
-    }
-  };
-
-  const handleRegister = async () => {
-    if (!validateInputs()) return;
-    setIsLoading(true);
-    setAction("register");
-    setError(null);
-    try {
-      const deviceId = await getOrCreateDeviceId();
-      const client = createApiClient();
-      const result = await registerWithPin(client, {
-        phone: phone.trim(),
-        pin: pin.trim(),
-        deviceId,
-      });
-      await completeAuth(result, deviceId);
-      router.replace("/(tabs)");
-    } catch (err: unknown) {
-      console.error("Register failed:", err);
-      if (err instanceof Error) {
-        setError(err.message || "Erreur lors de la création");
-      } else {
-        setError("Erreur lors de la création");
-      }
-    } finally {
-      setIsLoading(false);
-      setAction(null);
+      setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={styles.content}>
-        <Text style={styles.title}>Connexion</Text>
-        <Text style={styles.subtitle}>
-          Entre ton numéro et ton code secret (6 chiffres). Pas de SMS.
-        </Text>
-
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="+33 6 12 34 56 78"
-            placeholderTextColor={colors.text.disabled}
-            value={phone}
-            onChangeText={(text) => {
-              setPhone(text);
-              setError(null);
-            }}
-            keyboardType="phone-pad"
-            autoComplete="tel"
-            autoFocus
-            editable={!isLoading}
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Code 6 chiffres"
-            placeholderTextColor={colors.text.disabled}
-            value={pin}
-            onChangeText={(text) => {
-              setPin(text.replace(/[^0-9]/g, "").slice(0, 6));
-              setError(null);
-            }}
-            keyboardType="number-pad"
-            secureTextEntry
-            editable={!isLoading}
-          />
-        </View>
-
-        {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
-
-        <TouchableOpacity
-          style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={isLoading}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.buttonText}>
-            {action === "login" ? "Connexion..." : "Se connecter"}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.secondaryButton, isLoading && styles.buttonDisabled]}
-          onPress={handleRegister}
-          disabled={isLoading}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.secondaryButtonText}>
-            {action === "register" ? "Création..." : "Créer un compte"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+    <AuthFlowLayout progressFill={authTheme.phoneProgressFill}>
+      <OnboardingScreen
+        scroll
+        ctaVariant="welcome"
+        paddingHorizontal={authTheme.screenPaddingHorizontal}
+        primaryLabel="Recevoir le code"
+        onPrimaryPress={() => void handleReceiveCode()}
+        primaryDisabled={digits.replace(/\D/g, "").length < 9}
+        primaryLoading={loading}
+        secondaryLabel="Je n'ai pas encore de compte"
+        onSecondaryPress={() => router.replace("/(auth)/onboarding" as Href)}
+      >
+        <OnboardingTitle
+          variant="auth"
+          kicker="CONNEXION"
+          title="Bon retour."
+          titleMuted="Ton numéro ?"
+          subtitle="On t'envoie un code pour confirmer que c'est bien toi."
+        />
+        <CountryPhoneInput value={digits} onChange={setDigits} />
+        {deviceRecognized ? <ReturningDeviceBanner /> : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+      </OnboardingScreen>
+    </AuthFlowLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-  } as ViewStyle,
-  content: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: 100,
-  } as ViewStyle,
-  title: {
-    color: colors.text.primary,
-    fontSize: typography.sizes["3xl"],
-    fontWeight: typography.weights.bold,
-    marginBottom: spacing.sm,
-  } as TextStyle,
-  subtitle: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.base,
-    marginBottom: spacing.xl,
-    lineHeight: 22,
-  } as TextStyle,
-  inputContainer: {
-    marginBottom: spacing.md,
-  } as ViewStyle,
-  input: {
-    backgroundColor: colors.background.input,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    color: colors.text.primary,
-    fontSize: typography.sizes.base,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  } as TextStyle,
-  errorContainer: {
-    marginBottom: spacing.md,
-    padding: spacing.sm,
-    backgroundColor: colors.accent.error + "20",
-    borderRadius: borderRadius.sm,
-  } as ViewStyle,
-  errorText: {
+  error: {
     color: colors.text.error,
+    marginTop: 12,
     fontSize: typography.sizes.sm,
-  } as TextStyle,
-  button: {
-    backgroundColor: colors.accent.primary,
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    alignItems: "center",
-    marginTop: spacing.md,
-  } as ViewStyle,
-  secondaryButton: {
-    backgroundColor: "transparent",
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    alignItems: "center",
-    marginTop: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  } as ViewStyle,
-  buttonDisabled: {
-    opacity: 0.6,
-  } as ViewStyle,
-  buttonText: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold,
-  } as TextStyle,
-  secondaryButtonText: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold,
-  } as TextStyle,
+  },
 });

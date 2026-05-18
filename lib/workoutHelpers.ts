@@ -8,6 +8,17 @@ import {
 import type { RunTypeId, WorkoutEntity } from "./workoutStore";
 import type { WorkoutBlock } from "./workoutTypes";
 
+const DEFAULT_WORKOUT_NAME = "Nouveau workout";
+
+/** Prefer a user-facing name; falls back to nested workout.title when out of sync. */
+export function getWorkoutDisplayName(workout: WorkoutEntity): string {
+  const name = workout.name?.trim() ?? "";
+  const title = workout.workout?.title?.trim() ?? "";
+  if (name && name !== DEFAULT_WORKOUT_NAME) return name;
+  if (title && title !== DEFAULT_WORKOUT_NAME) return title;
+  return name || title || DEFAULT_WORKOUT_NAME;
+}
+
 // Format pace from seconds per km (e.g. 310 -> "5'10/km")
 function formatPace(secondsPerKm: number): string {
   const minutes = Math.floor(secondsPerKm / 60);

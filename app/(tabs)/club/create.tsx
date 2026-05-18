@@ -12,11 +12,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
 
-import { Card } from "../../components/ui/Card";
-import { Toast } from "../../components/ui/Toast";
-import { colors, spacing } from "../../constants/ui";
-import { useToast } from "../../hooks/useToast";
-import { createApiClient, createClub } from "../../lib/api";
+import { Card } from "@/components/ui/Card";
+import { Toast } from "@/components/ui/Toast";
+import { colors, spacing } from "@/constants/ui";
+import { useToast } from "@/hooks/useToast";
+import { createApiClient, createClub } from "@/lib/api";
 
 export default function ClubCreateScreen() {
   const [name, setName] = useState("");

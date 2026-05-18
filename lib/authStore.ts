@@ -6,6 +6,7 @@ import type { AuthUser, TokenBundle } from '../types/api';
 const TOKENS_KEY = 'grpd_auth_tokens_v1';
 const USER_KEY = 'grpd_auth_user_v1';
 const DEVICE_ID_KEY = 'grpd_device_id_v1';
+const MOCK_API_KEY = 'grpd_use_mock_api_v1';
 
 export type StoredAuthData = {
   tokens: TokenBundle;
@@ -135,7 +136,7 @@ export async function getDeviceId(): Promise<string | null> {
  */
 export async function clearAuthData(): Promise<void> {
   try {
-    await AsyncStorage.multiRemove([TOKENS_KEY, USER_KEY]);
+    await AsyncStorage.multiRemove([TOKENS_KEY, USER_KEY, MOCK_API_KEY]);
     // Keep device ID for future logins
   } catch (error) {
     console.warn('Failed to clear auth data:', error);
@@ -149,4 +150,25 @@ export async function clearAuthData(): Promise<void> {
 export async function isAuthenticated(): Promise<boolean> {
   const data = await getAuthData();
   return data !== null;
+}
+
+export async function setUseMockApi(enabled: boolean): Promise<void> {
+  try {
+    if (enabled) {
+      await AsyncStorage.setItem(MOCK_API_KEY, 'true');
+      return;
+    }
+    await AsyncStorage.removeItem(MOCK_API_KEY);
+  } catch (error) {
+    console.warn('Failed to update mock API preference:', error);
+  }
+}
+
+export async function shouldUseMockApi(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(MOCK_API_KEY)) === 'true';
+  } catch (error) {
+    console.warn('Failed to read mock API preference:', error);
+    return false;
+  }
 }

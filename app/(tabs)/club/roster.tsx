@@ -12,21 +12,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
 
-import { Card } from "../../components/ui/Card";
-import { Toast } from "../../components/ui/Toast";
-import { colors, spacing } from "../../constants/ui";
-import { useToast } from "../../hooks/useToast";
+import { Card } from "@/components/ui/Card";
+import { Toast } from "@/components/ui/Toast";
+import { colors, spacing } from "@/constants/ui";
+import { useToast } from "@/hooks/useToast";
 import {
   createApiClient,
   getClubRoster,
   getMyMemberships,
-} from "../../lib/api";
+} from "@/lib/api";
 import type {
   ClubRosterMember,
   ClubRosterResult,
   ClubRole,
-} from "../../types/api";
-import type { PrSummaryRecord } from "../../types/api";
+} from "@/types/api";
+import type { PrSummaryRecord } from "@/types/api";
 
 const ROLE_OPTIONS: { value: "all" | ClubRole; label: string }[] = [
   { value: "all", label: "Tous" },

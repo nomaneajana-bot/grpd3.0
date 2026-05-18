@@ -1,5 +1,5 @@
-import { router, Stack, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { router, Stack, useLocalSearchParams, useNavigation } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
@@ -20,9 +20,14 @@ import type { TextStyle, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
+import { CoachBuilderAskCard } from "@/components/coach/CoachBuilderAskCard";
+import { SelectableChip } from "@/components/ui/SelectableChip";
+import { AddStepButton } from "@/components/workout/AddStepButton";
+import { getRunTypePillLabel } from "@/lib/workoutHelpers";
 import {
     borderRadius,
     colors,
+    hairline,
     spacing,
     typography,
 } from "../../../constants/ui";
@@ -44,9 +49,9 @@ import type {
 type BlockKey = "warmup" | "main" | "cooldown";
 
 const BLOCK_LABELS: Record<BlockKey, string> = {
-  warmup: "Échauffement",
-  main: "Séance principale",
-  cooldown: "Retour au calme",
+  warmup: "ÉCHAUFFEMENT",
+  main: "SÉANCE PRINCIPALE",
+  cooldown: "RETOUR AU CALME",
 };
 
 type StepFormState = {
@@ -84,6 +89,55 @@ function isDraftWorkout(workout: WorkoutEntity): boolean {
   if (hasSteps(workout.workout.main)) return false;
   if (hasSteps(workout.workout.cooldown)) return false;
   return true;
+}
+
+function serializeWorkoutForm(entity: WorkoutEntity): string {
+  return JSON.stringify({
+    name: entity.name,
+    description: entity.description,
+    runType: entity.runType,
+    workout: entity.workout,
+  });
+}
+
+function buildWorkoutEntityFromForm(
+  form: WorkoutEntity,
+  id: string | undefined,
+): WorkoutEntity {
+  const trimmedName = form.name.trim() || "Nouveau workout";
+  return {
+    ...form,
+    id: id || form.id,
+    name: trimmedName,
+    description: form.description?.trim() || undefined,
+    runType: form.runType || "fartlek",
+    createdAt: form.createdAt || Date.now(),
+    workout: {
+      ...form.workout,
+      id: form.workout.id || `${form.id}-workout`,
+      title: trimmedName,
+      warmup: [
+        "progressif",
+        "easy_run",
+        "recovery_run",
+        "long_run",
+      ].includes(form.runType)
+        ? undefined
+        : form.workout.warmup && form.workout.warmup.steps.length > 0
+          ? form.workout.warmup
+          : undefined,
+      cooldown: [
+        "progressif",
+        "easy_run",
+        "recovery_run",
+        "long_run",
+      ].includes(form.runType)
+        ? undefined
+        : form.workout.cooldown && form.workout.cooldown.steps.length > 0
+          ? form.workout.cooldown
+          : undefined,
+    },
+  };
 }
 
 // Pace picker options (same as session/create.tsx)
@@ -186,6 +240,55 @@ function formatStepSummary(step: WorkoutStep): string {
   }
 
   return pieces.join(" · ");
+}
+
+function kindToFrench(kind: WorkoutStepKind): string {
+  switch (kind) {
+    case "interval":
+      return "effort";
+    case "recovery":
+      return "récupération";
+    case "cooldown":
+      return "retour au calme";
+    case "easy":
+    default:
+      return "footing léger";
+  }
+}
+
+function formatStepPrimaryLine(step: WorkoutStep): string {
+  const desc = step.description?.trim();
+  if (desc) return desc;
+  const parts: string[] = [];
+  if (step.durationSeconds !== undefined) {
+    const min = Math.max(1, Math.round(step.durationSeconds / 60));
+    parts.push(`${min} min`);
+  }
+  if (step.distanceKm !== undefined) {
+    parts.push(`${step.distanceKm} km`);
+  }
+  parts.push(kindToFrench(step.kind));
+  return parts.join(" ");
+}
+
+function formatStepSecondaryLine(step: WorkoutStep): string | null {
+  if (
+    step.kind === "easy" &&
+    (step.targetPaceSecondsPerKm === undefined ||
+      step.targetPaceSecondsPerKm === null)
+  ) {
+    return "allure facile";
+  }
+  if (
+    step.targetPaceSecondsPerKm !== undefined &&
+    step.targetPaceSecondsPerKm !== null
+  ) {
+    return formatPace(step.targetPaceSecondsPerKm);
+  }
+  if (step.recoveryHrBpm) {
+    return `Cible FC: ${step.recoveryHrBpm} bpm`;
+  }
+  return null;
 }
 
 // DualPacePickerModal component for MIN/MAX pace selection
@@ -653,6 +756,9 @@ function parsePaceInput(value: string): number | undefined {
 
 export default function WorkoutEditScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const navigation = useNavigation();
+  const initialSnapshotRef = useRef<string | null>(null);
+  const isLeavingRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [form, setForm] = useState<WorkoutEntity | null>(null);
@@ -708,7 +814,7 @@ export default function WorkoutEditScreen() {
 
   /** Name field label based on run type (e.g. "Nom du fartlek", "Nom des séries") */
   const getWorkoutNameLabel = (runType: RunTypeId): string => {
-    const map: Partial<Record<RunTypeId, string>> = {
+    const map: Record<string, string> = {
       fartlek: "Nom du fartlek",
       progressif: "Nom du progressif",
       casual_run: "Nom de la course libre",
@@ -775,6 +881,7 @@ export default function WorkoutEditScreen() {
           // Safety: ensure runType is always set
           cloned.runType = cloned.runType || "fartlek";
           setForm(cloned);
+          initialSnapshotRef.current = serializeWorkoutForm(cloned);
           setRepeatCountInput(
             cloned.workout.main?.repeatCount
               ? String(cloned.workout.main.repeatCount)
@@ -929,6 +1036,50 @@ export default function WorkoutEditScreen() {
 
     load();
   }, [id]);
+
+  const persistFormIfDirty = useCallback(async (): Promise<void> => {
+    if (!form || !initialSnapshotRef.current) return;
+    if (serializeWorkoutForm(form) === initialSnapshotRef.current) return;
+    const updated = buildWorkoutEntityFromForm(form, id);
+    await upsertWorkout(updated);
+    initialSnapshotRef.current = serializeWorkoutForm(updated);
+  }, [form, id]);
+
+  const handleBack = useCallback(async () => {
+    if (!isLeavingRef.current) {
+      try {
+        await persistFormIfDirty();
+      } catch (error) {
+        console.warn("Failed to autosave workout on leave:", error);
+      }
+    }
+    isLeavingRef.current = true;
+    router.back();
+  }, [persistFormIfDirty]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (event) => {
+      if (isLeavingRef.current || !form || !initialSnapshotRef.current) {
+        return;
+      }
+      if (serializeWorkoutForm(form) === initialSnapshotRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+      isLeavingRef.current = true;
+      void (async () => {
+        try {
+          await persistFormIfDirty();
+        } catch (error) {
+          console.warn("Failed to autosave workout on leave:", error);
+        } finally {
+          navigation.dispatch(event.data.action);
+        }
+      })();
+    });
+    return unsubscribe;
+  }, [navigation, form, persistFormIfDirty]);
 
   useEffect(() => {
     return () => {
@@ -1341,43 +1492,10 @@ export default function WorkoutEditScreen() {
 
     setIsSaving(true);
     try {
-      const updatedWorkout: WorkoutEntity = {
-        ...form,
-        id: id || form.id, // Ensure id is set (for new workouts)
-        name: form.name.trim() || "Nouveau workout", // Fallback only if truly empty
-        description: form.description?.trim() || undefined,
-        runType: form.runType || "fartlek", // Ensure runType is set (safety net, should always be set by UI)
-        createdAt: form.createdAt || Date.now(), // Preserve createdAt or set if new
-        // lastUsedAt is preserved (not updated on save, only when used in session)
-        workout: {
-          ...form.workout,
-          id: form.workout.id || `${form.id}-workout`,
-          title: form.name.trim() || "Nouveau workout",
-          // For specialized run types, never save warmup/cooldown
-          warmup: [
-            "progressif",
-            "easy_run",
-            "recovery_run",
-            "long_run",
-          ].includes(form.runType)
-            ? undefined
-            : form.workout.warmup && form.workout.warmup.steps.length > 0
-              ? form.workout.warmup
-              : undefined,
-          cooldown: [
-            "progressif",
-            "easy_run",
-            "recovery_run",
-            "long_run",
-          ].includes(form.runType)
-            ? undefined
-            : form.workout.cooldown && form.workout.cooldown.steps.length > 0
-              ? form.workout.cooldown
-              : undefined,
-        },
-      };
-
+      const updatedWorkout = buildWorkoutEntityFromForm(form, id);
       await upsertWorkout(updatedWorkout);
+      initialSnapshotRef.current = serializeWorkoutForm(updatedWorkout);
+      isLeavingRef.current = true;
       // Always navigate to Workouts tab list after save
       router.replace("/(tabs)/workouts");
     } catch (error) {
@@ -2619,52 +2737,37 @@ export default function WorkoutEditScreen() {
           )}
 
           {steps.length === 0 ? (
-            <TouchableOpacity
-              style={styles.addStepEmpty}
-              onPress={() => openStepModal(blockKey)}
-            >
-              <Text style={styles.addStepEmptyText}>Ajouter une étape</Text>
-            </TouchableOpacity>
+            <AddStepButton onPress={() => openStepModal(blockKey)} />
           ) : (
             <>
-              {steps.map((step, index) => (
-                <View key={step.id}>
-                  {index > 0 && <View style={styles.stepDivider} />}
-                  <View style={styles.stepRow}>
-                    <View style={styles.stepInfo}>
-                      <Text style={styles.stepLabel}>
-                        {formatStepSummary(step)}
-                      </Text>
-                      {step.recoveryHrBpm ? (
-                        <Text style={styles.stepSubLabel}>
-                          Cible FC: {step.recoveryHrBpm} bpm
+              {steps.map((step, index) => {
+                const secondary = formatStepSecondaryLine(step);
+                return (
+                  <View key={step.id}>
+                    {index > 0 && <View style={styles.stepDivider} />}
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.stepRow,
+                        pressed && styles.stepRowPressed,
+                      ]}
+                      onPress={() => openStepModal(blockKey, index)}
+                    >
+                      <View style={styles.stepInfo}>
+                        <Text style={styles.stepLabel}>
+                          {formatStepPrimaryLine(step)}
                         </Text>
-                      ) : null}
-                    </View>
-                    <View style={styles.stepActions}>
-                      <TouchableOpacity
-                        onPress={() => openStepModal(blockKey, index)}
-                        style={styles.stepActionButton}
-                      >
-                        <Text style={styles.stepActionText}>Modifier</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleDeleteStep(blockKey, index)}
-                        style={styles.deleteStepButton}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Text style={styles.deleteStepText}>✕</Text>
-                      </TouchableOpacity>
-                    </View>
+                        {secondary ? (
+                          <Text style={styles.stepSubLabel}>{secondary}</Text>
+                        ) : null}
+                      </View>
+                    </Pressable>
                   </View>
-                </View>
-              ))}
-              <TouchableOpacity
-                style={styles.addStepRow}
+                );
+              })}
+              <AddStepButton
+                style={styles.addStepAfterList}
                 onPress={() => openStepModal(blockKey)}
-              >
-                <Text style={styles.addStepRowText}>+ Ajouter une étape</Text>
-              </TouchableOpacity>
+              />
             </>
           )}
         </View>
@@ -2708,50 +2811,37 @@ export default function WorkoutEditScreen() {
           keyboardDismissMode="on-drag"
         >
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Infos de base</Text>
+            <Text style={styles.sectionTitle}>INFOS DE BASE</Text>
             <View style={styles.card}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{getWorkoutNameLabel(form.runType)}</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={form.name}
-                  onChangeText={handleChangeName}
-                  placeholder="Nouveau workout"
-                  placeholderTextColor="#6F6F6F"
-                />
-                {validationErrors.name ? (
-                  <Text style={styles.errorText}>{validationErrors.name}</Text>
-                ) : null}
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Description</Text>
-                <TextInput
-                  style={[styles.textInput, styles.multilineInput]}
-                  value={form.description ?? ""}
-                  onChangeText={handleChangeDescription}
-                  placeholder="Notes, intentions, sensations..."
-                  placeholderTextColor="#6F6F6F"
-                  multiline
-                />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Type de course</Text>
-                <TouchableOpacity
-                  style={styles.pickerRow}
-                  onPress={() => setShowRunTypePicker(true)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.pickerRowText}>
-                    {getRunTypeLabel(form.runType)}
-                  </Text>
-                  <Text style={styles.pickerRowArrow}>›</Text>
-                </TouchableOpacity>
-              </View>
+              <TextInput
+                style={styles.nameInput}
+                value={form.name}
+                onChangeText={handleChangeName}
+                placeholder={getWorkoutNameLabel(form.runType)}
+                placeholderTextColor={colors.text.tertiary}
+              />
+              {validationErrors.name ? (
+                <Text style={styles.errorText}>{validationErrors.name}</Text>
+              ) : null}
+              <TextInput
+                style={[styles.textInput, styles.multilineInput, styles.notesInput]}
+                value={form.description ?? ""}
+                onChangeText={handleChangeDescription}
+                placeholder="Notes, intentions, sensations..."
+                placeholderTextColor={colors.text.tertiary}
+                multiline
+              />
+              <SelectableChip
+                label={getRunTypePillLabel(form.runType)}
+                selected
+                uppercase
+                onPress={() => setShowRunTypePicker(true)}
+                style={styles.runTypeChip}
+                trailing={<Text style={styles.runTypeChipChevron}>›</Text>}
+                accessibilityLabel={`Type de course : ${getRunTypePillLabel(form.runType)}. Appuyer pour modifier.`}
+              />
             </View>
           </View>
-
-          {/* Run type description */}
-          {renderRunTypeDescription()}
 
           {/* Run-type specific builders */}
           {renderProgressifBuilder()}
@@ -2763,18 +2853,20 @@ export default function WorkoutEditScreen() {
           {renderBlockSection("warmup")}
           {renderBlockSection("main")}
           {renderBlockSection("cooldown")}
+
+          {form ? <CoachBuilderAskCard runType={form.runType} /> : null}
         </ScrollView>
 
         <View style={styles.footer}>
           <TouchableOpacity
             style={[
-              styles.primaryButton,
+              styles.footerOutlineButton,
               isSaving && styles.primaryButtonDisabled,
             ]}
             onPress={handleSaveWorkout}
             disabled={isSaving}
           >
-            <Text style={styles.primaryButtonText}>
+            <Text style={styles.footerOutlineButtonText}>
               {isSaving ? "Enregistrement..." : "Enregistrer"}
             </Text>
           </TouchableOpacity>
@@ -2984,6 +3076,25 @@ export default function WorkoutEditScreen() {
 
                   <View style={styles.modalDivider} />
 
+                  {stepContext?.stepIndex !== undefined ? (
+                    <TouchableOpacity
+                      style={styles.modalDeleteLink}
+                      onPress={() => {
+                        if (stepContext) {
+                          handleDeleteStep(
+                            stepContext.blockKey,
+                            stepContext.stepIndex!,
+                          );
+                          closeStepModal();
+                        }
+                      }}
+                    >
+                      <Text style={styles.modalDeleteLinkText}>
+                        Supprimer l&apos;étape
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+
                   <View style={styles.modalActions}>
                     <TouchableOpacity
                       style={[
@@ -2999,7 +3110,7 @@ export default function WorkoutEditScreen() {
                       onPress={handleSaveStep}
                     >
                       <Text style={styles.primaryButtonText}>
-                        Enregistrer l’étape
+                        Enregistrer l&apos;étape
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -3029,16 +3140,31 @@ export default function WorkoutEditScreen() {
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <View style={styles.headerTopRow}>
+        <View style={styles.headerNavRow}>
           <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backRow}
+            onPress={() => void handleBack()}
+            style={styles.headerBackCircle}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={styles.backIcon}>←</Text>
-            <Text style={styles.backLabel}>Annuler</Text>
+            <Text style={styles.headerBackChevron}>‹</Text>
           </TouchableOpacity>
-          <Text style={styles.screenTitle}>Modifier le workout</Text>
+          <Text style={styles.screenTitle} numberOfLines={1}>
+            Modifier le workout
+          </Text>
+          <TouchableOpacity
+            onPress={handleSaveWorkout}
+            disabled={isSaving}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text
+              style={[
+                styles.headerSaveAction,
+                isSaving && styles.headerSaveActionDisabled,
+              ]}
+            >
+              {isSaving ? "…" : "Enregistrer"}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
       {renderContent()}
@@ -3066,11 +3192,23 @@ export default function WorkoutEditScreen() {
 type EditStyles = {
   safeArea: ViewStyle;
   header: ViewStyle;
+  headerNavRow: ViewStyle;
+  headerBackCircle: ViewStyle;
+  headerBackChevron: TextStyle;
+  headerSaveAction: TextStyle;
+  headerSaveActionDisabled: TextStyle;
   headerTopRow: ViewStyle;
   backRow: ViewStyle;
   backIcon: TextStyle;
   backLabel: TextStyle;
   screenTitle: TextStyle;
+  nameInput: TextStyle;
+  notesInput: TextStyle;
+  runTypeChip: ViewStyle;
+  runTypeChipChevron: TextStyle;
+  stepRowPressed: ViewStyle;
+  footerOutlineButton: ViewStyle;
+  footerOutlineButtonText: TextStyle;
   scroll: ViewStyle;
   content: ViewStyle;
   section: ViewStyle;
@@ -3085,8 +3223,7 @@ type EditStyles = {
   inputLabel: TextStyle;
   textInput: TextStyle;
   multilineInput: TextStyle;
-  addStepEmpty: ViewStyle;
-  addStepEmptyText: TextStyle;
+  addStepAfterList: ViewStyle;
   stepDivider: ViewStyle;
   stepRow: ViewStyle;
   stepInfo: ViewStyle;
@@ -3097,8 +3234,6 @@ type EditStyles = {
   stepActionText: TextStyle;
   deleteStepButton: ViewStyle;
   deleteStepText: TextStyle;
-  addStepRow: ViewStyle;
-  addStepRowText: TextStyle;
   footer: ViewStyle;
   primaryButton: ViewStyle;
   primaryButtonDisabled: ViewStyle;
@@ -3130,6 +3265,8 @@ type EditStyles = {
   inlineInputGroupSpacing: ViewStyle;
   modalActions: ViewStyle;
   modalActionSpacing: ViewStyle;
+  modalDeleteLink: ViewStyle;
+  modalDeleteLinkText: TextStyle;
   errorContainer: ViewStyle;
   pickerBackdrop: ViewStyle;
   pickerContainer: ViewStyle;
@@ -3204,13 +3341,42 @@ type EditStyles = {
 const styles = StyleSheet.create<EditStyles>({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0B0B0B",
+    backgroundColor: colors.background.primary,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingHorizontal: spacing.screenHorizontal,
+    paddingTop: 8,
     paddingBottom: 8,
-    backgroundColor: "#0B0B0B",
+    backgroundColor: colors.background.primary,
+  },
+  headerNavRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerBackCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface.s3,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerBackChevron: {
+    color: colors.text.primary,
+    fontSize: 22,
+    fontWeight: "300",
+    marginTop: -2,
+  },
+  headerSaveAction: {
+    color: colors.text.accent,
+    fontSize: typography.sizes.md,
+    fontWeight: "700",
+    minWidth: 88,
+    textAlign: "right",
+  },
+  headerSaveActionDisabled: {
+    opacity: 0.5,
   },
   headerTopRow: {
     flexDirection: "row",
@@ -3222,45 +3388,91 @@ const styles = StyleSheet.create<EditStyles>({
     alignItems: "center",
   },
   backIcon: {
-    color: "#2081FF",
+    color: colors.text.accent,
     fontSize: 18,
     marginRight: 4,
   },
   backLabel: {
-    color: "#2081FF",
+    color: colors.text.accent,
     fontSize: 16,
     fontWeight: "500",
   },
   screenTitle: {
-    color: "#FFFFFF",
-    fontSize: 22,
+    flex: 1,
+    color: colors.text.primary,
+    fontSize: 17,
+    fontWeight: "700",
+    textAlign: "center",
+    marginHorizontal: 8,
+  },
+  nameInput: {
+    color: colors.text.primary,
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: spacing.sm,
+    paddingVertical: 4,
+  },
+  notesInput: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+    minHeight: 72,
+  },
+  runTypeChip: {
+    alignSelf: "flex-start",
+    marginTop: spacing.xs,
+    minHeight: 40,
+    paddingRight: 10,
+  },
+  runTypeChipChevron: {
+    color: colors.text.accent,
+    fontSize: 18,
+    fontWeight: "600",
+    lineHeight: 20,
+    marginLeft: 2,
+  },
+  stepRowPressed: {
+    opacity: 0.88,
+  },
+  footerOutlineButton: {
+    width: "100%",
+    borderRadius: borderRadius.lg,
+    borderWidth: hairline,
+    borderColor: colors.border.medium,
+    backgroundColor: colors.background.primary,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footerOutlineButtonText: {
+    color: colors.text.primary,
+    fontSize: typography.sizes.lg,
     fontWeight: "700",
   },
   scroll: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.screenHorizontal,
     paddingBottom: 120,
-    paddingTop: 16,
+    paddingTop: 8,
   },
   section: {
     marginBottom: 20,
   },
   sectionTitle: {
-    color: "#BFBFBF",
-    fontSize: 13,
+    color: colors.text.secondary,
+    fontSize: typography.sizes.sm,
     fontWeight: "600",
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
     textTransform: "uppercase",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   card: {
-    backgroundColor: "#131313",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
-    padding: 16,
+    backgroundColor: colors.surface.s2,
+    borderRadius: borderRadius.lg,
+    borderWidth: hairline,
+    borderColor: colors.border.default,
+    padding: spacing.md,
   },
   runTypeInfoCard: {
     backgroundColor: colors.pill.active,
@@ -3312,19 +3524,8 @@ const styles = StyleSheet.create<EditStyles>({
     minHeight: 80,
     textAlignVertical: "top",
   },
-  addStepEmpty: {
-    borderStyle: "dashed",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: 16,
-    paddingVertical: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addStepEmptyText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "500",
+  addStepAfterList: {
+    marginTop: 12,
   },
   stepDivider: {
     height: StyleSheet.hairlineWidth,
@@ -3341,14 +3542,14 @@ const styles = StyleSheet.create<EditStyles>({
     marginRight: 12,
   },
   stepLabel: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "500",
+    color: colors.text.primary,
+    fontSize: typography.sizes.md,
+    fontWeight: "700",
   },
   stepSubLabel: {
-    color: "#BFBFBF",
-    fontSize: 13,
-    marginTop: 2,
+    color: colors.text.secondary,
+    fontSize: typography.sizes.sm,
+    marginTop: 4,
   },
   stepActions: {
     flexDirection: "row",
@@ -3376,25 +3577,16 @@ const styles = StyleSheet.create<EditStyles>({
     fontSize: 14,
     fontWeight: "700",
   },
-  addStepRow: {
-    marginTop: 12,
-    paddingVertical: 10,
-  },
-  addStepRowText: {
-    color: "#2081FF",
-    fontSize: 15,
-    fontWeight: "600",
-  },
   footer: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.screenHorizontal,
     paddingVertical: 20,
-    backgroundColor: "#0B0B0B",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: colors.background.primary,
+    borderTopWidth: hairline,
+    borderTopColor: colors.border.default,
   },
   primaryButton: {
     flex: 1,
@@ -3528,6 +3720,16 @@ const styles = StyleSheet.create<EditStyles>({
   },
   inlineInputGroupSpacing: {
     marginRight: 0,
+  },
+  modalDeleteLink: {
+    alignSelf: "center",
+    marginBottom: spacing.sm,
+    paddingVertical: 8,
+  },
+  modalDeleteLinkText: {
+    color: colors.text.error,
+    fontSize: typography.sizes.md,
+    fontWeight: "600",
   },
   modalActions: {
     flexDirection: "row",

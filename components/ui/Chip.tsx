@@ -1,16 +1,23 @@
 // Reusable Chip/Pill component
 
 import React from "react";
-import { StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
-import { borderRadius, colors, typography } from "../../constants/ui";
+import {
+  StyleSheet,
+  StyleProp,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
+} from "react-native";
+import { borderRadius, colors, hairline, typography } from "@/constants/ui";
 
 type ChipVariant = "default" | "active" | "success" | "custom";
 
 type ChipProps = {
   label: string;
   variant?: ChipVariant;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
 };
 
 export function Chip({
@@ -57,40 +64,41 @@ type ChipStyles = {
 
 const styles = StyleSheet.create<ChipStyles>({
   chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: borderRadius.pill,
-    borderWidth: 1,
+    borderWidth: hairline,
   },
   chipDefault: {
-    backgroundColor: colors.pill.default,
-    borderColor: colors.border.light,
+    backgroundColor: "transparent",
+    borderColor: colors.border.default,
   },
   chipActive: {
-    backgroundColor: colors.pill.active,
-    borderColor: colors.border.accent,
+    backgroundColor: colors.accent.primary,
+    borderColor: colors.accent.primary,
   },
   chipSuccess: {
-    backgroundColor: colors.pill.success,
-    borderColor: "rgba(41, 208, 126, 0.6)",
+    backgroundColor: colors.tag.greenBg,
+    borderColor: colors.border.default,
   },
   chipCustom: {
-    backgroundColor: colors.pill.custom,
-    borderColor: "rgba(191, 191, 191, 0.4)",
+    backgroundColor: colors.surface.s3,
+    borderColor: colors.border.default,
   },
   chipText: {
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
-    textTransform: "uppercase",
+    fontSize: 11,
+    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
+    textTransform: "none",
   },
   chipTextDefault: {
     color: colors.text.secondary,
   },
   chipTextActive: {
-    color: colors.text.accent,
+    color: "#fff",
+    fontWeight: "600",
   },
   chipTextSuccess: {
-    color: colors.text.success,
+    color: colors.tag.greenText,
   },
   chipTextCustom: {
     color: colors.text.secondary,

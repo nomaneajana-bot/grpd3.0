@@ -15,9 +15,10 @@
  * - Robust parsing helpers for distance and time
  */
 
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router, Stack, useFocusEffect } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
     FlatList,
     KeyboardAvoidingView,
@@ -34,6 +35,15 @@ import {
 import type { TextStyle, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { CoachPredictionCard } from "@/components/pr/CoachPredictionCard";
+import { PrRecordCard } from "@/components/pr/PrRecordCard";
+import { PrSheetA } from "@/components/pr/PrSheetA";
+import { SectionHeader } from "@/components/redesign/SectionHeader";
+import { redesignTheme } from "@/constants/redesignTheme";
+import {
+  buildCoachPredictions,
+  predictionsCaveat,
+} from "@/lib/coachPredictions";
 import { borderRadius, colors, spacing, typography } from "../../constants/ui";
 import { createApiClient, updateMyPrs } from "../../lib/api";
 import type { TestMode } from "../../lib/profileStore";
@@ -61,6 +71,7 @@ import {
     inferTestMode,
     parseDateInput,
     parsePaceInput,
+    formatPaceInputDisplay,
 } from "../../lib/testHelpers";
 import type { ScrollEndEvent } from "../../types/events";
 
@@ -576,795 +587,6 @@ function CustomTypeSelection({
   );
 }
 
-// TestModal Component
-type TestModalProps = {
-  visible: boolean;
-  test: TestRecord | null;
-  onClose: () => void;
-  onSaveDraft: (test: TestRecord) => void;
-  isAdding?: boolean; // True when adding new test (even from template), false when editing existing
-};
-
-function TestModal({
-  visible,
-  test,
-  onClose,
-  onSaveDraft,
-  isAdding = false,
-}: TestModalProps) {
-  const isEditing = test !== null && !isAdding;
-
-  const [kind, setKind] = useState<"distance" | "duration">("distance");
-  const [mode, setMode] = useState<TestMode>("time_over_distance");
-  const [label, setLabel] = useState("");
-  const [distanceMeters, setDistanceMeters] = useState<number | null>(null);
-  const [durationSeconds, setDurationSeconds] = useState<number | null>(null);
-  const [paceSecondsPerKm, setPaceSecondsPerKm] = useState<number | null>(null);
-  const [distanceInput, setDistanceInput] = useState("");
-  const [distanceUnit, setDistanceUnit] = useState<"m" | "km">("m");
-  const [durationInputHours, setDurationInputHours] = useState("");
-  const [durationInputMinutes, setDurationInputMinutes] = useState("");
-  const [durationInputSeconds, setDurationInputSeconds] = useState("");
-  const [paceInput, setPaceInput] = useState("");
-  const [testDate, setTestDate] = useState<string | null>(null);
-  const [dateInput, setDateInput] = useState("");
-  // Track which field is calculated (not user input)
-  const [calculatedField, setCalculatedField] = useState<
-    "distance" | "time" | "pace" | null
-  >(null);
-  // testType is hardcoded to 'solo' and never shown in UI
-
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [distanceError, setDistanceError] = useState("");
-  const [durationError, setDurationError] = useState("");
-  const [paceError, setPaceError] = useState("");
-
-  useEffect(() => {
-    if (visible && test) {
-      // Pre-fill from existing test or new test data from template
-      setKind(test.kind);
-      setLabel(test.label);
-
-      // Infer or use existing mode
-      const inferredMode = test.mode || inferTestMode(test.label, test.kind);
-      setMode(inferredMode);
-
-      setDistanceMeters(test.distanceMeters);
-      setDurationSeconds(test.durationSeconds);
-
-      // Initialize distance input
-      if (test.distanceMeters) {
-        if (test.distanceMeters >= 1000) {
-          setDistanceInput(String(test.distanceMeters / 1000));
-          setDistanceUnit("km");
-        } else {
-          setDistanceInput(String(test.distanceMeters));
-          setDistanceUnit("m");
-        }
-      } else {
-        setDistanceInput("");
-      }
-
-      // Initialize duration input
-      if (test.durationSeconds) {
-        const totalSeconds = test.durationSeconds;
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        setDurationInputHours(String(hours));
-        setDurationInputMinutes(String(minutes));
-        setDurationInputSeconds(String(seconds));
-      } else {
-        setDurationInputHours("");
-        setDurationInputMinutes("");
-        setDurationInputSeconds("");
-      }
-
-      setTestDate(test.testDate || null);
-      setDateInput(test.testDate || "");
-
-      // Initialize pace from test or calculate from distance/time
-      if (test.paceSecondsPerKm) {
-        setPaceSecondsPerKm(test.paceSecondsPerKm);
-        const minutes = Math.floor(test.paceSecondsPerKm / 60);
-        const seconds = test.paceSecondsPerKm % 60;
-        setPaceInput(`${minutes}:${seconds.toString().padStart(2, "0")}`);
-      } else if (test.distanceMeters && test.durationSeconds) {
-        const calculated = calculatePaceSecondsPerKmSafe({
-          distanceMeters: test.distanceMeters,
-          durationSeconds: test.durationSeconds,
-        });
-        if (calculated) {
-          setPaceSecondsPerKm(calculated);
-          const minutes = Math.floor(calculated / 60);
-          const seconds = calculated % 60;
-          setPaceInput(`${minutes}:${seconds.toString().padStart(2, "0")}`);
-        }
-      } else {
-        setPaceSecondsPerKm(null);
-        setPaceInput("");
-      }
-
-      setCalculatedField(null);
-    } else if (visible && !test) {
-      // Reset for new test (should not happen, but safety fallback)
-      setKind("distance");
-      setMode("time_over_distance");
-      setLabel("");
-      setDistanceMeters(null);
-      setDurationSeconds(null);
-      setPaceSecondsPerKm(null);
-      setDistanceInput("");
-      setDistanceUnit("m");
-      setDurationInputHours("");
-      setDurationInputMinutes("");
-      setDurationInputSeconds("");
-      setPaceInput("");
-      setTestDate(null);
-      setDateInput("");
-      setDistanceError("");
-      setDurationError("");
-      setPaceError("");
-      setCalculatedField(null);
-    }
-  }, [visible, test]);
-
-  // Parsing helpers
-  const parseDistanceToMeters = (
-    value: string,
-    unit: "m" | "km",
-  ): number | null => {
-    const numeric = Number(value.replace(",", "."));
-    if (!isFinite(numeric) || numeric <= 0) return null;
-    return unit === "km" ? numeric * 1000 : numeric;
-  };
-
-  const parseTimeToSeconds = (
-    hourStr: string,
-    minStr: string,
-    secStr: string,
-  ): number | null => {
-    let hours = Number(hourStr) || 0;
-    let minutes = Number(minStr) || 0;
-    let seconds = Number(secStr) || 0;
-
-    // Clamp to valid ranges: hours 0-9, minutes 0-59, seconds 0-59
-    hours = Math.max(0, Math.min(9, hours));
-    minutes = Math.max(0, Math.min(59, minutes));
-    seconds = Math.max(0, Math.min(59, seconds));
-
-    if (!isFinite(hours) || !isFinite(minutes) || !isFinite(seconds)) {
-      return null;
-    }
-
-    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-    return totalSeconds > 0 ? totalSeconds : null;
-  };
-
-  // Update distance when input changes (clear calculated field if user edits)
-  useEffect(() => {
-    const parsed = parseDistanceToMeters(distanceInput, distanceUnit);
-    if (parsed !== null && calculatedField === "distance") {
-      setCalculatedField(null);
-    }
-    setDistanceMeters(parsed);
-  }, [distanceInput, distanceUnit]);
-
-  // Update duration when input changes (clear calculated field if user edits)
-  useEffect(() => {
-    const total = parseTimeToSeconds(
-      durationInputHours,
-      durationInputMinutes,
-      durationInputSeconds,
-    );
-    if (total !== null && calculatedField === "time") {
-      setCalculatedField(null);
-    }
-    setDurationSeconds(total);
-  }, [durationInputHours, durationInputMinutes, durationInputSeconds]);
-
-  // Update pace when input changes (clear calculated field if user edits)
-  useEffect(() => {
-    const parsed = parsePaceInput(paceInput);
-    if (parsed !== null && calculatedField === "pace") {
-      setCalculatedField(null);
-    }
-    setPaceSecondsPerKm(parsed);
-  }, [paceInput]);
-
-  // Auto-calculate the third variable when 2 are provided
-  useEffect(() => {
-    const hasDistance = distanceMeters !== null && distanceMeters > 0;
-    const hasTime = durationSeconds !== null && durationSeconds > 0;
-    const hasPace = paceSecondsPerKm !== null && paceSecondsPerKm > 0;
-
-    const filledCount = [hasDistance, hasTime, hasPace].filter(Boolean).length;
-
-    // Only calculate if exactly 2 are filled and we haven't already calculated this field
-    if (filledCount === 2) {
-      // Calculate the missing variable
-      if (
-        !hasDistance &&
-        hasTime &&
-        hasPace &&
-        calculatedField !== "distance"
-      ) {
-        // Calculate distance from time and pace
-        const calculated = calculateDistanceFromTimeAndPace(
-          durationSeconds!,
-          paceSecondsPerKm!,
-        );
-        if (calculated !== null && calculated > 0) {
-          setDistanceMeters(calculated);
-          setCalculatedField("distance");
-          // Update distance input display
-          if (calculated >= 1000) {
-            setDistanceInput(String((calculated / 1000).toFixed(2)));
-            setDistanceUnit("km");
-          } else {
-            setDistanceInput(String(calculated));
-            setDistanceUnit("m");
-          }
-        }
-      } else if (
-        !hasTime &&
-        hasDistance &&
-        hasPace &&
-        calculatedField !== "time"
-      ) {
-        // Calculate time from distance and pace
-        const calculated = calculateTimeFromDistanceAndPace(
-          distanceMeters!,
-          paceSecondsPerKm!,
-        );
-        if (calculated !== null && calculated > 0) {
-          setDurationSeconds(calculated);
-          setCalculatedField("time");
-          // Update duration input display
-          const hours = Math.floor(calculated / 3600);
-          const minutes = Math.floor((calculated % 3600) / 60);
-          const seconds = calculated % 60;
-          setDurationInputHours(String(hours));
-          setDurationInputMinutes(String(minutes));
-          setDurationInputSeconds(String(seconds));
-        }
-      } else if (
-        !hasPace &&
-        hasDistance &&
-        hasTime &&
-        calculatedField !== "pace"
-      ) {
-        // Calculate pace from distance and time
-        const calculated = calculatePaceSecondsPerKmSafe({
-          distanceMeters: distanceMeters!,
-          durationSeconds: durationSeconds!,
-        });
-        if (calculated !== null && calculated > 0) {
-          setPaceSecondsPerKm(calculated);
-          setCalculatedField("pace");
-          // Update pace input display
-          const minutes = Math.floor(calculated / 60);
-          const seconds = calculated % 60;
-          setPaceInput(`${minutes}:${seconds.toString().padStart(2, "0")}`);
-        }
-      }
-    } else if (filledCount < 2) {
-      // Reset calculated field if less than 2 are filled
-      if (calculatedField !== null) {
-        setCalculatedField(null);
-      }
-    }
-  }, [distanceMeters, durationSeconds, paceSecondsPerKm, calculatedField]);
-
-  // Format date input as user types (YYYY-MM-DD)
-  const handleDateInputChange = (text: string) => {
-    setDateInput(text);
-    // Parse and validate
-    const parsed = parseDateInput(text);
-    setTestDate(parsed);
-  };
-
-  // Date shortcuts
-  const setDateToday = () => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, "0");
-    const d = String(now.getDate()).padStart(2, "0");
-    const iso = `${y}-${m}-${d}`;
-    setTestDate(iso);
-    setDateInput(iso);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const setDateYesterday = () => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const y = yesterday.getFullYear();
-    const m = String(yesterday.getMonth() + 1).padStart(2, "0");
-    const d = String(yesterday.getDate()).padStart(2, "0");
-    const iso = `${y}-${m}-${d}`;
-    setTestDate(iso);
-    setDateInput(iso);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const setDate7DaysAgo = () => {
-    const date = new Date();
-    date.setDate(date.getDate() - 7);
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    const iso = `${y}-${m}-${d}`;
-    setTestDate(iso);
-    setDateInput(iso);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const clearDate = () => {
-    setTestDate(null);
-    setDateInput("");
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const handleSave = async () => {
-    // Validate that at least 2 of 3 fields are filled
-    const hasDistance = distanceMeters !== null && distanceMeters > 0;
-    const hasTime = durationSeconds !== null && durationSeconds > 0;
-    const hasPace = paceSecondsPerKm !== null && paceSecondsPerKm > 0;
-
-    const filledCount = [hasDistance, hasTime, hasPace].filter(Boolean).length;
-
-    if (filledCount < 2) {
-      if (!hasDistance) setDistanceError("Remplis au moins 2 champs");
-      if (!hasTime) setDurationError("Remplis au moins 2 champs");
-      if (!hasPace) setPaceError("Remplis au moins 2 champs");
-      return;
-    }
-
-    // Clear errors
-    setDistanceError("");
-    setDurationError("");
-    setPaceError("");
-
-    // Get final values (use calculated if needed)
-    let finalDistance = distanceMeters;
-    let finalTime = durationSeconds;
-    let finalPace = paceSecondsPerKm;
-
-    // Calculate missing value if needed
-    if (!hasDistance && hasTime && hasPace) {
-      finalDistance = calculateDistanceFromTimeAndPace(finalTime!, finalPace!);
-      if (!finalDistance) {
-        setDistanceError("Impossible de calculer la distance");
-        return;
-      }
-    } else if (!hasTime && hasDistance && hasPace) {
-      finalTime = calculateTimeFromDistanceAndPace(finalDistance!, finalPace!);
-      if (!finalTime) {
-        setDurationError("Impossible de calculer le temps");
-        return;
-      }
-    } else if (!hasPace && hasDistance && hasTime) {
-      finalPace = calculatePaceSecondsPerKmSafe({
-        distanceMeters: finalDistance!,
-        durationSeconds: finalTime!,
-      });
-      if (!finalPace) {
-        setPaceError("Impossible de calculer l'allure");
-        return;
-      }
-    }
-
-    // Ensure all three are set
-    if (!finalDistance || !finalTime || !finalPace) {
-      setDurationError("Vérifie que tous les champs sont valides");
-      return;
-    }
-
-    // Generate label - prefer distance if available, otherwise duration
-    let generatedLabel: string;
-    if (finalDistance) {
-      generatedLabel = formatDistanceLabel(finalDistance);
-      setMode("time_over_distance");
-      setKind("distance");
-    } else if (finalTime) {
-      generatedLabel = formatDurationLabel(finalTime);
-      setMode("distance_over_time");
-      setKind("duration");
-    } else {
-      generatedLabel = formatPace(finalPace);
-      setMode("time_over_distance");
-      setKind("distance");
-    }
-
-    const testRecord: TestRecord = {
-      id: test?.id || `test_${Date.now()}`,
-      kind: kind,
-      mode: mode,
-      label: generatedLabel,
-      distanceMeters: finalDistance,
-      durationSeconds: finalTime,
-      paceSecondsPerKm: finalPace,
-      testDate: testDate || null,
-      testType: "solo", // Hardcoded, never shown in UI
-      createdAt: test?.createdAt || Date.now(),
-    };
-
-    try {
-      // Save custom model if label is not in default presets
-      const isDefaultPreset = TEST_TEMPLATES.some(
-        (t) => t.label === generatedLabel,
-      );
-      if (!isDefaultPreset) {
-        // Check if custom model already exists
-        const existingModels = await getCustomPrModels();
-        const exists = existingModels.some((m) => m.label === generatedLabel);
-
-        if (!exists) {
-          // Add new custom model
-          const customModel: CustomPrModel = {
-            id: `model_${Date.now()}`,
-            label: generatedLabel,
-            mode:
-              mode === "time_over_distance"
-                ? "distance_fixed"
-                : "duration_fixed",
-            distanceMeters:
-              mode === "time_over_distance" ? finalDistance : null,
-            durationSeconds: mode === "distance_over_time" ? finalTime : null,
-            updatedAt: Date.now(),
-          };
-          await addCustomPrModel(customModel);
-        } else {
-          // Update usage timestamp
-          await updateCustomPrModelUsage(generatedLabel);
-        }
-      }
-
-      onSaveDraft(testRecord);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      onClose();
-    } catch (error) {
-      console.error("Failed to save test:", error);
-    }
-  };
-
-  // Validation for save button
-  // Check if at least 2 of 3 fields are filled
-  const hasDistance = distanceMeters !== null && distanceMeters > 0;
-  const hasTime = durationSeconds !== null && durationSeconds > 0;
-  const hasPace = paceSecondsPerKm !== null && paceSecondsPerKm > 0;
-  const filledCount = [hasDistance, hasTime, hasPace].filter(Boolean).length;
-  const canSave = filledCount >= 2;
-
-  if (!visible) return null;
-
-  return (
-    <>
-      <Modal
-        visible={visible}
-        transparent
-        animationType="slide"
-        onRequestClose={onClose}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalBackdrop}
-        >
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {isEditing ? formatTestLabel(test, test.label) : "Nouveau PR"}
-              </Text>
-              <TouchableOpacity
-                onPress={onClose}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={styles.modalCloseButton}>Fermer</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView
-              style={styles.modalScroll}
-              contentContainerStyle={styles.modalScrollContent}
-              keyboardDismissMode="on-drag"
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Info text */}
-              <View style={styles.section}>
-                <Text style={styles.helperText}>
-                  Entre 2 des 3 valeurs (distance, temps, allure). La 3ème sera
-                  calculée automatiquement.
-                </Text>
-              </View>
-              <View style={styles.divider} />
-
-              {/* All three fields shown together */}
-              <>
-                {/* Distance field */}
-                <View style={styles.section}>
-                  <View style={styles.sectionLabelRow}>
-                    <Text style={styles.sectionLabel}>Distance</Text>
-                    {calculatedField === "distance" && (
-                      <Text style={styles.calculatedBadge}>Calculé</Text>
-                    )}
-                  </View>
-                  <View style={styles.distanceRow}>
-                    <TextInput
-                      style={[
-                        styles.distanceInput,
-                        distanceError && styles.inputError,
-                      ]}
-                      value={distanceInput}
-                      onChangeText={setDistanceInput}
-                      placeholder="0"
-                      placeholderTextColor="#666"
-                      keyboardType="numeric"
-                    />
-                    <View style={styles.unitRow}>
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.unitPill,
-                          distanceUnit === "m" && styles.unitPillSelected,
-                          pressed && styles.unitPillPressed,
-                        ]}
-                        onPress={() => {
-                          setDistanceUnit("m");
-                          Haptics.impactAsync(
-                            Haptics.ImpactFeedbackStyle.Light,
-                          );
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.unitPillText,
-                            distanceUnit === "m" && styles.unitPillTextSelected,
-                          ]}
-                        >
-                          m
-                        </Text>
-                      </Pressable>
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.unitPill,
-                          distanceUnit === "km" && styles.unitPillSelected,
-                          pressed && styles.unitPillPressed,
-                        ]}
-                        onPress={() => {
-                          setDistanceUnit("km");
-                          Haptics.impactAsync(
-                            Haptics.ImpactFeedbackStyle.Light,
-                          );
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.unitPillText,
-                            distanceUnit === "km" &&
-                              styles.unitPillTextSelected,
-                          ]}
-                        >
-                          km
-                        </Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                  {distanceError ? (
-                    <Text style={styles.errorText}>{distanceError}</Text>
-                  ) : calculatedField === "distance" ? (
-                    <Text style={styles.helperText}>
-                      Calculé à partir du temps et de l'allure
-                    </Text>
-                  ) : (
-                    <Text style={styles.helperText}>
-                      Distance parcourue (m ou km)
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.divider} />
-
-                {/* Time field */}
-                <View style={styles.section}>
-                  <View style={styles.sectionLabelRow}>
-                    <Text style={styles.sectionLabel}>Temps</Text>
-                    {calculatedField === "time" && (
-                      <Text style={styles.calculatedBadge}>Calculé</Text>
-                    )}
-                  </View>
-                  <View style={styles.durationRow}>
-                    <View style={styles.durationInputGroup}>
-                      <TextInput
-                        style={[
-                          styles.durationInput,
-                          durationError && styles.inputError,
-                        ]}
-                        value={durationInputHours}
-                        onChangeText={(text) => {
-                          const num = Number(text);
-                          if (text === "" || (num >= 0 && num <= 9)) {
-                            setDurationInputHours(text);
-                          }
-                        }}
-                        placeholder="0"
-                        placeholderTextColor="#666"
-                        keyboardType="number-pad"
-                        maxLength={1}
-                      />
-                      <Text style={styles.durationLabel}>h</Text>
-                    </View>
-                    <View style={styles.durationInputGroup}>
-                      <TextInput
-                        style={[
-                          styles.durationInput,
-                          durationError && styles.inputError,
-                        ]}
-                        value={durationInputMinutes}
-                        onChangeText={(text) => {
-                          const num = Number(text);
-                          if (text === "" || (num >= 0 && num <= 59)) {
-                            setDurationInputMinutes(text);
-                          }
-                        }}
-                        placeholder="0"
-                        placeholderTextColor="#666"
-                        keyboardType="number-pad"
-                        maxLength={2}
-                      />
-                      <Text style={styles.durationLabel}>min</Text>
-                    </View>
-                    <View style={styles.durationInputGroup}>
-                      <TextInput
-                        style={[
-                          styles.durationInput,
-                          durationError && styles.inputError,
-                        ]}
-                        value={durationInputSeconds}
-                        onChangeText={(text) => {
-                          const num = Number(text);
-                          if (text === "" || (num >= 0 && num <= 59)) {
-                            setDurationInputSeconds(text);
-                          }
-                        }}
-                        placeholder="0"
-                        placeholderTextColor="#666"
-                        keyboardType="number-pad"
-                        maxLength={2}
-                      />
-                      <Text style={styles.durationLabel}>sec</Text>
-                    </View>
-                  </View>
-                  {durationError ? (
-                    <Text style={styles.errorText}>{durationError}</Text>
-                  ) : calculatedField === "time" ? (
-                    <Text style={styles.helperText}>
-                      Calculé à partir de la distance et de l'allure
-                    </Text>
-                  ) : (
-                    <Text style={styles.helperText}>
-                      Temps réalisé (h:min:sec)
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.divider} />
-
-                {/* Pace field */}
-                <View style={styles.section}>
-                  <View style={styles.sectionLabelRow}>
-                    <Text style={styles.sectionLabel}>Allure</Text>
-                    {calculatedField === "pace" && (
-                      <Text style={styles.calculatedBadge}>Calculé</Text>
-                    )}
-                  </View>
-                  <View style={styles.paceInputRow}>
-                    <TextInput
-                      style={[
-                        styles.paceInput,
-                        paceError && styles.inputError,
-                        calculatedField === "pace" && styles.calculatedInput,
-                      ]}
-                      value={paceInput}
-                      onChangeText={(text) => {
-                        // Allow format like "5:30" or "5'30"
-                        const cleaned = text.replace(/'/g, ":");
-                        setPaceInput(cleaned);
-                        setPaceError("");
-                      }}
-                      placeholder="5:30"
-                      placeholderTextColor={colors.text.disabled}
-                      keyboardType="numeric"
-                      editable={calculatedField !== "pace"}
-                    />
-                    <Text style={styles.paceUnit}>/km</Text>
-                  </View>
-                  {paceError ? (
-                    <Text style={styles.errorText}>{paceError}</Text>
-                  ) : calculatedField === "pace" ? (
-                    <Text style={styles.helperText}>
-                      Calculé à partir de la distance et du temps
-                    </Text>
-                  ) : (
-                    <Text style={styles.helperText}>
-                      Format: MM:SS (ex: 5:30 pour 5'30/km)
-                    </Text>
-                  )}
-                </View>
-              </>
-              <View style={styles.divider} />
-
-              {/* Date */}
-              <View style={styles.section}>
-                <Text style={styles.sectionLabel}>Date</Text>
-                <Pressable
-                  style={styles.dateButton}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <Text style={styles.dateButtonText}>
-                    {testDate
-                      ? formatDateForDisplay(testDate)
-                      : "Choisir une date"}
-                  </Text>
-                </Pressable>
-                <View style={styles.dateShortcutsRow}>
-                  <Pressable style={styles.dateShortcut} onPress={setDateToday}>
-                    <Text style={styles.dateShortcutText}>Aujourd'hui</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.dateShortcut}
-                    onPress={setDateYesterday}
-                  >
-                    <Text style={styles.dateShortcutText}>Hier</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.dateShortcut}
-                    onPress={setDate7DaysAgo}
-                  >
-                    <Text style={styles.dateShortcutText}>Il y a 7 jours</Text>
-                  </Pressable>
-                  {testDate && (
-                    <Pressable style={styles.dateShortcut} onPress={clearDate}>
-                      <Text style={styles.dateShortcutText}>Effacer</Text>
-                    </Pressable>
-                  )}
-                </View>
-              </View>
-            </ScrollView>
-
-            {/* Actions */}
-            <View style={styles.modalActions}>
-              <Pressable style={styles.cancelButton} onPress={onClose}>
-                <Text style={styles.cancelButtonText}>Annuler</Text>
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.saveButton,
-                  !canSave && styles.saveButtonDisabled,
-                ]}
-                onPress={handleSave}
-                disabled={!canSave}
-              >
-                <Text style={styles.saveButtonText}>Enregistrer</Text>
-              </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-      {/* Date Picker */}
-      <DatePicker
-        visible={showDatePicker}
-        initialDate={testDate}
-        onClose={() => setShowDatePicker(false)}
-        onConfirm={(dateISO) => {
-          setTestDate(dateISO);
-          setDateInput(dateISO);
-          setShowDatePicker(false);
-        }}
-      />
-    </>
-  );
-}
-
 // Helper to upsert a test in draft array
 function upsertDraftTest(
   prev: TestRecord[],
@@ -1390,6 +612,16 @@ export default function UpdateTestsScreen() {
   const [newTestData, setNewTestData] = useState<Partial<TestRecord> | null>(
     null,
   );
+  const [showPredictionsHelp, setShowPredictionsHelp] = useState(false);
+
+  const predictions = useMemo(
+    () => buildCoachPredictions(draftTests),
+    [draftTests],
+  );
+  const predictionsNote = useMemo(
+    () => predictionsCaveat(draftTests.length),
+    [draftTests.length],
+  );
 
   useFocusEffect(
     React.useCallback(() => {
@@ -1410,12 +642,27 @@ export default function UpdateTestsScreen() {
     }
   };
 
-  const handleSaveDraft = (test: TestRecord) => {
-    setDraftTests((prev) => upsertDraftTest(prev, test));
-    setHasChanges(true);
+  const persistTests = async (tests: TestRecord[]) => {
+    await replaceAllTestRecords(tests);
+    try {
+      await syncPrsWithCoach(tests);
+    } catch (syncError) {
+      console.warn("Failed to sync PRs:", syncError);
+    }
+  };
+
+  const handleSaveDraft = async (test: TestRecord) => {
+    const next = upsertDraftTest(draftTests, test);
+    setDraftTests(next);
+    setHasChanges(false);
     setEditingTest(null);
     setShowAddModal(false);
     setNewTestData(null);
+    try {
+      await persistTests(next);
+    } catch (error) {
+      console.error("Failed to save PR:", error);
+    }
   };
 
   const [deleteTestId, setDeleteTestId] = useState<string | null>(null);
@@ -1425,12 +672,18 @@ export default function UpdateTestsScreen() {
     setDeleteTestId(id);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deleteTestId) return;
-    setDraftTests((prev) => prev.filter((t) => t.id !== deleteTestId));
-    setHasChanges(true);
+    const next = draftTests.filter((t) => t.id !== deleteTestId);
+    setDraftTests(next);
+    setHasChanges(false);
     setDeleteTestId(null);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try {
+      await persistTests(next);
+    } catch (error) {
+      console.error("Failed to delete PR:", error);
+    }
   };
 
   const syncPrsWithCoach = async (tests: TestRecord[]) => {
@@ -1472,9 +725,20 @@ export default function UpdateTestsScreen() {
   };
 
   const handleAddTest = () => {
-    // Skip template selection, go directly to PR type selection
-    setShowCustomTypeModal(true);
+    setEditingTest(null);
+    setNewTestData(null);
+    setShowAddModal(true);
   };
+
+  const sheetTest: TestRecord | null =
+    editingTest ??
+    (showAddModal && newTestData
+      ? (newTestData as TestRecord)
+      : showAddModal
+        ? null
+        : null);
+  const sheetVisible = showAddModal || editingTest !== null;
+  const sheetIsAdding = showAddModal && editingTest === null;
 
   const handleSelectTemplate = async (
     template: (typeof TEST_TEMPLATES)[number] | CustomPrModel,
@@ -1552,71 +816,25 @@ export default function UpdateTestsScreen() {
     setShowAddModal(true);
   };
 
-  const renderTestRow = (test: TestRecord, index: number) => {
-    // Use dynamic label based on actual tested values
-    const dynamicLabel = formatTestLabel(test, test.label);
-    const paceDisplay = formatPace(test.paceSecondsPerKm);
-    const dateLabel = test.testDate
-      ? formatDateForList(test.testDate)
-      : "À définir";
-
-    return (
-      <React.Fragment key={test.id}>
-        {index > 0 && <View style={styles.testDivider} />}
-        <Pressable
-          style={({ pressed }) => [
-            styles.testRow,
-            pressed && styles.testRowPressed,
-          ]}
-          onPress={() => setEditingTest(test)}
-        >
-          <View style={styles.testRowLeft}>
-            <Text
-              style={styles.testName}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {dynamicLabel}
-            </Text>
-            <Text style={styles.testPace}>{paceDisplay}</Text>
-          </View>
-          <View style={styles.testRowRight}>
-            <Text style={styles.testDate} numberOfLines={1}>
-              {dateLabel}
-            </Text>
-            <Pressable
-              style={styles.deleteButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                handleAskDelete(test.id);
-              }}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={styles.deleteButtonText}>🗑</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </React.Fragment>
-    );
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Fixed Header */}
-      <View style={styles.header}>
+      <View style={styles.topbar}>
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backRow}
+          style={styles.backBtn}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel="Retour"
         >
-          <Text style={styles.backIcon}>←</Text>
-          <Text style={styles.backLabel}>Retour</Text>
+          <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
         </TouchableOpacity>
+      </View>
+      <View style={styles.pageHeader}>
         <Text style={styles.screenTitle}>PR & Records</Text>
         <Text style={styles.subtitle}>
-          Ces PR servent à calculer tes allures et prédictions.
+          Tes meilleurs temps. Ils servent à calculer tes allures de séance et
+          les prédictions du coach.
         </Text>
       </View>
 
@@ -1632,21 +850,62 @@ export default function UpdateTestsScreen() {
             <Text style={styles.loadingText}>Chargement...</Text>
           </View>
         ) : draftTests.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>📊</Text>
-            <Text style={styles.emptyStateText}>Aucun PR enregistré</Text>
-            <Text style={styles.emptyStateSubtext}>
-              Ajoute ton premier test pour commencer à suivre tes performances
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyStateText}>
+              Pas encore de record. Ton premier test démarre ton historique.
             </Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.emptyPrimaryBtn,
+                pressed && styles.addButtonPressed,
+              ]}
+              onPress={handleAddTest}
+            >
+              <Text style={styles.emptyPrimaryBtnText}>Faire un test</Text>
+            </Pressable>
+            <Pressable onPress={handleAddTest} hitSlop={8}>
+              <Text style={styles.emptySecondaryBtnText}>
+                Ajouter manuellement
+              </Text>
+            </Pressable>
           </View>
         ) : (
-          <View style={styles.card}>
-            {draftTests.map((test, index) => renderTestRow(test, index))}
-          </View>
+          <>
+            {draftTests.map((test) => (
+              <PrRecordCard
+                key={test.id}
+                test={test}
+                allTests={draftTests}
+                onPress={() => setEditingTest(test)}
+                onEdit={() => setEditingTest(test)}
+                onDelete={() => handleAskDelete(test.id)}
+              />
+            ))}
+            {predictions.length > 0 ? (
+              <>
+                <SectionHeader
+                  label="PRÉDICTIONS DU COACH"
+                  rightLabel="Comment ?"
+                  onRightPress={() => setShowPredictionsHelp(true)}
+                />
+                {predictionsNote ? (
+                  <Text style={styles.predictionsNote}>{predictionsNote}</Text>
+                ) : null}
+                <View style={styles.predictionsWrap}>
+                  {predictions.map((p) => (
+                    <CoachPredictionCard
+                      key={p.id}
+                      prediction={p}
+                      onPress={() => setShowPredictionsHelp(true)}
+                    />
+                  ))}
+                </View>
+              </>
+            ) : null}
+          </>
         )}
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtonsContainer}>
+        <View style={styles.addCtaWrap}>
           <Pressable
             style={({ pressed }) => [
               styles.addButton,
@@ -1654,27 +913,8 @@ export default function UpdateTestsScreen() {
             ]}
             onPress={handleAddTest}
           >
+            <Ionicons name="add" size={20} color="#FFFFFF" />
             <Text style={styles.addButtonText}>Ajouter un PR</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [
-              styles.saveAllButton,
-              (!hasChanges || draftTests.length === 0) &&
-                styles.saveAllButtonDisabled,
-              pressed && styles.saveAllButtonPressed,
-            ]}
-            onPress={handleSaveAll}
-            disabled={!hasChanges || draftTests.length === 0}
-          >
-            <Text
-              style={[
-                styles.saveAllButtonText,
-                (!hasChanges || draftTests.length === 0) &&
-                  styles.saveAllButtonTextDisabled,
-              ]}
-            >
-              Sauvegarder les tests
-            </Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -1697,23 +937,44 @@ export default function UpdateTestsScreen() {
         onClose={() => setShowCustomTypeModal(false)}
         onSelectType={handleSelectCustomType}
       />
-      <TestModal
-        visible={showAddModal}
-        test={newTestData as TestRecord | null}
+      <PrSheetA
+        visible={sheetVisible}
+        test={sheetTest}
+        isAdding={sheetIsAdding}
         onClose={() => {
           setShowAddModal(false);
+          setEditingTest(null);
           setNewTestData(null);
         }}
-        onSaveDraft={handleSaveDraft}
-        isAdding={true}
+        onSave={(t) => void handleSaveDraft(t)}
       />
-      <TestModal
-        visible={editingTest !== null}
-        test={editingTest}
-        onClose={() => setEditingTest(null)}
-        onSaveDraft={handleSaveDraft}
-        isAdding={false}
-      />
+      <Modal
+        visible={showPredictionsHelp}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPredictionsHelp(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setShowPredictionsHelp(false)}
+          />
+          <View style={styles.helpCard}>
+            <Text style={styles.helpTitle}>Prédictions du coach</Text>
+            <Text style={styles.helpBody}>
+              Estimations basées sur tes PR récents (modèle de progression
+              simplifié). Plus tu enregistres de records, plus les prédictions
+              sont fiables.
+            </Text>
+            <Pressable
+              style={styles.helpBtn}
+              onPress={() => setShowPredictionsHelp(false)}
+            >
+              <Text style={styles.helpBtnText}>Compris</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
       {/* Delete Confirmation Modal */}
       <Modal
         visible={deleteTestId !== null}
@@ -1755,14 +1016,25 @@ export default function UpdateTestsScreen() {
 // Explicit style types so View gets ViewStyle and Text gets TextStyle
 type UpdateTestsStyles = {
   safeArea: ViewStyle;
-  header: ViewStyle;
-  backRow: ViewStyle;
-  backIcon: TextStyle;
-  backLabel: TextStyle;
+  topbar: ViewStyle;
+  backBtn: ViewStyle;
+  pageHeader: ViewStyle;
   screenTitle: TextStyle;
   subtitle: TextStyle;
   scroll: ViewStyle;
   content: ViewStyle;
+  predictionsWrap: ViewStyle;
+  predictionsNote: TextStyle;
+  emptyCard: ViewStyle;
+  emptyPrimaryBtn: ViewStyle;
+  emptyPrimaryBtnText: TextStyle;
+  emptySecondaryBtnText: TextStyle;
+  addCtaWrap: ViewStyle;
+  helpCard: ViewStyle;
+  helpTitle: TextStyle;
+  helpBody: TextStyle;
+  helpBtn: ViewStyle;
+  helpBtnText: TextStyle;
   card: ViewStyle;
   testRow: ViewStyle;
   testRowPressed: ViewStyle;
@@ -1880,48 +1152,112 @@ type UpdateTestsStyles = {
 const styles = StyleSheet.create<UpdateTestsStyles>({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0B0B0B",
+    backgroundColor: redesignTheme.screen.background,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 16,
-    backgroundColor: "#0B0B0B",
+  topbar: {
+    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    paddingTop: 8,
   },
-  backRow: {
-    flexDirection: "row",
+  backBtn: {
+    width: redesignTheme.backButton.size,
+    height: redesignTheme.backButton.size,
+    borderRadius: redesignTheme.backButton.size / 2,
+    backgroundColor: redesignTheme.backButton.background,
     alignItems: "center",
-    alignSelf: "flex-start",
-    marginBottom: 24,
+    justifyContent: "center",
   },
-  backIcon: {
-    color: "#2081FF",
-    fontSize: 18,
-    marginRight: 4,
-  },
-  backLabel: {
-    color: "#2081FF",
-    fontSize: 16,
-    fontWeight: "500",
+  pageHeader: {
+    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   screenTitle: {
-    color: "#FFFFFF",
-    fontSize: 26,
+    color: redesignTheme.text.primary,
+    fontSize: redesignTheme.type.h1.fontSize,
     fontWeight: "700",
+    letterSpacing: -0.7,
     marginBottom: 8,
   },
   subtitle: {
-    color: "#BFBFBF",
-    fontSize: 13,
-    lineHeight: 18,
+    color: redesignTheme.text.dim,
+    fontSize: redesignTheme.type.bodyS.fontSize,
+    lineHeight: redesignTheme.type.bodyS.lineHeight,
   },
   scroll: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
+    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    paddingTop: 8,
+    paddingBottom: 24,
+  },
+  predictionsWrap: {
+    paddingHorizontal: 0,
+  },
+  predictionsNote: {
+    color: redesignTheme.text.dim,
+    fontSize: 12,
+    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    marginBottom: 8,
+  },
+  emptyCard: {
+    backgroundColor: redesignTheme.card.background,
+    borderRadius: redesignTheme.card.radiusXl,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: redesignTheme.card.hairline,
+  },
+  emptyPrimaryBtn: {
+    backgroundColor: redesignTheme.accent.blue,
+    borderRadius: redesignTheme.cta.radius,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  emptyPrimaryBtnText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  emptySecondaryBtnText: {
+    color: redesignTheme.accent.blue,
+    fontSize: 14,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  addCtaWrap: {
+    paddingTop: 8,
+    paddingBottom: 32,
+  },
+  helpCard: {
+    marginHorizontal: 24,
+    backgroundColor: redesignTheme.card.backgroundElevated,
+    borderRadius: 16,
+    padding: 20,
+  },
+  helpTitle: {
+    color: redesignTheme.text.primary,
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  helpBody: {
+    color: redesignTheme.text.dim,
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  helpBtn: {
+    backgroundColor: redesignTheme.accent.blue,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  helpBtnText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
   card: {
     backgroundColor: "#131313",
@@ -1990,13 +1326,13 @@ const styles = StyleSheet.create<UpdateTestsStyles>({
     marginBottom: 20,
   },
   addButton: {
-    backgroundColor: "#131313",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: redesignTheme.accent.blue,
+    borderRadius: redesignTheme.cta.radius,
+    height: redesignTheme.cta.height,
   },
   addButtonPressed: {
     opacity: 0.7,

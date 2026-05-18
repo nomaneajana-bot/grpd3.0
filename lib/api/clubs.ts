@@ -1,6 +1,8 @@
 import type {
   Club,
   ClubCreateInput,
+  ClubUpdateInput,
+  ClubMemberGroupInput,
   ClubApproveInput,
   ClubApproveResult,
   ClubDetail,
@@ -100,6 +102,16 @@ export async function getMyMemberships(
   return { memberships: normalizeMemberships(payload) };
 }
 
+export async function leaveClub(
+  client: ApiClient,
+  clubId: string,
+): Promise<{ ok: true }> {
+  return await client.request<{ ok: true }>(
+    `/api/v1/clubs/${clubId}/leave`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+}
+
 export async function joinClubByCode(
   client: ApiClient,
   input: ClubJoinByCodeInput,
@@ -129,6 +141,31 @@ export async function requestClubJoin(
   );
   const membership = (payload as { membership?: ClubMembership }).membership ?? (payload as ClubMembership);
   return { membership };
+}
+
+export async function updateClub(
+  client: ApiClient,
+  clubId: string,
+  input: ClubUpdateInput,
+): Promise<Club> {
+  return await client.request<Club>(`/api/v1/clubs/${clubId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function setClubMemberGroup(
+  client: ApiClient,
+  clubId: string,
+  input: ClubMemberGroupInput,
+): Promise<{ ok: true }> {
+  return await client.request<{ ok: true }>(
+    `/api/v1/clubs/${clubId}/member-group`,
+    {
+      method: "PUT",
+      body: JSON.stringify(input),
+    },
+  );
 }
 
 export async function getClubDetail(

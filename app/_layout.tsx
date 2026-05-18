@@ -4,6 +4,7 @@ import {
     ThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
@@ -12,6 +13,9 @@ import "react-native-reanimated";
 import { colors } from "@/constants/ui";
 import { useAuthGate } from "@/hooks/use-auth-gate";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useWelcomeFonts } from "@/lib/welcomeFonts";
+
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -53,6 +57,13 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { isLoading } = useAuthGate();
+  const [fontsLoaded] = useWelcomeFonts();
+
+  useEffect(() => {
+    if (!isLoading && fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => undefined);
+    }
+  }, [isLoading, fontsLoaded]);
 
   // Set global web styles
   useEffect(() => {
@@ -71,16 +82,13 @@ export default function RootLayout() {
     <ErrorBoundary>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <View style={styles.rootContainer}>
-          {isLoading ? (
+          {isLoading || !fontsLoaded ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.accent.primary} />
+              <Text style={styles.loadingLabel}>Chargement…</Text>
             </View>
           ) : (
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="run" options={{ headerShown: false }} />
-            </Stack>
+            <Stack screenOptions={{ headerShown: false }} />
           )}
           <StatusBar style="auto" />
         </View>
@@ -99,6 +107,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
     justifyContent: "center",
     alignItems: "center",
+    gap: 16,
+  },
+  loadingLabel: {
+    color: colors.text.secondary,
+    fontSize: 15,
   },
   errorContainer: {
     flex: 1,

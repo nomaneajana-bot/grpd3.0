@@ -4,6 +4,8 @@ import type {
   AuthUser,
   Club,
   ClubCreateInput,
+  ClubUpdateInput,
+  ClubMemberGroupInput,
   ClubApproveInput,
   ClubApproveResult,
   ClubDetail,
@@ -37,10 +39,18 @@ import type {
   RunMember,
   UpcomingRunsResult,
   SessionJoinRequestResult,
+  SessionParticipantsResult,
+  SessionParticipant,
   UpdateMyPrsInput,
   UpdateMyPrsResult,
 } from '../../types/api';
 import { getAuthUser } from '../authStore';
+import { getJoinedSessions, upsertJoinedSession } from '../joinedSessionsStore';
+import {
+  getRunnerProfile,
+  saveRunnerProfile,
+  type RunnerProfile,
+} from '../profileStore';
 import {
   getStoredRun,
   getStoredRuns,
@@ -66,6 +76,11 @@ const MOCK_USERS_KEY = 'mock:users';
 const MOCK_PINS_KEY = 'mock:pins';
 const MOCK_CLUBS_KEY = 'mock:clubs';
 const MOCK_MEMBERSHIPS_KEY = 'mock:club_memberships';
+const DEMO_PHONE = '0708060337';
+const DEMO_PIN = '123456';
+const DEMO_CLUB_NAME = "j'aime courir";
+/** ~7:45/km — maps to Groupe D in clubPaceGroups */
+const DEMO_USER_PACE_SECONDS_PER_KM = 465;
 
 const ACCESS_TOKEN_TTL = 60 * 60; // 1h
 const REFRESH_TOKEN_TTL = 60 * 60 * 24 * 30; // 30d
@@ -110,24 +125,171 @@ async function writeJson<T>(key: string, value: T): Promise<void> {
   await AsyncStorage.setItem(key, JSON.stringify(value));
 }
 
+type SeedRosterSpec = {
+  key: string;
+  displayName: string;
+  paceSecondsPerKm: number;
+};
+
+const SEED_ROSTER_SPECS: SeedRosterSpec[] = [
+  { key: 'kaoutar', displayName: 'Kaoutar Allaeddine', paceSecondsPerKm: 255 },
+  { key: 'yassine', displayName: 'Yassine Samir', paceSecondsPerKm: 262 },
+  { key: 'abdelali', displayName: 'Abdelali Anik', paceSecondsPerKm: 278 },
+  { key: 'abdellatif', displayName: 'Abdellatif Mansouri', paceSecondsPerKm: 285 },
+  { key: 'sara', displayName: 'Sara Kabbaj', paceSecondsPerKm: 292 },
+  { key: 'imane', displayName: 'Imane Rami', paceSecondsPerKm: 305 },
+  { key: 'mohamed', displayName: 'Mohamed Lahlou', paceSecondsPerKm: 318 },
+  { key: 'nadia', displayName: 'Nadia Jabri', paceSecondsPerKm: 325 },
+  { key: 'karim', displayName: 'Karim Benali', paceSecondsPerKm: 338 },
+  { key: 'salma', displayName: 'Salma Idrissi', paceSecondsPerKm: 345 },
+  { key: 'omar', displayName: 'Omar Tazi', paceSecondsPerKm: 358 },
+  { key: 'hajar', displayName: 'Hajar Alaoui', paceSecondsPerKm: 372 },
+  { key: 'amine', displayName: 'Amine Berrada', paceSecondsPerKm: 388 },
+  { key: 'lina', displayName: 'Lina Mansour', paceSecondsPerKm: 405 },
+  { key: 'reda', displayName: 'Reda Chakir', paceSecondsPerKm: 418 },
+  { key: 'fatima', displayName: 'Fatima Zahra', paceSecondsPerKm: 435 },
+  { key: 'youssef', displayName: 'Youssef Alaoui', paceSecondsPerKm: 448 },
+  { key: 'leila', displayName: 'Leila Bennis', paceSecondsPerKm: 465 },
+];
+
+function makePrSummary(paceSecondsPerKm: number) {
+  return {
+    updatedAt: new Date().toISOString(),
+    records: [
+      {
+        label: '10 km',
+        paceSecondsPerKm,
+        testDate: '2025-11-01',
+        distanceMeters: 10000,
+        durationSeconds: Math.round((paceSecondsPerKm * 10000) / 1000),
+      },
+    ],
+  };
+}
+
+function isDemoPhone(phone: string): boolean {
+  const normalized = phone.replace(/\s/g, '');
+  return (
+    normalized === DEMO_PHONE ||
+    normalized === `+212${DEMO_PHONE.slice(1)}`
+  );
+}
+
+async function ensureDemoRunnerProfile(): Promise<void> {
+  const existing = await getRunnerProfile();
+  const base: RunnerProfile = existing ?? {
+    name: 'Sara B.',
+    vo2max: null,
+    weightKg: null,
+    mainGoal: '10k',
+  };
+  await saveRunnerProfile({
+    ...base,
+    name: base.name || 'Sara B.',
+    clubName: DEMO_CLUB_NAME,
+    defaultGroup: 'D',
+  });
+}
+
+async function normalizeDemoJoinedSessionsGroup(): Promise<void> {
+  const sessions = await getJoinedSessions();
+  if (sessions.length === 0) return;
+  const last = sessions[sessions.length - 1];
+  if (last.groupId === 'D') return;
+  await upsertJoinedSession(last.sessionId, 'D');
+}
+
+async function resolveDemoUser(): Promise<AuthUser | null> {
+  const authUser = await getAuthUser();
+  if (authUser && isDemoPhone(authUser.phone)) {
+    return authUser;
+  }
+  const users = await readJson<MockUserMap>(MOCK_USERS_KEY, {});
+  return users[DEMO_PHONE] ?? users[`+212${DEMO_PHONE.slice(1)}`] ?? null;
+}
+
+async function ensureDemoClubMembership(clubId: string): Promise<void> {
+  const demoUser = await resolveDemoUser();
+  if (!demoUser) return;
+
+  await upsertMembership({
+    userId: demoUser.id,
+    clubId,
+    status: 'approved',
+    role: 'member',
+    displayName: 'Sara B.',
+    sharePrs: true,
+    prSummary: makePrSummary(DEMO_USER_PACE_SECONDS_PER_KM),
+  });
+  await ensureDemoRunnerProfile();
+  await normalizeDemoJoinedSessionsGroup();
+}
+
+async function ensureSeedRoster(clubId: string): Promise<void> {
+  const memberships = await readMemberships();
+  const seedCount = Object.values(memberships).filter(
+    (m) =>
+      m.clubId === clubId &&
+      m.status === 'approved' &&
+      m.userId.startsWith('seed_member_'),
+  ).length;
+
+  if (seedCount < SEED_ROSTER_SPECS.length) {
+    for (const spec of SEED_ROSTER_SPECS) {
+      const userId = `seed_member_${spec.key}`;
+      const existing = Object.values(memberships).find(
+        (m) => m.userId === userId && m.clubId === clubId,
+      );
+      if (existing) continue;
+      await upsertMembership({
+        userId,
+        clubId,
+        status: 'approved',
+        role: 'member',
+        displayName: spec.displayName,
+        sharePrs: true,
+        prSummary: makePrSummary(spec.paceSecondsPerKm),
+      });
+    }
+  }
+
+  await ensureDemoClubMembership(clubId);
+}
+
 async function ensureSeedClub(): Promise<Club & { code: string }> {
   const clubs = await readJson<MockClubMap>(MOCK_CLUBS_KEY, {});
   const existing = Object.values(clubs)[0];
-  if (existing) return existing;
+
+  if (existing) {
+    const updated: Club & { code: string } = {
+      ...existing,
+      name: DEMO_CLUB_NAME,
+      slug: 'jaime-courir',
+      city: existing.city ?? 'Casablanca',
+      description: existing.description ?? 'Club de course',
+      createdAt: existing.createdAt ?? '2018-01-01T00:00:00.000Z',
+      code: 'JAIME123',
+    };
+    clubs[existing.id] = updated;
+    await writeJson(MOCK_CLUBS_KEY, clubs);
+    await ensureSeedRoster(updated.id);
+    return updated;
+  }
 
   const club: Club & { code: string } = {
     id: 'club_jaime',
-    name: 'Jaime courir',
+    name: DEMO_CLUB_NAME,
     slug: 'jaime-courir',
     city: 'Casablanca',
     description: 'Club de course',
     visibility: 'members',
-    createdAt: new Date().toISOString(),
+    createdAt: '2018-01-01T00:00:00.000Z',
     createdById: 'seed',
     code: 'JAIME123',
   };
   clubs[club.id] = club;
   await writeJson(MOCK_CLUBS_KEY, clubs);
+  await ensureSeedRoster(club.id);
   return club;
 }
 
@@ -192,7 +354,16 @@ async function getOrCreateUser(phone: string): Promise<AuthUser> {
   return user;
 }
 
+async function ensureDemoPinAccount(): Promise<void> {
+  const pins = await readJson<MockPinMap>(MOCK_PINS_KEY, {});
+  if (!pins[DEMO_PHONE]) {
+    pins[DEMO_PHONE] = DEMO_PIN;
+    await writeJson(MOCK_PINS_KEY, pins);
+  }
+}
+
 async function readPins(): Promise<MockPinMap> {
+  await ensureDemoPinAccount();
   return await readJson<MockPinMap>(MOCK_PINS_KEY, {});
 }
 
@@ -369,6 +540,11 @@ async function mockPinLogin(input: PinLoginInput): Promise<PinAuthResult> {
       ? normalizedPhone
       : `+${normalizedPhone}`,
   );
+  if (isDemoPhone(normalizedPhone)) {
+    await ensureSeedClub();
+    await ensureDemoRunnerProfile();
+    await normalizeDemoJoinedSessionsGroup();
+  }
   return {
     user,
     tokens: createTokens(),
@@ -506,6 +682,10 @@ async function mockGetMemberships(): Promise<ClubMembershipsResult> {
   if (!user) {
     return { memberships: [] };
   }
+  const club = await ensureSeedClub();
+  if (isDemoPhone(user.phone)) {
+    await ensureDemoClubMembership(club.id);
+  }
   const clubs = await readClubs();
   const memberships = await readMemberships();
   const list = Object.values(memberships)
@@ -515,6 +695,22 @@ async function mockGetMemberships(): Promise<ClubMembershipsResult> {
       club: clubs[m.clubId],
     }));
   return { memberships: list };
+}
+
+async function mockLeaveClub(clubId: string): Promise<{ ok: true }> {
+  const user = await getAuthUser();
+  if (!user) {
+    throw new ApiError(401, 'Unauthorized');
+  }
+  const memberships = await readMemberships();
+  const entry = Object.values(memberships).find(
+    (m) => m.userId === user.id && m.clubId === clubId,
+  );
+  if (entry) {
+    delete memberships[entry.id];
+    await writeMemberships(memberships);
+  }
+  return { ok: true };
 }
 
 async function mockJoinByCode(
@@ -584,6 +780,81 @@ async function mockCreateInvite(clubId: string): Promise<{ code: string }> {
     await writeJson(MOCK_CLUBS_KEY, clubs);
   }
   return { code: club.code };
+}
+
+async function mockUpdateClub(
+  clubId: string,
+  input: ClubUpdateInput,
+): Promise<Club> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+
+  const clubs = await readClubs();
+  const club = clubs[clubId] as (Club & { code?: string }) | undefined;
+  if (!club) throw new ApiError(404, 'Club not found');
+
+  const memberships = await readMemberships();
+  const isAdmin = Object.values(memberships).some(
+    (m) =>
+      m.clubId === clubId &&
+      m.userId === user.id &&
+      m.status === 'approved' &&
+      (m.role === 'admin' || m.role === 'coach'),
+  );
+  if (!isAdmin) throw new ApiError(403, 'Forbidden');
+
+  if (input.name?.trim()) club.name = input.name.trim();
+  if (input.description !== undefined) club.description = input.description;
+  if (input.visibility) club.visibility = input.visibility;
+  if (input.accessCode?.trim()) {
+    (club as Club & { code: string }).code = input.accessCode.trim();
+  }
+
+  clubs[clubId] = {
+    ...club,
+    code: club.code ?? makeInviteCode(club.slug ?? club.name),
+  };
+  await writeJson(MOCK_CLUBS_KEY, clubs);
+
+  const { getClubAdminSettings, saveClubAdminSettings } = await import(
+    '../clubAdminStore'
+  );
+  const settings = await getClubAdminSettings(clubId);
+  await saveClubAdminSettings(clubId, {
+    ...settings,
+    name: club.name,
+    description: club.description ?? undefined,
+    visibility: club.visibility,
+    accessCode: club.code,
+  });
+
+  return club;
+}
+
+async function mockSetMemberGroup(
+  clubId: string,
+  input: ClubMemberGroupInput,
+): Promise<{ ok: true }> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+
+  const memberships = await readMemberships();
+  const isAdmin = Object.values(memberships).some(
+    (m) =>
+      m.clubId === clubId &&
+      m.userId === user.id &&
+      m.status === 'approved' &&
+      (m.role === 'admin' || m.role === 'coach'),
+  );
+  if (!isAdmin) throw new ApiError(403, 'Forbidden');
+
+  const { getClubAdminSettings, saveClubAdminSettings } = await import(
+    '../clubAdminStore'
+  );
+  const settings = await getClubAdminSettings(clubId);
+  settings.memberGroups[input.userId] = input.groupId;
+  await saveClubAdminSettings(clubId, settings);
+  return { ok: true };
 }
 
 async function mockGetClubDetail(clubId: string): Promise<ClubDetail> {
@@ -681,6 +952,225 @@ async function mockRequestSessionJoin(
   return { ok: true };
 }
 
+function hashString(input: string): number {
+  let hash = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
+const DEMO_RUNNER_NAMES = [
+  'Yasmine',
+  'Mehdi',
+  'Salma',
+  'Omar',
+  'Hajar',
+  'Karim',
+  'Nadia',
+  'Yassine',
+  'Lina',
+  'Anas',
+  'Sara',
+  'Amine',
+  'Imane',
+  'Reda',
+  'Soukaina',
+];
+
+function demoRunnerName(seed: number): string {
+  return DEMO_RUNNER_NAMES[seed % DEMO_RUNNER_NAMES.length];
+}
+
+/** Screenshot demo fixture — Reprise 100% femmes runners tab. */
+function buildScreenshotDemoSessionParticipants(
+  sessionId: string,
+): SessionParticipantsResult {
+  const groups: SessionParticipantsResult['groups'] = [
+    {
+      groupId: 'A',
+      count: 2,
+      participants: [
+        {
+          userId: 'demo_a1',
+          displayName: 'Kaoutar Allaeddine',
+          groupId: 'A',
+          status: 'joined',
+        },
+        {
+          userId: 'demo_a2',
+          displayName: 'Yassine Samir',
+          groupId: 'A',
+          status: 'joined',
+        },
+      ],
+    },
+    {
+      groupId: 'B',
+      count: 3,
+      participants: [
+        {
+          userId: 'demo_b1',
+          displayName: 'Abdelali Anik',
+          groupId: 'B',
+          status: 'joined',
+        },
+        {
+          userId: 'demo_b2',
+          displayName: 'Abdellatif Mansouri',
+          groupId: 'B',
+          status: 'joined',
+        },
+        {
+          userId: 'demo_b3',
+          displayName: 'Sara Kabbaj',
+          groupId: 'B',
+          status: 'suggested',
+        },
+      ],
+    },
+    {
+      groupId: 'C',
+      count: 3,
+      participants: [
+        {
+          userId: 'demo_c1',
+          displayName: 'Imane Rami',
+          groupId: 'C',
+          status: 'requested',
+        },
+        {
+          userId: 'demo_c2',
+          displayName: 'Mohamed Lahlou',
+          groupId: 'C',
+          status: 'joined',
+        },
+        {
+          userId: 'demo_c3',
+          displayName: 'Nadia Jabri',
+          groupId: 'C',
+          status: 'joined',
+        },
+      ],
+    },
+    {
+      groupId: 'D',
+      count: 6,
+      participants: [
+        {
+          userId: 'demo_d1',
+          displayName: 'Fatima Bennani',
+          groupId: 'D',
+          status: 'joined',
+        },
+        {
+          userId: 'demo_d2',
+          displayName: 'Hicham Alaoui',
+          groupId: 'D',
+          status: 'joined',
+        },
+        {
+          userId: 'demo_d3',
+          displayName: 'Leila Tazi',
+          groupId: 'D',
+          status: 'joined',
+        },
+        {
+          userId: 'demo_d4',
+          displayName: 'Omar Idrissi',
+          groupId: 'D',
+          status: 'joined',
+        },
+        {
+          userId: 'demo_d5',
+          displayName: 'Salma El Fassi',
+          groupId: 'D',
+          status: 'suggested',
+        },
+        {
+          userId: 'demo_d6',
+          displayName: 'Karim Berrada',
+          groupId: 'D',
+          status: 'requested',
+        },
+      ],
+    },
+    {
+      groupId: null,
+      count: 0,
+      participants: [],
+    },
+  ];
+
+  return {
+    sessionId,
+    visibility: 'public',
+    clubId: null,
+    counts: { total: 14, joined: 10, suggested: 2, requested: 2 },
+    groups,
+  };
+}
+
+/** Deterministic fake participants for offline/mock demo (matches API shape). */
+function buildMockSessionParticipants(sessionId: string): SessionParticipantsResult {
+  const seed = hashString(sessionId || 'session');
+  const total = 10 + (seed % 11);
+  const requested = seed % 3;
+  const suggested = (seed >> 2) % 3;
+  const joined = Math.max(0, total - requested - suggested);
+  const statuses: Array<'joined' | 'suggested' | 'requested'> = [
+    ...Array.from({ length: joined }, () => 'joined' as const),
+    ...Array.from({ length: suggested }, () => 'suggested' as const),
+    ...Array.from({ length: requested }, () => 'requested' as const),
+  ];
+  const groupIds: Array<'A' | 'B' | 'C' | 'D' | null> = ['A', 'B', 'C', 'D', null];
+
+  const participants: SessionParticipant[] = statuses.map((status, index) => ({
+    userId: `demo_${sessionId}_${index + 1}`,
+    displayName: demoRunnerName(seed + index * 7),
+    groupId: groupIds[(seed + index * 3) % groupIds.length],
+    status,
+  }));
+
+  const counts = {
+    total: participants.length,
+    joined: participants.filter((p) => p.status === 'joined').length,
+    suggested: participants.filter((p) => p.status === 'suggested').length,
+    requested: participants.filter((p) => p.status === 'requested').length,
+  };
+
+  type GroupId = 'A' | 'B' | 'C' | 'D' | null;
+  const groupOrder: GroupId[] = ['A', 'B', 'C', 'D', null];
+  const buckets: Record<string, SessionParticipant[]> = {
+    A: [],
+    B: [],
+    C: [],
+    D: [],
+    null: [],
+  };
+  for (const p of participants) {
+    const key = p.groupId ?? 'null';
+    buckets[key].push(p);
+  }
+  for (const arr of Object.values(buckets)) {
+    arr.sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }
+
+  const groups = groupOrder.map((groupId) => ({
+    groupId,
+    count: buckets[groupId ?? 'null'].length,
+    participants: buckets[groupId ?? 'null'],
+  }));
+
+  return {
+    sessionId,
+    visibility: 'public',
+    clubId: null,
+    counts,
+    groups,
+  };
+}
+
 export async function mockApiRequest<T>(
   path: string,
   init: RequestInit = {},
@@ -741,6 +1231,10 @@ export async function mockApiRequest<T>(
   if (path === '/api/v1/clubs/join-by-code' && method === 'POST') {
     return (await mockJoinByCode(body as ClubJoinByCodeInput)) as T;
   }
+  const clubLeaveMatch = path.match(/^\/api\/v1\/clubs\/([^/]+)\/leave$/);
+  if (clubLeaveMatch && method === 'POST') {
+    return (await mockLeaveClub(clubLeaveMatch[1])) as T;
+  }
   if (path.startsWith('/api/v1/clubs/') && path.endsWith('/request')) {
     const clubId = path.split('/api/v1/clubs/')[1]?.split('/')[0];
     return (await mockRequestJoin(clubId, body as ClubRequestInput)) as T;
@@ -757,12 +1251,33 @@ export async function mockApiRequest<T>(
     const clubId = path.split('/api/v1/clubs/')[1]?.split('/')[0];
     return (await mockGetClubRoster(clubId)) as T;
   }
+  const clubPatchMatch = path.match(/^\/api\/v1\/clubs\/([^/]+)$/);
+  if (clubPatchMatch && method === 'PATCH') {
+    return (await mockUpdateClub(clubPatchMatch[1], body as ClubUpdateInput)) as T;
+  }
+
+  const memberGroupMatch = path.match(/^\/api\/v1\/clubs\/([^/]+)\/member-group$/);
+  if (memberGroupMatch && method === 'PUT') {
+    return (await mockSetMemberGroup(
+      memberGroupMatch[1],
+      body as ClubMemberGroupInput,
+    )) as T;
+  }
+
   if (path.startsWith('/api/v1/clubs/') && method === 'GET') {
     const clubId = path.split('/api/v1/clubs/')[1];
     return (await mockGetClubDetail(clubId)) as T;
   }
   if (path.startsWith('/api/v1/sessions/') && path.endsWith('/request')) {
     return (await mockRequestSessionJoin('')) as T;
+  }
+
+  const participantsMatch = path.match(
+    /^\/api\/v1\/sessions\/([^/]+)\/participants$/,
+  );
+  if (participantsMatch && method === 'GET') {
+    const sessionId = participantsMatch[1];
+    return buildScreenshotDemoSessionParticipants(sessionId) as T;
   }
 
   throw new ApiError(404, 'Not found');

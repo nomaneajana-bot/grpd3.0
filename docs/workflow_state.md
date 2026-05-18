@@ -4,7 +4,7 @@
 
 ---
 
-## Commits DONE (1–8)
+## Commits DONE (1–9)
 
 | # | Goal |
 |---|------|
@@ -16,19 +16,9 @@
 | 6 | DB: suggested + left; assign ≠ join |
 | 7 | Leave endpoint + client wiring |
 | 8 | Remove group identity from Profile (session-scoped groups only) |
+| 9 | Participants: `GET /api/v1/sessions/:id/participants`, members-only gate, session detail participant/group UI; mock API deterministic demo participants |
 
 **Commit 8 note:** Profile shows no group identity; settings save works for existing users with groupName; new installs work without groupName; tsc, test, lint pass.
-
----
-
-## Remains (Commit 9)
-
-### Commit 9 — Participants session-scoped (API + minimal UI)
-- **Goal:** "Session contains participants" via API and UI.
-- **Acceptance criteria:**
-  - `GET /api/v1/sessions/:id/participants` (or extended session detail) returns attendance-based participants; members-only gated by membership.
-  - Session detail fetches and shows participant/group breakdown (structure only).
-- **Files:** `app/api/v1/sessions/[id]/participants/route.ts` or extend `[id]/route.ts`, `lib/api/clubs.ts` (getSessionParticipants), `app/session/[id].tsx`, role-checks for visibility.
 
 ---
 

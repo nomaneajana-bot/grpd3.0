@@ -1,5 +1,6 @@
-import { router } from "expo-router";
+import { type Href, router } from "expo-router";
 import { useEffect, useState } from "react";
+import { ONBOARDING_V2 } from "../lib/featureFlags";
 import { getAuthData } from "../lib/authStore";
 
 /**
@@ -31,7 +32,11 @@ export function useAuthGate(): {
           timeoutId = setTimeout(() => {
             if (isMounted) {
               try {
-                router.replace("/(auth)/phone");
+                router.replace(
+                  (ONBOARDING_V2
+                    ? "/(auth)/onboarding"
+                    : "/(auth)/phone") as Href,
+                );
               } catch (err) {
                 console.warn("Router redirect failed:", err);
               }
@@ -51,7 +56,11 @@ export function useAuthGate(): {
           timeoutId = setTimeout(() => {
             if (isMounted) {
               try {
-                router.replace("/(auth)/phone");
+                router.replace(
+                  (ONBOARDING_V2
+                    ? "/(auth)/onboarding"
+                    : "/(auth)/phone") as Href,
+                );
               } catch (err) {
                 console.warn("Router redirect failed:", err);
               }

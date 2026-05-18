@@ -1,59 +1,74 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import type { TextStyle, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import * as Haptics from "expo-haptics";
-import { Card } from "../../components/ui/Card";
-import { borderRadius, colors, spacing, typography } from "../../constants/ui";
-import { createApiClient, getMyMemberships } from "../../lib/api";
-import { clearAuthData, getAuthUser } from "../../lib/authStore";
+import { ProfileGoalCard } from "../../components/profile/ProfileGoalCard";
+import { ProfilePhysicalCard } from "../../components/profile/ProfilePhysicalCard";
+import { ProfileRecordsCard } from "../../components/profile/ProfileRecordsCard";
+import { ProfileSectionHeader } from "../../components/profile/ProfileSectionHeader";
+import { ProfileStatsGrid } from "../../components/profile/ProfileStatsGrid";
+import { ProfileStreakCard } from "../../components/profile/ProfileStreakCard";
+import { ProfileUserCard } from "../../components/profile/ProfileUserCard";
+import { LoadingState } from "../../components/ui/LoadingState";
+import { profileTheme } from "../../constants/profileTheme";
+import { colors, typography } from "../../constants/ui";
+import { createApiClient, listSessions } from "../../lib/api";
+import { getAuthUser } from "../../lib/authStore";
 import {
-    getProfileSnapshot,
-    getTestRecords,
-    type DistanceGoal,
-    type RunnerProfile,
-    type TestRecord,
+  buildGoalProgress,
+  computeAveragePaceFromSessions,
+  computeStreakSessionCount,
+  computeWeekActivity,
+  countAttendedSessions,
+  findTenKRecord,
+  formatPaceShort,
+  formatRaceTime,
+  sumKmYearToDate,
+} from "../../lib/profileMetrics";
+import { formatPhoneDisplay } from "../../lib/phoneFormat";
+import {
+  getProfileSnapshot,
+  getTestRecords,
+  type RunnerProfile,
+  type TestRecord,
 } from "../../lib/profileStore";
-import { formatDateForList, formatPace } from "../../lib/testHelpers";
-import type { ClubMembership } from "../../types/api";
-
-const GOAL_LABELS: Record<DistanceGoal, string> = {
-  "5k": "5 km",
-  "10k": "10 km",
-  "21k": "Semi-marathon",
-  "42k": "Marathon",
-  other: "Objectif personnalisé",
-};
+import {
+  apiSessionToSessionData,
+  getAllSessionsIncludingStored,
+  type SessionData,
+} from "../../lib/sessionData";
+import { isSessionVisibleToProfile } from "../../lib/sessionVisibility";
+import { formatPace } from "../../lib/testHelpers";
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
   const [tests, setTests] = useState<TestRecord[]>([]);
+  const [sessions, setSessions] = useState<SessionData[]>([]);
+  const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [memberships, setMemberships] = useState<ClubMembership[]>([]);
 
-  const loadProfile = async () => {
-    setIsLoading(true);
+  const loadProfile = useCallback(async (refresh = false) => {
+    if (refresh) setIsRefreshing(true);
+    else setIsLoading(true);
     try {
       const snapshot = await getProfileSnapshot();
       setProfile(snapshot.profile);
 
-      // Load all test records - store already dedupes by label (latest wins)
       const loadedTests = await getTestRecords();
-      // Show all tests (one per label, already deduped by store)
       setTests(loadedTests);
 
-      // Load phone number from auth store
       try {
         const authUser = await getAuthUser();
         if (authUser?.phone) {
@@ -63,284 +78,200 @@ export default function ProfileScreen() {
         console.warn("Failed to load phone number:", error);
       }
 
-      // Load memberships from API
-      try {
-        const client = createApiClient();
-        const membershipsResult = await getMyMemberships(client);
-        setMemberships(membershipsResult.memberships ?? []);
-      } catch (error) {
-        console.warn("Failed to load memberships:", error);
-        setMemberships([]);
-      }
+      const [localSessions, apiSessions, joined] = await Promise.all([
+        getAllSessionsIncludingStored(),
+        (async () => {
+          try {
+            const client = createApiClient();
+            const apiResult = await listSessions(client);
+            return (apiResult.sessions ?? []).map(apiSessionToSessionData);
+          } catch {
+            return [] as SessionData[];
+          }
+        })(),
+        (async () => {
+          const { getJoinedSessions } = await import("../../lib/joinedSessionsStore");
+          return getJoinedSessions();
+        })(),
+      ]);
+
+      const sessionMap = new Map<string, SessionData>();
+      localSessions.forEach((s) => sessionMap.set(s.id, s));
+      apiSessions.forEach((s) => sessionMap.set(s.id, s));
+      setSessions(Array.from(sessionMap.values()));
+      setJoinedIds(new Set(joined.map((j) => j.sessionId)));
     } catch (error) {
       console.warn("PROFILE_LOAD_ERROR", error);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
-  };
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      loadProfile();
-      return () => {
-        // no cleanup needed for now
-      };
-    }, []),
+      void loadProfile();
+    }, [loadProfile]),
   );
 
-  const profileName = profile?.name ?? "Ton prénom";
-  const primaryMembership =
-    memberships.find((m) => m.status === "approved") ?? memberships[0] ?? null;
-  const clubLabel = primaryMembership?.club?.name ?? profile?.clubName ?? null;
-  const membershipStatusLabel = primaryMembership
-    ? primaryMembership.status === "approved"
-      ? "Membre"
-      : primaryMembership.status === "pending"
-        ? "En attente"
-        : "Accès club inactif"
-    : profile?.clubName
-      ? "En attente de validation"
-      : "Sans club (optionnel)";
-  const hasAdminAccess = memberships.some(
-    (m) =>
-      m.status === "approved" && (m.role === "admin" || m.role === "coach"),
+  const profileName =
+    profile?.firstName?.trim() || profile?.name?.trim() || "Coureur";
+  const profileInitial = profileName.charAt(0).toUpperCase();
+  const cityLabel = "Casablanca";
+
+  const accessibleSessions = useMemo(
+    () => sessions.filter((s) => isSessionVisibleToProfile(s, profile)),
+    [sessions, profile],
   );
-  const vo2maxLabel =
-    profile?.vo2max !== null && profile?.vo2max !== undefined
-      ? String(profile.vo2max)
-      : "—";
-  const weightLabel =
-    profile?.weightKg !== null && profile?.weightKg !== undefined
-      ? `${profile.weightKg} kg`
-      : "—";
-  const prShareLabel =
-    profile?.sharePrsWithCoach === false ? "Privés" : "Partagés";
-  const goalLabel = profile?.mainGoal
-    ? (GOAL_LABELS[profile.mainGoal] ?? profile.mainGoal)
-    : "Objectif principal";
+
+  const sessionsCount = useMemo(
+    () => countAttendedSessions(accessibleSessions, joinedIds),
+    [accessibleSessions, joinedIds],
+  );
+
+  const kmYtd = useMemo(
+    () => sumKmYearToDate(accessibleSessions, joinedIds),
+    [accessibleSessions, joinedIds],
+  );
+
+  const streakSessionCount = useMemo(
+    () => computeStreakSessionCount(accessibleSessions, joinedIds),
+    [accessibleSessions, joinedIds],
+  );
+
+  const weekActivity = useMemo(
+    () => computeWeekActivity(accessibleSessions, joinedIds),
+    [accessibleSessions, joinedIds],
+  );
+
+  const tenKRecord = useMemo(() => findTenKRecord(tests), [tests]);
+
+  const pr10kLabel = useMemo(() => {
+    if (tenKRecord?.durationSeconds) {
+      return formatRaceTime(tenKRecord.durationSeconds);
+    }
+    return "—";
+  }, [tenKRecord]);
+
+  const pr10kPaceLabel = useMemo(() => {
+    if (tenKRecord?.paceSecondsPerKm) {
+      return formatPace(tenKRecord.paceSecondsPerKm);
+    }
+    return null;
+  }, [tenKRecord]);
+
+  const avgPaceLabel = useMemo(() => {
+    const avg = computeAveragePaceFromSessions(accessibleSessions, joinedIds);
+    if (avg != null) return formatPaceShort(avg);
+    return "—";
+  }, [accessibleSessions, joinedIds]);
+
+  const goalProgress = useMemo(
+    () =>
+      buildGoalProgress(
+        profile?.mainGoal,
+        tests,
+        profile?.targetDeadline ?? null,
+      ),
+    [profile, tests],
+  );
+
+  const subtitle = useMemo(() => {
+    const parts = [cityLabel];
+    if (phoneNumber) {
+      parts.push(formatPhoneDisplay(phoneNumber));
+    }
+    return parts.join(" · ");
+  }, [phoneNumber]);
+
+  const handleSettings = () => {
+    router.push("/profile/settings");
+  };
 
   const handleEditTests = () => {
     router.push("/profile/update-tests");
   };
 
-  const handleEditSettings = () => {
-    router.push("/profile/settings");
+  const handleSeeAllRecords = () => {
+    router.push("/profile/update-tests");
   };
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      await clearAuthData();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/(auth)/phone");
-    } catch (error) {
-      console.warn("Logout failed:", error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      // Still navigate even if clear fails
-      router.replace("/(auth)/phone");
-    } finally {
-      setIsLoggingOut(false);
-    }
+  const handlePhysicalProfile = () => {
+    router.push("/profile/update-tests");
   };
 
-  if (isLoading) {
+  if (isLoading && !profile) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingState}>
-          <Text style={styles.loadingText}>Chargement du profil...</Text>
-        </View>
+        <LoadingState message="Chargement du profil…" />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>Profil</Text>
+      <View style={styles.toprow}>
+        <Text style={styles.pg}>Profil</Text>
+        <TouchableOpacity
+          onPress={handleSettings}
+          style={styles.gearBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Paramètres"
+        >
+          <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => loadProfile(true)}
+            tintColor={colors.text.accent}
+          />
+        }
       >
-        <Card style={styles.profileCard}>
-          <View style={styles.profileHeaderRow}>
-            <View style={styles.profileHeaderLeft}>
-              <Text style={styles.profileName}>{profileName}</Text>
-              <View style={styles.profileMetaRow}>
-                <Text style={styles.profileSubtitle}>Coureur</Text>
-                {clubLabel && (
-                  <>
-                    <View style={styles.profileMetaDot} />
-                    <Text style={styles.profileSubtitle}>{clubLabel}</Text>
-                  </>
-                )}
-              </View>
-              {phoneNumber && (
-                <Text style={styles.profilePhone}>{phoneNumber}</Text>
-              )}
-            </View>
-            <TouchableOpacity
-              onPress={handleEditSettings}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={styles.settingsButton}
-            >
-              <Text style={styles.profileSettings}>Paramètres</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.profileStatsDivider} />
-          <View style={styles.profileStatsGrid}>
-            <View style={styles.profileStat}>
-              <Text style={styles.profileStatLabel}>VO₂max</Text>
-              <Text style={styles.profileStatValue}>{vo2maxLabel}</Text>
-            </View>
-            <View style={styles.profileStat}>
-              <Text style={styles.profileStatLabel}>Poids</Text>
-              <Text style={styles.profileStatValue}>{weightLabel}</Text>
-            </View>
-            <View style={styles.profileStat}>
-              <Text style={styles.profileStatLabel}>Club</Text>
-              <Text style={styles.profileStatValue}>
-                {clubLabel ?? "—"}
-              </Text>
-            </View>
-            <View style={styles.profileStat}>
-              <Text style={styles.profileStatLabel}>Accès club</Text>
-              <Text style={styles.profileStatValue}>
-                {membershipStatusLabel}
-              </Text>
-            </View>
-            <View style={styles.profileStat}>
-              <Text style={styles.profileStatLabel}>PR partagés</Text>
-              <Text style={styles.profileStatValue}>{prShareLabel}</Text>
-            </View>
-            <View style={styles.profileStat}>
-              <Text style={styles.profileStatLabel}>Objectif</Text>
-              <Text style={styles.profileStatValue}>{goalLabel}</Text>
-            </View>
-          </View>
-        </Card>
+        <ProfileUserCard
+          name={profileName}
+          initial={profileInitial}
+          subtitle={subtitle}
+          onEditPress={handleSettings}
+        />
 
-        <Card style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardLabel}>CLUB (optionnel)</Text>
-            <Text style={styles.cardSubtitle}>
-              Si tu as un club, gère tes accès ici.
-            </Text>
-          </View>
-          <Pressable
-            style={({ pressed }) => [
-              styles.testRow,
-              pressed && styles.testRowPressed,
-            ]}
-            onPress={() => router.push("/club")}
-          >
-            <View style={styles.testRowLeft}>
-              <Text style={styles.testName}>Club / Communauté</Text>
-              <Text style={styles.testDate}>
-                {clubLabel ?? "Sans club (optionnel)"}
-              </Text>
-            </View>
-            <Text style={styles.testValue}>›</Text>
-          </Pressable>
-          {hasAdminAccess && (
-            <>
-              <View style={styles.testDivider} />
-              <Pressable
-                style={({ pressed }) => [
-                  styles.testRow,
-                  pressed && styles.testRowPressed,
-                ]}
-                onPress={() => router.push("/club/admin")}
-              >
-                <View style={styles.testRowLeft}>
-                  <Text style={styles.testName}>Responsable du club</Text>
-                  <Text style={styles.testDate}>
-                    Demandes en attente
-                  </Text>
-                </View>
-                <Text style={styles.testValue}>›</Text>
-              </Pressable>
-            </>
-          )}
-        </Card>
+        <ProfileStreakCard
+          sessionCount={streakSessionCount}
+          kmYtd={kmYtd}
+          weekActivity={weekActivity}
+        />
 
-        <Card style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardLabel}>PR (records personnels)</Text>
-            <Text style={styles.cardSubtitle}>
-              Tes PR aident à ajuster les allures. Optionnel si tu débutes.
-            </Text>
-          </View>
-          {tests.length === 0 ? (
-            <View style={styles.emptyTestsState}>
-              <Text style={styles.emptyTestsText}>
-                Pas de PR pour l’instant — tu peux continuer sans.
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.testsList}>
-              {tests.map((test, index) => {
-                const paceDisplay = formatPace(test.paceSecondsPerKm);
-                const dateLabel = test.testDate
-                  ? formatDateForList(test.testDate)
-                  : "À définir";
-                return (
-                  <React.Fragment key={test.id}>
-                    {index > 0 && <View style={styles.testDivider} />}
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.testRow,
-                        pressed && styles.testRowPressed,
-                      ]}
-                      onPress={handleEditTests}
-                    >
-                      <View style={styles.testRowLeft}>
-                        <Text style={styles.testName}>{test.label}</Text>
-                        <Text style={styles.testDate}>{dateLabel}</Text>
-                      </View>
-                      <Text style={styles.testValue}>{paceDisplay}</Text>
-                    </Pressable>
-                  </React.Fragment>
-                );
-              })}
-            </View>
-          )}
-          <View style={styles.cardDivider} />
-          <Pressable
-            style={({ pressed }) => [
-              styles.linkButton,
-              pressed && styles.linkButtonPressed,
-            ]}
-            onPress={handleEditTests}
-          >
-            <Text style={styles.linkButtonText}>Ajouter</Text>
-          </Pressable>
-        </Card>
+        <ProfileStatsGrid
+          sessions={sessionsCount}
+          kmYtd={kmYtd}
+          pr10k={pr10kLabel}
+          pr10kPace={pr10kPaceLabel}
+          avgPace={avgPaceLabel}
+        />
 
-        {/* History link outside the card */}
-        <TouchableOpacity
-          style={styles.historyLink}
-          onPress={() => router.push("/profile/test-history")}
-        >
-          <Text style={styles.historyLinkText}>Voir l'historique complet</Text>
-        </TouchableOpacity>
+        <ProfileSectionHeader title="OBJECTIF" />
+        <ProfileGoalCard goal={goalProgress} onEdit={handleSettings} />
 
-        {/* Logout button */}
-        <TouchableOpacity
-          style={[
-            styles.logoutButton,
-            isLoggingOut && styles.logoutButtonDisabled,
-          ]}
-          onPress={handleLogout}
-          disabled={isLoggingOut}
-        >
-          <Text style={styles.logoutButtonText}>
-            {isLoggingOut ? "Déconnexion..." : "Déconnexion"}
-          </Text>
-        </TouchableOpacity>
+        <ProfileSectionHeader
+          title="RECORDS PERSONNELS"
+          actionLabel="Tout voir"
+          onAction={handleSeeAllRecords}
+        />
+        <ProfileRecordsCard
+          tests={tests}
+          onAdd={handleEditTests}
+          onPressRecord={handleEditTests}
+        />
+
+        <ProfileSectionHeader title="PROFIL PHYSIQUE" />
+        <ProfilePhysicalCard onPress={handlePhysicalProfile} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -348,50 +279,11 @@ export default function ProfileScreen() {
 
 type ProfileStyles = {
   safeArea: ViewStyle;
-  header: ViewStyle;
-  screenTitle: TextStyle;
+  toprow: ViewStyle;
+  pg: TextStyle;
+  gearBtn: ViewStyle;
   scroll: ViewStyle;
   content: ViewStyle;
-  profileCard: ViewStyle;
-  profileHeaderRow: ViewStyle;
-  profileHeaderLeft: ViewStyle;
-  profileName: TextStyle;
-  profileMetaRow: ViewStyle;
-  profileMetaDot: ViewStyle;
-  profileSettings: TextStyle;
-  settingsButton: ViewStyle;
-  profileSubtitle: TextStyle;
-  profileStatsDivider: ViewStyle;
-  profileStatsGrid: ViewStyle;
-  profileStat: ViewStyle;
-  profileStatLabel: TextStyle;
-  profileStatValue: TextStyle;
-  card: ViewStyle;
-  cardHeader: ViewStyle;
-  cardLabel: TextStyle;
-  cardSubtitle: TextStyle;
-  cardDivider: ViewStyle;
-  linkButton: ViewStyle;
-  linkButtonPressed: ViewStyle;
-  linkButtonText: TextStyle;
-  testsList: ViewStyle;
-  testRow: ViewStyle;
-  testRowPressed: ViewStyle;
-  testRowLeft: ViewStyle;
-  testDivider: ViewStyle;
-  testName: TextStyle;
-  testValue: TextStyle;
-  testDate: TextStyle;
-  emptyTestsState: ViewStyle;
-  emptyTestsText: TextStyle;
-  loadingState: ViewStyle;
-  loadingText: TextStyle;
-  historyLink: ViewStyle;
-  historyLinkText: TextStyle;
-  profilePhone: TextStyle;
-  logoutButton: ViewStyle;
-  logoutButtonDisabled: ViewStyle;
-  logoutButtonText: TextStyle;
 };
 
 const styles = StyleSheet.create<ProfileStyles>({
@@ -399,228 +291,34 @@ const styles = StyleSheet.create<ProfileStyles>({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-    backgroundColor: colors.background.primary,
+  toprow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: profileTheme.screenPaddingHorizontal,
+    paddingTop: 6,
+    paddingBottom: 10,
   },
-  screenTitle: {
-    color: colors.text.primary,
-    fontSize: 26,
+  pg: {
+    fontSize: typography.sizes["3xl"],
     fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.3,
+  },
+  gearBtn: {
+    width: profileTheme.gearButtonSize,
+    height: profileTheme.gearButtonSize,
+    borderRadius: profileTheme.gearButtonSize / 2,
+    backgroundColor: profileTheme.gearButtonBg,
+    alignItems: "center",
+    justifyContent: "center",
   },
   scroll: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: profileTheme.screenPaddingHorizontal,
+    paddingTop: 4,
     paddingBottom: 40,
-  },
-  profileCard: {
-    // Card component handles base styles
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  profileHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: spacing.md,
-  },
-  profileHeaderLeft: {
-    flex: 1,
-  },
-  profileName: {
-    color: colors.text.primary,
-    fontSize: typography.sizes["2xl"],
-    fontWeight: typography.weights.bold as TextStyle["fontWeight"],
-    marginBottom: spacing.xs,
-  },
-  profileMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: spacing.xs,
-  },
-  profileMetaDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.text.tertiary,
-    marginHorizontal: spacing.sm,
-  },
-  profileSettings: {
-    color: colors.text.accent,
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
-  },
-  settingsButton: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-  },
-  profileSubtitle: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.md,
-  },
-  profileStatsDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.default,
-    marginVertical: spacing.md,
-  },
-  profileStatsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: spacing.xs,
-  },
-  profileStat: {
-    width: "50%",
-    marginBottom: spacing.md,
-  },
-  profileStatLabel: {
-    color: colors.text.tertiary,
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-    marginBottom: spacing.xs,
-  },
-  profileStatValue: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
-  },
-  card: {
-    // Card component handles base styles
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-    marginBottom: spacing.md,
-  },
-  cardHeader: {
-    marginBottom: spacing.md,
-  },
-  cardLabel: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-    marginBottom: spacing.xs,
-  },
-  cardSubtitle: {
-    color: colors.text.tertiary,
-    fontSize: typography.sizes.sm,
-    lineHeight: 18,
-  },
-  cardDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.default,
-    marginVertical: spacing.md,
-  },
-  linkButton: {
-    paddingVertical: spacing.sm,
-    width: "100%",
-    alignItems: "center",
-  },
-  linkButtonPressed: {
-    opacity: 0.7,
-  },
-  linkButtonText: {
-    color: colors.text.accent,
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
-  },
-  testsList: {
-    marginTop: spacing.xs,
-  },
-  testRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: spacing.md,
-  },
-  testRowPressed: {
-    opacity: 0.7,
-  },
-  testRowLeft: {
-    flex: 1,
-    marginRight: spacing.md,
-  },
-  testDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.default,
-    marginVertical: 0,
-  },
-  testName: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.medium as TextStyle["fontWeight"],
-    marginBottom: spacing.xs / 2,
-  },
-  testValue: {
-    color: colors.text.accent,
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
-    minWidth: 80,
-    textAlign: "right",
-  },
-  testDate: {
-    color: colors.text.tertiary,
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.normal as TextStyle["fontWeight"],
-  },
-  emptyTestsState: {
-    paddingVertical: spacing.lg,
-    alignItems: "center",
-  },
-  emptyTestsText: {
-    color: colors.text.tertiary,
-    fontSize: typography.sizes.sm,
-  },
-  loadingState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  loadingText: {
-    color: colors.text.primary,
-    fontSize: 15,
-  },
-  historyLink: {
-    marginTop: 8,
-    marginBottom: 16,
-    alignItems: "center",
-  },
-  historyLinkText: {
-    color: colors.text.accent,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  profilePhone: {
-    color: colors.text.tertiary,
-    fontSize: typography.sizes.sm,
-    marginTop: spacing.xs,
-  },
-  logoutButton: {
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.accent.error + "20",
-    borderWidth: 1,
-    borderColor: colors.accent.error,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoutButtonDisabled: {
-    opacity: 0.6,
-  },
-  logoutButtonText: {
-    color: colors.text.error,
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold as TextStyle["fontWeight"],
   },
 });

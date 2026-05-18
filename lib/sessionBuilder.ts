@@ -54,11 +54,13 @@ export function buildSessionFromForm(params: {
   workoutId?: string | null;
   visibility?: SessionVisibility;
   hostGroupName?: string | null;
+  genderRestriction?: "women_only" | null;
 }): { id: string; session: SessionData; defaultGroupId: string } {
   const { spot, dateLabel, timeLabel, sessionType, groupConfigs, workoutId } =
     params;
   const visibility = params.visibility ?? "public";
   const hostGroupName = params.hostGroupName ?? null;
+  const genderRestriction = params.genderRestriction ?? null;
 
   // Generate unique ID
   const id = "custom-" + Date.now().toString();
@@ -239,6 +241,7 @@ export function buildSessionFromForm(params: {
       paceGroupsOverride.length > 0 ? paceGroupsOverride : undefined, // Full group overrides: explicit description of each active group
     visibility,
     hostGroupName,
+    genderRestriction,
     // workout is undefined for custom sessions (we use workoutId reference instead)
   };
 

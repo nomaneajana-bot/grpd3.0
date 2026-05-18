@@ -2,26 +2,28 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
-    Alert,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { OrangeInsightPanel } from "../../components/redesign/OrangeInsightPanel";
+import { SearchField } from "../../components/redesign/SearchField";
 import { Chip } from "../../components/ui/Chip";
-import { borderRadius, colors } from "../../constants/ui";
-import {
-    RUN_TYPE_OPTIONS,
-    type RunTypeId as FilterRunTypeId,
-} from "../../lib/runTypes";
+import { LoadingState } from "../../components/ui/LoadingState";
+import { borderRadius, colors, hairline, typography } from "../../constants/ui";
+import { type RunTypeId as FilterRunTypeId } from "../../lib/runTypes";
 import {
     formatDistanceKm,
     formatLastUsed,
     getRunTypePillLabel,
+    getWorkoutDisplayName,
     getWorkoutSummary,
     getWorkoutTotalDistanceKm,
 } from "../../lib/workoutHelpers";
@@ -239,12 +241,14 @@ export default function WorkoutsScreen() {
   const [selectedRunType, setSelectedRunType] = useState<FilterRunTypeId | null>(
     null,
   );
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isCreating, setIsCreating] = useState(false);
 
-  const loadWorkouts = useCallback(async () => {
-    setIsLoading(true);
+  const loadWorkouts = useCallback(async (refresh = false) => {
+    if (refresh) setIsRefreshing(true);
+    else setIsLoading(true);
     try {
       const workouts = await getWorkouts();
       const drafts = workouts.filter(isDraftWorkout);
@@ -271,12 +275,13 @@ export default function WorkoutsScreen() {
       setAllWorkouts([]);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      loadWorkouts();
+      void loadWorkouts();
     }, [loadWorkouts]),
   );
 
@@ -386,6 +391,8 @@ export default function WorkoutsScreen() {
   };
 
   // Filter and sort workouts
+  const insets = useSafeAreaInsets();
+
   const filteredWorkouts = useMemo(() => {
     let filtered = allWorkouts;
 
@@ -419,11 +426,23 @@ export default function WorkoutsScreen() {
     return filtered;
   }, [allWorkouts, selectedRunType, searchQuery]);
 
+  const latestWorkout = allWorkouts[0];
+
   return (
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 6 },
+        ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => loadWorkouts(true)}
+            tintColor={colors.text.accent}
+          />
+        }
       >
         {/* Header */}
         <View style={styles.header}>
@@ -431,11 +450,11 @@ export default function WorkoutsScreen() {
             <View style={styles.headerText}>
               <Text style={styles.headerTitle}>Workouts</Text>
               <Text style={styles.headerSubtitle}>
-                Crée et réutilise tes structures d'entraînement.
+                Crée et réutilise tes structures.
               </Text>
             </View>
             <TouchableOpacity
-              style={styles.headerAction}
+              style={styles.headerPill}
               onPress={toggleSelectionMode}
             >
               <Text style={styles.headerActionText}>
@@ -445,70 +464,49 @@ export default function WorkoutsScreen() {
           </View>
         </View>
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <MaterialIcons
-            name="search"
-            size={18}
-            color="#BFBFBF"
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Rechercher un workout"
-            placeholderTextColor="#6F6F6F"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
+        <SearchField
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Rechercher un workout…"
+        />
 
-        {/* Type Filter Pills */}
-        <View style={styles.filterPillsContainer}>
-          <View style={styles.filterPillsRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.runTypeChipsRow}
+        >
+          {(
+            [
+              { id: null, label: "Tout" },
+              { id: "fartlek" as const, label: "Fartlek" },
+              { id: "tempo_run" as const, label: "Tempo" },
+              { id: "series" as const, label: "Séries" },
+              { id: "easy_run" as const, label: "Footing" },
+              { id: "progressif" as const, label: "Progressif" },
+            ] as const
+          ).map((chip) => (
             <TouchableOpacity
-              style={[
-                styles.filterPill,
-                selectedRunType === null && styles.filterPillActive,
-              ]}
-              onPress={() => setSelectedRunType(null)}
-              activeOpacity={0.8}
+              key={chip.label}
+              onPress={() =>
+                setSelectedRunType(chip.id as FilterRunTypeId | null)
+              }
+              activeOpacity={0.85}
             >
-              <Text
+              <Chip
+                label={chip.label}
+                variant="default"
                 style={[
-                  styles.filterPillText,
-                  selectedRunType === null && styles.filterPillTextActive,
+                  styles.filterChip,
+                  selectedRunType === chip.id && styles.filterChipActive,
                 ]}
-              >
-                Tous les types
-              </Text>
+                textStyle={[
+                  styles.filterChipText,
+                  selectedRunType === chip.id && styles.filterChipTextActive,
+                ]}
+              />
             </TouchableOpacity>
-            {RUN_TYPE_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.filterPill,
-                  selectedRunType === option.id && styles.filterPillActive,
-                ]}
-                onPress={() =>
-                  setSelectedRunType(
-                    selectedRunType === option.id ? null : option.id,
-                  )
-                }
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.filterPillText,
-                    selectedRunType === option.id &&
-                      styles.filterPillTextActive,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+          ))}
+        </ScrollView>
 
         {/* Workouts List */}
         <View style={styles.section}>
@@ -543,10 +541,8 @@ export default function WorkoutsScreen() {
               </View>
             </View>
           )}
-          {isLoading ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>Chargement...</Text>
-            </View>
+          {isLoading && allWorkouts.length === 0 ? (
+            <LoadingState message="Chargement des workouts…" />
           ) : filteredWorkouts.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>
@@ -628,7 +624,7 @@ export default function WorkoutsScreen() {
                         numberOfLines={2}
                         ellipsizeMode="tail"
                       >
-                        {workout.name}
+                        {getWorkoutDisplayName(workout)}
                       </Text>
                       <Text
                         style={[
@@ -659,6 +655,19 @@ export default function WorkoutsScreen() {
             </View>
           )}
         </View>
+
+        {latestWorkout ? (
+          <OrangeInsightPanel
+            kicker="TA DERNIÈRE SÉANCE"
+            title={`${getRunTypePillLabel(latestWorkout.runType)} · ${getWorkoutDisplayName(latestWorkout)}`}
+            subtitle={
+              latestWorkout.lastUsedAt
+                ? formatLastUsed(latestWorkout.lastUsedAt)
+                : "Enregistré sur cet appareil"
+            }
+            highlight="Continue sur ta lancée."
+          />
+        ) : null}
       </ScrollView>
 
       {/* Fixed CTA button */}
@@ -689,12 +698,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 80,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingBottom: 120,
   },
   header: {
-    marginBottom: 32,
+    marginBottom: 12,
   },
   headerRow: {
     flexDirection: "row",
@@ -707,21 +715,26 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: colors.text.primary,
-    fontSize: 26,
+    fontSize: typography.sizes["3xl"],
     fontWeight: "700",
-    marginBottom: 8,
+    marginBottom: 4,
+    letterSpacing: -0.3,
   },
   headerSubtitle: {
     color: colors.text.secondary,
-    fontSize: 15,
+    fontSize: typography.sizes.sm,
   },
-  headerAction: {
+  headerPill: {
+    borderRadius: 20,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    paddingHorizontal: 10,
+    backgroundColor: colors.accent.primaryDim,
+    borderWidth: 1,
+    borderColor: colors.accent.primaryMid,
   },
   headerActionText: {
     color: colors.text.accent,
-    fontSize: 14,
+    fontSize: typography.sizes.sm,
     fontWeight: "600",
   },
   searchContainer: {
@@ -820,8 +833,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   workoutCard: {
-    // Card component handles base styles
-    marginBottom: 12,
+    marginBottom: 9,
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.lg,
+    borderWidth: hairline,
+    borderColor: colors.border.default,
+    paddingHorizontal: 11,
+    paddingVertical: 11,
   },
   workoutCardSelected: {
     borderColor: colors.accent.primary,
@@ -888,6 +906,33 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     textAlign: "right",
   },
+  runTypeChipsRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 10,
+    paddingRight: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    minHeight: 32,
+    justifyContent: "center",
+    backgroundColor: "transparent",
+    borderColor: "rgba(255,255,255,0.14)",
+    borderWidth: hairline,
+  },
+  filterChipActive: {
+    backgroundColor: colors.accent.primary,
+    borderColor: colors.accent.primary,
+  },
+  filterChipText: {
+    color: colors.text.secondary,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  filterChipTextActive: {
+    color: colors.text.primary,
+  },
   emptyState: {
     paddingVertical: 32,
     alignItems: "center",
@@ -912,8 +957,8 @@ const styles = StyleSheet.create({
   ctaButton: {
     backgroundColor: colors.accent.primary,
     paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 26,
+    paddingVertical: 13,
+    borderRadius: 13,
     alignItems: "center",
   },
   ctaButtonDisabled: {

@@ -30,6 +30,8 @@ function serializeSession(session: {
   coachAdvice: string | null;
   coachPhone: string | null;
   coachName: string | null;
+  attendanceStatus?: string;
+  attendanceGroupId?: string | null;
 }) {
   return {
     id: session.id,
@@ -56,6 +58,8 @@ function serializeSession(session: {
     coachAdvice: session.coachAdvice ?? undefined,
     coachPhone: session.coachPhone ?? undefined,
     coachName: session.coachName ?? undefined,
+    attendanceStatus: session.attendanceStatus ?? null,
+    attendanceGroupId: session.attendanceGroupId ?? null,
   };
 }
 
@@ -63,12 +67,21 @@ export async function GET(req: NextRequest) {
   try {
     const userId = requireAuth(req);
     const attendance = await prisma.sessionAttendance.findMany({
-      where: { userId, status: "joined" },
+      where: {
+        userId,
+        status: { in: ["joined", "requested", "suggested"] },
+      },
       include: { session: true },
       orderBy: { createdAt: "desc" },
     });
 
-    const sessions = attendance.map((a) => serializeSession(a.session));
+    const sessions = attendance.map((a) =>
+      serializeSession({
+        ...a.session,
+        attendanceStatus: a.status,
+        attendanceGroupId: a.groupId,
+      }),
+    );
     return jsonOk({ sessions });
   } catch (e) {
     if (e instanceof Error && e.message === "UNAUTHORIZED") {

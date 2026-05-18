@@ -121,6 +121,18 @@ export function computePaceFromDistanceAndTime(
 }
 
 /**
+ * Format pace (seconds/km) for MM:SS input display (e.g. 330 → "5:30").
+ */
+export function formatPaceInputDisplay(secondsPerKm: number | null): string {
+  if (secondsPerKm === null || secondsPerKm <= 0) {
+    return "";
+  }
+  const minutes = Math.floor(secondsPerKm / 60);
+  const seconds = Math.round(secondsPerKm % 60);
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+/**
  * Format pace from seconds per km to "X'YY/km" format
  */
 export function formatPace(secondsPerKm: number | null): string {

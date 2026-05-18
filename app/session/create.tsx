@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
     Alert,
@@ -20,6 +20,9 @@ import * as Haptics from "expo-haptics";
 
 import { router, useLocalSearchParams } from "expo-router";
 
+import { useUnsavedChangesGuard } from "../../lib/useUnsavedChangesGuard";
+
+import { SelectableChip } from "../../components/ui/SelectableChip";
 import { colors } from "../../constants/ui";
 import {
     createSession as createSessionApi,
@@ -37,7 +40,17 @@ import {
     buildSessionFromForm,
     type SessionGroupConfig,
 } from "../../lib/sessionBuilder";
-import { getSessionById, type SessionVisibility } from "../../lib/sessionData";
+import { getSessionById } from "../../lib/sessionData";
+import {
+  fieldsToSessionAudience,
+  SESSION_AUDIENCE_OPTIONS,
+  sessionAudienceToFields,
+  type SessionAudience,
+} from "../../lib/sessionAudience";
+import {
+  getClubAdminSettings,
+  type ClubAdminGroupOverride,
+} from "../../lib/clubAdminStore";
 import { createSession as createSessionLocal, updateSession } from "../../lib/sessionStore";
 import type { SessionCreateInput } from "../../types/api";
 import {
@@ -1409,8 +1422,7 @@ export default function CreateSessionScreen() {
         setProfile(runner);
         if (!hasInitializedAudience && !isEditMode) {
           if (runner?.clubName) {
-            setHostGroupName(runner.clubName);
-            setSessionVisibility("members");
+            setSessionAudience("club");
           }
           setHasInitializedAudience(true);
         }
@@ -1531,9 +1543,38 @@ export default function CreateSessionScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
   const [primaryClubId, setPrimaryClubId] = useState<string | null>(null);
-  const [sessionVisibility, setSessionVisibility] =
-    useState<SessionVisibility>("public");
-  const [hostGroupName, setHostGroupName] = useState<string | null>(null);
+  const [clubAdminGroups, setClubAdminGroups] = useState<
+    ClubAdminGroupOverride[] | null
+  >(null);
+  const [sessionAudience, setSessionAudience] =
+    useState<SessionAudience>("public");
+
+  useEffect(() => {
+    if (!primaryClubId) {
+      setClubAdminGroups(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const settings = await getClubAdminSettings(primaryClubId);
+        if (cancelled) return;
+        setClubAdminGroups(settings.groups);
+        setGroupConfigs((prev) =>
+          prev.map((g) => {
+            const admin = settings.groups.find((x) => x.id === g.id);
+            if (!admin || g.id === "A") return g;
+            return { ...g, isActive: admin.active };
+          }),
+        );
+      } catch {
+        if (!cancelled) setClubAdminGroups(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [primaryClubId]);
 
   // Format time as HH:MM
   const timeLabel = `${selectedHour.toString().padStart(2, "0")}:${selectedMinute.toString().padStart(2, "0")}`;
@@ -1852,8 +1893,15 @@ export default function CreateSessionScreen() {
           (existingSession.paceGroups ?? []).length > 0;
         setUsePaceGroups(hasEnabledGroups);
 
-        setSessionVisibility(existingSession.visibility ?? "public");
-        setHostGroupName(existingSession.hostGroupName ?? null);
+        setSessionAudience(
+          fieldsToSessionAudience(
+            existingSession.visibility,
+            existingSession.genderRestriction === "women_only"
+              ? "women"
+              : existingSession.genderRestriction,
+            existingSession.hostGroupName,
+          ),
+        );
 
         setHasLoadedExistingSession(true);
       } catch (error) {
@@ -1865,9 +1913,74 @@ export default function CreateSessionScreen() {
     loadExistingSession();
   }, [isEditMode, editSessionId, hasLoadedExistingSession]);
 
+  const initialSnapshotRef = useRef<string | null>(null);
+  const baselineCapturedRef = useRef(false);
+
+  const buildFormSnapshot = useCallback(
+    () =>
+      JSON.stringify({
+        spot,
+        dateLabel,
+        selectedHour,
+        selectedMinute,
+        sessionMode,
+        sessionType,
+        selectedWorkoutId,
+        sessionAudience,
+        usePaceGroups,
+        groupConfigs,
+      }),
+    [
+      spot,
+      dateLabel,
+      selectedHour,
+      selectedMinute,
+      sessionMode,
+      sessionType,
+      selectedWorkoutId,
+      sessionAudience,
+      usePaceGroups,
+      groupConfigs,
+    ],
+  );
+
+  const formReady = isEditMode
+    ? hasLoadedExistingSession
+    : hasInitializedAudience &&
+      (selectedWorkoutId == null || selectedWorkoutEntity != null);
+
+  useEffect(() => {
+    if (!formReady || baselineCapturedRef.current) return;
+    const timer = setTimeout(() => {
+      if (baselineCapturedRef.current) return;
+      initialSnapshotRef.current = buildFormSnapshot();
+      baselineCapturedRef.current = true;
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [formReady, buildFormSnapshot]);
+
+  const isFormDirty = useMemo(() => {
+    if (!baselineCapturedRef.current || !initialSnapshotRef.current) {
+      return false;
+    }
+    return buildFormSnapshot() !== initialSnapshotRef.current;
+  }, [buildFormSnapshot]);
+
+  const { tryLeave, markLeaving } = useUnsavedChangesGuard({
+    isDirty: isFormDirty,
+  });
+
   const handlePublish = async () => {
     try {
       setIsPublishing(true);
+
+      const audienceFields = sessionAudienceToFields(
+        sessionAudience,
+        profile?.clubName ?? primaryClubId,
+      );
+      const sessionVisibility = audienceFields.visibility;
+      const hostGroupName = audienceFields.hostGroupName;
+      const genderRestrictionUi = audienceFields.genderRestrictionUi;
 
       if (sessionVisibility === "members" && !primaryClubId) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -1911,12 +2024,13 @@ export default function CreateSessionScreen() {
           groupConfigs: submittedGroups,
           workoutId: sessionMode === "workout" ? selectedWorkoutId : null,
           visibility: sessionVisibility,
-          hostGroupName:
-            sessionVisibility === "members" ? hostGroupName : null,
+          hostGroupName,
+          genderRestriction: genderRestrictionUi,
         });
         const sessionWithAudience = {
           ...session,
           clubId: sessionVisibility === "members" ? primaryClubId : null,
+          genderRestriction: genderRestrictionUi,
         };
 
         // Update session (preserving id and isCustom)
@@ -1934,7 +2048,7 @@ export default function CreateSessionScreen() {
           }
         }
 
-        // Navigate back to session detail or my-sessions
+        markLeaving();
         router.back();
       } else {
         // Create new session (API first; fallback to local if API unavailable)
@@ -1946,8 +2060,8 @@ export default function CreateSessionScreen() {
           groupConfigs: submittedGroups,
           workoutId: sessionMode === "workout" ? selectedWorkoutId : null,
           visibility: sessionVisibility,
-          hostGroupName:
-            sessionVisibility === "members" ? hostGroupName : null,
+          hostGroupName,
+          genderRestriction: genderRestrictionUi,
         });
 
         const apiPayload: SessionCreateInput = {
@@ -1964,7 +2078,7 @@ export default function CreateSessionScreen() {
           paceGroups: usePaceGroups ? session.paceGroups : [],
           clubId: sessionVisibility === "members" ? primaryClubId : null,
           visibility: sessionVisibility,
-          genderRestriction: session.genderRestriction ?? "mixed",
+          genderRestriction: audienceFields.genderRestriction,
           workoutId: session.workoutId ?? null,
           isCustom: true,
           hostGroupName: session.hostGroupName ?? null,
@@ -2015,12 +2129,16 @@ export default function CreateSessionScreen() {
           }
         }
 
+        markLeaving();
         router.push(`/session/${createdId}`);
       }
     } catch (error) {
       console.error("Failed to publish session:", error);
-      // Still navigate even on error (user can retry from home)
-      router.push("/(tabs)/my-sessions");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(
+        "Publication impossible",
+        "Ta séance n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.",
+      );
     } finally {
       setIsPublishing(false);
     }
@@ -2032,7 +2150,7 @@ export default function CreateSessionScreen() {
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => void tryLeave()}
             style={styles.backRow}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -2146,6 +2264,34 @@ export default function CreateSessionScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {sessionMode === "workout" ? (
+            <>
+              <Text style={[styles.cardSubtitle, styles.sessionTypeSubtitle]}>
+                Type de séance structurée
+              </Text>
+              <View style={styles.sessionTypeChips}>
+                {SESSION_TYPE_OPTIONS.map((type) => {
+                  const selected = sessionType === type;
+                  return (
+                    <SelectableChip
+                      key={type}
+                      label={type}
+                      selected={selected}
+                      uppercase
+                      showCheckmark
+                      onPress={() => {
+                        Haptics.impactAsync(
+                          Haptics.ImpactFeedbackStyle.Light,
+                        );
+                        setSessionType(type);
+                      }}
+                    />
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
         </View>
 
         {/* Card 2 - Infos de base */}
@@ -2197,38 +2343,36 @@ export default function CreateSessionScreen() {
           )}
         </View>
 
-        {profile?.clubName && (
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>AUDIENCE</Text>
-            <Text style={styles.cardSubtitle}>
-              Session du club {profile.clubName}.
-            </Text>
-            <View style={styles.fieldRow}>
-              <View style={styles.audienceText}>
-                <Text style={styles.fieldLabel}>Membres seulement</Text>
-                <Text style={styles.fieldHint}>
-                  Par défaut pour les séances de groupe.
-                </Text>
-              </View>
-              <Switch
-                value={sessionVisibility === "members"}
-                onValueChange={(value) => {
-                  setSessionVisibility(value ? "members" : "public");
-                  if (value && !hostGroupName && profile.clubName) {
-                    setHostGroupName(profile.clubName);
-                  }
-                }}
-                trackColor={{ false: "#2a2f3a", true: colors.accent.primary }}
-                thumbColor="#ffffff"
-              />
-            </View>
-            <Text style={styles.audienceNote}>
-              {sessionVisibility === "members"
-                ? `Visible uniquement aux membres de ${profile.clubName}.`
-                : "Visible à tous les coureurs."}
-            </Text>
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>VISIBILITÉ</Text>
+          <Text style={styles.cardSubtitle}>
+            Qui peut voir et rejoindre cette séance ?
+          </Text>
+          <View style={styles.audienceChips}>
+            {SESSION_AUDIENCE_OPTIONS.map((opt) => {
+              const on = sessionAudience === opt.id;
+              return (
+                <SelectableChip
+                  key={opt.id}
+                  label={opt.label}
+                  selected={on}
+                  showCheckmark
+                  labelStyle={styles.audienceChipLabel}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSessionAudience(opt.id);
+                  }}
+                />
+              );
+            })}
           </View>
-        )}
+          <Text style={styles.audienceNote}>
+            {
+              SESSION_AUDIENCE_OPTIONS.find((o) => o.id === sessionAudience)
+                ?.hint
+            }
+          </Text>
+        </View>
 
         {/* Card 2 - Groupes & allures */}
         {(selectedWorkoutId || sessionMode !== "workout") && (
@@ -2247,6 +2391,12 @@ export default function CreateSessionScreen() {
             </View>
             {usePaceGroups && groupConfigs.map((group, index) => {
               const paceSeconds = group.paceSecondsPerKm ?? null;
+              const adminPaceLabel = clubAdminGroups?.find(
+                (g) => g.id === group.id,
+              )?.paceLabel;
+              const adminInactive =
+                clubAdminGroups?.find((g) => g.id === group.id)?.active ===
+                false;
 
               // Display pace
               const paceDisplayStr = paceSeconds
@@ -2276,11 +2426,18 @@ export default function CreateSessionScreen() {
                       style={[
                         styles.groupToggle,
                         group.isActive && styles.groupToggleActive,
+                        adminInactive && styles.groupToggleInactive,
                       ]}
                       activeOpacity={0.7}
+                      disabled={adminInactive}
                     >
                       <Text style={styles.groupToggleText}>{group.id}</Text>
                     </TouchableOpacity>
+                    {adminPaceLabel ? (
+                      <Text style={styles.groupAdminPace} numberOfLines={1}>
+                        {adminPaceLabel}
+                      </Text>
+                    ) : null}
                     <Text style={styles.groupLabel}>
                       {`Groupe ${group.id}`}
                     </Text>
@@ -2653,6 +2810,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 8,
   },
+  audienceChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+  audienceChipLabel: {
+    fontSize: 13,
+    textTransform: "none",
+    letterSpacing: 0,
+  },
+  sessionTypeSubtitle: {
+    marginTop: 14,
+    marginBottom: 0,
+  },
+  sessionTypeChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
   audienceNote: {
     color: colors.text.tertiary,
     fontSize: 12,
@@ -2733,6 +2911,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
+  },
+  groupToggleInactive: {
+    opacity: 0.35,
+  },
+  groupAdminPace: {
+    color: colors.text.secondary,
+    fontSize: 11,
+    maxWidth: 88,
+    marginRight: 8,
   },
   groupToggleActive: {
     backgroundColor: colors.accent.primary,

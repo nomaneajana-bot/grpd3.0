@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { View, ViewStyle, StyleSheet } from 'react-native';
-import { colors, borderRadius, spacing } from '../../constants/ui';
+import { colors, borderRadius, hairline } from "@/constants/ui";
 
 type CardProps = {
   children: React.ReactNode;
@@ -21,10 +21,10 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.background.card,
     borderRadius: borderRadius.lg,
-    borderWidth: 1,
+    borderWidth: hairline,
     borderColor: colors.border.default,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.md,
+    paddingHorizontal: 13,
+    paddingVertical: 13,
+    marginBottom: 9,
   },
 });

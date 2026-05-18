@@ -1,5 +1,8 @@
 import type { ApiEnvelope, ApiErrorPayload } from "../../types/api";
-import { getAccessToken as getStoredAccessToken } from "../authStore";
+import {
+  getAccessToken as getStoredAccessToken,
+  shouldUseMockApi,
+} from "../authStore";
 import { ApiError } from "./errors";
 import { isMockEnabled, mockApiRequest } from "./mock";
 
@@ -56,8 +59,7 @@ export class ApiClient {
   ): Promise<T> {
     const url = joinUrl(this.baseUrl, path);
     const headers = new Headers(init.headers);
-
-    const useMock = isMockEnabled(this.baseUrl);
+    const useMock = (await shouldUseMockApi()) || isMockEnabled(this.baseUrl);
 
     if (options.auth !== false && this.getAccessToken) {
       const token = await this.getAccessToken();
@@ -70,7 +72,7 @@ export class ApiClient {
       return await mockApiRequest<T>(path, { ...init, headers });
     }
 
-if (init.body && !headers.has("Content-Type")) {
+    if (init.body && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
 

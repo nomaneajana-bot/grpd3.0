@@ -11,17 +11,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
 
-import { Card } from "../../components/ui/Card";
-import { Toast } from "../../components/ui/Toast";
-import { colors, spacing } from "../../constants/ui";
-import { useToast } from "../../hooks/useToast";
+import { Card } from "@/components/ui/Card";
+import { Toast } from "@/components/ui/Toast";
+import { colors, spacing } from "@/constants/ui";
+import { useToast } from "@/hooks/useToast";
 import {
   approveClubMember,
   createApiClient,
   getClubDetail,
   getMyMemberships,
-} from "../../lib/api";
-import type { ClubDetail } from "../../types/api";
+} from "@/lib/api";
+import type { ClubDetail } from "@/types/api";
 
 type PendingGroup = {
   club: ClubDetail["club"];
@@ -121,7 +121,7 @@ export default function ClubAdminScreen() {
                 pressed && styles.rosterButtonPressed,
               ]}
             >
-              <Text style={styles.rosterButtonText}>Affectations (coach)</Text>
+              <Text style={styles.rosterButtonText}>Membres & PRs (coach)</Text>
             </Pressable>
             <Pressable
               onPress={loadPending}

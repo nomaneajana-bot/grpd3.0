@@ -1,6 +1,10 @@
 import type {
   LogoutInput,
   LogoutResult,
+  OtpRequestInput,
+  OtpRequestResult,
+  OtpVerifyInput,
+  OtpVerifyResult,
   PinAuthResult,
   PinLoginInput,
   PinRegisterInput,
@@ -8,6 +12,34 @@ import type {
   RefreshResult,
 } from "../../types/api";
 import type { ApiClient } from "./client";
+
+export async function requestOtp(
+  client: ApiClient,
+  input: OtpRequestInput,
+): Promise<OtpRequestResult> {
+  return await client.request<OtpRequestResult>(
+    "/api/v1/auth/otp/request",
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+    { auth: false },
+  );
+}
+
+export async function verifyOtp(
+  client: ApiClient,
+  input: OtpVerifyInput,
+): Promise<OtpVerifyResult> {
+  return await client.request<OtpVerifyResult>(
+    "/api/v1/auth/otp/verify",
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+    { auth: false },
+  );
+}
 
 export async function registerWithPin(
   client: ApiClient,
