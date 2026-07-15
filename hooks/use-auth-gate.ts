@@ -1,7 +1,12 @@
-import { type Href, router } from "expo-router";
+import { type Href, router, usePathname } from "expo-router";
 import { useEffect, useState } from "react";
 import { ONBOARDING_V2 } from "../lib/featureFlags";
 import { getAuthData } from "../lib/authStore";
+
+function isPublicVisionRoute(pathname: string | undefined): boolean {
+  if (!pathname) return false;
+  return pathname === "/avenir" || pathname.endsWith("/avenir");
+}
 
 /**
  * Hook to check authentication status and redirect unauthenticated users
@@ -11,6 +16,7 @@ export function useAuthGate(): {
   isAuthenticated: boolean | null; // null = checking, true = authenticated, false = not authenticated
   isLoading: boolean;
 } {
+  const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -25,12 +31,15 @@ export function useAuthGate(): {
         if (!isMounted) return;
 
         if (authData === null) {
-          // No auth data, redirect to phone screen
+          // No auth data — allow the pitch vision page without forcing onboarding
           setIsAuthenticated(false);
           setIsLoading(false);
+          if (isPublicVisionRoute(pathname)) {
+            return;
+          }
           // Use setTimeout to ensure router is ready
           timeoutId = setTimeout(() => {
-            if (isMounted) {
+            if (isMounted && !isPublicVisionRoute(pathname)) {
               try {
                 router.replace(
                   (ONBOARDING_V2
@@ -50,11 +59,14 @@ export function useAuthGate(): {
       } catch (error) {
         console.warn("Auth check failed:", error);
         if (isMounted) {
-          // On error, assume not authenticated and redirect
+          // On error, assume not authenticated and redirect (except vision page)
           setIsAuthenticated(false);
           setIsLoading(false);
+          if (isPublicVisionRoute(pathname)) {
+            return;
+          }
           timeoutId = setTimeout(() => {
-            if (isMounted) {
+            if (isMounted && !isPublicVisionRoute(pathname)) {
               try {
                 router.replace(
                   (ONBOARDING_V2
@@ -82,7 +94,7 @@ export function useAuthGate(): {
       }
       clearTimeout(initTimeout);
     };
-  }, []);
+  }, [pathname]);
 
   return {
     isAuthenticated,
