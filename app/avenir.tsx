@@ -154,9 +154,12 @@ const styles = StyleSheet.create({
   },
   safe: {
     flex: 1,
+    backgroundColor: "transparent",
+    zIndex: 1,
   },
   scroll: {
     flex: 1,
+    backgroundColor: "transparent",
   },
   content: {
     paddingHorizontal: welcomeTheme.screenPaddingHorizontal,

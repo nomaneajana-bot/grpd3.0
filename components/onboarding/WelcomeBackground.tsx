@@ -1,43 +1,13 @@
-import React, { createElement } from "react";
-import {
-  Platform,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import React from "react";
+import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 
 import { welcomeTheme } from "@/components/onboarding/onboardingTheme";
 
-/** Stacked CSS backgrounds — matches Présence HTML export (top layer first). */
-const WEB_BACKGROUND_IMAGE = [
-  "linear-gradient(to top, rgba(0, 0, 0, 0) 40%, rgb(0, 0, 0) 100%)",
-  "radial-gradient(circle at 50% 38%, rgba(47, 123, 255, 0.55) 0%, rgba(0, 0, 0, 0) 62%)",
-  "rgb(0, 0, 0)",
-].join(", ");
-
-const webLayerStyle: React.CSSProperties = {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  zIndex: 0,
-  pointerEvents: "none",
-  backgroundColor: welcomeTheme.background,
-  backgroundImage: WEB_BACKGROUND_IMAGE,
-  backgroundRepeat: "no-repeat",
-  backgroundSize: "cover",
-};
-
 export function WelcomeBackground() {
   const { width, height } = useWindowDimensions();
   const radial = welcomeTheme.gradientRadial;
-
-  if (Platform.OS === "web") {
-    return createElement("div", { style: webLayerStyle });
-  }
 
   const cx = width * 0.5;
   const cy = height * 0.32;
@@ -64,7 +34,13 @@ export function WelcomeBackground() {
               <Stop offset="62%" stopColor={radial.edgeColor} />
             </RadialGradient>
           </Defs>
-          <Rect x={0} y={0} width={width} height={height} fill="url(#welcomeBloom)" />
+          <Rect
+            x={0}
+            y={0}
+            width={width}
+            height={height}
+            fill="url(#welcomeBloom)"
+          />
         </Svg>
       ) : null}
       <LinearGradient
