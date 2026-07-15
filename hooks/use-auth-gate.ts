@@ -1,11 +1,21 @@
 import { type Href, router, usePathname } from "expo-router";
 import { useEffect, useState } from "react";
+import { Platform } from "react-native";
 import { ONBOARDING_V2 } from "../lib/featureFlags";
 import { getAuthData } from "../lib/authStore";
 
 function isPublicVisionRoute(pathname: string | undefined): boolean {
-  if (!pathname) return false;
-  return pathname === "/avenir" || pathname.endsWith("/avenir");
+  if (pathname) {
+    if (pathname === "/avenir" || pathname.endsWith("/avenir")) {
+      return true;
+    }
+  }
+  // Cold load on web: pathname may be empty before the router hydrates
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    const path = window.location.pathname;
+    return path === "/avenir" || path.endsWith("/avenir");
+  }
+  return false;
 }
 
 /**
@@ -17,10 +27,17 @@ export function useAuthGate(): {
   isLoading: boolean;
 } {
   const pathname = usePathname();
+  const onVisionPage = isPublicVisionRoute(pathname);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!onVisionPage);
 
   useEffect(() => {
+    if (onVisionPage) {
+      setIsAuthenticated(false);
+      setIsLoading(false);
+      return;
+    }
+
     let isMounted = true;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -31,13 +48,11 @@ export function useAuthGate(): {
         if (!isMounted) return;
 
         if (authData === null) {
-          // No auth data — allow the pitch vision page without forcing onboarding
           setIsAuthenticated(false);
           setIsLoading(false);
           if (isPublicVisionRoute(pathname)) {
             return;
           }
-          // Use setTimeout to ensure router is ready
           timeoutId = setTimeout(() => {
             if (isMounted && !isPublicVisionRoute(pathname)) {
               try {
@@ -52,14 +67,12 @@ export function useAuthGate(): {
             }
           }, 200);
         } else {
-          // User is authenticated
           setIsAuthenticated(true);
           setIsLoading(false);
         }
       } catch (error) {
         console.warn("Auth check failed:", error);
         if (isMounted) {
-          // On error, assume not authenticated and redirect (except vision page)
           setIsAuthenticated(false);
           setIsLoading(false);
           if (isPublicVisionRoute(pathname)) {
@@ -82,7 +95,6 @@ export function useAuthGate(): {
       }
     }
 
-    // Small delay to ensure router is initialized
     const initTimeout = setTimeout(() => {
       checkAuth();
     }, 50);
@@ -94,7 +106,7 @@ export function useAuthGate(): {
       }
       clearTimeout(initTimeout);
     };
-  }, [pathname]);
+  }, [pathname, onVisionPage]);
 
   return {
     isAuthenticated,

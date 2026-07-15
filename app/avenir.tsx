@@ -1,5 +1,12 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -93,54 +100,64 @@ const VISION_CARDS: VisionItem[] = [
   },
 ];
 
+const CONTENT_MAX_WIDTH = 520;
+
 export default function AvenirScreen() {
+  const { width } = useWindowDimensions();
+  const contentWidth = Math.min(width - welcomeTheme.screenPaddingHorizontal * 2, CONTENT_MAX_WIDTH);
+
   return (
     <View style={styles.root}>
       <WelcomeBackground />
       <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            Platform.OS === "web" && styles.contentWeb,
+          ]}
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View
-            entering={FadeInDown.duration(700).springify().damping(20)}
-            style={styles.hero}
-          >
-            <Text style={styles.brand}>G R P D</Text>
-            <Text style={styles.title}>L'avenir de GrpD</Text>
-            <Text style={styles.subtitle}>
-              Aujourd'hui nous réunissons des coureurs.{"\n"}
-              Demain, nous connecterons des communautés.
-            </Text>
-          </Animated.View>
+          <View style={[styles.inner, { maxWidth: contentWidth }]}>
+            <Animated.View
+              entering={FadeInDown.duration(700).springify().damping(20)}
+              style={styles.hero}
+            >
+              <Text style={styles.brand}>G R P D</Text>
+              <Text style={styles.title}>L'avenir de GrpD</Text>
+              <Text style={styles.subtitle}>
+                Aujourd'hui nous réunissons des coureurs.{"\n"}
+                Demain, nous connecterons des communautés.
+              </Text>
+            </Animated.View>
 
-          <View style={styles.cards}>
-            {VISION_CARDS.map((card, index) => (
-              <VisionCard
-                key={card.title}
-                icon={card.icon}
-                title={card.title}
-                description={card.description}
-                badge={card.badge}
-                badgeVariant={card.badgeVariant}
-                index={index}
-              />
-            ))}
+            <View style={styles.cards}>
+              {VISION_CARDS.map((card, index) => (
+                <VisionCard
+                  key={card.title}
+                  icon={card.icon}
+                  title={card.title}
+                  description={card.description}
+                  badge={card.badge}
+                  badgeVariant={card.badgeVariant}
+                  index={index}
+                />
+              ))}
+            </View>
+
+            <Animated.View
+              entering={FadeIn.delay(900).duration(800)}
+              style={styles.quoteBlock}
+            >
+              <View style={styles.quoteRule} />
+              <Text style={styles.quote}>
+                Nous ne construisons pas uniquement une application de course.
+                {"\n"}
+                Nous construisons une plateforme qui rapproche les personnes
+                grâce au mouvement.
+              </Text>
+            </Animated.View>
           </View>
-
-          <Animated.View
-            entering={FadeIn.delay(900).duration(800)}
-            style={styles.quoteBlock}
-          >
-            <View style={styles.quoteRule} />
-            <Text style={styles.quote}>
-              Nous ne construisons pas uniquement une application de course.
-              {"\n"}
-              Nous construisons une plateforme qui rapproche les personnes grâce
-              au mouvement.
-            </Text>
-          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -166,8 +183,15 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxl + spacing.lg,
   },
+  contentWeb: {
+    alignItems: "center",
+  },
+  inner: {
+    width: "100%",
+    alignSelf: "center",
+  },
   hero: {
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.xxl + spacing.sm,
     gap: 14,
   },
   brand: {
@@ -190,13 +214,12 @@ const styles = StyleSheet.create({
     fontFamily: welcomeFontFamily.regular,
     lineHeight: 26,
     marginTop: 4,
-    maxWidth: 340,
   },
   cards: {
-    gap: 14,
+    gap: 16,
   },
   quoteBlock: {
-    marginTop: spacing.xxl + spacing.md,
+    marginTop: spacing.xxl + spacing.lg,
     alignItems: "center",
     paddingHorizontal: spacing.sm,
     gap: spacing.lg,
@@ -214,6 +237,5 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     lineHeight: 26,
     textAlign: "center",
-    maxWidth: 360,
   },
 });

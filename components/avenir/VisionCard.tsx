@@ -32,56 +32,72 @@ export function VisionCard({
         .damping(18)}
       style={styles.card}
     >
-      <View style={styles.topRow}>
-        <View style={styles.iconTile}>
-          <Text style={styles.icon}>{icon}</Text>
-        </View>
-        <Tag label={badge} variant={badgeVariant} />
+      <View style={styles.iconTile}>
+        <Text style={styles.icon}>{icon}</Text>
       </View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.description}>{description}</Text>
+      <View style={styles.body}>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{title}</Text>
+          <Tag label={badge} variant={badgeVariant} style={styles.badge} />
+        </View>
+        <Text style={styles.description}>{description}</Text>
+      </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 16,
     backgroundColor: colors.background.card,
     borderRadius: borderRadius.xl,
     borderWidth: hairline,
     borderColor: colors.border.default,
     paddingHorizontal: 20,
     paddingVertical: 20,
-    gap: 12,
-  },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
   },
   iconTile: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     backgroundColor: colors.accent.primaryDim,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   icon: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 24,
+    lineHeight: 30,
+  },
+  body: {
+    flex: 1,
+    gap: 8,
+    paddingTop: 2,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
   },
   title: {
+    flex: 1,
     color: colors.text.primary,
-    fontSize: 18,
+    fontSize: 17,
     fontFamily: welcomeFontFamily.semibold,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
+    lineHeight: 22,
+  },
+  badge: {
+    marginTop: 1,
+    flexShrink: 0,
   },
   description: {
     color: colors.text.secondary,
     fontSize: 15,
     fontFamily: welcomeFontFamily.regular,
     lineHeight: 22,
-    marginTop: -2,
   },
 });
