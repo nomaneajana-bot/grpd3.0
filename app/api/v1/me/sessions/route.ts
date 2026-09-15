@@ -5,6 +5,8 @@ import { requireAuth } from "@/lib/server/auth-helpers";
 import { prisma } from "@/lib/server/prisma";
 import { jsonOk, jsonError } from "@/lib/server/api-response";
 
+import { visibleSessionsWhere } from "@/lib/server/session-access";
+
 function serializeSession(session: {
   id: string;
   title: string;
@@ -24,6 +26,7 @@ function serializeSession(session: {
   workoutId: string | null;
   isCustom: boolean;
   createdAt: Date;
+  experience?: unknown;
   paceGroups: unknown | null;
   hostGroupName: string | null;
   meetingPoint: string | null;
@@ -34,6 +37,7 @@ function serializeSession(session: {
   attendanceGroupId?: string | null;
 }) {
   return {
+    experience: session.experience ?? null,
     id: session.id,
     title: session.title,
     spot: session.spot,
@@ -65,11 +69,12 @@ function serializeSession(session: {
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const attendance = await prisma.sessionAttendance.findMany({
       where: {
         userId,
-        status: { in: ["joined", "requested", "suggested"] },
+        session: { is: visibleSessionsWhere(userId) },
+        status: { in: ["joined", "requested", "suggested", "attended"] },
       },
       include: { session: true },
       orderBy: { createdAt: "desc" },

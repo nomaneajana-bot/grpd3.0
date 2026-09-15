@@ -13,7 +13,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const params = await context.params;
     const paramParsed = clubIdParamSchema.safeParse(params);
     if (!paramParsed.success) {
@@ -25,7 +25,7 @@ export async function POST(
     }
     const clubId = paramParsed.data.id;
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
     const bodyParsed = approveBodySchema.safeParse(body);
     if (!bodyParsed.success) {
       return jsonError(
@@ -38,10 +38,21 @@ export async function POST(
 
     await requireClubPermission(userId, clubId, "approve_members");
 
-    const membership = await prisma.clubMembership.update({
-      where: { id: membershipId },
+    const existing = await prisma.clubMembership.findFirst({
+      where: { id: membershipId, clubId },
+    });
+    if (!existing) return jsonError("Membership not found", "NOT_FOUND", 404);
+    if (["banned", "rejected"].includes(existing.status)) {
+      return jsonError("Membership cannot be approved", "FORBIDDEN", 403);
+    }
+    await prisma.clubMembership.updateMany({
+      where: { id: membershipId, clubId, status: MembershipStatus.pending },
       data: { status: MembershipStatus.approved },
     });
+    const membership = await prisma.clubMembership.findFirst({
+      where: { id: membershipId, clubId, status: MembershipStatus.approved },
+    });
+    if (!membership) return jsonError("Membership changed; retry", "CONFLICT", 409);
 
     return jsonOk(membership);
   } catch (e) {

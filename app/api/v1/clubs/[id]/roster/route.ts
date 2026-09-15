@@ -12,7 +12,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const params = await context.params;
     const parsed = clubIdParamSchema.safeParse(params);
     if (!parsed.success) {
@@ -46,6 +46,7 @@ export async function GET(
         status: true,
         sharePrs: true,
         prSummary: true,
+        duesPaid: true,
       },
       orderBy: { createdAt: "asc" },
     });
@@ -57,7 +58,8 @@ export async function GET(
       role: m.role,
       status: m.status,
       sharePrs: m.sharePrs,
-      prSummary: m.prSummary as { updatedAt?: string; records?: Array<{ label: string; paceSecondsPerKm: number | null; testDate?: string | null }> } | null,
+      duesPaid: m.duesPaid,
+      prSummary: m.sharePrs ? m.prSummary as { updatedAt?: string; records?: Array<{ label: string; paceSecondsPerKm: number | null; testDate?: string | null }> } | null : null,
     }));
 
     return jsonOk({ clubId, members });

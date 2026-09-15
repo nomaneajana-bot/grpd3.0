@@ -8,6 +8,7 @@
 
 export type AttendanceStatusValue =
   | "joined"
+  | "attended"
   | "suggested"
   | "left"
   | "requested"
@@ -19,7 +20,7 @@ export function getAssignUpdateData(
   existingStatus: AttendanceStatusValue | null,
   groupId: string
 ): { groupId: string; status?: "suggested" } {
-  if (existingStatus === "joined") {
+  if (existingStatus === "joined" || existingStatus === "attended") {
     return { groupId };
   }
   return { groupId, status: "suggested" };
@@ -30,7 +31,7 @@ export function getJoinUpdateData(
   existingStatus: AttendanceStatusValue | null,
   groupId: string
 ): { groupId: string; status?: "joined" } {
-  if (existingStatus === "joined") {
+  if (existingStatus === "joined" || existingStatus === "attended") {
     return { groupId };
   }
   return { groupId, status: "joined" };

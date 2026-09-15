@@ -2,11 +2,16 @@
 // GET  /api/v1/sessions – list sessions
 
 import { NextRequest } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/server/prisma";
-import { requireAuth } from "@/lib/server/auth-helpers";
+import { requireAuth, getAuthUserId } from "@/lib/server/auth-helpers";
 import { hasClubPermission } from "@/lib/server/role-checks";
 import { jsonOk, jsonError } from "@/lib/server/api-response";
+
+import { visibleSessionsWhere } from "@/lib/server/session-access";
+
+import { communityOutingSchema, communitySessionData } from "@/lib/server/community-input";
 
 const paceGroupSchema = z.object({
   id: z.string().min(1),
@@ -59,6 +64,7 @@ function serializeSession(session: {
   workoutId: string | null;
   isCustom: boolean;
   createdAt: Date;
+  experience?: unknown;
   paceGroups: unknown | null;
   hostGroupName: string | null;
   meetingPoint: string | null;
@@ -67,6 +73,7 @@ function serializeSession(session: {
   coachName: string | null;
 }) {
   return {
+    experience: session.experience ?? null,
     id: session.id,
     title: session.title,
     spot: session.spot,
@@ -96,9 +103,12 @@ function serializeSession(session: {
 
 export async function POST(req: NextRequest) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const body = await req.json().catch(() => null);
-    const parsed = createSchema.safeParse(body ?? {});
+    const community = body?.experience?.kind === "community";
+    const parsed = community
+      ? communityOutingSchema.transform(communitySessionData).safeParse(body)
+      : createSchema.safeParse(body ?? {});
     if (!parsed.success) {
       return jsonError(
         parsed.error.errors[0]?.message ?? "Invalid payload",
@@ -106,7 +116,7 @@ export async function POST(req: NextRequest) {
         400,
       );
     }
-    const data = parsed.data;
+    const data = parsed.data as z.infer<typeof createSchema> & { experience?: z.infer<typeof communityOutingSchema>["experience"] };
 
     if (data.clubId) {
       const canCreate = await hasClubPermission(
@@ -119,7 +129,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const visibility =
+    let visibility =
       data.visibility ?? (data.clubId ? "members" : "public");
     if (visibility === "members" && !data.clubId) {
       return jsonError(
@@ -129,8 +139,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (data.clubId) {
+      const club = await prisma.club.findUnique({ where: { id: data.clubId }, select: { visibility: true } });
+      if (!club) return jsonError("Club not found", "NOT_FOUND", 404);
+      visibility = club.visibility === "members" ? "members" : (data.visibility ?? "public");
+    }
     const session = await prisma.session.create({
       data: {
+        experience: data.experience,
         title: data.title,
         spot: data.spot,
         dateLabel: data.dateLabel,
@@ -152,7 +168,7 @@ export async function POST(req: NextRequest) {
         coachName: data.coachName ?? null,
         workoutId: data.workoutId ?? null,
         isCustom: data.isCustom ?? true,
-        paceGroups: data.paceGroups ?? null,
+        paceGroups: data.paceGroups ?? undefined,
       },
     });
 
@@ -172,12 +188,12 @@ export async function GET(req: NextRequest) {
     const clubId = searchParams.get("clubId") ?? null;
     const from = searchParams.get("from") ?? null;
 
-    const where: Record<string, unknown> = {};
+    const where: Prisma.SessionWhereInput = {};
     if (clubId) where.clubId = clubId;
     if (from) where.dateISO = { gte: from };
 
     const sessions = await prisma.session.findMany({
-      where,
+      where: { AND: [visibleSessionsWhere(await getAuthUserId(req)), where] },
       orderBy: { dateISO: "asc" },
       take: 50,
     });

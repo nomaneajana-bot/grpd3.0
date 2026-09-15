@@ -12,7 +12,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const params = await context.params;
     const parsedParams = sessionIdParamSchema.safeParse(params);
     if (!parsedParams.success) {
@@ -34,15 +34,11 @@ export async function POST(
       where: { sessionId_userId: { sessionId, userId } },
     });
 
-    const leaveData = getLeaveUpdateData();
-    const attendance = existingAttendance
-      ? await prisma.sessionAttendance.update({
-          where: { sessionId_userId: { sessionId, userId } },
-          data: leaveData,
-        })
-      : await prisma.sessionAttendance.create({
-          data: { sessionId, userId, ...leaveData },
-        });
+    if (!existingAttendance) return jsonError("Participation not found", "NOT_FOUND", 404);
+    const attendance = await prisma.sessionAttendance.update({
+      where: { sessionId_userId: { sessionId, userId } },
+      data: getLeaveUpdateData(),
+    });
 
     return jsonOk({
       attendance: {

@@ -5,6 +5,9 @@ import { prisma } from "@/lib/server/prisma";
 import { jsonOk, jsonError } from "@/lib/server/api-response";
 import { clubIdParamSchema } from "@/lib/server/validators";
 
+import { getAuthUserId } from "@/lib/server/auth-helpers";
+import { visibleSessionsWhere } from "@/lib/server/session-access";
+
 const todayStart = (): Date => {
   const d = new Date();
   d.setUTCHours(0, 0, 0, 0);
@@ -36,6 +39,7 @@ export async function GET(
     const from = todayStart();
     const sessions = await prisma.session.findMany({
       where: {
+        AND: [visibleSessionsWhere(await getAuthUserId(req))],
         clubId,
         dateISO: { gte: from.toISOString() },
       },
