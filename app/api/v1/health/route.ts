@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/server/prisma";
+import { prisma } from "../../../../lib/server/prisma";
 
 /** Minimal readiness probe: never return connection details or secret values. */
 export async function GET() {

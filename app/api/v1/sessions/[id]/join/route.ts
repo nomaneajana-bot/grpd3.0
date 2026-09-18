@@ -2,11 +2,11 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { visibleSessionsWhere } from "@/lib/server/session-access";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { sessionIdParamSchema } from "@/lib/server/validators";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { visibleSessionsWhere } from "../../../../../../lib/server/session-access";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { sessionIdParamSchema } from "../../../../../../lib/server/validators";
 
 
 const bodySchema = z.object({

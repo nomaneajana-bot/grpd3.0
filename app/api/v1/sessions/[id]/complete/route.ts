@@ -2,11 +2,11 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { sessionIdParamSchema } from "@/lib/server/validators";
-import { visibleSessionsWhere } from "@/lib/server/session-access";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { sessionIdParamSchema } from "../../../../../../lib/server/validators";
+import { visibleSessionsWhere } from "../../../../../../lib/server/session-access";
 
 const bodySchema = z.object({
   actualDistanceKm: z.number().positive().optional(),

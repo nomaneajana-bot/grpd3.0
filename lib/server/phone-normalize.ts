@@ -1,1 +1,1 @@
-export { normalizePhone } from "@/lib/phone-normalize";
+export { normalizePhone } from "../phone-normalize";

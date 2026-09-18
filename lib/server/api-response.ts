@@ -1,7 +1,7 @@
 // Consistent ApiEnvelope responses for API routes
 
 import { NextResponse } from "next/server";
-import type { ApiErrorCode } from "@/types/api";
+import type { ApiErrorCode } from "../../types/api";
 
 export function jsonOk<T>(data: T, status = 200) {
   return NextResponse.json({ ok: true as const, data }, { status });

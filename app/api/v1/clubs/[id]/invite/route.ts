@@ -1,13 +1,13 @@
 // POST /api/v1/clubs/:id/invite – create invite code (admin/coach only)
 
 import { NextRequest } from "next/server";
-import { inviteCreateSchema } from "@/lib/server/community-input";
+import { inviteCreateSchema } from "../../../../../../lib/server/community-input";
 import { randomBytes } from "crypto";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { requireClubPermission } from "@/lib/server/role-checks";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { clubIdParamSchema } from "@/lib/server/validators";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { requireClubPermission } from "../../../../../../lib/server/role-checks";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { clubIdParamSchema } from "../../../../../../lib/server/validators";
 
 function generateInviteCode(): string {
   return randomBytes(16).toString("hex").toUpperCase();

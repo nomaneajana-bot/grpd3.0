@@ -4,14 +4,14 @@
 import { NextRequest } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { prisma } from "@/lib/server/prisma";
-import { requireAuth, getAuthUserId } from "@/lib/server/auth-helpers";
-import { hasClubPermission } from "@/lib/server/role-checks";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
+import { prisma } from "../../../../lib/server/prisma";
+import { requireAuth, getAuthUserId } from "../../../../lib/server/auth-helpers";
+import { hasClubPermission } from "../../../../lib/server/role-checks";
+import { jsonOk, jsonError } from "../../../../lib/server/api-response";
 
-import { visibleSessionsWhere } from "@/lib/server/session-access";
+import { visibleSessionsWhere } from "../../../../lib/server/session-access";
 
-import { communityOutingSchema, communitySessionData } from "@/lib/server/community-input";
+import { communityOutingSchema, communitySessionData } from "../../../../lib/server/community-input";
 
 const paceGroupSchema = z.object({
   id: z.string().min(1),

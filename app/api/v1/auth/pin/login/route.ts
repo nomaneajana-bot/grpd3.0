@@ -3,16 +3,16 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
-import { jsonError, jsonOk } from "@/lib/server/api-response";
+import { jsonError, jsonOk } from "../../../../../../lib/server/api-response";
 import {
   getAccessTokenTtlSeconds,
   signAppAccessToken,
-} from "@/lib/server/app-jwt";
+} from "../../../../../../lib/server/app-jwt";
 import {
   findAllowlistUser,
   isPinAllowlistEnabled,
-} from "@/lib/server/pin-allowlist";
-import { normalizePhone } from "@/lib/server/phone-normalize";
+} from "../../../../../../lib/server/pin-allowlist";
+import { normalizePhone } from "../../../../../../lib/server/phone-normalize";
 
 const bodySchema = z.object({
   phone: z.string().min(8),

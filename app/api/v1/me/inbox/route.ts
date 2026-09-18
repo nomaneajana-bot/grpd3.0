@@ -2,10 +2,10 @@
 
 import { NextRequest } from "next/server";
 import { MembershipRole, MembershipStatus } from "@prisma/client";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { visibleSessionsWhere } from "@/lib/server/session-access";
+import { requireAuth } from "../../../../../lib/server/auth-helpers";
+import { prisma } from "../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../lib/server/api-response";
+import { visibleSessionsWhere } from "../../../../../lib/server/session-access";
 
 export async function GET(req: NextRequest) {
   try {

@@ -2,13 +2,13 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAuth, getAuthUserId } from "@/lib/server/auth-helpers";
-import { requireClubPermission, hasClubPermission } from "@/lib/server/role-checks";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { clubIdParamSchema } from "@/lib/server/validators";
+import { requireAuth, getAuthUserId } from "../../../../../lib/server/auth-helpers";
+import { requireClubPermission, hasClubPermission } from "../../../../../lib/server/role-checks";
+import { prisma } from "../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../lib/server/api-response";
+import { clubIdParamSchema } from "../../../../../lib/server/validators";
 
-import { visibleSessionsWhere } from "@/lib/server/session-access";
+import { visibleSessionsWhere } from "../../../../../lib/server/session-access";
 
 const patchBodySchema = z.object({
   name: z.string().min(1).optional(),

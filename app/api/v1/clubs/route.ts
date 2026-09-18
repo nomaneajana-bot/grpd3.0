@@ -7,12 +7,12 @@ import {
   MembershipRole,
   MembershipStatus,
 } from "@prisma/client";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
+import { requireAuth } from "../../../../lib/server/auth-helpers";
+import { prisma } from "../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../lib/server/api-response";
 
 import { randomUUID } from "node:crypto";
-import { clubCreateSchema } from "@/lib/server/community-input";
+import { clubCreateSchema } from "../../../../lib/server/community-input";
 
 export async function POST(req: NextRequest) {
   try {

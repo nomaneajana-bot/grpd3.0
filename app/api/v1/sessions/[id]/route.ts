@@ -1,12 +1,12 @@
 // GET /api/v1/sessions/:id – session detail
 
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { sessionIdParamSchema } from "@/lib/server/validators";
+import { prisma } from "../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../lib/server/api-response";
+import { sessionIdParamSchema } from "../../../../../lib/server/validators";
 
-import { getAuthUserId } from "@/lib/server/auth-helpers";
-import { visibleSessionsWhere } from "@/lib/server/session-access";
+import { getAuthUserId } from "../../../../../lib/server/auth-helpers";
+import { visibleSessionsWhere } from "../../../../../lib/server/session-access";
 
 function serializeSession(session: {
   id: string;

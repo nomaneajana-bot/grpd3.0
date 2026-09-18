@@ -1,11 +1,11 @@
 // GET /api/v1/me/sessions – list sessions joined by current user
 
 import { NextRequest } from "next/server";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
+import { requireAuth } from "../../../../../lib/server/auth-helpers";
+import { prisma } from "../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../lib/server/api-response";
 
-import { visibleSessionsWhere } from "@/lib/server/session-access";
+import { visibleSessionsWhere } from "../../../../../lib/server/session-access";
 
 function serializeSession(session: {
   id: string;

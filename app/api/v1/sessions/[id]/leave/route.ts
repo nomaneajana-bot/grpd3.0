@@ -1,11 +1,11 @@
 // POST /api/v1/sessions/:id/leave – runner leaves session (sets status to left)
 
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { sessionIdParamSchema } from "@/lib/server/validators";
-import { getLeaveUpdateData } from "@/lib/attendanceStatusLogic";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { sessionIdParamSchema } from "../../../../../../lib/server/validators";
+import { getLeaveUpdateData } from "../../../../../../lib/attendanceStatusLogic";
 
 export async function POST(
   req: NextRequest,

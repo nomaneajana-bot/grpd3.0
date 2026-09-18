@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { NextRequest } from "next/server";
 
-import { dispatchApiRequest } from "@/lib/server/vercel-dispatch";
+import { dispatchApiRequest } from "../../lib/server/vercel-dispatch";
 
 export const config = {
   api: {

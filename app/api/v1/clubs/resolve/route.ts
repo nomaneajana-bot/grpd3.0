@@ -2,10 +2,10 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { getAuthUserId } from "@/lib/server/auth-helpers";
-import { hasClubPermission } from "@/lib/server/role-checks";
+import { prisma } from "../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../lib/server/api-response";
+import { getAuthUserId } from "../../../../../lib/server/auth-helpers";
+import { hasClubPermission } from "../../../../../lib/server/role-checks";
 
 const bodySchema = z
   .object({

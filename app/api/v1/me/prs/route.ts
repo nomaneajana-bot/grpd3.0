@@ -2,9 +2,9 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { requireAuth } from "@/lib/server/auth-helpers";
+import { prisma } from "../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../lib/server/api-response";
+import { requireAuth } from "../../../../../lib/server/auth-helpers";
 
 const bodySchema = z.object({
   clubId: z.string().optional(),

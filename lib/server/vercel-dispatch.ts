@@ -26,22 +26,22 @@ function staticRoute(
 }
 
 const STATIC_ROUTES: Record<string, RouteMatch> = Object.fromEntries([
-  staticRoute("health", () => import("@/app/api/v1/health/route")),
-  staticRoute("clubs", () => import("@/app/api/v1/clubs/route")),
-  staticRoute("clubs/resolve", () => import("@/app/api/v1/clubs/resolve/route")),
-  staticRoute("clubs/join", () => import("@/app/api/v1/clubs/join/route")),
+  staticRoute("health", () => import("../../app/api/v1/health/route")),
+  staticRoute("clubs", () => import("../../app/api/v1/clubs/route")),
+  staticRoute("clubs/resolve", () => import("../../app/api/v1/clubs/resolve/route")),
+  staticRoute("clubs/join", () => import("../../app/api/v1/clubs/join/route")),
   staticRoute(
     "clubs/join-by-code",
-    () => import("@/app/api/v1/clubs/join-by-code/route"),
+    () => import("../../app/api/v1/clubs/join-by-code/route"),
   ),
-  staticRoute("sessions", () => import("@/app/api/v1/sessions/route")),
-  staticRoute("me/memberships", () => import("@/app/api/v1/me/memberships/route")),
-  staticRoute("me/sessions", () => import("@/app/api/v1/me/sessions/route")),
-  staticRoute("me/prs", () => import("@/app/api/v1/me/prs/route")),
-  staticRoute("me/inbox", () => import("@/app/api/v1/me/inbox/route")),
+  staticRoute("sessions", () => import("../../app/api/v1/sessions/route")),
+  staticRoute("me/memberships", () => import("../../app/api/v1/me/memberships/route")),
+  staticRoute("me/sessions", () => import("../../app/api/v1/me/sessions/route")),
+  staticRoute("me/prs", () => import("../../app/api/v1/me/prs/route")),
+  staticRoute("me/inbox", () => import("../../app/api/v1/me/inbox/route")),
   staticRoute(
     "auth/pin/login",
-    () => import("@/app/api/v1/auth/pin/login/route"),
+    () => import("../../app/api/v1/auth/pin/login/route"),
   ),
 ]);
 
@@ -60,7 +60,7 @@ function matchDynamicRoute(segments: string[]): RouteMatch | null {
   ) {
     return {
       load: asRouteModule(
-        () => import("@/app/api/v1/clubs/[id]/members/[userId]/dues/route"),
+        () => import("../../app/api/v1/clubs/[id]/members/[userId]/dues/route"),
       ),
       params: { id: b, userId: d },
     };
@@ -68,100 +68,100 @@ function matchDynamicRoute(segments: string[]): RouteMatch | null {
 
   if (a === "clubs" && b && !c) {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/clubs/[id]/route")),
+      load: asRouteModule(() => import("../../app/api/v1/clubs/[id]/route")),
       params: { id: b },
     };
   }
   if (a === "clubs" && b && c === "request") {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/clubs/[id]/request/route")),
+      load: asRouteModule(() => import("../../app/api/v1/clubs/[id]/request/route")),
       params: { id: b },
     };
   }
   if (a === "clubs" && b && c === "approve") {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/clubs/[id]/approve/route")),
+      load: asRouteModule(() => import("../../app/api/v1/clubs/[id]/approve/route")),
       params: { id: b },
     };
   }
   if (a === "clubs" && b && c === "invite") {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/clubs/[id]/invite/route")),
+      load: asRouteModule(() => import("../../app/api/v1/clubs/[id]/invite/route")),
       params: { id: b },
     };
   }
   if (a === "clubs" && b && c === "roster") {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/clubs/[id]/roster/route")),
+      load: asRouteModule(() => import("../../app/api/v1/clubs/[id]/roster/route")),
       params: { id: b },
     };
   }
   if (a === "clubs" && b && c === "sessions") {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/clubs/[id]/sessions/route")),
+      load: asRouteModule(() => import("../../app/api/v1/clubs/[id]/sessions/route")),
       params: { id: b },
     };
   }
   if (a === "clubs" && b && c === "leave") {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/clubs/[id]/leave/route")),
+      load: asRouteModule(() => import("../../app/api/v1/clubs/[id]/leave/route")),
       params: { id: b },
     };
   }
   if (a === "clubs" && b && c === "member-group") {
     return {
       load: asRouteModule(
-        () => import("@/app/api/v1/clubs/[id]/member-group/route"),
+        () => import("../../app/api/v1/clubs/[id]/member-group/route"),
       ),
       params: { id: b },
     };
   }
   if (a === "clubs" && b && c === "summary") {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/clubs/[id]/summary/route")),
+      load: asRouteModule(() => import("../../app/api/v1/clubs/[id]/summary/route")),
       params: { id: b },
     };
   }
 
   if (a === "sessions" && b && !c) {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/sessions/[id]/route")),
+      load: asRouteModule(() => import("../../app/api/v1/sessions/[id]/route")),
       params: { id: b },
     };
   }
   if (a === "sessions" && b && c === "join") {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/sessions/[id]/join/route")),
+      load: asRouteModule(() => import("../../app/api/v1/sessions/[id]/join/route")),
       params: { id: b },
     };
   }
   if (a === "sessions" && b && c === "leave") {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/sessions/[id]/leave/route")),
+      load: asRouteModule(() => import("../../app/api/v1/sessions/[id]/leave/route")),
       params: { id: b },
     };
   }
   if (a === "sessions" && b && c === "request") {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/sessions/[id]/request/route")),
+      load: asRouteModule(() => import("../../app/api/v1/sessions/[id]/request/route")),
       params: { id: b },
     };
   }
   if (a === "sessions" && b && c === "assign") {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/sessions/[id]/assign/route")),
+      load: asRouteModule(() => import("../../app/api/v1/sessions/[id]/assign/route")),
       params: { id: b },
     };
   }
   if (a === "sessions" && b && c === "participants") {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/sessions/[id]/participants/route")),
+      load: asRouteModule(() => import("../../app/api/v1/sessions/[id]/participants/route")),
       params: { id: b },
     };
   }
   if (a === "sessions" && b && c === "complete") {
     return {
-      load: asRouteModule(() => import("@/app/api/v1/sessions/[id]/complete/route")),
+      load: asRouteModule(() => import("../../app/api/v1/sessions/[id]/complete/route")),
       params: { id: b },
     };
   }
