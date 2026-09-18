@@ -2,17 +2,17 @@
 
 import { NextRequest } from "next/server";
 import { MembershipStatus } from "@prisma/client";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { clubIdParamSchema } from "@/lib/server/validators";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { clubIdParamSchema } from "../../../../../../lib/server/validators";
 
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const params = await context.params;
     const parsed = clubIdParamSchema.safeParse(params);
     if (!parsed.success) {
@@ -29,6 +29,7 @@ export async function POST(
       const normalized = rawId.toLowerCase();
       const matches = await prisma.club.findMany({
         where: {
+          visibility: "public",
           OR: [
             { slug: normalized },
             { name: { equals: rawId, mode: "insensitive" } },
@@ -52,21 +53,23 @@ export async function POST(
     }
 
     const clubId = club.id;
+    if (club.visibility !== "public") return jsonError("Club not found", "NOT_FOUND", 404);
+    if (club.joinMode === "invite") return jsonError("Invitation required", "FORBIDDEN", 403);
 
     const existing = await prisma.clubMembership.findUnique({
       where: { userId_clubId: { userId, clubId } },
     });
     if (existing) {
-      return jsonError(
-        "Membership request already exists",
-        "VALIDATION_ERROR",
-        409,
-      );
+      if (["banned", "rejected"].includes(existing.status)) return jsonError("Forbidden", "FORBIDDEN", 403);
+      return jsonOk(existing);
     }
 
-    const membership = await prisma.clubMembership.create({
-      data: { userId, clubId, status: MembershipStatus.pending },
+    const membership = await prisma.clubMembership.upsert({
+      where: { userId_clubId: { userId, clubId } },
+      create: { userId, clubId, status: club.joinMode === "open" ? MembershipStatus.approved : MembershipStatus.pending },
+      update: {},
     });
+    if (["banned", "rejected"].includes(membership.status)) return jsonError("Forbidden", "FORBIDDEN", 403);
 
     return jsonOk(membership);
   } catch (e) {

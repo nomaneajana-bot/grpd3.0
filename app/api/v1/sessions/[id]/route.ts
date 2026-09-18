@@ -1,9 +1,12 @@
 // GET /api/v1/sessions/:id – session detail
 
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { sessionIdParamSchema } from "@/lib/server/validators";
+import { prisma } from "../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../lib/server/api-response";
+import { sessionIdParamSchema } from "../../../../../lib/server/validators";
+
+import { getAuthUserId } from "../../../../../lib/server/auth-helpers";
+import { visibleSessionsWhere } from "../../../../../lib/server/session-access";
 
 function serializeSession(session: {
   id: string;
@@ -24,6 +27,7 @@ function serializeSession(session: {
   workoutId: string | null;
   isCustom: boolean;
   createdAt: Date;
+  experience?: unknown;
   paceGroups: unknown | null;
   hostGroupName: string | null;
   meetingPoint: string | null;
@@ -32,6 +36,7 @@ function serializeSession(session: {
   coachName: string | null;
 }) {
   return {
+    experience: session.experience ?? null,
     id: session.id,
     title: session.title,
     spot: session.spot,
@@ -75,8 +80,8 @@ export async function GET(
     }
     const sessionId = parsed.data.id;
 
-    const session = await prisma.session.findUnique({
-      where: { id: sessionId },
+    const session = await prisma.session.findFirst({
+      where: { AND: [{ id: sessionId }, visibleSessionsWhere(await getAuthUserId(req))] },
     });
 
     if (!session) return jsonError("Session not found", "NOT_FOUND", 404);
