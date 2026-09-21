@@ -1,9 +1,10 @@
 ## Verified hosted acceptance checkpoint - 21 September 2026, Cursor
 Isolated D02 Preview PIN auth configured (AUTH_JWT_SECRET + PIN_ALLOWLIST_JSON, Preview / codex/d02-backend-verification only). Automation bypass created; SSO deployment protection remains enabled. Production DATABASE_URL unchanged.
-Redeploy dpl_6CNMNchG44cXqHgxmvJ3X6pt3UW2 Ready on commit 05f73a4cbcdb36b7614cada84a905ec1b6a954c8.
+Hosted acceptance exercised on commit 05f73a4 / deployment dpl_6CNMNchG44cXqHgxmvJ3X6pt3UW2 Ready.
 URL: https://grpd30-355kzkwzz-noas-projects-0b3f311d.vercel.app
 hosted-check.mjs authenticated-test: 8/8 PASS, complete=true (evidence/2026-09-21/hosted-runner-preview.json). Neon persistence verified on grpd_d02_test (hosted-persistence-neon.json).
-French D02 review/docs refreshed; PDF regenerated. D02 technical criteria for architecture/API/Test env are met for Codex review. Financial originals and stakeholder/OCIF acceptance remain open. D03 not started.
+Docs/evidence commit pushed: 327a3382d23ad5136e81dc1c763b622abcba87d2 (review sources + runner + PDF only; no API change).
+French D02 review/docs refreshed; PDF regenerated and visually inspected. D02 technical criteria for architecture/API/Test env are met for Codex review. Financial originals and stakeholder/OCIF acceptance remain open. D03 not started.
 NEXT for Codex: milestone/dossier review. Owner may add named evaluator Visit access if needed. Do not merge main or submit OCIF from this checkpoint.
 
 # GRPD - Cursor handoff
