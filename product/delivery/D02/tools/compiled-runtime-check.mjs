@@ -28,7 +28,7 @@ for(let i=0;i<inputs.length;i++){
 }
 try {
  for(const file of inputs){
-  const js=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,esModuleInterop:true}}).outputText;
+  const js=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.Node16,esModuleInterop:true}}).outputText;
   const dest=join(stage,relative(root,file).replace(/\.ts$/,'.js'));mkdirSync(dirname(dest),{recursive:true});writeFileSync(dest,js);
  }
  mkdirSync(join(stage,'node_modules/@prisma'),{recursive:true});
