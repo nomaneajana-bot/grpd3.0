@@ -1,16 +1,16 @@
 // POST /api/v1/clubs/:id/invite – create invite code (admin/coach only)
 
 import { NextRequest } from "next/server";
-import { MembershipRole } from "@prisma/client";
+import { inviteCreateSchema } from "../../../../../../lib/server/community-input";
 import { randomBytes } from "crypto";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { requireClubPermission } from "@/lib/server/role-checks";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { clubIdParamSchema } from "@/lib/server/validators";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { requireClubPermission } from "../../../../../../lib/server/role-checks";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { clubIdParamSchema } from "../../../../../../lib/server/validators";
 
 function generateInviteCode(): string {
-  return randomBytes(4).toString("hex").toUpperCase();
+  return randomBytes(16).toString("hex").toUpperCase();
 }
 
 export async function POST(
@@ -18,7 +18,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const params = await context.params;
     const parsed = clubIdParamSchema.safeParse(params);
     if (!parsed.success) {
@@ -30,11 +30,16 @@ export async function POST(
     }
     const clubId = parsed.data.id;
 
-    const body = await req.json();
-    const { invitedPhone, invitedEmail, role, expiresInDays } = body;
+    const parsedBody = inviteCreateSchema.safeParse(await req.json().catch(() => null));
+    if (!parsedBody.success) return jsonError("Invalid invite: use a shareable code and expiry of 1–30 days", "VALIDATION_ERROR", 400);
+    const { invitedPhone, invitedEmail, role, expiresInDays } = parsedBody.data;
 
     await requireClubPermission(userId, clubId, "invite");
 
+    if (role !== "member") {
+      const issuer = await prisma.clubMembership.findUnique({ where: { userId_clubId: { userId, clubId } } });
+      if (issuer?.role !== "admin") return jsonError("Only admins can invite elevated roles", "FORBIDDEN", 403);
+    }
     let code = generateInviteCode();
     let attempts = 0;
     while (
@@ -58,7 +63,7 @@ export async function POST(
         code,
         invitedPhone: invitedPhone ?? null,
         invitedEmail: invitedEmail ?? null,
-        role: role ?? MembershipRole.member,
+        role,
         expiresAt,
       },
     });

@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-09-21T17:44:14.469Z",
+  "database": "grpd_d02_test",
+  "branch": "grpd-d02-test",
+  "sourceReport": "hosted-runner-preview.json",
+  "deploymentId": "dpl_DsaHp76bfBhxz7DN9JosCPmU3CK4",
+  "commit": "05f73a4cbcdb36b7614cada84a905ec1b6a954c8",
+  "origin": "https://grpd30-git-codex-d02-backend-veri-6f38b5-noas-projects-0b3f311d.vercel.app",
+  "freshConnection": true,
+  "clubsFound": 2,
+  "sessionsFound": 2,
+  "membershipRows": 3,
+  "attendanceRows": 2,
+  "clubIds": [
+    "cmubjb1sv0001xdgay5hpzd8u",
+    "cmubjb1z90005xdgatridg1f6"
+  ],
+  "outingIds": [
+    "cmubjb2v5000dxdga9qrda48a",
+    "cmubjb30g000fxdgakbv6sg27"
+  ],
+  "expectations": {
+    "bothClubs": true,
+    "bothSessions": true,
+    "guestLeftPrivateJoinedPublic": true
+  },
+  "secretsIncluded": false
+}

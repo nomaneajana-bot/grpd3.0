@@ -1,27 +1,35 @@
-// Auth helpers for API routes – Auth.js v5
-
 import type { NextRequest } from "next/server";
 
-/** Request with Auth.js v5 session (set by middleware or getSession). */
+import { verifyAppAccessToken } from "./app-jwt";
+import { verifySupabaseAccessToken } from "./supabase-jwt";
+
 type RequestWithAuth = NextRequest & {
   auth?: { user?: { id?: string } } | null;
 };
 
 /**
- * Get authenticated user ID from request (Auth.js v5).
- * Uses req.auth?.user?.id set by Auth.js middleware or getServerSession.
+ * Get authenticated user ID from Supabase Bearer JWT or Auth.js session.
  */
-export function getAuthUserId(req: NextRequest): string | null {
+export async function getAuthUserId(req: NextRequest): Promise<string | null> {
+  const authHeader = req.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7).trim();
+    const userId =
+      (await verifySupabaseAccessToken(token)) ??
+      (await verifyAppAccessToken(token));
+    if (userId) return userId;
+  }
+
   const r = req as RequestWithAuth;
   const id = r.auth?.user?.id;
   return typeof id === "string" ? id : null;
 }
 
 /**
- * Require authentication – throws UNAUTHORIZED if not authenticated.
+ * Require authentication — throws UNAUTHORIZED if not authenticated.
  */
-export function requireAuth(req: NextRequest): string {
-  const userId = getAuthUserId(req);
+export async function requireAuth(req: NextRequest): Promise<string> {
+  const userId = await getAuthUserId(req);
   if (!userId) throw new Error("UNAUTHORIZED");
   return userId;
 }

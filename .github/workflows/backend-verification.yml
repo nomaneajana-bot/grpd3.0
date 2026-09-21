@@ -1,0 +1,59 @@
+name: Backend verification
+permissions:
+  contents: read
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  persistent-journeys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: grpd_test
+          POSTGRES_PASSWORD: grpd_test_local_only
+          POSTGRES_DB: grpd_test
+        ports:
+          - 55439:5432
+        options: >-
+          --health-cmd "pg_isready -U grpd_test -d grpd_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://grpd_test:grpd_test_local_only@127.0.0.1:55439/grpd_test
+      D02_TEST_RUNTIME: /tmp/grpd-d02-runtime
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install locked backend verification dependencies
+        run: |
+          mkdir -p "$D02_TEST_RUNTIME" d02-ci-results
+          cp product/delivery/D02/runtime/package*.json "$D02_TEST_RUNTIME/"
+          npm ci --prefix "$D02_TEST_RUNTIME" --ignore-scripts --no-audit --no-fund
+      - name: Generate client and migrate disposable database
+        run: node product/delivery/D02/tools/prepare-integration.mjs 2>&1 | tee d02-ci-results/migrations.txt
+      - name: Strict backend TypeScript
+        run: node product/delivery/D02/tools/typecheck.mjs 2>&1 | tee d02-ci-results/typecheck.txt
+      - name: Compiled runtime and URL routing
+        run: node product/delivery/D02/tools/compiled-runtime-check.mjs 2>&1 | tee d02-ci-results/compiled-runtime.txt
+      - name: JWT issuer and audience checks
+        run: node product/delivery/D02/tools/auth-check.mjs 2>&1 | tee d02-ci-results/auth.txt
+      - name: PostgreSQL journeys and authorization regressions
+        run: node product/delivery/D02/tools/integration.mjs 2>&1 | tee d02-ci-results/integration.txt
+      - name: HTTP adapter and restart checks
+        run: node product/delivery/D02/tools/http-check.mjs 2>&1 | tee d02-ci-results/http.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d02-verification-${{ github.sha }}
+          path: d02-ci-results/
+          retention-days: 30

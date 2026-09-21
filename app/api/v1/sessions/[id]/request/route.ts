@@ -2,18 +2,19 @@
 
 import { NextRequest } from "next/server";
 import { AttendanceStatus, SessionVisibility } from "@prisma/client";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { hasClubPermission } from "@/lib/server/role-checks";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { sessionIdParamSchema } from "@/lib/server/validators";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { hasClubPermission } from "../../../../../../lib/server/role-checks";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { visibleSessionsWhere } from "../../../../../../lib/server/session-access";
+import { sessionIdParamSchema } from "../../../../../../lib/server/validators";
 
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const params = await context.params;
     const parsed = sessionIdParamSchema.safeParse(params);
     if (!parsed.success) {
@@ -28,8 +29,8 @@ export async function POST(
     const body = await req.json().catch(() => ({}));
     const { groupId } = body;
 
-    const session = await prisma.session.findUnique({
-      where: { id: sessionId },
+    const session = await prisma.session.findFirst({
+      where: { AND: [{ id: sessionId }, visibleSessionsWhere(userId)] },
       include: { club: true },
     });
 

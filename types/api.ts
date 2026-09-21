@@ -16,7 +16,7 @@ export type ApiEnvelope<T> =
   | { ok: true; data: T }
   | { ok: false; error: ApiErrorPayload };
 
-export type OtpChannel = 'sms' | 'whatsapp';
+export type OtpChannel = 'sms' | 'whatsapp' | 'email';
 
 export type OtpRequestInput = {
   phone: string;
@@ -162,6 +162,10 @@ export type DeviceRegistrationResult = {
 
 export type ClubVisibility = "public" | "members";
 
+export type ClubCategory = "mixed" | "women_only" | "technical" | "team";
+
+export type ClubJoinMode = "open" | "invite" | "approval";
+
 export type ClubRole = "member" | "coach" | "admin";
 
 export type ClubMembershipStatus =
@@ -177,8 +181,14 @@ export type Club = {
   city?: string | null;
   description?: string | null;
   visibility: ClubVisibility;
+  clubCategory?: ClubCategory;
+  joinMode?: ClubJoinMode;
+  isPaid?: boolean;
+  duesAmountCents?: number | null;
+  duesLabel?: string | null;
   createdAt?: string;
   createdById?: string | null;
+  membersCount?: number;
 };
 
 export type PrSummaryRecord = {
@@ -202,6 +212,7 @@ export type ClubMembership = {
   status: ClubMembershipStatus;
   displayName?: string | null;
   sharePrs?: boolean;
+  duesPaid?: boolean;
   prSummary?: PrSummary | null;
   createdAt?: string;
   club?: Club;
@@ -214,6 +225,10 @@ export type ClubMembershipsResult = {
 export type ClubCreateInput = {
   name: string;
   city?: string | null;
+  description?: string | null;
+  visibility?: ClubVisibility;
+  clubCategory?: ClubCategory;
+  joinMode?: ClubJoinMode;
 };
 
 export type ClubUpdateInput = {
@@ -221,6 +236,58 @@ export type ClubUpdateInput = {
   description?: string | null;
   visibility?: ClubVisibility;
   accessCode?: string;
+  isPaid?: boolean;
+  duesAmountCents?: number | null;
+  duesLabel?: string | null;
+};
+
+export type ClubResolveInput = {
+  inviteCode?: string;
+  slug?: string;
+};
+
+export type ClubResolveResult = {
+  clubId: string;
+  mode: "invite" | "request";
+  club: Club;
+};
+
+export type ClubSummaryResult = {
+  club: Club;
+};
+
+export type ClubMemberDuesInput = {
+  duesPaid: boolean;
+};
+
+export type InboxResult = {
+  pendingMemberships: ClubMembership[];
+  sessionNotifications: Array<{
+    attendanceId: string;
+    sessionId: string;
+    status: string;
+    groupId: string | null;
+    session: {
+      id: string;
+      title: string;
+      dateLabel: string;
+      spot: string;
+      clubId: string | null;
+    };
+  }>;
+  adminPendingRequests: Array<{
+    membershipId: string;
+    clubId: string;
+    userId: string;
+    displayName: string | null;
+    createdAt: string;
+    club: { id: string; name: string };
+  }>;
+};
+
+export type SessionCompleteInput = {
+  actualDistanceKm?: number;
+  actualDurationMin?: number;
 };
 
 export type ClubMemberGroupInput = {
@@ -278,6 +345,7 @@ export type ClubRosterMember = {
   role: ClubRole;
   status: ClubMembershipStatus;
   sharePrs: boolean;
+  duesPaid?: boolean;
   prSummary?: PrSummary | null;
 };
 
@@ -320,6 +388,7 @@ export type AttendanceStatus =
   | "left"
   | "requested"
   | "waitlisted"
+  | "attended"
   | "declined";
 
 export type SessionAssignResult = {
@@ -330,8 +399,18 @@ export type SessionAssignResult = {
   status: AttendanceStatus;
 };
 
+export type CommunityExperience = {
+  kind: "community"; activity: "walk" | "run"; durationMinutes: number;
+} & ({ format: "open" } | { format: "language"; language: string; level: string });
+export type CommunityOutingCreateInput = {
+  title: string; meetingPoint: string; hostName: string; programme: string;
+  dateISO: string; clubId?: string | null; visibility?: "public" | "members";
+  experience: CommunityExperience;
+};
+
 // API Session (matches backend/Prisma shape; paceGroups may be computed client-side or returned by API)
 export type ApiSession = {
+  experience?: CommunityExperience | null;
   id: string;
   title: string;
   spot: string;
@@ -386,7 +465,7 @@ export type SessionCreateInput = {
 
 export type SessionCreateResult = ApiSession;
 
-export type SessionJoinInput = { groupId: string };
+export type SessionJoinInput = { groupId?: string };
 
 export type SessionJoinResult = {
   id: string;

@@ -1,0 +1,48 @@
+{
+  "date": "2026-09-21",
+  "source_pdf": "Factures_Pro_Forma_D01-D05_Othmane_Sahel_GRPD (1).pdf",
+  "source_page": 2,
+  "source_sha256": "7060a742e7a01b779c74dbf6cd56e3f680c652c86f2d1b4a613512e4a884e3b6",
+  "proforma_ref": "PF-OS-2026-D02",
+  "amount_total_mad": 9000,
+  "allocation_sp_mad": 5000,
+  "project_mad": 4000,
+  "actual_invoiced_mad": null,
+  "actual_paid_mad": null,
+  "requirements": [
+    {
+      "requirement": "Architecture technique",
+      "evidence": "ARCHITECTURE.md ; schéma Prisma ; diagramme éditable",
+      "status": "Réalisé et documenté"
+    },
+    {
+      "requirement": "Modélisation",
+      "evidence": "6 modèles Prisma, contraintes et 8 migrations ; CI PostgreSQL réussi ; Neon grpd_d02_test migré",
+      "status": "Réalisé et vérifié en CI et Test"
+    },
+    {
+      "requirement": "API REST sécurisées",
+      "evidence": "CI 35607697453 ; hosted-check Preview complete=true (8 PASS) ; health JSON et PIN login inspectés",
+      "status": "Vérifié en CI et sur Preview Test"
+    },
+    {
+      "requirement": "Environnements Dev/Test/Production",
+      "evidence": "Dev local ; CI jetable ; Preview D02 branch-scoped Neon test + PIN auth ; Production DATABASE_URL All Environments inchangé",
+      "status": "Séparation Test/Production établie ; go-live D05"
+    },
+    {
+      "requirement": "CI/CD",
+      "evidence": "GitHub Actions 35607697453 réussi ; preview Ready dpl_6CNMNchG44cXqHgxmvJ3X6pt3UW2",
+      "status": "CI opérationnel ; CD Preview Test vérifié"
+    },
+    {
+      "requirement": "Facture définitive et paiement",
+      "evidence": "Pro forma PF-OS-2026-D02 uniquement ; 9 000 MAD prévu = 5 000 SP + 4 000 projet",
+      "status": "3 originaux matériels attendus ; dépenses réelles non renseignées"
+    }
+  ],
+  "jury_scoring_rubric_provided": false,
+  "hosted_acceptance_complete": true,
+  "ocif_submitted": false,
+  "stakeholder_acceptance": false
+}

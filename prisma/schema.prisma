@@ -20,6 +20,11 @@ model Club {
   city        String?
   description String?  @db.Text
   visibility  ClubVisibility @default(public)
+  clubCategory ClubCategory @default(mixed)
+  joinMode     ClubJoinMode @default(invite)
+  isPaid      Boolean  @default(false)
+  duesAmountCents Int?
+  duesLabel   String?
   createdById String  // Auth.js user ID
   createdAt   DateTime @default(now())
 
@@ -42,6 +47,7 @@ model ClubMembership {
   displayName String?
   sharePrs  Boolean  @default(true)
   prSummary Json?
+  duesPaid  Boolean  @default(false)
   createdAt DateTime @default(now())
 
   // Relations
@@ -85,6 +91,7 @@ model Session {
   targetPace       String
   estimatedDistanceKm Float
   recommendedGroupId String
+  experience       Json? // Structured community outing; null for legacy training
   paceGroups       Json?
   clubId           String?
   visibility       SessionVisibility @default(public)
@@ -115,6 +122,9 @@ model SessionAttendance {
   userId    String   // Auth.js user ID
   status    AttendanceStatus @default(requested)
   groupId   String?  // Pace group (A, B, C, D)
+  actualDistanceKm Float?
+  actualDurationMin Int?
+  completedAt DateTime?
   createdAt DateTime @default(now())
 
   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -144,6 +154,19 @@ model SessionTag {
 enum ClubVisibility {
   public
   members
+}
+
+enum ClubCategory {
+  mixed
+  women_only
+  technical
+  team
+}
+
+enum ClubJoinMode {
+  open
+  invite
+  approval
 }
 
 enum MembershipRole {
@@ -176,5 +199,6 @@ enum AttendanceStatus {
   left
   requested
   waitlisted
+  attended
   declined // kept for DB compatibility; prefer joined|requested|waitlisted in API
 }

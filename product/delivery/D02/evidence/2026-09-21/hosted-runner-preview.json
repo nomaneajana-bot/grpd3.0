@@ -1,0 +1,51 @@
+{
+  "origin": "https://grpd30-git-codex-d02-backend-veri-6f38b5-noas-projects-0b3f311d.vercel.app",
+  "startedAt": "2026-09-21T17:43:54.875Z",
+  "checks": [
+    {
+      "name": "Readiness JSON",
+      "result": "PASS"
+    },
+    {
+      "name": "Nested endpoint rejects anonymous access",
+      "result": "PASS"
+    },
+    {
+      "name": "Unknown route rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "Independent clubs and private discovery",
+      "result": "PASS"
+    },
+    {
+      "name": "Invitation redemption and retry",
+      "result": "PASS"
+    },
+    {
+      "name": "Multiple outings retain logistics and privacy",
+      "result": "PASS"
+    },
+    {
+      "name": "Selected join/cancel and retries preserve other participation",
+      "result": "PASS"
+    },
+    {
+      "name": "Invalid input rejected",
+      "result": "PASS"
+    }
+  ],
+  "records": {
+    "clubs": [
+      "cmubjb1sv0001xdgay5hpzd8u",
+      "cmubjb1z90005xdgatridg1f6"
+    ],
+    "outings": [
+      "cmubjb2v5000dxdga9qrda48a",
+      "cmubjb30g000fxdgakbv6sg27"
+    ]
+  },
+  "complete": true,
+  "mode": "authenticated-test",
+  "finishedAt": "2026-09-21T17:44:00.758Z"
+}

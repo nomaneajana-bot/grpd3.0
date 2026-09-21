@@ -1,18 +1,20 @@
 // GET /api/v1/sessions/:id/participants – list participants by group (permission-gated for members-only)
 
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { requireClubPermission } from "@/lib/server/role-checks";
-import { sessionIdParamSchema } from "@/lib/server/validators";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { getAuthUserId } from "../../../../../../lib/server/auth-helpers";
+import { visibleSessionsWhere } from "../../../../../../lib/server/session-access";
+import { sessionIdParamSchema } from "../../../../../../lib/server/validators";
 
 const VALID_GROUP_IDS = ["A", "B", "C", "D"] as const;
 type GroupId = (typeof VALID_GROUP_IDS)[number] | null;
 
 function normalizeGroupId(value: string | null): GroupId {
   if (value == null) return null;
-  return VALID_GROUP_IDS.includes(value as GroupId) ? (value as GroupId) : null;
+  return VALID_GROUP_IDS.includes(value as (typeof VALID_GROUP_IDS)[number])
+    ? (value as (typeof VALID_GROUP_IDS)[number])
+    : null;
 }
 
 export async function GET(
@@ -31,22 +33,11 @@ export async function GET(
     }
     const sessionId = parsedParams.data.id;
 
-    const session = await prisma.session.findUnique({
-      where: { id: sessionId },
+    const userId = await getAuthUserId(req);
+    const session = await prisma.session.findFirst({
+      where: { AND: [{ id: sessionId }, visibleSessionsWhere(userId)] },
     });
     if (!session) return jsonError("Session not found", "NOT_FOUND", 404);
-
-    if (session.visibility === "members") {
-      const userId = requireAuth(req);
-      if (!session.clubId) {
-        return jsonError("Forbidden", "FORBIDDEN", 403);
-      }
-      try {
-        await requireClubPermission(userId, session.clubId, "view");
-      } catch {
-        return jsonError("Réservé aux membres du club.", "FORBIDDEN", 403);
-      }
-    }
 
     const attendances = await prisma.sessionAttendance.findMany({
       where: { sessionId },

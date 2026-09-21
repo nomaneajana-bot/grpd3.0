@@ -2,16 +2,16 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { requireClubPermission } from "@/lib/server/role-checks";
-import { sessionIdParamSchema } from "@/lib/server/validators";
-import { getAssignUpdateData } from "@/lib/attendanceStatusLogic";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { requireClubPermission } from "../../../../../../lib/server/role-checks";
+import { sessionIdParamSchema } from "../../../../../../lib/server/validators";
+import { getAssignUpdateData } from "../../../../../../lib/attendanceStatusLogic";
 
 const bodySchema = z.object({
   userId: z.string().min(1, "userId is required"),
-  groupId: z.string().min(1, "groupId is required"),
+  groupId: z.enum(["A", "B", "C", "D", "community"]),
 });
 
 export async function POST(
@@ -19,7 +19,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const coachId = requireAuth(req);
+    const coachId = await requireAuth(req);
     const params = await context.params;
     const parsedParams = sessionIdParamSchema.safeParse(params);
     if (!parsedParams.success) {
@@ -52,6 +52,19 @@ export async function POST(
       } catch {
         return jsonError("Forbidden", "FORBIDDEN", 403);
       }
+      const target = await prisma.clubMembership.findUnique({
+        where: { userId_clubId: { userId, clubId: session.clubId } },
+      });
+      if (target?.status !== "approved") {
+        return jsonError("Member not found", "NOT_FOUND", 404);
+      }
+    } else if (session.hostUserId !== coachId) {
+      return jsonError("Forbidden", "FORBIDDEN", 403);
+    }
+
+    const community = (session.experience as { kind?: string } | null)?.kind === "community";
+    if (community !== (groupId === "community")) {
+      return jsonError("Invalid group for this session", "VALIDATION_ERROR", 400);
     }
 
     const existingAttendance = await prisma.sessionAttendance.findUnique({

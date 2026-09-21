@@ -2,15 +2,15 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { hasClubPermission } from "@/lib/server/role-checks";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { sessionIdParamSchema } from "@/lib/server/validators";
-import { getJoinUpdateData } from "@/lib/attendanceStatusLogic";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { visibleSessionsWhere } from "../../../../../../lib/server/session-access";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { sessionIdParamSchema } from "../../../../../../lib/server/validators";
+
 
 const bodySchema = z.object({
-  groupId: z.string().min(1, "groupId is required"),
+  groupId: z.string().trim().min(1).optional(),
 });
 
 export async function POST(
@@ -18,7 +18,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const params = await context.params;
     const parsedParams = sessionIdParamSchema.safeParse(params);
     if (!parsedParams.success) {
@@ -40,33 +40,22 @@ export async function POST(
     }
 
     const sessionId = parsedParams.data.id;
-    const { groupId } = parsedBody.data;
+    let { groupId } = parsedBody.data;
 
-    const session = await prisma.session.findUnique({
-      where: { id: sessionId },
+    const session = await prisma.session.findFirst({
+      where: { AND: [{ id: sessionId }, visibleSessionsWhere(userId)] },
     });
     if (!session) return jsonError("Session not found", "NOT_FOUND", 404);
 
-    if (session.visibility === "members" && session.clubId) {
-      const hasAccess = await hasClubPermission(userId, session.clubId, "join");
-      if (!hasAccess) {
-        return jsonError("Members-only session", "FORBIDDEN", 403);
-      }
-    }
-
-    const existingAttendance = await prisma.sessionAttendance.findUnique({
+    const community = session.experience && typeof session.experience === "object" && !Array.isArray(session.experience) && session.experience.kind === "community";
+    if (community && (!session.dateISO || Date.parse(session.dateISO) <= Date.now())) return jsonError("Outing has already started", "VALIDATION_ERROR", 400);
+    if (!groupId && !community) return jsonError("groupId is required", "VALIDATION_ERROR", 400);
+    groupId = groupId ?? "community";
+    const attendance = await prisma.sessionAttendance.upsert({
       where: { sessionId_userId: { sessionId, userId } },
+      update: { groupId, status: "joined" },
+      create: { sessionId, userId, groupId, status: "joined" },
     });
-
-    const updateData = getJoinUpdateData(existingAttendance?.status ?? null, groupId);
-    const attendance = existingAttendance
-      ? await prisma.sessionAttendance.update({
-          where: { sessionId_userId: { sessionId, userId } },
-          data: updateData,
-        })
-      : await prisma.sessionAttendance.create({
-          data: { sessionId, userId, groupId, status: "joined" },
-        });
 
     return jsonOk(attendance);
   } catch (e) {

@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "@types/node": "22.20.2",
+    "@vercel/node": "5.8.2",
+    "jose": "6.2.3",
+    "next": "15.5.18",
+    "prisma": "5.22.0",
+    "typescript": "5.9.2",
+    "zod": "3.25.76"
+  },
+  "private": true,
+  "name": "grpd-backend-verification",
+  "version": "1.0.0"
+}
