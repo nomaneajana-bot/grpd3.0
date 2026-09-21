@@ -1,6 +1,6 @@
 {
-  "origin": "https://grpd30-355kzkwzz-noas-projects-0b3f311d.vercel.app",
-  "startedAt": "2026-09-21T17:13:43.876Z",
+  "origin": "https://grpd30-git-codex-d02-backend-veri-6f38b5-noas-projects-0b3f311d.vercel.app",
+  "startedAt": "2026-09-21T17:43:54.875Z",
   "checks": [
     {
       "name": "Readiness JSON",
@@ -37,15 +37,15 @@
   ],
   "records": {
     "clubs": [
-      "cmubi88xi00014sf8h8juvoju",
-      "cmubi893l00054sf8ln8yqzgh"
+      "cmubjb1sv0001xdgay5hpzd8u",
+      "cmubjb1z90005xdgatridg1f6"
     ],
     "outings": [
-      "cmubi8a57000d4sf8l5f6afz7",
-      "cmubi8abd000f4sf8ldg6v7gv"
+      "cmubjb2v5000dxdga9qrda48a",
+      "cmubjb30g000fxdgakbv6sg27"
     ]
   },
   "complete": true,
   "mode": "authenticated-test",
-  "finishedAt": "2026-09-21T17:13:50.563Z"
+  "finishedAt": "2026-09-21T17:44:00.758Z"
 }

@@ -1,57 +1,65 @@
-## Verified hosted acceptance checkpoint - 21 September 2026, Cursor
-Isolated D02 Preview PIN auth configured (AUTH_JWT_SECRET + PIN_ALLOWLIST_JSON, Preview / codex/d02-backend-verification only). Automation bypass created; SSO deployment protection remains enabled. Production DATABASE_URL unchanged.
-Hosted acceptance exercised on commit 05f73a4 / deployment dpl_6CNMNchG44cXqHgxmvJ3X6pt3UW2 Ready.
-URL: https://grpd30-355kzkwzz-noas-projects-0b3f311d.vercel.app
-hosted-check.mjs authenticated-test: 8/8 PASS, complete=true (evidence/2026-09-21/hosted-runner-preview.json). Neon persistence verified on grpd_d02_test (hosted-persistence-neon.json).
-Docs/evidence commit pushed: 327a3382d23ad5136e81dc1c763b622abcba87d2 (review sources + runner + PDF only; no API change).
-French D02 review/docs refreshed; PDF regenerated and visually inspected. D02 technical criteria for architecture/API/Test env are met for Codex review. Financial originals and stakeholder/OCIF acceptance remain open. D03 not started.
-NEXT for Codex: milestone/dossier review. Owner may add named evaluator Visit access if needed. Do not merge main or submit OCIF from this checkpoint.
+## Codex checkpoint — D02 hosted acceptance (re-verified 21 September 2026)
+
+### Status for Codex review
+Hosted authenticated acceptance on isolated Test is **complete=true (8/8 PASS)** and was **re-run successfully**. This is technical evidence for dossier review — **not** OCIF validation, UAT, or financial completion.
+
+### What changed / published
+- Preview-only secrets on `codex/d02-backend-verification`: `DATABASE_URL` → `grpd_d02_test`, `AUTH_JWT_SECRET`, `PIN_ALLOWLIST_JSON` (test identities). Production All-Environments `DATABASE_URL` unchanged.
+- Automation bypass created; **SSO deployment protection remains enabled**.
+- Docs/evidence on branch `codex/d02-backend-verification` (tip includes handoff/docs after `05f73a4` API commit).
+
+### Deployed version exercised
+- API commit: `05f73a4cbcdb36b7614cada84a905ec1b6a954c8`
+- Deployment Ready: `dpl_DsaHp76bfBhxz7DN9JosCPmU3CK4`
+- URL / alias: https://grpd30-git-codex-d02-backend-veri-6f38b5-noas-projects-0b3f311d.vercel.app
+- PR: https://github.com/nomaneajana-bot/grpd3.0/pull/4 (draft)
+
+### Tests actually executed (hosted)
+| Check | Result |
+|--------|--------|
+| Health JSON | `ok=true`, `database=ready` |
+| PIN login host + guest | HTTP 200, distinct userIds |
+| `hosted-check.mjs` authenticated-test | **8/8 PASS**, `complete=true` (initial + re-verify) |
+| Neon `grpd_d02_test` fresh connection | 2 clubs, 2 outings, memberships/attendance match join/leave |
+| Anonymous without bypass | SSO protection still on |
+
+### Evidence / review paths
+- `product/delivery/D02/evidence/2026-09-21/hosted-runner-preview.json`
+- `product/delivery/D02/evidence/2026-09-21/hosted-persistence-neon.json`
+- `product/delivery/D02/REPRISE_2026-09-21.md`
+- `product/delivery/D02/ARCHITECTURE.md`
+- `product/delivery/D02/API_ENVIRONNEMENT.md`
+- `product/delivery/D02/ACCES_ET_RECETTE_HEBERGEE.md`
+- `product/delivery/D02/CONFORMITE_D02.json`
+- `output/pdf/GRPD_D02_Reprise_2026-09-21.pdf`
+
+### D02 technical criteria vs open items
+**Met (technical):** architecture, modelling, secured REST journeys on isolated Test, Dev/Test/Production separation documented, CI + verified Preview CD.
+
+**Open / owner-Codex:** named evaluator Visit (optional if bypass used); Production go-live proof (D05); approved annexes; definitive invoices/bank originals; stakeholder acceptance; OCIF submission.
+
+### Note
+A later ERROR deploy on `cursor/d03-mobile-mvp` does **not** invalidate the D02 branch alias above. D03 is separate work; this checkpoint is for **D02**.
+
+---
+
+## Deadline and schedule — 21 September 2026
+Internal completion target: **14 October 2026**. Finish before **15 October 2026**. Programme Demo Day/submission deadline still **unconfirmed**.
+
+See `product/delivery/SCHEDULE_2026-10-14.md` and `product/delivery/DEPENDANCES_14_OCT.md`.
 
 # GRPD - Cursor handoff
-Updated 21 September 2026 (hosted acceptance). Owner: Nouamane. Working directory: /Users/noa/Desktop/grpd3.0.
-Separate D02 worktree used: /tmp/grpd-d02-worktree (branch codex/d02-backend-verification). Dirty main checkout preserved.
+Updated 21 September 2026 (D02 Codex checkpoint re-verified). Owner: Nouamane.
+Worktrees: `/tmp/grpd-d02-worktree` (`codex/d02-backend-verification`), `/tmp/grpd-d03-worktree` (`cursor/d03-mobile-mvp`). Dirty `main` preserved.
 
-## Mission and division of work
-Cursor handled implementation and heavy testing for D02 hosted acceptance. Codex reserved for milestone review and OCIF evidence decisions. Resume existing product; do not restart. After Codex review of this checkpoint, continue D03 mobile when instructed.
+## Mission split
+- **Codex:** D02 dossier/milestone review using this checkpoint.
+- **Cursor:** may continue D03 only after/as instructed; do not treat D02 automated PASS as OCIF done.
 
 ## Working rules
-- This checkout contains extensive unrelated uncommitted mobile/design work. Preserve it. Never reset, clean, stage everything or overwrite local changes.
-- Local Git HEAD on main does not represent the published D02 branch. Use /tmp/grpd-d02-worktree for D02 publishes.
-- Existing draft PR: https://github.com/nomaneajana-bot/grpd3.0/pull/4 . Branch: codex/d02-backend-verification. No main merge or OCIF submission in this mission.
-- Public repository: never commit .env, connection strings, tokens, private financial documents or user data.
-- Do not invent invoices, bank evidence, supplier attribution, acceptance, successful tests or production readiness.
+- Preserve dirty local main. Never reset/clean/stage-everything.
+- Never commit secrets. Never invent invoices/UAT/OCIF acceptance.
+- Do not merge main or promote Production without explicit authorization.
 
-## Last verified published / exercised version
-Commit: 05f73a4cbcdb36b7614cada84a905ec1b6a954c8.
-CI passed: https://github.com/nomaneajana-bot/grpd3.0/actions/runs/35607697453 .
-Preview deployment (post PIN auth env): dpl_6CNMNchG44cXqHgxmvJ3X6pt3UW2 Ready.
-Preview URL: https://grpd30-355kzkwzz-noas-projects-0b3f311d.vercel.app
-Branch alias: https://grpd30-git-codex-d02-backend-veri-6f38b5-noas-projects-0b3f311d.vercel.app
-Vercel project: prj_M5oKQEy7NTYOO9eWy5TOgd1eO2cQ; SSO protection still enabled.
-
-## Actual Neon / Vercel Test setup - do not recreate
-Neon project GRPD dry-tooth-73314920; branch grpd-d02-test / br-super-voice-ahsrux4i; database grpd_d02_test migrated (eight migrations).
-Preview-only secrets on codex/d02-backend-verification: DATABASE_URL, AUTH_JWT_SECRET, PIN_ALLOWLIST_JSON. Production All Environments DATABASE_URL unchanged.
-Automation bypass exists for authorized hosted checks; do not disable deployment protection. Secrets live in /tmp/grpd-d02-preview-secrets.env and /tmp/grpd-d02-runtime.env (mode 0600) — never commit.
-
-## Hosted acceptance results (genuine)
-Tool: product/delivery/D02/tools/hosted-check.mjs
-Report: product/delivery/D02/evidence/2026-09-21/hosted-runner-preview.json
-Persistence: product/delivery/D02/evidence/2026-09-21/hosted-persistence-neon.json
-Mode authenticated-test, complete=true, eight PASS groups including clubs, invites, outings, join/cancel, invalid input.
-Distinct from local evidence hosted-runner-local.json and CI logs.
-
-## Documentation refreshed
-- product/delivery/D02/REPRISE_2026-09-21.md
-- product/delivery/D02/ARCHITECTURE.md
-- product/delivery/D02/API_ENVIRONNEMENT.md
-- product/delivery/D02/ACCES_ET_RECETTE_HEBERGEE.md
-- product/delivery/D02/CONFORMITE_D02.json
-- output/pdf/GRPD_D02_Reprise_2026-09-21.pdf
-
-## D02 technical vs open items
-Met for technical D02 scope: architecture, modelling, secured REST API journeys on isolated Test, Dev/Test/Production separation documented, CI/CD with verified Preview.
-Not met / owner-Codex: definitive invoices/payment evidence; stakeholder UAT; OCIF submission; D03 mobile builds; Production go-live (D05).
-
-## Checkpoint return
-See conversation final report for files/commit, deployment URL/SHA, tests, evidence paths, blockers, and technical-criteria verdict.
+## Access (out of Git)
+- `/tmp/grpd-d02-preview-secrets.env`, `/tmp/grpd-d02-runtime.env` — Nouamane owns distribution.
