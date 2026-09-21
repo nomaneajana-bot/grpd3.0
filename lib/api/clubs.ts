@@ -1,4 +1,5 @@
 import type {
+  CommunityOutingCreateInput,
   Club,
   ClubCreateInput,
   ClubUpdateInput,
@@ -8,7 +9,12 @@ import type {
   ClubDetail,
   ClubJoinByCodeInput,
   ClubJoinByCodeResult,
+  ClubMemberDuesInput,
   ClubMemberSummary,
+  ClubResolveInput,
+  ClubResolveResult,
+  ClubSummaryResult,
+  SessionCompleteInput,
   ClubMembership,
   ClubMembershipsResult,
   ClubRequestInput,
@@ -56,26 +62,25 @@ function normalizeClubDetail(payload: ClubDetailPayload): ClubDetail {
   };
 }
 
-function slugify(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 export async function createClub(
   client: ApiClient,
   input: ClubCreateInput,
 ): Promise<Club> {
   const name = input.name.trim();
-  const slug = slugify(name);
   const city = input.city?.trim() ? input.city.trim() : undefined;
+  const description = input.description?.trim()
+    ? input.description.trim()
+    : undefined;
   return await client.request<Club>("/api/v1/clubs", {
     method: "POST",
-    body: JSON.stringify({ name, slug, city }),
+    body: JSON.stringify({
+      name,
+      city,
+      description,
+      visibility: input.visibility,
+      clubCategory: input.clubCategory ?? "mixed",
+      joinMode: input.joinMode ?? "invite",
+    }),
   });
 }
 
@@ -278,7 +283,6 @@ export async function listSessions(
   const payload = await client.request<{ sessions?: ApiSession[] }>(
     path,
     { method: "GET" },
-    { auth: false },
   );
   return { sessions: payload.sessions ?? [] };
 }
@@ -370,6 +374,55 @@ export async function getMySessions(
   return { sessions: payload.sessions ?? [] };
 }
 
+export async function resolveClub(
+  client: ApiClient,
+  input: ClubResolveInput,
+): Promise<ClubResolveResult> {
+  return await client.request<ClubResolveResult>("/api/v1/clubs/resolve", {
+    method: "POST",
+    body: JSON.stringify(input),
+  }, { auth: false });
+}
+
+export async function getClubSummary(
+  client: ApiClient,
+  clubId: string,
+): Promise<ClubSummaryResult> {
+  return await client.request<ClubSummaryResult>(
+    `/api/v1/clubs/${clubId}/summary`,
+    { method: "GET" },
+  );
+}
+
+export async function setMemberDuesPaid(
+  client: ApiClient,
+  clubId: string,
+  userId: string,
+  input: ClubMemberDuesInput,
+): Promise<{ membership: ClubMembership }> {
+  return await client.request<{ membership: ClubMembership }>(
+    `/api/v1/clubs/${clubId}/members/${userId}/dues`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export async function completeSession(
+  client: ApiClient,
+  sessionId: string,
+  input: SessionCompleteInput = {},
+): Promise<SessionJoinResult> {
+  return await client.request<SessionJoinResult>(
+    `/api/v1/sessions/${sessionId}/complete`,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
 export async function updateMyPrs(
   client: ApiClient,
   input: UpdateMyPrsInput,
@@ -383,4 +436,8 @@ export async function updateMyPrs(
   );
   const membership = (payload as { membership?: ClubMembership }).membership ?? (payload as ClubMembership);
   return { membership };
+}
+
+export async function createCommunityOuting(client: ApiClient, input: CommunityOutingCreateInput): Promise<ApiSession> {
+  return client.request<ApiSession>("/api/v1/sessions", {method: "POST", body: JSON.stringify(input)});
 }

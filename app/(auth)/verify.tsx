@@ -18,6 +18,8 @@ import {
   requestOtp,
   verifyOtp,
 } from "@/lib/api";
+import { isPinAuthMode } from "@/lib/authMode";
+import { isSupabaseAuthEnabled } from "@/lib/supabase";
 import {
   getOrCreateDeviceId,
   setUseMockApi,
@@ -29,7 +31,6 @@ import {
   getLoginPhone,
   setLoginOtpRequest,
 } from "@/lib/loginFlowStore";
-import { formatPhoneDisplay } from "@/lib/phoneFormat";
 import { registerForPushNotificationsAsync } from "@/lib/notifications";
 
 export default function VerifyScreen() {
@@ -56,7 +57,8 @@ export default function VerifyScreen() {
     return () => clearInterval(t);
   }, [resendSec]);
 
-  const phoneDisplay = phone ? formatPhoneDisplay(phone) : "+212 …";
+  const contactDisplay = phone ?? "…";
+  const isEmail = contactDisplay.includes("@");
 
   const completeAuth = async (
     result: {
@@ -106,6 +108,31 @@ export default function VerifyScreen() {
       const deviceId = await getOrCreateDeviceId();
       const client = createApiClient(useMock ? { baseUrl: "" } : undefined);
       const otpRequest = await getLoginOtpRequest();
+
+      // PIN Test/demo mode must win over Supabase env leftovers.
+      if (isPinAuthMode()) {
+        await setUseMockApi(false);
+        const pinClient = createApiClient();
+        const result = await loginWithPin(pinClient, {
+          phone,
+          pin: c,
+          deviceId,
+        });
+        await completeAuth(result, deviceId);
+        return;
+      }
+
+      if (isSupabaseAuthEnabled()) {
+        const result = await verifyOtp(client, {
+          phone,
+          code: c,
+          requestId: otpRequest?.requestId,
+          deviceId,
+        });
+        await completeAuth(result, deviceId);
+        return;
+      }
+
       try {
         const result = await verifyOtp(client, {
           phone,
@@ -116,6 +143,9 @@ export default function VerifyScreen() {
         await completeAuth(result, deviceId);
         return;
       } catch {
+        if (!useMock) {
+          throw new Error("Code invalide.");
+        }
         const result = await loginWithPin(client, {
           phone,
           pin: c,
@@ -140,7 +170,7 @@ export default function VerifyScreen() {
     try {
       const useMock = await shouldUseMockApi();
       const client = createApiClient(useMock ? { baseUrl: "" } : undefined);
-      const otp = await requestOtp(client, { phone, channel: "sms" });
+      const otp = await requestOtp(client, { phone, channel: "email" });
       await setLoginOtpRequest({ phone, requestId: otp.requestId });
     } catch {
       // ignore — countdown still resets
@@ -151,14 +181,18 @@ export default function VerifyScreen() {
     return null;
   }
 
-  const resendSlot =
-    resendSec > 0 ? (
-      <ResendCountdown seconds={resendSec} />
-    ) : (
-      <Text style={styles.resendActive} onPress={() => void handleResend()}>
-        Renvoyer le code
-      </Text>
-    );
+  const pinMode = isPinAuthMode();
+  const resendSlot = pinMode
+    ? null
+    : resendSec > 0
+      ? (
+          <ResendCountdown seconds={resendSec} />
+        )
+      : (
+          <Text style={styles.resendActive} onPress={() => void handleResend()}>
+            Renvoyer le code
+          </Text>
+        );
 
   return (
     <AuthFlowLayout progressFill={authTheme.verifyProgressFill}>
@@ -173,12 +207,19 @@ export default function VerifyScreen() {
         <OnboardingTitle
           variant="auth"
           kicker="CONNEXION"
-          title="Code reçu ?"
+          title={pinMode ? "Ton code" : "Code reçu ?"}
           subtitle={
-            <>
-              On a envoyé un code à{" "}
-              <Text style={styles.phoneBold}>{phoneDisplay}</Text>
-            </>
+            pinMode ? (
+              <>
+                Entre le code à 6 chiffres pour{" "}
+                <Text style={styles.phoneBold}>{contactDisplay}</Text>
+              </>
+            ) : (
+              <>
+                {isEmail ? "On a envoyé un code à " : "On a envoyé un code au "}
+                <Text style={styles.phoneBold}>{contactDisplay}</Text>
+              </>
+            )
           }
         />
         <OtpCodeInput
@@ -195,7 +236,7 @@ export default function VerifyScreen() {
 
 const styles = StyleSheet.create({
   phoneBold: {
-    color: "#FFFFFF",
+    color: colors.text.primary,
     fontWeight: "700",
   },
   resendActive: {

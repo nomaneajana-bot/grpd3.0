@@ -76,7 +76,26 @@ export class ApiClient {
       headers.set("Content-Type", "application/json");
     }
 
+    // Isolated Preview only: optional Vercel automation bypass for device rehearsal.
+    // Never commit a real value; keep EXPO_PUBLIC_VERCEL_BYPASS in local .env.
+    const bypass = process.env.EXPO_PUBLIC_VERCEL_BYPASS?.trim();
+    if (bypass && !headers.has("x-vercel-protection-bypass")) {
+      headers.set("x-vercel-protection-bypass", bypass);
+    }
+
     const response = await fetch(url, { ...init, headers });
+    if (
+      !response.ok &&
+      response.status >= 300 &&
+      response.status < 400 &&
+      response.headers.get("location")?.includes("vercel.com")
+    ) {
+      throw new ApiError(
+        response.status,
+        "Aperçu Vercel protégé. Configure EXPO_PUBLIC_VERCEL_BYPASS (Test) ou un accès Visit autorisé.",
+        "VERCEL_PROTECTION",
+      );
+    }
     const payload = await parseJson(response);
 
     if (response.status === 401 && this.onUnauthorized) {

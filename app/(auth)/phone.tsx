@@ -1,27 +1,37 @@
 import { type Href, router } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, TextInput } from "react-native";
 
 import { AuthFlowLayout } from "@/components/auth/AuthFlowLayout";
 import { ReturningDeviceBanner } from "@/components/auth/ReturningDeviceBanner";
-import { CountryPhoneInput } from "@/components/onboarding/CountryPhoneInput";
 import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
 import { OnboardingTitle } from "@/components/onboarding/OnboardingTitle";
 import { authTheme } from "@/constants/authTheme";
 import { colors, typography } from "@/constants/ui";
 import { createApiClient, requestOtp } from "@/lib/api";
+import { normalizeAuthIdentifier } from "@/lib/authIdentifier";
+import { isPinAuthMode } from "@/lib/authMode";
+import { isSupabaseAuthEnabled } from "@/lib/supabase";
 import { getAuthData, getDeviceId, setUseMockApi } from "@/lib/authStore";
-import { setLoginOtpRequest, setLoginPhone } from "@/lib/loginFlowStore";
+import {
+  clearLoginOtpRequest,
+  setLoginOtpRequest,
+  setLoginPhone,
+} from "@/lib/loginFlowStore";
+import { normalizePhone } from "@/lib/phone-normalize";
 
-const DEMO_PHONE = "0708060337";
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
 
-function isDemoPhone(digits: string): boolean {
-  const d = digits.replace(/\D/g, "");
-  return d === DEMO_PHONE || d === DEMO_PHONE.slice(1);
+function isValidPhone(phone: string): boolean {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length >= 9 && digits.length <= 15;
 }
 
 export default function PhoneScreen() {
-  const [digits, setDigits] = useState("");
+  const pinMode = isPinAuthMode();
+  const [identifier, setIdentifier] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [deviceRecognized, setDeviceRecognized] = useState(true);
@@ -33,25 +43,58 @@ export default function PhoneScreen() {
     })();
   }, []);
 
+  const canContinue = pinMode
+    ? isValidPhone(identifier)
+    : isValidEmail(identifier);
+
   const handleReceiveCode = async () => {
-    const local = digits.replace(/\D/g, "");
-    if (local.length < 9) {
-      setError("Entre un numéro valide.");
+    if (pinMode) {
+      if (!isValidPhone(identifier)) {
+        setError("Entre un numéro valide (ex. 06… ou +212…).");
+        return;
+      }
+      setError(null);
+      setLoading(true);
+      try {
+        await setUseMockApi(false);
+        const normalised = normalizePhone(identifier.trim());
+        await setLoginPhone(normalised);
+        await clearLoginOtpRequest();
+        router.push("/(auth)/verify" as Href);
+      } catch (err: unknown) {
+        setError(
+          err instanceof Error
+            ? err.message || "Impossible de continuer."
+            : "Impossible de continuer.",
+        );
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    if (!isValidEmail(identifier)) {
+      setError("Entre un email valide.");
       return;
     }
     setError(null);
     setLoading(true);
-    const phone = local.startsWith("0") ? `+212${local.slice(1)}` : `+212${local}`;
-    const useMock = isDemoPhone(local);
+    const normalised = normalizeAuthIdentifier(identifier);
+    // Only force mock when neither Supabase nor a real API URL is configured.
+    const useMock =
+      !isSupabaseAuthEnabled() && !process.env.EXPO_PUBLIC_API_URL?.trim();
     try {
       await setUseMockApi(useMock);
-      await setLoginPhone(phone);
+      await setLoginPhone(normalised);
       const client = createApiClient(useMock ? { baseUrl: "" } : undefined);
       try {
-        const otp = await requestOtp(client, { phone, channel: "sms" });
-        await setLoginOtpRequest({ phone, requestId: otp.requestId });
+        const otp = await requestOtp(client, {
+          phone: normalised,
+          channel: "email",
+        });
+        await setLoginOtpRequest({ phone: normalised, requestId: otp.requestId });
       } catch {
-        // PIN-only backends: verify screen falls back to loginWithPin.
+        // ignore — verify screen handles missing requestId
       }
       router.push("/(auth)/verify" as Href);
     } catch (err: unknown) {
@@ -71,9 +114,9 @@ export default function PhoneScreen() {
         scroll
         ctaVariant="welcome"
         paddingHorizontal={authTheme.screenPaddingHorizontal}
-        primaryLabel="Recevoir le code"
+        primaryLabel={pinMode ? "Continuer" : "Recevoir le code"}
         onPrimaryPress={() => void handleReceiveCode()}
-        primaryDisabled={digits.replace(/\D/g, "").length < 9}
+        primaryDisabled={!canContinue}
         primaryLoading={loading}
         secondaryLabel="Je n'ai pas encore de compte"
         onSecondaryPress={() => router.replace("/(auth)/onboarding" as Href)}
@@ -82,10 +125,24 @@ export default function PhoneScreen() {
           variant="auth"
           kicker="CONNEXION"
           title="Bon retour."
-          titleMuted="Ton numéro ?"
-          subtitle="On t'envoie un code pour confirmer que c'est bien toi."
+          titleMuted={pinMode ? "Ton numéro ?" : "Ton email ?"}
+          subtitle={
+            pinMode
+              ? "Entre le code PIN à 6 chiffres que tu as reçu pour cet environnement de test."
+              : "On t'envoie un code à 6 chiffres pour confirmer."
+          }
         />
-        <CountryPhoneInput value={digits} onChange={setDigits} />
+        <TextInput
+          style={styles.emailInput}
+          value={identifier}
+          onChangeText={setIdentifier}
+          placeholder={pinMode ? "06 08 06 03 37" : "ton@email.com"}
+          placeholderTextColor={colors.text.tertiary}
+          keyboardType={pinMode ? "phone-pad" : "email-address"}
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete={pinMode ? "tel" : "email"}
+        />
         {deviceRecognized ? <ReturningDeviceBanner /> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </OnboardingScreen>
@@ -94,6 +151,15 @@ export default function PhoneScreen() {
 }
 
 const styles = StyleSheet.create({
+  emailInput: {
+    backgroundColor: colors.background.input,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: colors.text.primary,
+    fontSize: typography.sizes.base,
+    marginTop: 16,
+  },
   error: {
     color: colors.text.error,
     marginTop: 12,

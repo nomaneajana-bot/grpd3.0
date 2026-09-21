@@ -4,3 +4,4 @@ export * from './auth';
 export * from './runs';
 export * from './devices';
 export * from './clubs';
+export * from './inbox';

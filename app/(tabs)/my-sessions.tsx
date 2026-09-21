@@ -1,3 +1,4 @@
+import { isSocialOuting } from '@/lib/experiences';
 import { router, useFocusEffect } from "expo-router";
 import React, {
     useCallback,
@@ -51,6 +52,7 @@ import {
     getSessionRunTypeId,
 } from "../../lib/sessionLogic";
 import { buildCoachContext } from "../../lib/coach";
+import { canMarkSessionComplete } from "../../lib/sessionCompletion";
 import { getRunTypePillLabel } from "../../lib/workoutHelpers";
 import { getWorkout, type RunTypeId } from "../../lib/workoutStore";
 
@@ -184,6 +186,7 @@ export default function MySessionsScreen() {
   const scrollBottomPadding = tabBarInset + 16;
   const [sessionSearch, setSessionSearch] = useState("");
   const [chipType, setChipType] = useState<SessionFilterChipId>("all");
+  const [apiOffline, setApiOffline] = useState(false);
 
   const loadData = useCallback(async (refresh = false) => {
     if (refresh) setIsRefreshing(true);
@@ -193,16 +196,22 @@ export default function MySessionsScreen() {
       try {
         const client = createApiClient();
         const apiResult = await getMySessions(client);
+        setApiOffline(false);
         const apiSessions = (apiResult.sessions ?? []).map(apiSessionToSessionData);
-        const localIds = new Set(sessions.map((s) => s.id));
+        const byId = new Map(sessions.map((s) => [s.id, s]));
         for (const apiSession of apiSessions) {
-          if (!localIds.has(apiSession.id)) {
-            sessions = [...sessions, apiSession];
-            localIds.add(apiSession.id);
-          }
+          const existing = byId.get(apiSession.id);
+          byId.set(
+            apiSession.id,
+            existing
+              ? { ...existing, ...apiSession }
+              : apiSession,
+          );
         }
+        sessions = Array.from(byId.values());
       } catch (apiErr) {
         console.warn("API my-sessions failed, using local only:", apiErr);
+        setApiOffline(Boolean(process.env.EXPO_PUBLIC_API_URL?.trim()));
       }
       setAllSessions(sessions);
 
@@ -418,19 +427,24 @@ export default function MySessionsScreen() {
         }
       >
         {isLoading && allSessions.length === 0 ? (
-          <LoadingState message="Chargement de tes séances…" />
+          <LoadingState message="Chargement de tes sorties…" />
+        ) : null}
+        {apiOffline ? (
+          <Text style={styles.offlineBanner}>
+            Données hors ligne — affichage local uniquement.
+          </Text>
         ) : null}
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <View style={styles.headerTextContainer}>
-              <Text style={styles.headerTitle}>Mes séances</Text>
+              <Text style={styles.headerTitle}>Mes sorties</Text>
               <Text style={styles.headerSubtitle}>
-                Ton agenda de séances.
+                Tes prochains rendez-vous.
               </Text>
             </View>
             <TouchableOpacity
-              onPress={() => router.push("/session/create")}
+              onPress={() => router.push("/outing/create")}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={styles.createPill}
               activeOpacity={0.85}
@@ -574,7 +588,7 @@ export default function MySessionsScreen() {
               Rien de prévu — rejoins une séance ou crée-en une.
             </Text>
             <Text style={styles.emptyStateSubtitle}>
-              Utilise Créer ci-dessus ou rejoins une séance depuis l&apos;accueil.
+              Propose une sortie ou découvre les prochains rendez-vous.
             </Text>
             <TouchableOpacity
               style={styles.emptyStateSecondaryButton}
@@ -582,7 +596,7 @@ export default function MySessionsScreen() {
               activeOpacity={0.85}
             >
               <Text style={styles.emptyStateSecondaryButtonText}>
-                Parcourir les séances
+                Découvrir les sorties
               </Text>
             </TouchableOpacity>
           </View>
@@ -612,7 +626,7 @@ export default function MySessionsScreen() {
                   : null;
                 const sessionTypeId =
                   workoutRunType || getSessionRunTypeId(session);
-                const typeLabel = workoutRunType
+                const typeLabel = isSocialOuting(session) ? session.typeLabel : workoutRunType
                   ? getRunTypePillLabel(workoutRunType)
                   : sessionTypeId
                     ? getRunTypePillLabelFromModule(
@@ -664,7 +678,7 @@ export default function MySessionsScreen() {
                           {formatSessionMetaUpper(session)}
                         </Text>
                         <Text style={styles.sessionDistance}>
-                          {formatSessionDistanceKm(session.estimatedDistanceKm)}
+                          {isSocialOuting(session) ? session.volume : formatSessionDistanceKm(session.estimatedDistanceKm)}
                         </Text>
                       </View>
 
@@ -696,15 +710,14 @@ export default function MySessionsScreen() {
 
                       <View style={styles.sessionCardFooter}>
                         <Text style={styles.sessionParticipants}>
-                          {n}{" "}
-                          {n <= 1 ? "participant" : "participants"}
+                          {isSocialOuting(session) ? 'Sortie gratuite' : `${n} ${n <= 1 ? 'participant' : 'participants'}`}
                         </Text>
                         <TouchableOpacity
                           onPress={() => {
                             Haptics.impactAsync(
                               Haptics.ImpactFeedbackStyle.Light,
                             );
-                            router.push(`/session/${session.id}`);
+                            router.push(isSocialOuting(session) ? `/outing/${session.id}` : `/session/${session.id}`);
                           }}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           activeOpacity={0.85}
@@ -716,7 +729,7 @@ export default function MySessionsScreen() {
                       </View>
                     </Card>
                   </AnimatedTimelineCard>
-                  {index === 0 ? (
+                  {index === 0 && !isSocialOuting(session) ? (
                     <CoachWeeklyPlan
                       context={coachWeeklyContext}
                       sessions={allSessions}
@@ -741,13 +754,21 @@ export default function MySessionsScreen() {
             )}
             {filteredPastSessions.map((session) => {
               const description = `${session.volume} · ${session.targetPace}`;
+              const isJoined = joinedSet.has(session.id);
+              const attendanceStatus =
+                attendanceStatusBySessionId.get(session.id) ??
+                (isJoined ? "joined" : null);
+              const showMarkDone = !isSocialOuting(session) && canMarkSessionComplete(session, {
+                hasLocalJoin: isJoined,
+                attendanceStatus,
+              });
 
               const workoutRunType = session.workoutId
                 ? workoutRunTypes[session.id]
                 : null;
               const sessionTypeId =
                 workoutRunType || getSessionRunTypeId(session);
-              const typeLabel = workoutRunType
+              const typeLabel = isSocialOuting(session) ? session.typeLabel : workoutRunType
                 ? getRunTypePillLabel(workoutRunType)
                 : sessionTypeId
                   ? getRunTypePillLabelFromModule(
@@ -768,14 +789,31 @@ export default function MySessionsScreen() {
                         {session.volume ? ` · ${session.volume}` : ""}
                       </Text>
                     </View>
-                    <Text style={styles.historyDone}>TERMINÉ</Text>
+                    <Text style={styles.historyDone}>
+                      {attendanceStatus === "attended"
+                        ? "FAIT"
+                        : showMarkDone
+                          ? "À COMPLÉTER"
+                          : "TERMINÉ"}
+                    </Text>
                   </View>
                   <Text style={styles.title}>{session.title}</Text>
                   <Text style={styles.description}>{description}</Text>
+                  {showMarkDone ? (
+                    <TouchableOpacity
+                      onPress={() => router.push(isSocialOuting(session) ? `/outing/${session.id}` : `/session/${session.id}`)}
+                      style={styles.markDoneButton}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={styles.markDoneButtonText}>
+                        Marquer comme fait
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
                   <TouchableOpacity
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push(`/session/${session.id}`);
+                      router.push(isSocialOuting(session) ? `/outing/${session.id}` : `/session/${session.id}`);
                     }}
                     style={styles.detailsButton}
                   >
@@ -824,7 +862,7 @@ const styles = StyleSheet.create({
     minHeight: 32,
     justifyContent: "center",
     backgroundColor: "transparent",
-    borderColor: "rgba(255,255,255,0.14)",
+    borderColor: colors.border.default,
     borderWidth: hairline,
   },
   filterChipActive: {
@@ -833,7 +871,7 @@ const styles = StyleSheet.create({
   },
   filterChipActiveAll: {
     backgroundColor: "transparent",
-    borderColor: "rgba(255,255,255,0.85)",
+    borderColor: colors.text.primary,
     borderWidth: 1.5,
   },
   filterChipText: {
@@ -842,11 +880,11 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   filterChipTextActive: {
-    color: "#fff",
+    color: colors.text.onAccent,
     fontWeight: "600",
   },
   filterChipTextActiveAll: {
-    color: "#fff",
+    color: colors.text.onAccent,
     fontWeight: "600",
   },
   filterEmpty: {
@@ -878,6 +916,24 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     opacity: 0.9,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexShrink: 1,
+  },
+  secondaryPill: {
+    borderRadius: borderRadius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderWidth: hairline,
+    borderColor: colors.border.default,
+  },
+  secondaryPillText: {
+    color: colors.text.secondary,
+    fontSize: typography.sizes.xs,
+    fontWeight: "600",
+  },
   createPill: {
     borderRadius: borderRadius.pill,
     paddingHorizontal: 14,
@@ -886,7 +942,21 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   createPillText: {
-    color: "#fff",
+    color: colors.text.onAccent,
+    fontSize: typography.sizes.sm,
+    fontWeight: "700",
+  },
+  offlineBanner: {
+    color: colors.accent.orange,
+    fontSize: typography.sizes.sm,
+    marginBottom: 10,
+  },
+  markDoneButton: {
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  markDoneButtonText: {
+    color: colors.accent.primary,
     fontSize: typography.sizes.sm,
     fontWeight: "700",
   },
@@ -894,7 +964,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    color: "#BFBFBF",
+    color: colors.text.secondary,
     fontSize: 13,
     fontWeight: "600",
     textTransform: "uppercase",
@@ -911,11 +981,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   upcomingSessionCard: {
-    backgroundColor: "#131313",
+    backgroundColor: colors.surface.s2,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
+    borderColor: colors.border.default,
     marginBottom: 0,
   },
   sessionMetaRow: {
@@ -935,7 +1005,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   sessionDistance: {
-    color: "#fff",
+    color: colors.text.primary,
     fontSize: 13,
     fontWeight: "700",
     flexShrink: 0,
@@ -953,8 +1023,8 @@ const styles = StyleSheet.create({
   sessionMetaChip: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: colors.surface.s3,
+    borderColor: colors.border.default,
     borderWidth: hairline,
   },
   sessionMetaChipText: {
@@ -964,7 +1034,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   sessionCardTitle: {
-    color: "#fff",
+    color: colors.text.primary,
     fontSize: 15,
     fontWeight: "800",
     textTransform: "uppercase",
@@ -973,7 +1043,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   sessionCardDescription: {
-    color: "#BFBFBF",
+    color: colors.text.secondary,
     fontSize: 13,
     lineHeight: 18,
   },
@@ -994,19 +1064,19 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   sessionCard: {
-    backgroundColor: "#131313",
+    backgroundColor: colors.surface.s2,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
+    borderColor: colors.border.default,
     marginBottom: 16,
   },
   historyCard: {
-    backgroundColor: "#131313",
+    backgroundColor: colors.surface.s2,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
+    borderColor: colors.border.default,
     marginBottom: 12,
   },
   historyTopRow: {
@@ -1053,12 +1123,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: "#1A2230",
+    backgroundColor: colors.accent.primaryDim,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: colors.border.medium,
   },
   typePillText: {
-    color: "#BFBFBF",
+    color: colors.text.secondary,
     fontSize: 11,
     fontWeight: "600",
     textTransform: "uppercase",
@@ -1067,18 +1137,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 999,
-    backgroundColor: "#1A2230",
+    backgroundColor: colors.accent.primaryDim,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: colors.border.medium,
   },
   customPillText: {
-    color: "#BFBFBF",
+    color: colors.text.secondary,
     fontSize: 11,
     fontWeight: "600",
     textTransform: "uppercase",
   },
   spotName: {
-    color: "#FFFFFF",
+    color: colors.text.primary,
     fontSize: 16,
     fontWeight: "600",
     flexShrink: 1,
@@ -1088,39 +1158,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 999,
-    backgroundColor: "rgba(41, 208, 126, 0.18)",
+    backgroundColor: colors.pill.success,
     borderWidth: 1,
-    borderColor: "rgba(41, 208, 126, 0.6)",
+    borderColor: colors.tag.greenText,
   },
   statusPillText: {
-    color: "#29D07E",
+    color: colors.text.success,
     fontSize: 11,
     fontWeight: "600",
     textTransform: "uppercase",
   },
   date: {
-    color: "#F8B319",
+    color: colors.accent.warning,
     fontSize: 12,
     fontWeight: "600",
     textTransform: "uppercase",
     flexShrink: 0,
   },
   dateText: {
-    color: "#BFBFBF",
+    color: colors.text.secondary,
     fontSize: 12,
     fontWeight: "600",
     textTransform: "uppercase",
     flexShrink: 0,
   },
   title: {
-    color: "#FFFFFF",
+    color: colors.text.primary,
     fontSize: 16,
     fontWeight: "700",
     textTransform: "uppercase",
     marginBottom: 8,
   },
   description: {
-    color: "#BFBFBF",
+    color: colors.text.secondary,
     fontSize: 14,
     marginBottom: 8,
   },
@@ -1146,14 +1216,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyStateTitle: {
-    color: "#FFFFFF",
+    color: colors.text.primary,
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 8,
     textAlign: "center",
   },
   emptyStateSubtitle: {
-    color: "#BFBFBF",
+    color: colors.text.secondary,
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
@@ -1167,10 +1237,10 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     marginHorizontal: 20,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
+    borderColor: colors.border.default,
   },
   emptyStateSecondaryButtonText: {
-    color: "#BFBFBF",
+    color: colors.text.secondary,
     fontSize: 14,
     fontWeight: "500",
     textAlign: "center",

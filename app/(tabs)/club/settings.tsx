@@ -55,6 +55,9 @@ export default function ClubSettingsScreen() {
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<ClubVisibility>("members");
   const [accessCode, setAccessCode] = useState("");
+  const [isPaid, setIsPaid] = useState(false);
+  const [duesLabel, setDuesLabel] = useState("");
+  const [duesAmountMad, setDuesAmountMad] = useState("");
 
   const { toast, showToast, hideToast } = useToast();
 
@@ -99,6 +102,13 @@ export default function ClubSettingsScreen() {
       setDescription(merged.description ?? "");
       setVisibility(merged.visibility ?? "members");
       setAccessCode(merged.accessCode ?? "");
+      setIsPaid(clubData?.isPaid ?? false);
+      setDuesLabel(clubData?.duesLabel ?? "");
+      setDuesAmountMad(
+        clubData?.duesAmountCents != null
+          ? String(Math.round(clubData.duesAmountCents / 100))
+          : "",
+      );
     } catch (error) {
       console.warn("Club settings load failed:", error);
       showToast("Impossible de charger les paramètres.", "error");
@@ -121,11 +131,17 @@ export default function ClubSettingsScreen() {
     setIsSaving(true);
     try {
       const client = createApiClient();
+      const duesCents = duesAmountMad.trim()
+        ? Math.round(parseFloat(duesAmountMad.replace(",", ".")) * 100)
+        : null;
       const updated = await updateClub(client, clubId, {
         name: name.trim(),
         description: description.trim() || null,
         visibility,
         accessCode: accessCode.trim() || undefined,
+        isPaid,
+        duesLabel: isPaid ? duesLabel.trim() || null : null,
+        duesAmountCents: isPaid && duesCents && duesCents > 0 ? duesCents : null,
       });
       const nextSettings: ClubAdminSettings = {
         ...adminSettings,
@@ -243,7 +259,7 @@ export default function ClubSettingsScreen() {
                   setVisibility(v ? "members" : "public")
                 }
                 trackColor={{ false: colors.surface.s4, true: colors.accent.primary }}
-                thumbColor="#fff"
+                thumbColor={colors.text.onAccent}
               />
             </View>
             <Text style={styles.fieldLabel}>Code d&apos;accès</Text>
@@ -260,6 +276,41 @@ export default function ClubSettingsScreen() {
                 <Text style={styles.codeBtnTxt}>Générer</Text>
               </Pressable>
             </View>
+            <View style={styles.switchRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>Cotisation (espèces)</Text>
+                <Text style={styles.fieldHint}>
+                  Affichée à l&apos;inscription — paiement géré hors app.
+                </Text>
+              </View>
+              <Switch
+                value={isPaid}
+                onValueChange={setIsPaid}
+                trackColor={{ false: colors.surface.s4, true: colors.accent.primary }}
+                thumbColor={colors.text.onAccent}
+              />
+            </View>
+            {isPaid ? (
+              <>
+                <Text style={styles.fieldLabel}>Libellé cotisation</Text>
+                <TextInput
+                  style={styles.input}
+                  value={duesLabel}
+                  onChangeText={setDuesLabel}
+                  placeholder="Cotisation annuelle (espèces)"
+                  placeholderTextColor={colors.text.tertiary}
+                />
+                <Text style={styles.fieldLabel}>Montant (MAD)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={duesAmountMad}
+                  onChangeText={setDuesAmountMad}
+                  placeholder="Ex. 300"
+                  placeholderTextColor={colors.text.tertiary}
+                  keyboardType="decimal-pad"
+                />
+              </>
+            ) : null}
             <Pressable
               style={[styles.primaryBtn, isSaving && styles.primaryBtnDisabled]}
               onPress={handleSaveClub}

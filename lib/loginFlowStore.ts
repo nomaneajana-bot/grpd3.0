@@ -26,6 +26,10 @@ export async function setLoginOtpRequest(
   await AsyncStorage.setItem(LOGIN_OTP_REQUEST_KEY, JSON.stringify(data));
 }
 
+export async function clearLoginOtpRequest(): Promise<void> {
+  await AsyncStorage.removeItem(LOGIN_OTP_REQUEST_KEY);
+}
+
 export async function getLoginOtpRequest(): Promise<StoredOtpRequest | null> {
   const raw = await AsyncStorage.getItem(LOGIN_OTP_REQUEST_KEY);
   if (!raw) return null;

@@ -28,8 +28,9 @@ import { useToast } from "@/hooks/useToast";
 import {
   createApiClient,
   getClubRoster,
+  getClubSessions,
+  getClubSummary,
   getMyMemberships,
-  getMySessions,
   joinClubByCode,
   leaveClub,
 } from "@/lib/api";
@@ -71,6 +72,9 @@ export default function ClubScreen() {
     null,
   );
   const [clubSessions, setClubSessions] = useState<SessionData[]>([]);
+  const [clubMemberCount, setClubMemberCount] = useState<number | undefined>(
+    undefined,
+  );
   const { toast, showToast, hideToast } = useToast();
 
   const loadData = useCallback(async (refresh = false) => {
@@ -89,18 +93,49 @@ export default function ClubScreen() {
         null;
 
       if (primary?.status === "approved" && primary.clubId) {
-        const [rosterResult, profile, joined, paces, adminCfg, mySessions] =
+        const isCoachOrAdmin =
+          primary.role === "admin" || primary.role === "coach";
+        const [summaryResult, profile, joined, paces, adminCfg, sessionsResult, rosterResult] =
           await Promise.all([
-            getClubRoster(client, primary.clubId),
+            getClubSummary(client, primary.clubId),
             getRunnerProfile(),
             getJoinedSessions(),
             getReferencePaces(),
             getClubAdminSettings(primary.clubId),
-            getMySessions(client),
+            getClubSessions(client, primary.clubId),
+            isCoachOrAdmin
+              ? getClubRoster(client, primary.clubId).catch(() => ({
+                  clubId: primary.clubId,
+                  members: [] as ClubRosterMember[],
+                }))
+              : Promise.resolve({
+                  clubId: primary.clubId,
+                  members: [] as ClubRosterMember[],
+                }),
           ]);
         setRoster(rosterResult.members ?? []);
+        setClubMemberCount(summaryResult.club.membersCount);
         setClubSessions(
-          (mySessions.sessions ?? []).map(apiSessionToSessionData),
+          (sessionsResult.sessions ?? []).map((s) =>
+            apiSessionToSessionData({
+              id: s.id,
+              title: s.title,
+              spot: s.spot,
+              dateLabel: s.dateLabel,
+              dateISO: s.dateISO,
+              timeMinutes: null,
+              typeLabel: "",
+              volume: "",
+              targetPace: "",
+              estimatedDistanceKm: 0,
+              recommendedGroupId: "B",
+              clubId: primary.clubId,
+              visibility: "members",
+              genderRestriction: null,
+              workoutId: null,
+              isCustom: false,
+            }),
+          ),
         );
         setAdminSettings(adminCfg);
         const authUser = await getAuthUser();
@@ -114,6 +149,7 @@ export default function ClubScreen() {
       } else {
         setRoster([]);
         setClubSessions([]);
+        setClubMemberCount(undefined);
         setAdminSettings(null);
       }
     } catch (error) {
@@ -150,7 +186,8 @@ export default function ClubScreen() {
       primaryMembership?.role === "coach");
   const club = primaryMembership?.club;
   const groupBuckets = bucketMembersByGroup(roster, adminSettings);
-  const memberCount = roster.length > 0 ? roster.length : undefined;
+  const memberCount =
+    clubMemberCount ?? (roster.length > 0 ? roster.length : undefined);
   const foundedYear = formatFoundedYear(club?.createdAt);
 
   const handleLeaveClub = async () => {
@@ -321,6 +358,8 @@ export default function ClubScreen() {
               );
             })}
 
+            {primaryMembership && <Pressable accessibilityRole="button" onPress={() => router.push({pathname: "/outing/create", params: {clubId: primaryMembership.clubId}} as Href)} style={{padding: 16, marginVertical: 12, borderRadius: 16, backgroundColor: "#C5D8B7"}}><Text style={{color: "#172019", fontWeight: "600"}}>Organiser une sortie du club</Text></Pressable>}
+
             {isClubAdmin ? (
               <>
                 <SectionHeader label="ADMINISTRATION" />
@@ -401,6 +440,12 @@ export default function ClubScreen() {
                 <Text style={styles.moreLink}>
                   Plus d&apos;options → Accès club
                 </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push("/(tabs)/club/create" as Href)}
+                style={styles.moreLinkWrap}
+              >
+                <Text style={styles.moreLink}>Créer mon propre club →</Text>
               </Pressable>
             </View>
           </>
