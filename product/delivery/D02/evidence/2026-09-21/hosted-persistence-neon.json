@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-09-21T17:15:00Z",
+  "database": "grpd_d02_test",
+  "branch": "grpd-d02-test",
+  "sourceReport": "hosted-runner-preview.json",
+  "deploymentId": "dpl_6CNMNchG44cXqHgxmvJ3X6pt3UW2",
+  "commit": "05f73a4cbcdb36b7614cada84a905ec1b6a954c8",
+  "freshConnection": true,
+  "clubsFound": 2,
+  "sessionsFound": 2,
+  "membershipRows": 3,
+  "attendanceRows": 2,
+  "clubIds": [
+    "cmubi88xi00014sf8h8juvoju",
+    "cmubi893l00054sf8ln8yqzgh"
+  ],
+  "outingIds": [
+    "cmubi8a57000d4sf8l5f6afz7",
+    "cmubi8abd000f4sf8ldg6v7gv"
+  ],
+  "observations": [
+    "Both clubs persisted with D02 test labels; one members-only and one public.",
+    "Both outings persisted with meetingPoint and club linkage.",
+    "Guest remains approved member of the private club after invitation.",
+    "Guest attendance on private outing is left; on public outing is joined."
+  ],
+  "secretsIncluded": false
+}

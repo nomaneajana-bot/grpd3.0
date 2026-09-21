@@ -1,0 +1,51 @@
+{
+  "origin": "https://grpd30-355kzkwzz-noas-projects-0b3f311d.vercel.app",
+  "startedAt": "2026-09-21T17:13:43.876Z",
+  "checks": [
+    {
+      "name": "Readiness JSON",
+      "result": "PASS"
+    },
+    {
+      "name": "Nested endpoint rejects anonymous access",
+      "result": "PASS"
+    },
+    {
+      "name": "Unknown route rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "Independent clubs and private discovery",
+      "result": "PASS"
+    },
+    {
+      "name": "Invitation redemption and retry",
+      "result": "PASS"
+    },
+    {
+      "name": "Multiple outings retain logistics and privacy",
+      "result": "PASS"
+    },
+    {
+      "name": "Selected join/cancel and retries preserve other participation",
+      "result": "PASS"
+    },
+    {
+      "name": "Invalid input rejected",
+      "result": "PASS"
+    }
+  ],
+  "records": {
+    "clubs": [
+      "cmubi88xi00014sf8h8juvoju",
+      "cmubi893l00054sf8ln8yqzgh"
+    ],
+    "outings": [
+      "cmubi8a57000d4sf8l5f6afz7",
+      "cmubi8abd000f4sf8ldg6v7gv"
+    ]
+  },
+  "complete": true,
+  "mode": "authenticated-test",
+  "finishedAt": "2026-09-21T17:13:50.563Z"
+}

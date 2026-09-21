@@ -1,0 +1,51 @@
+{
+  "origin": "http://127.0.0.1:57756",
+  "startedAt": "2026-09-21T15:57:54.733Z",
+  "checks": [
+    {
+      "name": "Readiness JSON",
+      "result": "PASS"
+    },
+    {
+      "name": "Nested endpoint rejects anonymous access",
+      "result": "PASS"
+    },
+    {
+      "name": "Unknown route rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "Independent clubs and private discovery",
+      "result": "PASS"
+    },
+    {
+      "name": "Invitation redemption and retry",
+      "result": "PASS"
+    },
+    {
+      "name": "Multiple outings retain logistics and privacy",
+      "result": "PASS"
+    },
+    {
+      "name": "Selected join/cancel and retries preserve other participation",
+      "result": "PASS"
+    },
+    {
+      "name": "Invalid input rejected",
+      "result": "PASS"
+    }
+  ],
+  "records": {
+    "clubs": [
+      "cmubfip6p000112frs8lo12k1",
+      "cmubfip6x000512fr92wu1azj"
+    ],
+    "outings": [
+      "cmubfip8l000d12frh4kwouon",
+      "cmubfip8p000f12fr2e11ii35"
+    ]
+  },
+  "complete": true,
+  "mode": "authenticated-test",
+  "finishedAt": "2026-09-21T15:57:54.926Z"
+}
