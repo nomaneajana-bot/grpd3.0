@@ -45,6 +45,11 @@ try {
   await handler({method,url:'/api/v1/'+path,headers:{host:'localhost',...(body?{'content-type':'application/json'}:{})},query,body},res);return result;
  }
  (async()=>{
+  process.env.AUTH_JWT_SECRET='compiled-runtime-disposable-test-secret';
+  const auth=require('./lib/server/app-jwt.js');
+  assert.equal(await auth.verifyAppAccessToken(await auth.signAppAccessToken('compiled-user')),'compiled-user');
+  delete process.env.AUTH_JWT_SECRET;
+  console.log('PASS compiled JWT signing/verification with ESM require disabled');
   for(const [path,method,body,status] of [['missing','GET',undefined,404],['health','POST',undefined,405],['me/sessions','GET',undefined,401],['clubs','POST','{bad',400]]) {
    const r=await call(path,method,body);assert.equal(r.status,status,JSON.stringify(r));assert.equal(r.body.ok,false);
   }
@@ -60,7 +65,7 @@ try {
  writeFileSync(join(stage,'check.cjs'),child);
  // A fresh environment prevents accidental reads of real credentials or databases.
  const env={PATH:process.env.PATH,NODE_ENV:'test',DATABASE_URL:'postgresql://unused@127.0.0.1:1/unused'};
- const run=spawnSync(process.execPath,[join(stage,'check.cjs')],{cwd:stage,env,encoding:'utf8',timeout:30000});
+ const run=spawnSync(process.execPath,['--no-experimental-require-module',join(stage,'check.cjs')],{cwd:stage,env,encoding:'utf8',timeout:30000});
  process.stdout.write(run.stdout||'');process.stderr.write(run.stderr||'');
  assert.equal(run.status,0,run.error?.message||'Compiled runtime failed');
  const adapter=join(stage,'api/v1/[...path].js');

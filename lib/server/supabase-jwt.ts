@@ -1,4 +1,4 @@
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import type { createRemoteJWKSet } from "jose";
 
 const supabaseUrl = process.env.SUPABASE_URL?.trim() ?? "";
 const jwtSecret = process.env.SUPABASE_JWT_SECRET?.trim() ?? "";
@@ -18,6 +18,7 @@ export async function verifySupabaseAccessToken(
   if (!token) return null;
 
   try {
+    const { createRemoteJWKSet, jwtVerify } = await import("jose");
     if (jwtSecret && supabaseUrl) {
       const secret = new TextEncoder().encode(jwtSecret);
       const { payload } = await jwtVerify(token, secret, {

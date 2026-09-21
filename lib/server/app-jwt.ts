@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify } from "jose";
+// jose is ESM-only; use native dynamic imports from the server runtime.
 
 const ISSUER = "grpd";
 const ACCESS_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -20,6 +20,7 @@ export async function signAppAccessToken(userId: string): Promise<string> {
   if (!secret) {
     throw new Error("AUTH_JWT_SECRET is not configured");
   }
+  const { SignJWT } = await import("jose");
   return await new SignJWT({})
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(userId)
@@ -35,6 +36,7 @@ export async function verifyAppAccessToken(
   const secret = getSecret();
   if (!secret) return null;
   try {
+    const { jwtVerify } = await import("jose");
     const { payload } = await jwtVerify(token, secret, {
       algorithms: ["HS256"],
       issuer: ISSUER,
