@@ -9,11 +9,18 @@ export const config = {
   },
 };
 
-function pathSegments(query: VercelRequest["query"]): string[] {
-  const raw = query.path;
-  if (Array.isArray(raw)) return raw.filter(Boolean) as string[];
-  if (typeof raw === "string" && raw) return [raw];
-  return [];
+function pathSegments(req: VercelRequest): string[] {
+  // The pathname works even when Vercel omits catch-all query parameters.
+  // A query named path must never override the route selected by the URL.
+  const pathname = new URL(req.url ?? "/", "https://localhost").pathname;
+  if (!pathname.startsWith("/api/v1/")) return [];
+  try {
+    const segments = pathname.slice("/api/v1/".length).split("/").map(decodeURIComponent);
+    if (segments.some(segment => !segment || segment.includes("/") || segment.includes("\\"))) return [];
+    return segments;
+  } catch {
+    return [];
+  }
 }
 
 function toNextRequest(req: VercelRequest, segments: string[]): NextRequest {
@@ -57,7 +64,7 @@ export default async function handler(
   res: VercelResponse,
 ): Promise<void> {
   try {
-    const segments = pathSegments(req.query);
+    const segments = pathSegments(req);
     const nextReq = toNextRequest(req, segments);
     const response = await dispatchApiRequest(nextReq, segments);
     await sendResponse(res, response);

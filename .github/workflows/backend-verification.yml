@@ -43,6 +43,8 @@ jobs:
         run: node product/delivery/D02/tools/prepare-integration.mjs 2>&1 | tee d02-ci-results/migrations.txt
       - name: Strict backend TypeScript
         run: node product/delivery/D02/tools/typecheck.mjs 2>&1 | tee d02-ci-results/typecheck.txt
+      - name: Compiled runtime and URL routing
+        run: node product/delivery/D02/tools/compiled-runtime-check.mjs 2>&1 | tee d02-ci-results/compiled-runtime.txt
       - name: JWT issuer and audience checks
         run: node product/delivery/D02/tools/auth-check.mjs 2>&1 | tee d02-ci-results/auth.txt
       - name: PostgreSQL journeys and authorization regressions
