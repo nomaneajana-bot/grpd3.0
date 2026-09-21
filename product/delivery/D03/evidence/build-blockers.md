@@ -1,15 +1,24 @@
 # Native build blockers — 21 September 2026
 
+Threatens internal checkpoint **2 October 2026** (installable Android/iOS).
+
 ## Android
-- `app.json` now includes `android.package` = `com.noasmap.grpd30` and `versionCode` = 3.
-- `eas.json` preview profile builds APK (`buildType: apk`).
-- Blocker: EAS CLI not authenticated in this environment (`eas whoami` / `npx eas-cli` hung or no credentials). No `extra.eas.projectId` in `app.json` yet.
-- Next owner action: `eas login`, `eas init` / link project, then `eas build -p android --profile preview`.
+- `app.json`: `android.package` = `com.noasmap.grpd30`, `versionCode` = 3.
+- `eas.json` preview profile: internal APK.
+- Local machine: **no Android SDK** (`ANDROID_HOME` unset; no `adb` / sdkmanager).
+- Preferred path: **EAS cloud build** (does not need local SDK) once EAS is logged in.
+- Blocker: EAS CLI not authenticated in this environment; no `extra.eas.projectId` yet.
+- Owner action: `eas login` → `eas init` / link → `eas build -p android --profile preview`.
 
 ## iOS
 - `bundleIdentifier` = `com.noasmap.grpd30`, `buildNumber` = 3.
-- Blocker: Apple Developer signing / distribution account access not verified here. Internal distribution (Ad Hoc / TestFlight internal) cannot be started without certificates/profiles.
-- Record early: **Apple signing/account access required from Nouamane** before claiming D03.4.
+- Local machine: Xcode 26.6 present; **0 valid codesign identities**; no provisioning profiles.
+- Blocker: Apple Developer Team access / certificates not configured for EAS or local.
+- Owner action: confirm Apple Team; add credentials to EAS (or install signing identities); then `eas build -p ios --profile preview`.
 
 ## Expo Go
-- Usable for rehearsal with `.env.local` PIN + Preview URL + bypass. Does **not** satisfy native-build deliverable.
+- Usable for rehearsal with `.env.local` (PIN + Preview + bypass).
+- Does **not** satisfy the native-build deliverable for 2 Oct.
+
+## Evidence of API Must path (not a build substitute)
+- `product/delivery/D03/evidence/must-journey-smoke-preview.json` — outsider privacy + invite + join/leave PASS on Test Preview (21 Sep).

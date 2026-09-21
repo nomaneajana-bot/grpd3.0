@@ -1,0 +1,29 @@
+{
+  "origin": "https://grpd30-git-codex-d02-backend-veri-6f38b5-noas-projects-0b3f311d.vercel.app",
+  "startedAt": "2026-09-21T17:35:45.195Z",
+  "checks": [
+    {
+      "name": "Health",
+      "result": "PASS"
+    },
+    {
+      "name": "Outsider and non-member cannot read private club",
+      "result": "PASS"
+    },
+    {
+      "name": "Participant redeems invite",
+      "result": "PASS"
+    },
+    {
+      "name": "Public discoverable; private hidden from outsider/public list",
+      "result": "PASS"
+    },
+    {
+      "name": "Join public, join/leave private preserves other participation",
+      "result": "PASS"
+    }
+  ],
+  "complete": true,
+  "mode": "d03-must-smoke",
+  "finishedAt": "2026-09-21T17:35:50.210Z"
+}
