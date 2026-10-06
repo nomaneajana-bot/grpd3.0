@@ -2,13 +2,14 @@
 
 Not an App Store or Play Store release. Not OCIF acceptance.
 
-The showing artifact is the internal Android APK already built against isolated Test.
+The showing is a laptop browser on isolated Test. No store install.
 
-- Build: `b28bc5c0-9261-45fe-ad0b-e3d4362e1510`
-- Commit baked into that APK: `59d4836`
-- Install: https://expo.dev/accounts/noasmap/projects/grpd30/builds/b28bc5c0-9261-45fe-ad0b-e3d4362e1510
+- Start: in `/tmp/grpd-d03-worktree`, with gitignored `.env.local` (PIN mode, Test API, bypass), run `npx expo start --web`
+- Open: http://localhost:8081
 - API: https://grpd30-git-codex-d02-backend-veri-6f38b5-noas-projects-0b3f311d.vercel.app
 - Auth: PIN on Test only. Phones `+212600000001` (organizer), `+212600000002` (participant), `+212600000003` (outsider). PINs stay with Nouamane and are not written here.
+- First screen: **J'ai déjà un compte**, then the phone, then the PIN.
+- Android APK `b28bc5c0` remains available and is not required for this showing.
 
 ## What to tap
 

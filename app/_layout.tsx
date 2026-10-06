@@ -7,7 +7,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
 import "react-native-reanimated";
 
 import { colors } from "@/constants/ui";
@@ -81,7 +81,7 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <View style={styles.rootContainer}>
+        <View style={[styles.rootContainer, Platform.OS === "web" && styles.webColumn]}>
           {isLoading || !fontsLoaded ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.accent.primary} />
@@ -101,6 +101,11 @@ const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  webColumn: {
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
   },
   loadingContainer: {
     flex: 1,

@@ -128,7 +128,7 @@ export default function PhoneScreen() {
           titleMuted={pinMode ? "Ton numéro ?" : "Ton email ?"}
           subtitle={
             pinMode
-              ? "Entre le code PIN à 6 chiffres que tu as reçu pour cet environnement de test."
+              ? "Numéro de test, puis le code PIN à 6 chiffres."
               : "On t'envoie un code à 6 chiffres pour confirmer."
           }
         />
@@ -136,7 +136,7 @@ export default function PhoneScreen() {
           style={styles.emailInput}
           value={identifier}
           onChangeText={setIdentifier}
-          placeholder={pinMode ? "06 08 06 03 37" : "ton@email.com"}
+          placeholder={pinMode ? "+212 600 000 001" : "ton@email.com"}
           placeholderTextColor={colors.text.tertiary}
           keyboardType={pinMode ? "phone-pad" : "email-address"}
           autoCapitalize="none"

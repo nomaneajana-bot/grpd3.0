@@ -14,8 +14,8 @@ export default function OnboardingWelcomeScreen() {
       paddingHorizontal={welcomeTheme.screenPaddingHorizontal}
       primaryLabel="Commencer"
       onPrimaryPress={() => router.push("/(auth)/onboarding/phone" as Href)}
-      secondaryLabel="J'ai déjà un compte"
-      onSecondaryPress={() => router.push("/(auth)/phone" as Href)}
+      topLinkLabel="J'ai déjà un compte"
+      onTopLinkPress={() => router.push("/(auth)/phone" as Href)}
     >
       <View style={styles.content}>
         <View style={styles.top}>
