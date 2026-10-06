@@ -13,8 +13,9 @@ Internal completion target remains **14 October 2026**. The 2 October installabl
 ## iOS
 - `bundleIdentifier` `com.noasmap.grpd30`, buildNumber 3.
 - Local codesign identities: **0**.
-- `eas build` was rejected on 6 Oct before upload because `eas.json` `production.android.buildType` was `aab` (invalid). Fixed to `app-bundle` on the D03 branch.
-- Apple Developer credentials are still required for an internal iOS build.
+- 6 Oct: `eas build -p ios --profile preview --non-interactive` got past config (`0c58f40`) and found no remote credentials suitable for internal distribution.
+- Exact stop: “EAS CLI couldn't find any credentials suitable for internal distribution. Run this command again in interactive mode.”
+- Owner action: Apple Team on Expo account `noasmap`, then an interactive `eas build -p ios --profile preview`.
 
 ## Preview API (6 Oct, health only)
 - Alias https://grpd30-git-codex-d02-backend-veri-6f38b5-noas-projects-0b3f311d.vercel.app
