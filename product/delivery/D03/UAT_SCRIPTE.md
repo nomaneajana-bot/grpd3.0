@@ -10,7 +10,7 @@ Status: prepared. Not yet executed with participants. Does not establish OCIF-ap
 ## Build under test
 - App version: `1.0.0` (iOS buildNumber 3 / Android versionCode 3)
 - API: Preview Test — record exact deployment URL and SHA at session time
-- Install: Android internal APK and/or iOS internal build when available; Expo Go only for rehearsal
+- Install: internal Android APK `b28bc5c0` (https://expo.dev/accounts/noasmap/projects/grpd30/builds/b28bc5c0-9261-45fe-ad0b-e3d4362e1510). iOS and store listing are not required for the jury.
 
 ## Scenarios (expected / actual / issues)
 

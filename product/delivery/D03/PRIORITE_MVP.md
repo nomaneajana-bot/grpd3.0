@@ -1,37 +1,24 @@
-# D03 — prioritized mobile MVP cut (rehearsal)
+# D03 — jury prototype
 
-Updated 21 September 2026. Implementation priorities only; approved OCIF scope unchanged.
+Updated 6 October 2026. Show a small app that works. Do not add features the jury never asked for.
 
-## Label in force
-Working toward **MVP ready for rehearsal** (not “D03 delivered”, not OCIF complete).
+## What we show
+Internal Android APK `b28bc5c0` against isolated Test. Script: `DEMO_JURY.md`.
 
-## Must journeys (demo script aligned)
-1. Organizer PIN auth → create club (unrestricted purpose / description).
-2. Organizer create outing linked to that club.
-3. Participant discovers public club/outing.
-4. Participant redeems private invitation.
-5. Outsider cannot discover/access private info.
-6. Participant joins and leaves selected outing.
-7. Persistence across restart (server Test DB).
-8. Usable missing/invalid/failure/retry handling on those paths.
+Not App Store, Play Store, or an iOS build.
 
-## Not priorities this cut (preserve, do not expand)
-Workouts, PRs, coach assignment, pace groups, inbox expansion, payments, romantic matching.
+## Must path
+1. Organizer PIN login, then a club with a free-text purpose. Choose **Public** when the outing should be discoverable. Choose **Sur invitation** for the private club.
+2. Outing on that club.
+3. Participant sees the public outing on Home.
+4. Participant redeems the invite code from Club → Invitations et demandes.
+5. Outsider does not see the private club or outing.
+6. Participant joins and leaves the outing.
+7. Data remains after the app is closed.
+8. Empty club name shows an error, then retry works.
 
-## Discrepancies flagged (not silent scope changes)
-- D01-M04 describes an editable invitation *draft text*; mobile currently shares **invite codes**. Flagged for Codex dossier language; code flow keeps Must privacy journey.
-- Demo auth is PIN allowlist on isolated Test — **not** approved production auth.
-- Preview + `grpd_d02_test` does **not** satisfy D05.
-- Expo Go may rehearse; native APK / internal iOS still required for D03.4 evidence.
+## Leave alone
+Workouts, PRs, coach, pace groups, payments, matching, store submission, production auth.
 
-## Implementation order (this pass)
-1. Wire PIN + Preview API (stop mock force; phone identifier; PIN wins over Supabase leftovers).
-2. Optional `EXPO_PUBLIC_VERCEL_BYPASS` header for protected Preview device calls.
-3. Three Test roles on Preview allowlist: host, guest, outsider.
-4. Android `package` + version identifiers in `app.json`.
-5. Inventory dirty Must-journey files onto `cursor/d03-mobile-mvp`.
-6. Attempt internal Android preview build; record iOS signing blockers early.
-7. Scripted UAT pack prepared (Nouamane + 1–2 participants) — execution after installable build.
-
-## Backend baseline
-Published D02 Preview: commit `05f73a4`, deployment `dpl_6CNMNchG44cXqHgxmvJ3X6pt3UW2`, DB `grpd_d02_test`. Hosted-check 8/8 PASS evidence under `product/delivery/D02/evidence/2026-09-21/`.
+## Flag for Codex
+Invite flow shares a code, not an editable draft message. Test PIN login is not production auth.

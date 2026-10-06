@@ -10,16 +10,16 @@ The showing artifact is the internal Android APK already built against isolated 
 - API: https://grpd30-git-codex-d02-backend-veri-6f38b5-noas-projects-0b3f311d.vercel.app
 - Auth: PIN on Test only. Phones `+212600000001` (organizer), `+212600000002` (participant), `+212600000003` (outsider). PINs stay with Nouamane and are not written here.
 
-## What to show
+## What to tap
 
-1. Organizer signs in and creates a club with any purpose text.
-2. Organizer creates an outing on that club.
-3. Participant signs in on a second phone, or after logout, and finds the public outing.
-4. Organizer shares an invite code. Participant enters it.
-5. Outsider does not see the private club or outing.
+1. Organizer (`+212600000001`) signs in. Home → **Créer mon club**. Set access to **Public**, add any purpose, create it.
+2. Club tab → **Organiser une sortie du club**. Publish a future date (`AAAA-MM-JJ`, `HH:MM`).
+3. Participant (`+212600000002`) signs in. Home lists that public outing.
+4. For the private half, create a second club with access **Sur invitation**. Club → **Invitations et demandes**, create a code. Participant enters it.
+5. Outsider (`+212600000003`) signs in. The private club and its outing are absent.
 6. Participant joins the outing, then leaves it.
-7. Close and reopen the app. The club and attendance are still there.
-8. Submit an empty club name and show the error, then retry.
+7. Force-close and reopen. The club and attendance are still there.
+8. Try to create a club with an empty name. The error shows. Retry with a name.
 
 Device Must on this APK has not been run yet. API journeys for the same steps passed on Test on 21 September. Health was rechecked on 6 October (`ok=true`, `database=ready`).
 
