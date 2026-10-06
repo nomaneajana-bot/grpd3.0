@@ -67,7 +67,10 @@
     "extra": {
       "excludeFromBundling": [
         "app/api"
-      ]
+      ],
+      "eas": {
+        "projectId": "4b7aa073-d7c7-4bdb-a525-3cb6ce3a9ef3"
+      }
     }
   }
 }

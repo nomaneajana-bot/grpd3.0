@@ -1,0 +1,22 @@
+{
+  "label": "D03 internal Android preview APK (not store / not OCIF)",
+  "status": "FINISHED",
+  "buildId": "b28bc5c0-9261-45fe-ad0b-e3d4362e1510",
+  "platform": "ANDROID",
+  "profile": "preview",
+  "distribution": "internal",
+  "appVersion": "1.0.0",
+  "versionCode": 3,
+  "gitCommitHash": "59d4836d3b89d4d3677be178eb128d7e78b4281d",
+  "package": "com.noasmap.grpd30",
+  "page": "https://expo.dev/accounts/noasmap/projects/grpd30/builds/b28bc5c0-9261-45fe-ad0b-e3d4362e1510",
+  "apk": "https://expo.dev/artifacts/eas/Q9Q4pGQCfRf5VSgOd5m5O0f9McCMUDvZkXfbMl8fVX4.apk",
+  "api": "https://grpd30-git-codex-d02-backend-veri-6f38b5-noas-projects-0b3f311d.vercel.app",
+  "authMode": "pin",
+  "recordedAt": "2026-09-22",
+  "notes": [
+    "Prior failed build 03e6f64a fixed by commit 59d4836 (missing lib modules + supabase-js).",
+    "Installable internal APK only — Must journeys on device still pending.",
+    "Not App Store / Play Store. Not MVP ready for rehearsal until device Must script passes."
+  ]
+}

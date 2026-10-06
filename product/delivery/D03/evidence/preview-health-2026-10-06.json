@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-10-06",
+  "kind": "hosted-health-recheck",
+  "not": "full hosted-check or device Must or UAT",
+  "origin": "https://grpd30-git-codex-d02-backend-veri-6f38b5-noas-projects-0b3f311d.vercel.app",
+  "environment": "Vercel Preview alias for codex/d02-backend-verification",
+  "withBypass": {
+    "path": "/api/v1/health",
+    "http": 200,
+    "ok": true,
+    "service": "grpd-api",
+    "database": "ready"
+  },
+  "withoutBypass": {
+    "path": "/api/v1/health",
+    "http": 302
+  },
+  "notes": [
+    "SSO deployment protection still on.",
+    "Authenticated 8/8 hosted-check was last run 2026-09-21. PIN allowlist file is not on this machine on 2026-10-06, so that suite was not re-run."
+  ]
+}
