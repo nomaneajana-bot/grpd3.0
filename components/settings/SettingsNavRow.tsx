@@ -10,6 +10,7 @@ type SettingsNavRowProps = {
   destructive?: boolean;
   showChevron?: boolean;
   onPress?: () => void;
+  onLongPress?: () => void;
 };
 
 export function SettingsNavRow({
@@ -18,6 +19,7 @@ export function SettingsNavRow({
   destructive = false,
   showChevron = true,
   onPress,
+  onLongPress,
 }: SettingsNavRowProps) {
   const content = (
     <>
@@ -44,7 +46,7 @@ export function SettingsNavRow({
     </>
   );
 
-  if (!onPress) {
+  if (!onPress && !onLongPress) {
     return <View style={styles.row}>{content}</View>;
   }
 
@@ -52,6 +54,8 @@ export function SettingsNavRow({
     <Pressable
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={600}
     >
       {content}
     </Pressable>

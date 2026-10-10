@@ -25,18 +25,17 @@ import {
   createApiClient,
   getMyMemberships,
   leaveClub,
+  resetDemoData,
   updateMyPrs,
 } from "@/lib/api";
 import { clearAuthData, getAuthUser } from "@/lib/authStore";
 import { getClubAdminSettings } from "@/lib/clubAdminStore";
-import { inferUserClubGroupId } from "@/lib/clubPaceGroups";
 import { confirmAction } from "@/lib/confirmAction";
-import { getJoinedSessions } from "@/lib/joinedSessionsStore";
+import { DEMO_MODE } from "@/lib/featureFlags";
 import { interGroupModeLabel } from "@/lib/interGroupPolicy";
 import { formatPhoneDisplay } from "@/lib/phoneFormat";
 import {
   getRunnerProfile,
-  getReferencePaces,
   getTestRecords,
   saveRunnerProfile,
   type RunnerProfile,
@@ -77,9 +76,9 @@ export default function SettingsScreen() {
   });
 
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
-  const [userGroupId, setUserGroupId] = useState("B");
   const [interGroupPolicyLabel, setInterGroupPolicyLabel] =
     useState("Avertissement");
+  const [isResettingDemo, setIsResettingDemo] = useState(false);
 
   const buildPrSummary = async (): Promise<PrSummary> => {
     const tests = await getTestRecords();
@@ -119,10 +118,9 @@ export default function SettingsScreen() {
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [runner, prefs, paces, authUser] = await Promise.all([
+      const [runner, prefs, authUser] = await Promise.all([
         getRunnerProfile(),
         getSettingsPreferences(),
-        getReferencePaces(),
         getAuthUser(),
       ]);
 
@@ -154,8 +152,6 @@ export default function SettingsScreen() {
             const mode = admin.defaultInterGroupPolicy ?? "warn";
             setInterGroupPolicyLabel(interGroupModeLabel(mode));
           }
-          const joined = await getJoinedSessions();
-          setUserGroupId(inferUserClubGroupId(runner, joined, paces));
         } catch (error) {
           console.warn("Failed to load club settings context:", error);
         }
@@ -283,6 +279,30 @@ export default function SettingsScreen() {
     Alert.alert(title, "Bientôt disponible.");
   };
 
+  const handleResetDemo = async () => {
+    if (!DEMO_MODE || isResettingDemo) return;
+    const ok = await confirmAction({
+      title: "Reset demo",
+      message:
+        "Efface les données locales et réinitialise le monde de démo Casablanca.",
+      confirmLabel: "Réinitialiser",
+      destructive: true,
+    });
+    if (!ok) return;
+    setIsResettingDemo(true);
+    try {
+      await resetDemoData();
+      await clearAuthData();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace("/(auth)/phone");
+    } catch (error) {
+      console.warn("Reset demo failed:", error);
+      Alert.alert("Erreur", "Impossible de réinitialiser la démo.");
+    } finally {
+      setIsResettingDemo(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -406,7 +426,6 @@ export default function SettingsScreen() {
             <Text style={styles.clubSubtitle}>
               Membre de{" "}
               <Text style={styles.clubName}>{clubName}</Text>
-              {" · "}Groupe {userGroupId}
             </Text>
           }
         >
@@ -445,7 +464,19 @@ export default function SettingsScreen() {
             title="Contacter le support"
             onPress={() => openPlaceholder("Contacter le support")}
           />
-          <SettingsNavRow title="Version" value={versionLabel} showChevron={false} />
+          <SettingsNavRow
+            title="Version"
+            value={versionLabel}
+            showChevron={false}
+            onPress={() => undefined}
+            onLongPress={
+              DEMO_MODE
+                ? () => {
+                    void handleResetDemo();
+                  }
+                : undefined
+            }
+          />
         </SettingsGroup>
 
         <Pressable
