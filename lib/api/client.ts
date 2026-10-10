@@ -3,6 +3,7 @@ import {
   getAccessToken as getStoredAccessToken,
   shouldUseMockApi,
 } from "../authStore";
+import { DEMO_MODE } from "../featureFlags";
 import { ApiError } from "./errors";
 import { isMockEnabled, mockApiRequest } from "./mock";
 
@@ -59,7 +60,11 @@ export class ApiClient {
   ): Promise<T> {
     const url = joinUrl(this.baseUrl, path);
     const headers = new Headers(init.headers);
-    const useMock = (await shouldUseMockApi()) || isMockEnabled(this.baseUrl);
+    // DEMO_MODE always forces the mock API regardless of EXPO_PUBLIC_API_URL
+    const useMock =
+      DEMO_MODE ||
+      (await shouldUseMockApi()) ||
+      isMockEnabled(this.baseUrl);
 
     if (options.auth !== false && this.getAccessToken) {
       const token = await this.getAccessToken();
