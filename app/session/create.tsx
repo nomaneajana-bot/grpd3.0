@@ -2542,6 +2542,11 @@ export default function CreateSessionScreen() {
           style={[styles.ctaButton, isPublishing && styles.ctaButtonDisabled]}
           onPress={handlePublish}
           disabled={isPublishing}
+          accessibilityRole="button"
+          accessibilityLabel={
+            isEditMode ? "Mettre à jour la séance" : "Publier la séance"
+          }
+          testID="session-publish-btn"
         >
           <Text style={styles.ctaButtonText}>
             {isPublishing

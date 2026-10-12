@@ -1189,6 +1189,9 @@ export default function SessionScreen() {
                               ]}
                               activeOpacity={0.8}
                               onPress={() => setSelectedGroupId(group.id)}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Groupe ${group.label}`}
+                              testID={`session-group-${group.id}`}
                             >
                               <View style={styles.groupLeft}>
                                 <View style={styles.groupLabelRow}>

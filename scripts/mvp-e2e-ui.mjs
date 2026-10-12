@@ -362,14 +362,15 @@ try {
         return Boolean(spot);
       }, i + 1);
       const submitted = await page.evaluate(() => {
-        const nodes = Array.from(
-          document.querySelectorAll('[role="button"], button'),
-        );
-        const btn = nodes.find((n) =>
-          /Publier la séance|Créer une séance|Enregistrer/i.test(
-            n.textContent || "",
-          ),
-        );
+        const btn =
+          document.querySelector('[data-testid="session-publish-btn"]') ||
+          Array.from(
+            document.querySelectorAll('[role="button"], button'),
+          ).find((n) =>
+            /Publier la séance|Créer une séance|Enregistrer/i.test(
+              n.textContent || "",
+            ),
+          );
         if (btn) {
           btn.scrollIntoView({ block: "center" });
           btn.click();
@@ -407,27 +408,42 @@ try {
 
   // Join / leave if buttons present (RN ScrollView — scroll element into view)
   try {
+    // Select a pace group first when tiles are present
+    await page.evaluate(() => {
+      const group = document.querySelector('[data-testid^="session-group-"]');
+      if (group) {
+        group.scrollIntoView({ block: "center" });
+        group.click();
+      }
+    });
+    await new Promise((r) => setTimeout(r, 400));
     const joinReady = await page.evaluate(async () => {
       const pick = () =>
         document.querySelector('[data-testid="session-join-btn"]') ||
         document.querySelector('[data-testid="session-join-confirm"]') ||
         Array.from(document.querySelectorAll('[role="button"], button')).find(
-          (n) => /^S'inscrire|^Confirmer$/i.test((n.textContent || "").trim()),
+          (n) =>
+            /S'inscrire|Confirmer|Demander l'accès/i.test(
+              (n.textContent || "").trim(),
+            ),
         );
       let btn = pick();
       if (!btn) {
-        // Nudge nested scrollables downward
-        document
-          .querySelectorAll('[class*="ScrollView"], [data-testid], div')
-          .forEach((el) => {
-            if (el.scrollHeight > el.clientHeight + 40) {
-              el.scrollTop = el.scrollHeight;
-            }
-          });
+        document.querySelectorAll("div").forEach((el) => {
+          if (el.scrollHeight > el.clientHeight + 40) {
+            el.scrollTop = el.scrollHeight;
+          }
+        });
         await new Promise((r) => setTimeout(r, 200));
         btn = pick();
       }
-      if (!btn) return { ok: false, reason: "no btn" };
+      if (!btn) {
+        return {
+          ok: false,
+          reason: "no btn",
+          tail: document.body.innerText.slice(-400),
+        };
+      }
       btn.scrollIntoView({ block: "center" });
       btn.click();
       return { ok: true, label: (btn.textContent || "").slice(0, 40) };
