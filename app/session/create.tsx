@@ -2335,10 +2335,10 @@ export default function CreateSessionScreen() {
                 onPress={() => setShowWorkoutPicker(true)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.fieldLabel}>Workout associé</Text>
+                <Text style={styles.fieldLabel}>Entraînement associé</Text>
                 <View style={styles.fieldInputRow}>
                   <Text style={styles.fieldInput}>
-                    {selectedWorkoutName ?? "Aucun workout associé"}
+                    {selectedWorkoutName ?? "Aucun entraînement associé"}
                   </Text>
                   <Text style={styles.fieldChevron}>›</Text>
                 </View>

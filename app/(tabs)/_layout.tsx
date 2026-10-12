@@ -28,7 +28,7 @@ export default function TabLayout() {
         },
         tabBarButton: HapticTab,
         tabBarActiveTintColor: colors.accent.primary,
-        tabBarInactiveTintColor: colors.text.tertiary,
+        tabBarInactiveTintColor: colors.text.secondary,
         tabBarStyle: {
           backgroundColor: colors.background.primary,
           borderTopWidth: hairline,

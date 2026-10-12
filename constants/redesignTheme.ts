@@ -5,11 +5,14 @@ export const redesignTheme = {
   screen: {
     width: 390,
     horizontalPadding: 20,
+    /** Newest community homepage: near-black with charcoal fallback */
     background: "#000000",
+    charcoal: "#1A1C1A",
   },
   card: {
     background: "#141414",
     backgroundElevated: "#1C1C1E",
+    charcoal: "#1A1C1A",
     radiusSm: 10,
     radiusMd: 12,
     radiusLg: 14,
@@ -21,16 +24,19 @@ export const redesignTheme = {
   text: {
     primary: "#FFFFFF",
     dim: "rgba(255,255,255,0.62)",
-    faint: "rgba(255,255,255,0.38)",
+    faint: "rgba(255,255,255,0.45)",
+    sage: "#9AA89C",
   },
   accent: {
     blue: "#2F7BFF",
     green: "#2BC97A",
+    sage: "#8FAE97",
     orange: "#F08A3A",
     red: "#E94B5E",
     purple: "#B265E0",
     grey: "#7A7A82",
     greenSoft: "rgba(43,201,122,0.12)",
+    sageSoft: "rgba(143,174,151,0.14)",
     blueDim: "rgba(47,123,255,0.12)",
     blueBorder: "rgba(47,123,255,0.20)",
   },

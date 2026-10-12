@@ -275,10 +275,6 @@ export default function SettingsScreen() {
     }
   };
 
-  const openPlaceholder = (title: string) => {
-    Alert.alert(title, "Bientôt disponible.");
-  };
-
   const handleResetDemo = async () => {
     if (!DEMO_MODE || isResettingDemo) return;
     const ok = await confirmAction({
@@ -342,12 +338,12 @@ export default function SettingsScreen() {
             value={
               phoneNumber ? formatPhoneDisplay(phoneNumber) : "—"
             }
-            onPress={() => openPlaceholder("Téléphone")}
+            showChevron={false}
           />
           <SettingsNavRow
             title="Photo de profil"
             value={`Initiale ${profileInitial}`}
-            onPress={() => openPlaceholder("Photo de profil")}
+            comingSoon
           />
         </SettingsGroup>
 
@@ -356,12 +352,12 @@ export default function SettingsScreen() {
           <SettingsNavRow
             title="Langue"
             value={LANGUAGE_LABELS[language]}
-            onPress={() => openPlaceholder("Langue")}
+            comingSoon
           />
           <SettingsNavRow
             title="Unités"
             value={UNITS_LABELS[units]}
-            onPress={() => openPlaceholder("Unités")}
+            comingSoon
           />
         </SettingsGroup>
 
@@ -432,17 +428,18 @@ export default function SettingsScreen() {
           CLUB
         </SettingsSectionLabel>
         <SettingsGroup>
-          <SettingsNavRow
-            title="Politique d'accès inter-groupes"
-            value={interGroupPolicyLabel}
-            onPress={() => {
-              if (primaryMembership?.clubId) {
-                router.push("/(tabs)/club/settings");
-              } else {
-                openPlaceholder("Politique d'accès inter-groupes");
-              }
-            }}
-          />
+          {primaryMembership?.clubId ? (
+            <SettingsNavRow
+              title="Politique d'accès inter-groupes"
+              value={interGroupPolicyLabel}
+              onPress={() => router.push("/(tabs)/club/settings")}
+            />
+          ) : (
+            <SettingsNavRow
+              title="Politique d'accès inter-groupes"
+              comingSoon
+            />
+          )}
           <SettingsNavRow
             title="Quitter le club"
             destructive
@@ -452,23 +449,13 @@ export default function SettingsScreen() {
 
         <SettingsSectionLabel>À PROPOS</SettingsSectionLabel>
         <SettingsGroup>
-          <SettingsNavRow
-            title="Conditions d'utilisation"
-            onPress={() => openPlaceholder("Conditions d'utilisation")}
-          />
-          <SettingsNavRow
-            title="Confidentialité"
-            onPress={() => openPlaceholder("Confidentialité")}
-          />
-          <SettingsNavRow
-            title="Contacter le support"
-            onPress={() => openPlaceholder("Contacter le support")}
-          />
+          <SettingsNavRow title="Conditions d'utilisation" comingSoon />
+          <SettingsNavRow title="Confidentialité" comingSoon />
+          <SettingsNavRow title="Contacter le support" comingSoon />
           <SettingsNavRow
             title="Version"
             value={versionLabel}
             showChevron={false}
-            onPress={() => undefined}
             onLongPress={
               DEMO_MODE
                 ? () => {

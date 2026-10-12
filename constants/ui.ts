@@ -33,12 +33,12 @@ export const colors = {
   text: {
     /** --text */
     primary: "#EFEFEF",
-    /** --t2 */
-    secondary: "#7A7A8A",
-    /** --t3 / GRPD.textFaint */
-    tertiary: "#3A3A48",
-    faint: "#3A3A48",
-    disabled: "#3A3A48",
+    /** --t2 — readable muted on black (was too dark for body) */
+    secondary: "#9AA89C",
+    /** --t3 — sage-muted; must stay readable on charcoal */
+    tertiary: "#7A8A7E",
+    faint: "#5C6B60",
+    disabled: "#5C6B60",
     /** on blue tint */
     accent: "#6BA4F8",
     warning: "#F59040",
@@ -53,6 +53,10 @@ export const colors = {
     /** --blue-mid */
     primaryMid: "#1A3A7A",
     success: "#22C162",
+    /** charcoal/sage community fallback accents */
+    charcoal: "#1A1C1A",
+    sage: "#8FAE97",
+    sageDim: "rgba(143, 174, 151, 0.14)",
     /** --orange */
     orange: "#F5782A",
     orangeDim: "#2A1608",

@@ -73,10 +73,23 @@ export async function createClub(
   const name = input.name.trim();
   const slug = slugify(name);
   const city = input.city?.trim() ? input.city.trim() : undefined;
+  const purpose = input.purpose?.trim() ? input.purpose.trim() : undefined;
+  const visibility = input.visibility ?? "public";
   return await client.request<Club>("/api/v1/clubs", {
     method: "POST",
-    body: JSON.stringify({ name, slug, city }),
+    body: JSON.stringify({ name, slug, city, purpose, description: purpose, visibility }),
   });
+}
+
+/** Cancel a pending club join request (mock + API). */
+export async function cancelClubRequest(
+  client: ApiClient,
+  clubId: string,
+): Promise<{ ok: true }> {
+  return await client.request<{ ok: true }>(
+    `/api/v1/clubs/${clubId}/cancel-request`,
+    { method: "POST" },
+  );
 }
 
 export async function createClubInvite(

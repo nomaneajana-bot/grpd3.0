@@ -9,6 +9,8 @@ type SettingsNavRowProps = {
   value?: string;
   destructive?: boolean;
   showChevron?: boolean;
+  /** Non-actionable stub — no chevron, muted value "Bientôt" */
+  comingSoon?: boolean;
   onPress?: () => void;
   onLongPress?: () => void;
 };
@@ -18,24 +20,35 @@ export function SettingsNavRow({
   value,
   destructive = false,
   showChevron = true,
+  comingSoon = false,
   onPress,
   onLongPress,
 }: SettingsNavRowProps) {
+  const displayValue = comingSoon ? value ?? "Bientôt" : value;
+  const actionable = Boolean(onPress || onLongPress) && !comingSoon;
+
   const content = (
     <>
       <Text
-        style={[styles.title, destructive && styles.titleDestructive]}
+        style={[
+          styles.title,
+          destructive && styles.titleDestructive,
+          comingSoon && styles.titleMuted,
+        ]}
         numberOfLines={2}
       >
         {title}
       </Text>
       <View style={styles.right}>
-        {value ? (
-          <Text style={styles.value} numberOfLines={1}>
-            {value}
+        {displayValue ? (
+          <Text
+            style={[styles.value, comingSoon && styles.valueMuted]}
+            numberOfLines={1}
+          >
+            {displayValue}
           </Text>
         ) : null}
-        {showChevron && onPress ? (
+        {showChevron && actionable ? (
           <Ionicons
             name="chevron-forward"
             size={18}
@@ -46,8 +59,16 @@ export function SettingsNavRow({
     </>
   );
 
-  if (!onPress && !onLongPress) {
-    return <View style={styles.row}>{content}</View>;
+  if (!actionable) {
+    return (
+      <View
+        style={styles.row}
+        accessibilityState={{ disabled: true }}
+        accessibilityHint={comingSoon ? "Bientôt disponible" : undefined}
+      >
+        {content}
+      </View>
+    );
   }
 
   return (
@@ -83,6 +104,9 @@ const styles = StyleSheet.create({
   titleDestructive: {
     color: colors.accent.error,
   },
+  titleMuted: {
+    color: colors.text.secondary,
+  },
   right: {
     flexDirection: "row",
     alignItems: "center",
@@ -94,5 +118,9 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     color: colors.text.secondary,
     textAlign: "right",
+  },
+  valueMuted: {
+    color: colors.text.tertiary,
+    fontStyle: "italic",
   },
 });

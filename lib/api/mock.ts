@@ -328,7 +328,7 @@ async function ensureSeedClub(): Promise<Club & { code: string }> {
 }
 
 async function mockCreateClub(
-  input: ClubCreateInput & { slug?: string },
+  input: ClubCreateInput & { slug?: string; purpose?: string | null; description?: string | null },
 ): Promise<Club> {
   const user = await getAuthUser();
   if (!user) throw new ApiError(401, 'Unauthorized');
@@ -338,13 +338,18 @@ async function mockCreateClub(
   if (!name) throw new ApiError(400, 'Name required');
   const slug = input.slug?.trim() || slugify(name);
   const id = randomId('club');
+  const purpose =
+    input.purpose?.trim() ||
+    input.description?.trim() ||
+    null;
+  const visibility = input.visibility === 'members' ? 'members' : 'public';
   const club: Club & { code: string } = {
     id,
     name,
     slug,
     city: input.city?.trim() || null,
-    description: null,
-    visibility: 'public',
+    description: purpose,
+    visibility,
     createdAt: new Date().toISOString(),
     createdById: user.id,
     code: makeInviteCode(slug),
@@ -360,6 +365,22 @@ async function mockCreateClub(
   });
 
   return club;
+}
+
+async function mockCancelClubRequest(clubId: string): Promise<{ ok: true }> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+  const memberships = await readMemberships();
+  const entry = Object.values(memberships).find(
+    (m) =>
+      m.userId === user.id &&
+      m.clubId === clubId &&
+      m.status === 'pending',
+  );
+  if (!entry) throw new ApiError(404, 'Demande introuvable');
+  delete memberships[entry.id];
+  await writeMemberships(memberships);
+  return { ok: true };
 }
 
 async function readClubs(): Promise<MockClubMap> {
@@ -1512,6 +1533,12 @@ export async function mockApiRequest<T>(
   const clubLeaveMatch = path.match(/^\/api\/v1\/clubs\/([^/]+)\/leave$/);
   if (clubLeaveMatch && method === 'POST') {
     return (await mockLeaveClub(clubLeaveMatch[1])) as T;
+  }
+  const clubCancelMatch = path.match(
+    /^\/api\/v1\/clubs\/([^/]+)\/cancel-request$/,
+  );
+  if (clubCancelMatch && method === 'POST') {
+    return (await mockCancelClubRequest(clubCancelMatch[1])) as T;
   }
   if (path.startsWith('/api/v1/clubs/') && path.endsWith('/request')) {
     const clubId = path.split('/api/v1/clubs/')[1]?.split('/')[0];
