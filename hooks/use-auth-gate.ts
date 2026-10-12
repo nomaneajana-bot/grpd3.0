@@ -1,7 +1,7 @@
 import { type Href, router, usePathname } from "expo-router";
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
-import { DEMO_MODE, ONBOARDING_V2 } from "../lib/featureFlags";
+import { ONBOARDING_V2 } from "../lib/featureFlags";
 import { getAuthData } from "../lib/authStore";
 
 function currentPath(pathname: string | undefined): string {
@@ -114,11 +114,6 @@ export function useAuthGate(): {
       clearTimeout(initTimeout);
     };
   }, [pathname]);
-
-  // Soft hint in demo logs
-  if (DEMO_MODE && typeof console !== "undefined") {
-    // no-op — flag imported to keep demo coupling explicit
-  }
 
   return {
     isAuthenticated,

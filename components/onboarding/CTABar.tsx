@@ -67,8 +67,6 @@ export function CTABar({
           Platform.OS === "web" && styles.btnWeb,
         ]}
         disabled={primaryDisabled || primaryLoading}
-        // @ts-expect-error web hitSlop / cursor
-        tabIndex={0}
       >
         {primaryLoading ? (
           <ActivityIndicator color={colors.text.primary} />
@@ -103,6 +101,8 @@ const styles = StyleSheet.create({
   wrap: {
     paddingTop: spacing.sm,
     backgroundColor: colors.background.primary,
+    zIndex: 2,
+    position: "relative",
   },
   wrapWelcome: {
     backgroundColor: "transparent",
