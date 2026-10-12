@@ -272,6 +272,19 @@ export default function ProfileScreen() {
 
         <ProfileSectionHeader title="PROFIL PHYSIQUE" />
         <ProfilePhysicalCard onPress={handlePhysicalProfile} />
+
+        <ProfileSectionHeader title="ENTRAÎNEMENT" />
+        <TouchableOpacity
+          style={styles.trainingRow}
+          onPress={() => router.push("/(tabs)/workouts")}
+          accessibilityRole="button"
+          accessibilityLabel="Entraînement avancé"
+        >
+          <Text style={styles.trainingTitle}>Entraînement avancé</Text>
+          <Text style={styles.trainingSub}>
+            Plans, workouts et séances structurées
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -284,6 +297,9 @@ type ProfileStyles = {
   gearBtn: ViewStyle;
   scroll: ViewStyle;
   content: ViewStyle;
+  trainingRow: ViewStyle;
+  trainingTitle: TextStyle;
+  trainingSub: TextStyle;
 };
 
 const styles = StyleSheet.create<ProfileStyles>({
@@ -320,5 +336,24 @@ const styles = StyleSheet.create<ProfileStyles>({
     paddingHorizontal: profileTheme.screenPaddingHorizontal,
     paddingTop: 4,
     paddingBottom: 40,
+  },
+  trainingRow: {
+    backgroundColor: colors.background.card,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 12,
+    gap: 4,
+  },
+  trainingTitle: {
+    color: colors.text.primary,
+    fontSize: typography.sizes.base,
+    fontWeight: "600",
+  },
+  trainingSub: {
+    color: colors.text.secondary,
+    fontSize: typography.sizes.sm,
   },
 });

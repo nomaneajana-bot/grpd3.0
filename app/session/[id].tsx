@@ -67,7 +67,6 @@ import {
 import {
   getAllSessionsIncludingStored,
   getSessionById,
-  SESSION_MAP,
   apiSessionToSessionData,
   type SessionData,
 } from "../../lib/sessionData";
@@ -84,13 +83,9 @@ import type { WorkoutBlock, WorkoutStep } from "../../lib/workoutTypes";
 
 function formatSessionDetailSubtitle(s: import("../../lib/sessionData").SessionData): string {
   const spot = (s.spot || "").trim();
-  const datePart = s.dateLabel || "";
-  const tm = s.timeMinutes;
-  const timeStr =
-    tm != null && Number.isFinite(tm)
-      ? `${Math.floor(tm / 60)}:${String(tm % 60).padStart(2, "0")}`
-      : "";
-  const parts = [datePart, timeStr, spot].filter(Boolean);
+  // dateLabel already includes HH:MM when built via formatDateLabel — do not append time again
+  const datePart = (s.dateLabel || "").trim();
+  const parts = [datePart, spot].filter(Boolean);
   return parts.join(" · ");
 }
 
@@ -174,11 +169,8 @@ export default function SessionScreen() {
       } catch (err) {
         console.warn("API get session failed, trying local:", err);
       }
-      if (SESSION_MAP[id]) {
-        setSession(SESSION_MAP[id]);
-        setSessionLoadState("ready");
-        return;
-      }
+      // Always use getSessionById so seed sessions get shiftSeedSessionToFuture
+      // (Home and detail must show the same date).
       try {
         const storedSession = await getSessionById(id);
         if (storedSession) {
@@ -827,7 +819,7 @@ export default function SessionScreen() {
                 sessionDetailTab === "info" && styles.tabLabelActive,
               ]}
             >
-              Info
+              Infos
             </Text>
             {sessionDetailTab === "info" ? (
               <View style={styles.tabUnderline} />
@@ -846,7 +838,7 @@ export default function SessionScreen() {
                   sessionDetailTab === "runners" && styles.tabLabelActive,
                 ]}
               >
-                Runners
+                Coureurs
               </Text>
               {sessionDetailTab === "runners" ? (
                 <View style={styles.tabUnderline} />
@@ -899,7 +891,7 @@ export default function SessionScreen() {
                 session.paceGroups.reduce((a, g) => a + g.runnersCount, 0) ||
                   "—",
               ),
-              label: "Runners",
+              label: "Coureurs",
             },
           ]}
         />
