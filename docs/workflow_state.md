@@ -25,6 +25,8 @@
 
 **MVP audit follow-ups (same PR #5):** Session detail uses `getSessionById` (shifted dates match Home); real upcoming ISO dates in create (reject past); walk defaults no longer invent 10 km / 5:00; tabs Découvrir / Mes sorties / Clubs / Profil with Entraînement avancé secondary; club create purpose+visibility; multi-club join; cancel pending; settings stubs `comingSoon`; auth-gate no longer steals onboarding→phone; OTP `000000` remains DEMO_MODE/mock-only.
 
+**MVP audit continuation:** Primary Profil = community (name, city from clubs, clubs, prefs) — PRs/streak/goals/physical moved to `/profile/training`. API modes: `DEMO_MODE` / `EXPO_PUBLIC_USE_MOCK_API` / AsyncStorage mock are explicit; missing `EXPO_PUBLIC_API_URL` in connected mode throws `MISSING_API_URL` (no silent mock). Shared `ScreenContainer` + testIDs for E2E. Build handoff in `docs/BUILD_HANDOFF.md` (cloud EAS blocked).
+
 ---
 
 ## Non-negotiable invariants
