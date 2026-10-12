@@ -23,6 +23,8 @@
 
 **Commit 10 note:** Offline jury prototype. When `EXPO_PUBLIC_DEMO_MODE=true`, `createApiClient` always uses `lib/api/mock.ts` regardless of `EXPO_PUBLIC_API_URL`. Seed lives in `lib/api/demoSeed.ts`. No Prisma / API route changes. Settings Version long-press → Reset demo (clears AsyncStorage + reseeds). Invariant (c): settings club subtitle no longer shows a profile-level group.
 
+**MVP audit follow-ups (same PR #5):** Session detail uses `getSessionById` (shifted dates match Home); real upcoming ISO dates in create (reject past); walk defaults no longer invent 10 km / 5:00; tabs Découvrir / Mes sorties / Clubs / Profil with Entraînement avancé secondary; club create purpose+visibility; multi-club join; cancel pending; settings stubs `comingSoon`; auth-gate no longer steals onboarding→phone; OTP `000000` remains DEMO_MODE/mock-only.
+
 ---
 
 ## Non-negotiable invariants
