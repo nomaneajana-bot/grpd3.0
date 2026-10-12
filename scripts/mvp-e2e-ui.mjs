@@ -58,18 +58,75 @@ async function clearAppStorage() {
   await new Promise((r) => setTimeout(r, 1500));
 }
 
-async function clickTestId(testId, label = testId) {
-  const sel = `[data-testid="${testId}"]`;
-  await page.waitForSelector(sel, { visible: true, timeout: 20000 });
-  await page.click(sel);
+/** Click visible testID; optional aria-label disambiguates stacked auth screens. */
+async function clickTestId(testId, label = testId, ariaLabel = null) {
+  const handle = await page.waitForFunction(
+    (id, aria) => {
+      const nodes = Array.from(
+        document.querySelectorAll(`[data-testid="${id}"]`),
+      );
+      const match = nodes.find((el) => {
+        const style = window.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        const visible =
+          style.visibility !== "hidden" &&
+          style.display !== "none" &&
+          rect.width > 0 &&
+          rect.height > 0;
+        if (!visible) return false;
+        if (aria && el.getAttribute("aria-label") !== aria) return false;
+        return true;
+      });
+      if (match) {
+        match.scrollIntoView({ block: "center" });
+        return true;
+      }
+      return false;
+    },
+    { timeout: 20000 },
+    testId,
+    ariaLabel,
+  );
+  await page.evaluate(
+    (id, aria) => {
+      const nodes = Array.from(
+        document.querySelectorAll(`[data-testid="${id}"]`),
+      );
+      const match = nodes.find((el) => {
+        const style = window.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        const visible =
+          style.visibility !== "hidden" &&
+          style.display !== "none" &&
+          rect.width > 0 &&
+          rect.height > 0;
+        if (!visible) return false;
+        if (aria && el.getAttribute("aria-label") !== aria) return false;
+        return true;
+      });
+      match?.click();
+    },
+    testId,
+    ariaLabel,
+  );
+  void handle;
   results.notes.push(`click:${label}`);
 }
 
 async function typeTestId(testId, value) {
-  const sel = `[data-testid="${testId}"]`;
-  await page.waitForSelector(sel, { visible: true });
-  await page.click(sel, { clickCount: 3 });
-  await page.type(sel, value, { delay: 20 });
+  await page.waitForSelector(`[data-testid="${testId}"]`, { timeout: 20000 });
+  await page.evaluate((id) => {
+    const el = Array.from(
+      document.querySelectorAll(`[data-testid="${id}"]`),
+    ).find((n) => n.getBoundingClientRect().width > 0);
+    if (!el) throw new Error(`No visible ${id}`);
+    el.focus();
+    const proto = window.HTMLInputElement.prototype;
+    const desc = Object.getOwnPropertyDescriptor(proto, "value");
+    desc?.set?.call(el, "");
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }, testId);
+  await page.keyboard.type(value, { delay: 20 });
 }
 
 async function enterOtp(code) {
@@ -90,13 +147,34 @@ async function loginViaUi(phoneDigits, otp = "000000") {
   await shot("01-onboarding-welcome.png");
 
   // Secondary: "J'ai déjà un compte" → real login
-  await clickTestId("cta-secondary", "J'ai déjà un compte");
-  await new Promise((r) => setTimeout(r, 1200));
+  await clickTestId(
+    "cta-secondary",
+    "J'ai déjà un compte",
+    "J'ai déjà un compte",
+  );
+  await page.waitForFunction(() => /\/phone/.test(location.pathname), {
+    timeout: 15000,
+  });
+  await new Promise((r) => setTimeout(r, 800));
   await shot("02-phone.png");
 
-  await typeTestId("phone-input", phoneDigits);
-  await clickTestId("cta-primary", "Recevoir le code");
-  await new Promise((r) => setTimeout(r, 1500));
+  // Clear then type phone via focused visible input
+  await page.evaluate(() => {
+    const el = Array.from(
+      document.querySelectorAll('[data-testid="phone-input"]'),
+    ).find((n) => n.getBoundingClientRect().width > 0);
+    el?.focus();
+  });
+  await page.keyboard.down("Control");
+  await page.keyboard.press("KeyA");
+  await page.keyboard.up("Control");
+  await page.keyboard.press("Backspace");
+  await page.keyboard.type(phoneDigits, { delay: 25 });
+  await new Promise((r) => setTimeout(r, 400));
+  await clickTestId("cta-primary", "Recevoir le code", "Recevoir le code");
+  await page.waitForFunction(() => /verify/i.test(location.pathname), {
+    timeout: 15000,
+  });
   const phoneUrl = page.url();
   record("login_navigated_to_verify", /verify/i.test(phoneUrl), phoneUrl);
   await shot("03-verify.png");
@@ -105,7 +183,7 @@ async function loginViaUi(phoneDigits, otp = "000000") {
   await new Promise((r) => setTimeout(r, 400));
   // Ensure verify CTA fires if auto-complete didn't
   try {
-    await clickTestId("cta-primary", "Vérifier");
+    await clickTestId("cta-primary", "Vérifier", "Vérifier");
   } catch {
     /* may already navigate */
   }
@@ -136,9 +214,10 @@ try {
   const profileText = await bodyText();
   record(
     "profile_no_primary_streak_prs",
-    !/OBJECTIF|RECORDS PERSONNELS|PROFIL PHYSIQUE|Série/i.test(profileText) ||
-      /Entraînement avancé/i.test(profileText),
-    "training link expected; streak/PR blocks should not dominate primary",
+    !/OBJECTIF|RECORDS PERSONNELS|PROFIL PHYSIQUE|SÉRIE EN COURS/i.test(
+      profileText,
+    ) && /Entraînement avancé/i.test(profileText),
+    "primary must not show training metrics blocks",
   );
   record(
     "profile_has_training_link",
@@ -189,29 +268,38 @@ try {
   await page.goto(BASE + "/club/access", { waitUntil: "networkidle0" });
   await new Promise((r) => setTimeout(r, 1200));
   let inviteCode = null;
-  const genClicked = await page.evaluate(() => {
-    const nodes = Array.from(
-      document.querySelectorAll('[role="button"], button, div'),
+  try {
+    await page.waitForSelector('[data-testid="club-generate-invite"]', {
+      timeout: 10000,
+    });
+    await page.evaluate(() => {
+      document
+        .querySelector('[data-testid="club-generate-invite"]')
+        ?.scrollIntoView({ block: "center" });
+    });
+    await clickTestId(
+      "club-generate-invite",
+      "Générer invite",
+      "Générer un code d'invitation",
     );
-    const btn = nodes.find((n) =>
-      /Générer un code/i.test(n.textContent || ""),
+    record("invite_generate_clicked", true);
+    await page.waitForSelector('[data-testid="club-invite-code"]', {
+      timeout: 10000,
+    });
+    inviteCode = await page.evaluate(
+      () =>
+        document
+          .querySelector('[data-testid="club-invite-code"]')
+          ?.textContent?.trim() || null,
     );
-    if (btn) {
-      btn.click();
-      return true;
-    }
-    return false;
-  });
-  record("invite_generate_clicked", genClicked);
-  await new Promise((r) => setTimeout(r, 1200));
-  inviteCode = await page.evaluate(() => {
-    const el = document.querySelector('[class*="inviteCode"], [data-testid="club-invite-code"]');
-    if (el?.textContent?.trim()) return el.textContent.trim();
-    const body = document.body.innerText;
-    const m = body.match(/\b[A-Z0-9]{6,10}\b/);
-    return m ? m[0] : null;
-  });
-  record("invite_code_captured", Boolean(inviteCode), inviteCode || "");
+  } catch (e) {
+    record("invite_generate_clicked", false, String(e.message || e));
+  }
+  record(
+    "invite_code_captured",
+    Boolean(inviteCode && /^[A-Z0-9]{4,12}$/i.test(inviteCode)),
+    inviteCode || "",
+  );
   await shot("10-invite-code.png");
 
   // Create outings via Mes sorties
@@ -222,47 +310,56 @@ try {
 
   for (let i = 0; i < 2; i++) {
     try {
-      await clickTestId("create-outing-btn");
-      await new Promise((r) => setTimeout(r, 1500));
+      await page.goto(BASE + "/my-sessions", { waitUntil: "networkidle0" });
+      await new Promise((r) => setTimeout(r, 1000));
+      await clickTestId("create-outing-btn", "Créer sortie");
+      await page.waitForFunction(
+        () => /session\/create|Créer/.test(location.href + document.body.innerText),
+        { timeout: 15000 },
+      );
+      await new Promise((r) => setTimeout(r, 1000));
       await shot(`12-create-outing-${i + 1}.png`);
-      // Fill minimal create form via labels if present
       const filled = await page.evaluate((n) => {
         const inputs = Array.from(document.querySelectorAll("input, textarea"));
         const spot = inputs.find((el) =>
-          /spot|lieu|marina|endroit/i.test(
-            el.getAttribute("placeholder") || el.getAttribute("aria-label") || "",
+          /spot|lieu|marina|endroit|Corniche/i.test(
+            el.getAttribute("placeholder") ||
+              el.getAttribute("aria-label") ||
+              "",
           ),
         );
         if (spot) {
           spot.focus();
-          spot.value = `Corniche E2E ${n}`;
+          const proto = window.HTMLInputElement.prototype;
+          const desc = Object.getOwnPropertyDescriptor(proto, "value");
+          desc?.set?.call(spot, `Corniche E2E ${n}`);
           spot.dispatchEvent(new Event("input", { bubbles: true }));
         }
         return Boolean(spot);
       }, i + 1);
-      // Submit primary if available
-      try {
-        await clickTestId("cta-primary");
-      } catch {
-        const submitted = await page.evaluate(() => {
-          const nodes = Array.from(
-            document.querySelectorAll('[role="button"], button'),
-          );
-          const btn = nodes.find((n) =>
-            /Créer|Publier|Enregistrer|Continuer/i.test(n.textContent || ""),
-          );
-          if (btn) {
-            btn.click();
-            return true;
-          }
-          return false;
-        });
-        record(`outing_${i + 1}_submit_clicked`, submitted);
-      }
+      const submitted = await page.evaluate(() => {
+        const nodes = Array.from(
+          document.querySelectorAll('[role="button"], button'),
+        );
+        const btn = nodes.find((n) =>
+          /Créer la sortie|Publier|Enregistrer/i.test(n.textContent || ""),
+        );
+        if (btn) {
+          btn.scrollIntoView({ block: "center" });
+          btn.click();
+          return true;
+        }
+        return false;
+      });
+      record(`outing_${i + 1}_submit_clicked`, submitted);
       await new Promise((r) => setTimeout(r, 2000));
-      record(`outing_${i + 1}_form_reached`, true, filled ? "spot filled" : "form opened");
+      record(
+        `outing_${i + 1}_form_reached`,
+        true,
+        filled ? "spot filled" : "form opened",
+      );
     } catch (e) {
-      record(`outing_${i + 1}_form_reached`, false, String(e));
+      record(`outing_${i + 1}_form_reached`, false, String(e.message || e));
     }
   }
 
@@ -282,19 +379,48 @@ try {
   await new Promise((r) => setTimeout(r, 2000));
   await shot("14-session-detail.png");
 
-  // Join / leave if buttons present
+  // Join / leave if buttons present (below fold on detail)
   try {
-    await clickTestId("session-join-btn");
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await new Promise((r) => setTimeout(r, 600));
+    const joinReady = await page.evaluate(() => {
+      const btn =
+        document.querySelector('[data-testid="session-join-btn"]') ||
+        document.querySelector('[data-testid="session-join-confirm"]');
+      if (!btn) return false;
+      btn.scrollIntoView({ block: "center" });
+      btn.click();
+      return true;
+    });
+    record("session_join_clicked", joinReady, joinReady ? "scrolled" : "no btn");
     await new Promise((r) => setTimeout(r, 1500));
-    record("session_join_clicked", true);
     await shot("15-session-joined.png");
-  } catch {
-    try {
-      await clickTestId("session-join-confirm");
-      record("session_join_clicked", true, "confirm");
-    } catch (e) {
-      record("session_join_clicked", false, String(e.message || e));
+    // Cancel / leave if available
+    const left = await page.evaluate(() => {
+      const leave = document.querySelector('[data-testid="session-leave-btn"]');
+      if (!leave) return false;
+      leave.scrollIntoView({ block: "center" });
+      leave.click();
+      return true;
+    });
+    if (left) {
+      await new Promise((r) => setTimeout(r, 800));
+      // confirm dialog if any
+      await page.evaluate(() => {
+        const nodes = Array.from(
+          document.querySelectorAll('[role="button"], button'),
+        );
+        const conf = nodes.find((n) =>
+          /^Quitter$/i.test((n.textContent || "").trim()),
+        );
+        conf?.click();
+      });
+      record("session_leave_clicked", true);
+    } else {
+      record("session_leave_clicked", false, "leave btn absent after join");
     }
+  } catch (e) {
+    record("session_join_clicked", false, String(e.message || e));
   }
 
   // Bad input: empty club create

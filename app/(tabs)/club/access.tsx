@@ -57,15 +57,20 @@ export default function ClubAccessScreen() {
     loadMemberships();
   }, [loadMemberships]);
 
+  const approvedMemberships = memberships.filter((m) => m.status === "approved");
+  /** Prefer a club where the user can administer invites (multi-club safe). */
+  const adminMembership =
+    approvedMemberships.find(
+      (m) => m.role === "admin" || m.role === "coach",
+    ) ?? null;
   const primaryMembership =
-    memberships.find((m) => m.status === "approved") ??
+    adminMembership ??
+    approvedMemberships[0] ??
     memberships.find((m) => m.status === "pending") ??
     null;
   const isApprovedMember = primaryMembership?.status === "approved";
   const isPendingMember = primaryMembership?.status === "pending";
-  const isCoachOrAdmin =
-    isApprovedMember &&
-    (primaryMembership?.role === "admin" || primaryMembership?.role === "coach");
+  const isCoachOrAdmin = Boolean(adminMembership);
 
   const handleJoinByCode = async () => {
     if (!inviteCode.trim()) {
@@ -196,6 +201,9 @@ export default function ClubAccessScreen() {
               ]}
               onPress={handleGenerateInvite}
               disabled={isGeneratingInvite}
+              accessibilityRole="button"
+              accessibilityLabel="Générer un code d'invitation"
+              testID="club-generate-invite"
             >
               <Text style={styles.secondaryButtonText}>
                 Générer un code d&apos;invitation
@@ -203,13 +211,22 @@ export default function ClubAccessScreen() {
             </Pressable>
             {generatedInviteCode && (
               <View style={styles.inviteRow}>
-                <Text style={styles.inviteCode}>{generatedInviteCode}</Text>
+                <Text
+                  style={styles.inviteCode}
+                  testID="club-invite-code"
+                  accessibilityLabel={`Code ${generatedInviteCode}`}
+                >
+                  {generatedInviteCode}
+                </Text>
                 <Pressable
                   style={({ pressed }) => [
                     styles.copyButton,
                     pressed && styles.copyButtonPressed,
                   ]}
                   onPress={handleCopyInvite}
+                  accessibilityRole="button"
+                  accessibilityLabel="Copier le code"
+                  testID="club-copy-invite"
                 >
                   <Text style={styles.copyButtonText}>Copier</Text>
                 </Pressable>
