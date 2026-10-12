@@ -19,19 +19,24 @@ export function ProfileUserCard({
   onEditPress,
 }: ProfileUserCardProps) {
   return (
-    <View style={styles.card}>
+    <View style={styles.card} testID="profile-user-card">
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{initial}</Text>
       </View>
       <View style={styles.meta}>
-        <Text style={styles.name}>{name}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+        <Text style={styles.name} testID="profile-name">
+          {name}
+        </Text>
+        <Text style={styles.subtitle} testID="profile-subtitle">
+          {subtitle}
+        </Text>
       </View>
       <Pressable
         onPress={onEditPress}
         hitSlop={8}
         accessibilityRole="button"
         accessibilityLabel="Modifier le profil"
+        testID="profile-edit"
       >
         <Ionicons
           name="pencil-outline"
