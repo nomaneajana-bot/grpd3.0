@@ -116,11 +116,11 @@ export function todayISO(): string {
  * Next `count` calendar days starting from today (inclusive), as ISO dates.
  * Used by session create date picker — real dates, never invented weekdays.
  */
-export function upcomingDateOptions(count = 14): Array<{
+export function upcomingDateOptions(count = 14): {
   dateISO: string;
   label: string;
-}> {
-  const options: Array<{ dateISO: string; label: string }> = [];
+}[] {
+  const options: { dateISO: string; label: string }[] = [];
   const dayNames = [
     "DIMANCHE",
     "LUNDI",

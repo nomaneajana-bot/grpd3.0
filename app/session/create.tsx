@@ -2385,7 +2385,7 @@ export default function CreateSessionScreen() {
               <Text style={styles.cardTitle}>Groupes & allures</Text>
             </View>
             <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>Utiliser des groupes d'allure</Text>
+              <Text style={styles.fieldLabel}>Utiliser des groupes d&apos;allure</Text>
               <Switch
                 value={usePaceGroups}
                 onValueChange={setUsePaceGroups}
