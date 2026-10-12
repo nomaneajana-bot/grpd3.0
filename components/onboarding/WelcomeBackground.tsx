@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
   wrap: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 0,
+    pointerEvents: "none",
   },
   linear: {
     ...StyleSheet.absoluteFillObject,

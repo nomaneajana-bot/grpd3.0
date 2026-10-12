@@ -58,6 +58,8 @@ export function CTABar({
       ) : null}
       <Pressable
         onPress={onPrimaryPress}
+        accessibilityRole="button"
+        accessibilityLabel={primaryLabel}
         style={({ pressed }) => [
           styles.primaryBtn,
           (primaryDisabled || primaryLoading) && styles.primaryDisabled,
@@ -65,6 +67,8 @@ export function CTABar({
           Platform.OS === "web" && styles.btnWeb,
         ]}
         disabled={primaryDisabled || primaryLoading}
+        // @ts-expect-error web hitSlop / cursor
+        tabIndex={0}
       >
         {primaryLoading ? (
           <ActivityIndicator color={colors.text.primary} />
