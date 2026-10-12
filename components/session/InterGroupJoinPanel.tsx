@@ -70,7 +70,13 @@ export function InterGroupJoinPanel({
 
   if (hasStoredJoin) {
     return (
-      <Pressable style={styles.leaveBtn} onPress={onLeave}>
+      <Pressable
+        style={styles.leaveBtn}
+        onPress={onLeave}
+        accessibilityRole="button"
+        accessibilityLabel="Quitter cette séance"
+        testID="session-leave-btn"
+      >
         <Text style={styles.leaveText}>Quitter cette séance</Text>
       </Pressable>
     );

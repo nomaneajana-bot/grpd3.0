@@ -44,17 +44,37 @@ async function shot(name) {
   return file;
 }
 
-async function clearAppStorage() {
-  await page.goto(BASE + "/onboarding", { waitUntil: "networkidle0", timeout: 90000 });
-  await page.evaluate(() => {
+async function clearAppStorage({ preserveMockWorld = false } = {}) {
+  await page.goto(BASE + "/onboarding", {
+    waitUntil: "networkidle0",
+    timeout: 90000,
+  });
+  await page.evaluate((preserve) => {
     try {
-      localStorage.clear();
-      sessionStorage.clear();
+      if (!preserve) {
+        localStorage.clear();
+        sessionStorage.clear();
+        return;
+      }
+      // Keep mock clubs/sessions/invites; only drop auth so another identity can login.
+      const authKeys = [
+        "grpd_auth_user_v1",
+        "grpd_auth_tokens_v1",
+        "grpd_device_id_v1",
+        "grpd_use_mock_api_v1",
+        "grpd_login_phone_v1",
+        "grpd_login_otp_request_v1",
+        "grpd_onboarding_v1",
+      ];
+      for (const k of authKeys) localStorage.removeItem(k);
     } catch {
       /* ignore */
     }
+  }, preserveMockWorld);
+  await page.goto(BASE + "/onboarding", {
+    waitUntil: "networkidle0",
+    timeout: 90000,
   });
-  await page.goto(BASE + "/onboarding", { waitUntil: "networkidle0", timeout: 90000 });
   await new Promise((r) => setTimeout(r, 1500));
 }
 
@@ -142,9 +162,13 @@ async function bodyText() {
   return page.evaluate(() => document.body.innerText || "");
 }
 
-async function loginViaUi(phoneDigits, otp = "000000") {
-  await clearAppStorage();
-  await shot("01-onboarding-welcome.png");
+async function loginViaUi(
+  phoneDigits,
+  otp = "000000",
+  { preserveMockWorld = false, shotPrefix = "" } = {},
+) {
+  await clearAppStorage({ preserveMockWorld });
+  await shot(`${shotPrefix}01-onboarding-welcome.png`);
 
   // Secondary: "J'ai déjà un compte" → real login
   await clickTestId(
@@ -214,10 +238,10 @@ try {
   const profileText = await bodyText();
   record(
     "profile_no_primary_streak_prs",
-    !/OBJECTIF|RECORDS PERSONNELS|PROFIL PHYSIQUE|SÉRIE EN COURS/i.test(
+    !/SÉRIE EN COURS|RECORDS PERSONNELS|Pas de PR pour l'instant|Sub-50 sur 10/i.test(
       profileText,
     ) && /Entraînement avancé/i.test(profileText),
-    "primary must not show training metrics blocks",
+    "primary must not show streak/PR/goal cards",
   );
   record(
     "profile_has_training_link",
@@ -342,7 +366,9 @@ try {
           document.querySelectorAll('[role="button"], button'),
         );
         const btn = nodes.find((n) =>
-          /Créer la sortie|Publier|Enregistrer/i.test(n.textContent || ""),
+          /Publier la séance|Créer une séance|Enregistrer/i.test(
+            n.textContent || "",
+          ),
         );
         if (btn) {
           btn.scrollIntoView({ block: "center" });
@@ -379,25 +405,46 @@ try {
   await new Promise((r) => setTimeout(r, 2000));
   await shot("14-session-detail.png");
 
-  // Join / leave if buttons present (below fold on detail)
+  // Join / leave if buttons present (RN ScrollView — scroll element into view)
   try {
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await new Promise((r) => setTimeout(r, 600));
-    const joinReady = await page.evaluate(() => {
-      const btn =
+    const joinReady = await page.evaluate(async () => {
+      const pick = () =>
         document.querySelector('[data-testid="session-join-btn"]') ||
-        document.querySelector('[data-testid="session-join-confirm"]');
-      if (!btn) return false;
+        document.querySelector('[data-testid="session-join-confirm"]') ||
+        Array.from(document.querySelectorAll('[role="button"], button')).find(
+          (n) => /^S'inscrire|^Confirmer$/i.test((n.textContent || "").trim()),
+        );
+      let btn = pick();
+      if (!btn) {
+        // Nudge nested scrollables downward
+        document
+          .querySelectorAll('[class*="ScrollView"], [data-testid], div')
+          .forEach((el) => {
+            if (el.scrollHeight > el.clientHeight + 40) {
+              el.scrollTop = el.scrollHeight;
+            }
+          });
+        await new Promise((r) => setTimeout(r, 200));
+        btn = pick();
+      }
+      if (!btn) return { ok: false, reason: "no btn" };
       btn.scrollIntoView({ block: "center" });
       btn.click();
-      return true;
+      return { ok: true, label: (btn.textContent || "").slice(0, 40) };
     });
-    record("session_join_clicked", joinReady, joinReady ? "scrolled" : "no btn");
+    record(
+      "session_join_clicked",
+      Boolean(joinReady?.ok),
+      joinReady?.label || joinReady?.reason || "",
+    );
     await new Promise((r) => setTimeout(r, 1500));
     await shot("15-session-joined.png");
-    // Cancel / leave if available
     const left = await page.evaluate(() => {
-      const leave = document.querySelector('[data-testid="session-leave-btn"]');
+      const leave =
+        document.querySelector('[data-testid="session-leave-btn"]') ||
+        Array.from(document.querySelectorAll('[role="button"], button')).find(
+          (n) => /Quitter cette séance/i.test(n.textContent || ""),
+        );
       if (!leave) return false;
       leave.scrollIntoView({ block: "center" });
       leave.click();
@@ -405,7 +452,6 @@ try {
     });
     if (left) {
       await new Promise((r) => setTimeout(r, 800));
-      // confirm dialog if any
       await page.evaluate(() => {
         const nodes = Array.from(
           document.querySelectorAll('[role="button"], button'),
@@ -453,9 +499,12 @@ try {
   await shot("18-home-desktop.png");
   record("desktop_home_loaded", /Découvrir/i.test(await bodyText()));
 
-  // --- Identity B: join with invite (fresh login) ---
+  // --- Identity B: join with invite (keep mock clubs/invites) ---
   if (inviteCode) {
-    const okB = await loginViaUi("0622222222");
+    const okB = await loginViaUi("0622222222", "000000", {
+      preserveMockWorld: true,
+      shotPrefix: "b-",
+    });
     record("login_identity_b", okB);
     if (okB) {
       await page.goto(BASE + "/club/access", { waitUntil: "networkidle0" });
