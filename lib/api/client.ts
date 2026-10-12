@@ -1,11 +1,12 @@
 import type { ApiEnvelope, ApiErrorPayload } from "../../types/api";
-import {
-  getAccessToken as getStoredAccessToken,
-  shouldUseMockApi,
-} from "../authStore";
-import { DEMO_MODE } from "../featureFlags";
+import { getAccessToken as getStoredAccessToken } from "../authStore";
 import { ApiError } from "./errors";
-import { isMockEnabled, mockApiRequest } from "./mock";
+import {
+  assertConnectedApiUrl,
+  getConfiguredApiUrl,
+  resolveApiTransport,
+} from "./mode";
+import { mockApiRequest } from "./mock";
 
 type ApiClientOptions = {
   baseUrl?: string;
@@ -18,7 +19,7 @@ type RequestOptions = {
 };
 
 function getDefaultBaseUrl(): string {
-  return process.env.EXPO_PUBLIC_API_URL ?? "";
+  return getConfiguredApiUrl();
 }
 
 function joinUrl(baseUrl: string, path: string): string {
@@ -58,13 +59,11 @@ export class ApiClient {
     init: RequestInit = {},
     options: RequestOptions = {},
   ): Promise<T> {
-    const url = joinUrl(this.baseUrl, path);
     const headers = new Headers(init.headers);
-    // DEMO_MODE always forces the mock API regardless of EXPO_PUBLIC_API_URL
-    const useMock =
-      DEMO_MODE ||
-      (await shouldUseMockApi()) ||
-      isMockEnabled(this.baseUrl);
+    const transport = await resolveApiTransport(this.baseUrl);
+    const useMock = transport.useMock;
+    const effectiveBase = useMock ? this.baseUrl : transport.apiUrl || this.baseUrl;
+    const url = joinUrl(effectiveBase, path);
 
     if (options.auth !== false && this.getAccessToken) {
       const token = await this.getAccessToken();
@@ -76,6 +75,8 @@ export class ApiClient {
     if (useMock) {
       return await mockApiRequest<T>(path, { ...init, headers });
     }
+
+    assertConnectedApiUrl(transport.apiUrl || this.baseUrl);
 
     if (init.body && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");

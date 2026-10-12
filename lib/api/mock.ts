@@ -105,13 +105,7 @@ const DEMO_USER_PACE_SECONDS_PER_KM = 465;
 const ACCESS_TOKEN_TTL = 60 * 60; // 1h
 const REFRESH_TOKEN_TTL = 60 * 60 * 24 * 30; // 30d
 
-export function isMockEnabled(baseUrl?: string): boolean {
-  // Jury prototype: always offline mock when DEMO_MODE is on
-  if (DEMO_MODE) return true;
-  const explicit = process.env.EXPO_PUBLIC_USE_MOCK_API === 'true';
-  const hasBaseUrl = Boolean((baseUrl ?? process.env.EXPO_PUBLIC_API_URL ?? '').trim());
-  return explicit || !hasBaseUrl;
-}
+export { isMockEnabled } from './mode';
 
 /** Clear AsyncStorage and reseed Casablanca demo world. */
 export async function resetDemoData(): Promise<void> {
