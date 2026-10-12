@@ -66,6 +66,8 @@ import {
     getWorkout,
     type RunTypeId as WorkoutRunTypeId,
 } from "../../lib/workoutStore";
+import { formatSessionDistanceLabel } from "../../lib/sessionDisplay";
+
 import {
     buildCoachContext,
     computeAttendedStreakCount,
@@ -412,6 +414,9 @@ export default function HomeScreen() {
               onPress={() =>
                 router.push(`/session/${nextHighlightSession.id}`)
               }
+              accessibilityRole="button"
+              accessibilityLabel={`Prochaine séance ${nextHighlightSession.title}`}
+              testID={`session-card-${nextHighlightSession.id}`}
             >
               <View style={styles.nextHeroCard}>
                 <Text style={styles.nextKicker}>PROCHAINE SÉANCE</Text>
@@ -423,7 +428,9 @@ export default function HomeScreen() {
                     <Text style={styles.nextMeta}>
                       {nextHighlightSession.dateLabel} ·{" "}
                       {nextHighlightSession.spot} ·{" "}
-                      {nextHighlightSession.estimatedDistanceKm} km
+                      {formatSessionDistanceLabel(
+                        nextHighlightSession.estimatedDistanceKm,
+                      )}
                     </Text>
                     <View style={styles.tagRow}>
                       {nextHighlightSession.visibility !== "members" && (
@@ -532,6 +539,8 @@ export default function HomeScreen() {
                       router.push(`/session/${session.id}`);
                     }}
                     accessibilityRole="button"
+                    accessibilityLabel={session.title}
+                    testID={`session-card-${session.id}`}
                   >
                     <Card style={styles.nearbyCard}>
                       <View style={styles.nearbyTopRow}>

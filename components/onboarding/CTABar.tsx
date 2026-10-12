@@ -52,7 +52,13 @@ export function CTABar({
       ]}
     >
       {topLinkLabel && onTopLinkPress ? (
-        <Pressable onPress={onTopLinkPress} style={styles.topLinkWrap}>
+        <Pressable
+          onPress={onTopLinkPress}
+          style={styles.topLinkWrap}
+          accessibilityRole="button"
+          accessibilityLabel={topLinkLabel}
+          testID="cta-top-link"
+        >
           <Text style={styles.topLink}>{topLinkLabel}</Text>
         </Pressable>
       ) : null}
@@ -60,6 +66,7 @@ export function CTABar({
         onPress={onPrimaryPress}
         accessibilityRole="button"
         accessibilityLabel={primaryLabel}
+        testID="cta-primary"
         style={({ pressed }) => [
           styles.primaryBtn,
           (primaryDisabled || primaryLoading) && styles.primaryDisabled,
@@ -82,7 +89,13 @@ export function CTABar({
         )}
       </Pressable>
       {secondaryLabel && onSecondaryPress ? (
-        <Pressable onPress={onSecondaryPress} style={styles.secondaryWrap}>
+        <Pressable
+          onPress={onSecondaryPress}
+          style={styles.secondaryWrap}
+          accessibilityRole="button"
+          accessibilityLabel={secondaryLabel}
+          testID="cta-secondary"
+        >
           <Text
             style={[
               styles.secondaryText,

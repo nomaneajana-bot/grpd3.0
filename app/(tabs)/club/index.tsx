@@ -22,8 +22,10 @@ import { GroupedList } from "@/components/redesign/GroupedList";
 import { SectionHeader } from "@/components/redesign/SectionHeader";
 import { SectionLabel } from "@/components/redesign/SectionLabel";
 import { redesignTheme } from "@/constants/redesignTheme";
+import { ScreenContainer } from "@/components/ui/ScreenContainer";
 import { Toast } from "@/components/ui/Toast";
 import { colors, spacing } from "@/constants/ui";
+
 import { useToast } from "@/hooks/useToast";
 import {
   cancelClubRequest,
@@ -241,7 +243,8 @@ export default function ClubScreen() {
     : "Espace privé · validation admin.";
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScreenContainer>
       {toast && (
         <Toast
           message={toast.message}
@@ -251,12 +254,16 @@ export default function ClubScreen() {
       )}
 
       <View style={styles.toprow}>
-        <Text style={styles.pg}>Clubs</Text>
+        <Text style={styles.pg} accessibilityRole="header">
+          Clubs
+        </Text>
         <Text style={styles.roleSub}>{roleSubtitle}</Text>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
+        testID="clubs-scroll"
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -445,6 +452,7 @@ export default function ClubScreen() {
           </>
         )}
       </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }

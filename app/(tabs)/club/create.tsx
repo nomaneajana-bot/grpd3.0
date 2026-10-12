@@ -89,6 +89,7 @@ export default function ClubCreateScreen() {
               autoCapitalize="words"
               editable={!isSubmitting}
               accessibilityLabel="Nom du club"
+              testID="club-name-input"
             />
           </View>
           <View style={styles.fieldRow}>
@@ -102,6 +103,7 @@ export default function ClubCreateScreen() {
               autoCapitalize="words"
               editable={!isSubmitting}
               accessibilityLabel="Ville"
+              testID="club-city-input"
             />
           </View>
           <View style={styles.fieldRow}>
@@ -147,6 +149,7 @@ export default function ClubCreateScreen() {
             disabled={isSubmitting}
             accessibilityRole="button"
             accessibilityLabel="Créer le club"
+            testID="club-create-submit"
           >
             <Text style={styles.primaryButtonText}>
               {isSubmitting ? "Création…" : "Créer le club"}

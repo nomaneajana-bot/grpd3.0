@@ -230,6 +230,8 @@ export default function ClubAccessScreen() {
               placeholderTextColor={colors.text.tertiary}
               autoCapitalize="characters"
               editable={!isSubmitting}
+              accessibilityLabel="Code d'invitation"
+              testID="club-invite-code-input"
             />
           </View>
           <Pressable
@@ -239,6 +241,9 @@ export default function ClubAccessScreen() {
             ]}
             onPress={handleJoinByCode}
             disabled={isSubmitting}
+            accessibilityRole="button"
+            accessibilityLabel="Rejoindre avec code"
+            testID="club-join-by-code"
           >
             <Text style={styles.primaryButtonText}>Rejoindre</Text>
           </Pressable>
@@ -309,6 +314,9 @@ export default function ClubAccessScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push("/(tabs)/club/create" as Href);
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Créer un club"
+            testID="club-create-nav"
           >
             <Text style={styles.createButtonText}>Créer un club</Text>
           </Pressable>

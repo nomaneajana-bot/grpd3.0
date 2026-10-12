@@ -139,6 +139,9 @@ export function InterGroupJoinPanel({
             ]}
             onPress={onJoin}
             disabled={isPublishing}
+            accessibilityRole="button"
+            accessibilityLabel="Confirmer l'inscription"
+            testID="session-join-confirm"
           >
             <Text style={styles.joinBtnPrimaryText}>
               {isPublishing ? "Inscription…" : "Confirmer"}
@@ -160,6 +163,9 @@ export function InterGroupJoinPanel({
       ]}
       onPress={onJoin}
       disabled={isPublishing}
+      accessibilityRole="button"
+      accessibilityLabel="S'inscrire à la séance"
+      testID="session-join-btn"
     >
       <Text style={styles.joinBtnPrimaryText}>
         {isPublishing ? "Inscription…" : "S'inscrire"}

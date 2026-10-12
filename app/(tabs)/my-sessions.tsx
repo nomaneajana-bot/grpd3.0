@@ -24,8 +24,10 @@ import { Tag } from "../../components/redesign/Tag";
 import { Card } from "../../components/ui/Card";
 import { Chip } from "../../components/ui/Chip";
 import { LoadingState } from "../../components/ui/LoadingState";
+import { ScreenContainer } from "../../components/ui/ScreenContainer";
 import { CoachWeeklyPlan } from "../../components/coach/CoachWeeklyPlan";
 import { borderRadius, colors, hairline, typography } from "../../constants/ui";
+
 import { createApiClient, getMySessions } from "../../lib/api";
 import {
     getJoinedSessions,
@@ -399,6 +401,7 @@ export default function MySessionsScreen() {
 
   return (
     <View style={styles.container}>
+      <ScreenContainer>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -409,6 +412,7 @@ export default function MySessionsScreen() {
           },
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -424,7 +428,9 @@ export default function MySessionsScreen() {
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <View style={styles.headerTextContainer}>
-              <Text style={styles.headerTitle}>Mes séances</Text>
+              <Text style={styles.headerTitle} accessibilityRole="header">
+                Mes sorties
+              </Text>
               <Text style={styles.headerSubtitle}>
                 Ton agenda de séances.
               </Text>
@@ -434,6 +440,9 @@ export default function MySessionsScreen() {
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={styles.createPill}
               activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Créer une sortie"
+              testID="create-outing-btn"
             >
               <Text style={styles.createPillText}>Créer</Text>
             </TouchableOpacity>
@@ -789,6 +798,7 @@ export default function MySessionsScreen() {
           </View>
         )}
       </ScrollView>
+      </ScreenContainer>
     </View>
   );
 }

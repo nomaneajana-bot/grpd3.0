@@ -26,6 +26,12 @@ import {
 } from "../../components/session/SessionRunnersPanel";
 import { InterGroupJoinPanel } from "../../components/session/InterGroupJoinPanel";
 import { borderRadius, colors, hairline, typography } from "../../constants/ui";
+import {
+  formatSessionDistanceKm,
+  formatSessionDistanceLabel,
+  formatSessionPaceLabel,
+} from "../../lib/sessionDisplay";
+
 import { buildCoachContext, type CoachContext } from "../../lib/coach";
 import {
     getJoinedSession,
@@ -877,12 +883,12 @@ export default function SessionScreen() {
         <StatGrid3
           cells={[
             {
-              value: String(session.estimatedDistanceKm),
+              value: formatSessionDistanceKm(session.estimatedDistanceKm),
               sub: "km",
               label: "Distance",
             },
             {
-              value: session.targetPace.replace(/\s*\/km\s*/i, "").trim(),
+              value: formatSessionPaceLabel(session.targetPace),
               label: "/km",
               valueColor: colors.text.accent,
             },
@@ -895,6 +901,7 @@ export default function SessionScreen() {
             },
           ]}
         />
+
 
         {/* Session Details Card - on top (Type de course first) */}
         <View style={styles.card}>
@@ -914,7 +921,7 @@ export default function SessionScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Distance</Text>
             <Text style={styles.infoValue}>
-              {session.estimatedDistanceKm} km
+              {formatSessionDistanceLabel(session.estimatedDistanceKm)}
             </Text>
           </View>
 
@@ -1405,6 +1412,9 @@ export default function SessionScreen() {
                 style={styles.leaveButton}
                 activeOpacity={0.8}
                 onPress={handleLeave}
+                accessibilityRole="button"
+                accessibilityLabel="Quitter cette séance"
+                testID="session-leave-btn"
               >
                 <Text style={styles.leaveButtonText}>
                   Quitter cette séance
