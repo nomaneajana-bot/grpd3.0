@@ -1,5 +1,5 @@
 {
-  "sha": "d511ac57923cd52da6a2669e765fe09b1ef0b011",
+  "sha": "61889bcc8658d8100b199ea9c3ef522118957cb2",
   "referenceRoute": "/reference/green-home",
   "liveDiscover": "/",
   "tokenSource": "components/experiences/ExperienceUI.tsx",
