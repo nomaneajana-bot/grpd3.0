@@ -473,18 +473,15 @@ try {
           };
         });
         if (state.hasLeave) {
-          // Already joined — exercise leave (dialog handler accepts confirm)
-          await Promise.all([
-            page.waitForEvent("dialog", { timeout: 5000 }).catch(() => null),
-            page.evaluate(() => {
-              document
-                .querySelector('[data-testid="session-leave-btn"]')
-                ?.scrollIntoView({ block: "center" });
-              document
-                .querySelector('[data-testid="session-leave-btn"]')
-                ?.click();
-            }),
-          ]);
+          // Already joined — exercise leave (page dialog listener accepts confirm)
+          await page.evaluate(() => {
+            document
+              .querySelector('[data-testid="session-leave-btn"]')
+              ?.scrollIntoView({ block: "center" });
+            document
+              .querySelector('[data-testid="session-leave-btn"]')
+              ?.click();
+          });
           await new Promise((r) => setTimeout(r, 1000));
           // Re-open and join again
           await page.goto(BASE + `/session/${sid}`, {
@@ -531,21 +528,19 @@ try {
             await shot("15-session-joined.png");
             let leftOk = false;
             try {
-              // Click leave; dialog handler accepts window.confirm from confirmAction()
-              await Promise.all([
-                page
-                  .waitForEvent("dialog", { timeout: 5000 })
-                  .catch(() => null),
-                page.evaluate(() => {
-                  document
-                    .querySelector('[data-testid="session-leave-btn"]')
-                    ?.scrollIntoView({ block: "center" });
-                  document
-                    .querySelector('[data-testid="session-leave-btn"]')
-                    ?.click();
-                }),
-              ]);
-              await new Promise((r) => setTimeout(r, 1200));
+              // Prefer ElementHandle click so window.confirm can be accepted by
+              // the page "dialog" listener without blocking Runtime.evaluate.
+              const leaveHandle = await page.$(
+                '[data-testid="session-leave-btn"]',
+              );
+              if (leaveHandle) {
+                await leaveHandle.evaluate((el) =>
+                  el.scrollIntoView({ block: "center" }),
+                );
+                await leaveHandle.click();
+                await leaveHandle.dispose();
+              }
+              await new Promise((r) => setTimeout(r, 1500));
               leftOk = await page.evaluate(() => {
                 const leave = document.querySelector(
                   '[data-testid="session-leave-btn"]',
