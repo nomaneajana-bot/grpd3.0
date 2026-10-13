@@ -68,7 +68,7 @@ export function WelcomeBackground() {
         </Svg>
       ) : null}
       <LinearGradient
-        colors={["rgba(0, 0, 0, 0)", "#000000"]}
+        colors={["rgba(17, 18, 20, 0)", "#111214"]}
         locations={[0.5, 1]}
         style={styles.linear}
         start={{ x: 0.5, y: 0 }}

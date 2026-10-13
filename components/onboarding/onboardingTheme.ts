@@ -7,8 +7,8 @@ export const onboardingColors = {
   greenBorder: "rgba(77, 217, 144, 0.35)",
   greenText: colors.text.success,
   tagMarcheBg: "#1A3A28",
-  tagMarcheText: "#4DD990",
-  radialBlue: "rgba(47, 123, 255, 0.35)",
+  tagMarcheText: colors.accent.sage,
+  radialBlue: "rgba(195, 213, 179, 0.35)",
   iconTileBg: colors.accent.primaryDim,
   /** Muted copy on dark backgrounds (HTML: rgba(255,255,255,0.62)). */
   textMuted: "rgba(255, 255, 255, 0.62)",
@@ -18,7 +18,7 @@ export const onboardingColors = {
 export const welcomeTheme = {
   textMuted: onboardingColors.textMuted,
   heroMutedColor: "rgba(255, 255, 255, 0.50)",
-  background: "#000000",
+  background: "#111214",
   fontFamily: welcomeFontFamily,
   progressTrack: "rgba(255, 255, 255, 0.08)",
   heroSize: 44,
