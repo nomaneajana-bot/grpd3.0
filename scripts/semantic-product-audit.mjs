@@ -1026,8 +1026,11 @@ let membersOutingId = null;
   let actual = "";
   let shotPath = "";
   try {
-    // Member joins outing
-    const ok1 = await loginViaUi(PERSONA_MEMBER.phone, { label: "sw1" });
+    // Preserve clubs/memberships; clear only auth + joinedSessions (per-identity).
+    const ok1 = await loginViaUi(PERSONA_MEMBER.phone, {
+      label: "sw1",
+      preserveMockWorld: true,
+    });
     if (!ok1) throw new Error("member login failed");
     if (inviteCodeClubA) {
       await goto("/club/access");
@@ -1051,8 +1054,11 @@ let membersOutingId = null;
     );
     await shot("S9-member-joined");
 
-    // Switch to outsider
-    const ok2 = await loginViaUi(PERSONA_OUTSIDER.phone, { label: "sw2" });
+    // Switch identity without wiping club world
+    const ok2 = await loginViaUi(PERSONA_OUTSIDER.phone, {
+      label: "sw2",
+      preserveMockWorld: true,
+    });
     if (!ok2) throw new Error("outsider login failed");
     await goto(`/session/${sid}`);
     const outsiderState = await page.evaluate(() => ({
@@ -1084,8 +1090,13 @@ let membersOutingId = null;
     id,
     title: "Same-device account switch does not leak attendance",
     persona: `${PERSONA_MEMBER.id}→${PERSONA_OUTSIDER.id}`,
-    setup: "Member joins outing; logout via fresh login as outsider",
-    steps: ["Member join", "Outsider login (storage cleared)", "Open same outing"],
+    setup:
+      "Member joins outing; switch account via real OTP (auth cleared, club world preserved)",
+    steps: [
+      "Member join",
+      "Outsider login (auth cleared, clubs preserved)",
+      "Open same outing",
+    ],
     expectedMeaning: "Attendance is per-identity, not device-global after switch",
     actual,
     result,
@@ -1101,7 +1112,10 @@ let membersOutingId = null;
   let actual = "";
   let shotPath = "";
   try {
-    const ok = await loginViaUi(PERSONA_ORG.phone, { label: "pol" });
+    const ok = await loginViaUi(PERSONA_ORG.phone, {
+      label: "pol",
+      preserveMockWorld: true,
+    });
     if (!ok) throw new Error("login failed");
     await goto(`/session/${publicOutingId || "explore-sortie-longue-facile"}`);
     shotPath = await shot("S10-session-detail");
@@ -1170,7 +1184,10 @@ let membersOutingId = null;
   let actual = "";
   let shotPath = "";
   try {
-    const ok = await loginViaUi(PERSONA_MEMBER.phone, { label: "labels" });
+    const ok = await loginViaUi(PERSONA_MEMBER.phone, {
+      label: "labels",
+      preserveMockWorld: true,
+    });
     if (!ok) throw new Error("login failed");
     await goto("/session/create");
     const createText = await bodyText();
@@ -1213,6 +1230,77 @@ let membersOutingId = null;
   });
 }
 
+/** Ensure Club Alpha + invite exist; return a usable invite code. */
+async function ensureClubAInvite() {
+  if (inviteCodeClubA) {
+    // Probe whether code still resolves by trying to open access as org
+    return inviteCodeClubA;
+  }
+  const okOrg = await loginViaUi(PERSONA_ORG.phone, {
+    label: "ensure-club-a",
+    preserveMockWorld: true,
+  });
+  if (!okOrg) throw new Error("org login failed while ensuring club A");
+  await goto("/club/access");
+  await clickTestId("club-create-nav");
+  await new Promise((r) => setTimeout(r, 1000));
+  await typeTestId("club-name-input", clubAName);
+  await typeTestId("club-city-input", "Casablanca");
+  await clickTestId("club-create-submit");
+  await new Promise((r) => setTimeout(r, 2000));
+  await goto("/club/access");
+  await new Promise((r) => setTimeout(r, 800));
+  await clickTestId("club-generate-invite");
+  await new Promise((r) => setTimeout(r, 1200));
+  inviteCodeClubA = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="club-invite-code"]');
+    return el?.textContent?.trim() || null;
+  });
+  if (!inviteCodeClubA) throw new Error("failed to mint Club A invite");
+  return inviteCodeClubA;
+}
+
+/** Login member and ensure approved membership in Club Alpha. */
+async function ensureMemberInClubA() {
+  const code = await ensureClubAInvite();
+  const okMem = await loginViaUi(PERSONA_MEMBER.phone, {
+    label: "ensure-member",
+    preserveMockWorld: true,
+  });
+  if (!okMem) throw new Error("member login failed");
+  await goto("/club");
+  await new Promise((r) => setTimeout(r, 1200));
+  let text = await bodyText();
+  if (/Quitter le club/i.test(text) && /Alpha/i.test(text)) return;
+  await goto("/club/access");
+  await typeTestId("club-invite-code-input", code);
+  await clickTestId("club-join-by-code");
+  await new Promise((r) => setTimeout(r, 2200));
+  await goto("/club");
+  await new Promise((r) => setTimeout(r, 1200));
+  text = await bodyText();
+  if (!/Quitter le club/i.test(text)) {
+    // Invite may be stale after an earlier full wipe — remint as org
+    inviteCodeClubA = null;
+    const fresh = await ensureClubAInvite();
+    const ok2 = await loginViaUi(PERSONA_MEMBER.phone, {
+      label: "ensure-member-retry",
+      preserveMockWorld: true,
+    });
+    if (!ok2) throw new Error("member retry login failed");
+    await goto("/club/access");
+    await typeTestId("club-invite-code-input", fresh);
+    await clickTestId("club-join-by-code");
+    await new Promise((r) => setTimeout(r, 2200));
+    await goto("/club");
+    await new Promise((r) => setTimeout(r, 1200));
+    text = await bodyText();
+  }
+  if (!/Quitter le club/i.test(text)) {
+    throw new Error("member not approved in club after invite join");
+  }
+}
+
 // --- S14: Leave club while attending members-only outing ---
 {
   const id = "S14-leave-club-while-attending";
@@ -1220,7 +1308,9 @@ let membersOutingId = null;
   let actual = "";
   let shotPath = "";
   try {
-    // Ensure a members-only outing exists (reuse S6 id or create)
+    await ensureMemberInClubA();
+
+    // Ensure a members-only outing exists (reuse S6 id or create as org)
     let outingId = membersOutingId;
     if (!outingId) {
       const okOrg = await loginViaUi(PERSONA_ORG.phone, {
@@ -1254,37 +1344,17 @@ let membersOutingId = null;
         ? page.url().split("/session/")[1]?.split("?")[0]
         : null;
       membersOutingId = outingId;
+      await ensureMemberInClubA();
     }
     if (!outingId) throw new Error("no members-only outing id");
 
-    // Member must be in Club Alpha; re-join invite if needed
-    const okMem = await loginViaUi(PERSONA_MEMBER.phone, {
-      label: "s14-member",
-      preserveMockWorld: true,
-    });
-    if (!okMem) throw new Error("member login failed");
-    await goto("/club");
-    await new Promise((r) => setTimeout(r, 1200));
-    let clubText = await bodyText();
-    if (!/Alpha/i.test(clubText) || /Quitter le club/i.test(clubText) === false) {
-      if (!inviteCodeClubA) throw new Error("no invite A to rejoin");
-      await goto("/club/access");
-      await typeTestId("club-invite-code-input", inviteCodeClubA);
-      await clickTestId("club-join-by-code");
-      await new Promise((r) => setTimeout(r, 2000));
-      await goto("/club");
-      clubText = await bodyText();
-    }
-    if (!/Quitter le club/i.test(clubText)) {
-      throw new Error("member not approved in club before leave test");
-    }
-
-    // Join members-only outing
+    // Join members-only outing as member
     await goto(`/session/${outingId}`);
     await new Promise((r) => setTimeout(r, 1500));
     const beforeJoin = await page.evaluate(() => ({
       join: Boolean(document.querySelector('[data-testid="session-join-btn"]')),
       leave: Boolean(document.querySelector('[data-testid="session-leave-btn"]')),
+      text: (document.body.innerText || "").slice(0, 200),
     }));
     if (beforeJoin.join) {
       await clickTestId("session-join-btn");
@@ -1317,7 +1387,7 @@ let membersOutingId = null;
     const stillMember =
       /Quitter le club/i.test(afterLeaveClub) && /Alpha/i.test(afterLeaveClub);
     const leftOk =
-      /quitté|Rejoindre|Accès club|code d'invitation|DEMANDER/i.test(
+      /quitté|Rejoindre|Accès club|code d'invitation|DEMANDER|REJOINDRE UN CLUB/i.test(
         afterLeaveClub,
       ) || !stillMember;
 
@@ -1398,18 +1468,8 @@ let membersOutingId = null;
   let actual = "";
   let shotPath = "";
   try {
-    // Need an approved member again (S14 may have left)
-    const okMem = await loginViaUi(PERSONA_MEMBER.phone, {
-      label: "s15-member",
-      preserveMockWorld: true,
-    });
-    if (!okMem) throw new Error("member login failed");
-    if (inviteCodeClubA) {
-      await goto("/club/access");
-      await typeTestId("club-invite-code-input", inviteCodeClubA);
-      await clickTestId("club-join-by-code");
-      await new Promise((r) => setTimeout(r, 2000));
-    }
+    // S14 left the club — rejoin and verify TOI vs counts
+    await ensureMemberInClubA();
     await goto("/club");
     await new Promise((r) => setTimeout(r, 1500));
     shotPath = await shot("S15-pace-groups");
@@ -1431,9 +1491,9 @@ let membersOutingId = null;
     );
     actual = `clubVisible=${clubVisible}; groups=${JSON.stringify(groups)}`;
     if (!clubVisible) {
-      result = "BLOCKED";
+      result = "FAIL";
       flagContradiction({
-        severity: "P2",
+        severity: "P1",
         title: "Could not reach approved club pace groups for TOI check",
         impact: "TOI vs count consistency not proven this run",
         evidence: actual,
