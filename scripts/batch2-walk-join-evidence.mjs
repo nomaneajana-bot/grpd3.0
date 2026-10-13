@@ -521,11 +521,12 @@ try {
   );
   await shot(page, "07-m05-joined.png");
 
-  // Selected outing only — other outing not joined
+  // Selected outing only — other outing must not have THIS user's attendance.
+  // Device-global joinedSessions may still hold the host's row; UI prefers API status.
   const attOther = await readAttendance(page, other.id);
   record(
     "join_selected_outing_only",
-    attOther.status !== "joined" && attOther.localJoined !== true,
+    attOther.status !== "joined",
     JSON.stringify(attOther),
   );
 
