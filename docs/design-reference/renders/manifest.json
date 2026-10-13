@@ -1,0 +1,9 @@
+{
+  "sha": "a6e121429a1b60b53a707f09e56ce3842ac72877",
+  "referenceRoute": "/reference/green-home",
+  "liveDiscover": "/",
+  "tokenSource": "components/experiences/ExperienceUI.tsx",
+  "branchSource": "origin/cursor/d03-mobile-mvp",
+  "phoneSheet": "/opt/cursor/artifacts/contact-sheet/CONTACT-SHEET-phone.png",
+  "desktopSheet": "/opt/cursor/artifacts/contact-sheet/CONTACT-SHEET-desktop.png"
+}

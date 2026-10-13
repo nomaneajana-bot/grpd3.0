@@ -375,26 +375,28 @@ export default function SessionScreen() {
   }, [session, joinedGroupId, selectedGroupId, linkedWorkout]);
 
   useEffect(() => {
-    if (session) {
-      // Load saved group from async store
-      const loadJoinedSession = async () => {
-        const savedJoined = await getJoinedSession(session.id);
-        if (savedJoined) {
-          // Use saved group
-          setSelectedGroupId(savedJoined.groupId);
-          setJoinedGroupId(savedJoined.groupId);
-          setHasStoredJoin(true);
-        } else {
-          // Otherwise use recommended group, or first group if no recommended
-          const defaultId =
-            session.recommendedGroupId || session.paceGroups[0]?.id || null;
-          setSelectedGroupId(defaultId);
-          setJoinedGroupId(null);
-          setHasStoredJoin(false);
-        }
-      };
-      loadJoinedSession();
-    }
+    if (!session) return;
+    let cancelled = false;
+    // Load saved group from async store
+    const loadJoinedSession = async () => {
+      const savedJoined = await getJoinedSession(session.id);
+      if (cancelled) return;
+      if (savedJoined) {
+        setSelectedGroupId(savedJoined.groupId);
+        setJoinedGroupId(savedJoined.groupId);
+        setHasStoredJoin(true);
+      } else {
+        const defaultId =
+          session.recommendedGroupId || session.paceGroups[0]?.id || null;
+        setSelectedGroupId(defaultId);
+        setJoinedGroupId(null);
+        setHasStoredJoin(false);
+      }
+    };
+    void loadJoinedSession();
+    return () => {
+      cancelled = true;
+    };
   }, [session]);
 
   // Load linked workout if session has workoutId
@@ -581,6 +583,7 @@ export default function SessionScreen() {
       }
       await upsertJoinedSession(session.id, currentGroupId);
       setJoinedGroupId(currentGroupId);
+      setHasStoredJoin(true);
       showToast("Tu es inscrit à cette séance.", "success");
     } catch (error) {
       console.warn("Failed to save joined session:", error);
@@ -1408,23 +1411,6 @@ export default function SessionScreen() {
               <Text style={styles.deleteButtonText}>Supprimer la séance</Text>
             </TouchableOpacity>
           </View>
-        ) : hasStoredJoin ? (
-          <View style={styles.footer}>
-            <View style={styles.footerButtonGroup}>
-              <TouchableOpacity
-                style={styles.leaveButton}
-                activeOpacity={0.8}
-                onPress={handleLeave}
-                accessibilityRole="button"
-                accessibilityLabel="Quitter cette séance"
-                testID="session-leave-btn"
-              >
-                <Text style={styles.leaveButtonText}>
-                  Quitter cette séance
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         ) : null}
         </>
         )}
@@ -2096,27 +2082,32 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   modifyButton: {
-    backgroundColor: colors.accent.primary,
+    backgroundColor: colors.accent.sage,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 26,
+    paddingVertical: 17,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
   },
   modifyButtonText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.accent.charcoal,
+    fontSize: 15,
+    fontWeight: "700",
   },
   deleteButton: {
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.card,
   },
   deleteButtonText: {
-    color: "#FF3B30",
+    color: colors.text.error,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   workoutSummaryText: {
     color: colors.text.primary,

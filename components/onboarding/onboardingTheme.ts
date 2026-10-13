@@ -61,7 +61,7 @@ export const welcomeTheme = {
     cy: "32%",
     rx: "55%",
     ry: "55%",
-    centerColor: "rgba(47, 123, 255, 0.55)",
+    centerColor: "rgba(195, 213, 179, 0.35)",
     edgeColor: "rgba(0, 0, 0, 0)",
     edgeOffset: "62%",
   },

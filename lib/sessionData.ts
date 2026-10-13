@@ -157,7 +157,8 @@ export function apiSessionToSessionData(api: {
     recommendedGroupId: api.recommendedGroupId,
     estimatedDistanceKm: api.estimatedDistanceKm,
     workoutId: api.workoutId ?? undefined,
-    isCustom: api.isCustom ?? true,
+    // API/club sessions are joinable by default; only explicit true means user-owned draft
+    isCustom: api.isCustom ?? false,
     visibility: (api.visibility as SessionVisibility) ?? "public",
     hostGroupName: api.hostGroupName ?? null,
     meetingPoint: api.meetingPoint ?? undefined,

@@ -83,6 +83,7 @@ import {
   writeDemoSession,
 } from './demoSeed';
 import { ApiError } from './errors';
+import { getSessionById, type SessionData } from '../sessionData';
 
 type MockOtpRecord = {
   phone: string;
@@ -90,6 +91,48 @@ type MockOtpRecord = {
   code: string;
   expiresAt: number;
 };
+
+/** Materialize a local seed/catalog session into the demo API store for join/leave. */
+function sessionDataToApiSession(data: SessionData): ApiSession {
+  return {
+    id: data.id,
+    title: data.title,
+    spot: data.spot,
+    dateLabel: data.dateLabel,
+    dateISO: data.dateISO ?? null,
+    timeMinutes: data.timeMinutes ?? null,
+    typeLabel: data.typeLabel,
+    volume: data.volume,
+    targetPace: data.targetPace,
+    estimatedDistanceKm: data.estimatedDistanceKm,
+    recommendedGroupId: data.recommendedGroupId,
+    clubId: data.clubId ?? null,
+    visibility: data.visibility ?? 'public',
+    genderRestriction: data.genderRestriction ?? 'none',
+    hostUserId: 'demo_seed_host',
+    workoutId: data.workoutId ?? null,
+    isCustom: data.isCustom ?? false,
+    createdAt: new Date().toISOString(),
+    paceGroups: data.paceGroups ?? [],
+    hostGroupName: data.hostGroupName ?? null,
+    meetingPoint: data.meetingPoint ?? null,
+    coachAdvice: data.coachAdvice ?? null,
+    coachPhone: data.coachPhone ?? null,
+    coachName: data.coachName ?? null,
+    attendanceStatus: data.attendanceStatus ?? null,
+    attendanceGroupId: data.attendanceGroupId ?? null,
+  };
+}
+
+async function resolveDemoSession(sessionId: string): Promise<ApiSession | null> {
+  const existing = await readDemoSession(sessionId);
+  if (existing) return existing;
+  const seed = await getSessionById(sessionId);
+  if (!seed) return null;
+  const api = sessionDataToApiSession(seed);
+  await writeDemoSession(api);
+  return api;
+}
 
 type MockUserMap = Record<string, AuthUser>;
 type MockPinMap = Record<string, string>;
@@ -801,7 +844,7 @@ async function mockListSessions(query: {
 
 async function mockGetSession(sessionId: string): Promise<ApiSession> {
   if (DEMO_MODE) {
-    const session = await readDemoSession(sessionId);
+    const session = await resolveDemoSession(sessionId);
     if (!session) throw new ApiError(404, 'Session not found');
     const user = await getAuthUser();
     if (user) {
@@ -872,7 +915,7 @@ async function mockJoinSession(
   if (!user) throw new ApiError(401, 'Unauthorized');
   if (!DEMO_MODE) throw new ApiError(404, 'Not found');
 
-  const session = await readDemoSession(sessionId);
+  const session = await resolveDemoSession(sessionId);
   if (!session) throw new ApiError(404, 'Session not found');
 
   // Invariant (a) for members-only: must be club member

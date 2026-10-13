@@ -417,7 +417,8 @@ function buildDemoSessions(): ApiSession[] {
           ? "demo_coach_youssef"
           : "demo_coach_amelie",
       workoutId: null,
-      isCustom: true,
+      // Club/demo outings are joinable community sessions, not user-owned drafts
+      isCustom: false,
       createdAt: new Date().toISOString(),
       paceGroups,
       hostGroupName: null,

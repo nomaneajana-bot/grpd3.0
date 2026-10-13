@@ -225,27 +225,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   joinBtn: {
-    paddingVertical: 14,
-    borderRadius: borderRadius.pill,
+    paddingVertical: 17,
+    borderRadius: 16,
     alignItems: "center",
   },
   joinBtnPrimary: {
-    backgroundColor: colors.text.primary,
+    backgroundColor: colors.accent.sage,
     borderWidth: 1,
-    borderColor: colors.text.primary,
+    borderColor: colors.accent.sage,
   },
   joinBtnPrimaryText: {
-    color: colors.background.primary,
+    color: colors.accent.charcoal,
     fontSize: typography.sizes.md,
     fontWeight: "700",
   },
   joinBtnGhost: {
     borderWidth: 1,
     borderColor: colors.border.medium,
-    backgroundColor: colors.surface.s3,
+    backgroundColor: colors.background.card,
   },
   joinBtnGhostText: {
-    color: colors.text.secondary,
+    color: colors.text.primary,
     fontSize: typography.sizes.md,
     fontWeight: "600",
   },
@@ -261,8 +261,8 @@ const styles = StyleSheet.create({
   },
   joinBtnUnavailable: {
     borderWidth: 1,
-    borderColor: colors.text.tertiary,
-    backgroundColor: colors.surface.s3,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.card,
   },
   joinBtnUnavailableText: {
     color: colors.text.tertiary,
@@ -271,6 +271,10 @@ const styles = StyleSheet.create({
   },
   leaveBtn: {
     paddingVertical: 14,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.card,
     alignItems: "center",
   },
   leaveText: {
@@ -280,14 +284,15 @@ const styles = StyleSheet.create({
   },
   requestBtn: {
     paddingVertical: 14,
-    borderRadius: borderRadius.pill,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.text.primary,
+    borderColor: colors.accent.sage,
+    backgroundColor: colors.background.card,
     alignItems: "center",
   },
   requestText: {
-    color: colors.text.primary,
-    fontWeight: "600",
+    color: colors.accent.sage,
+    fontWeight: "700",
   },
   pendingWrap: {
     alignItems: "center",
