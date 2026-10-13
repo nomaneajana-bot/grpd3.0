@@ -28,7 +28,7 @@ exhaustive page inventory
 - **No giant fix-everything passes.**
 - Each implementation batch covers about **3–5 related issues**, with evidence, then a **stop/review gate**.
 - Deployment success is **not** product verification.
-- Separate evidence surfaces: **demo**, **hosted**, **cross-device**, **native**, **UAT**.
+- Separate evidence surfaces: **demo**, **hosted**, **multi-context** (isolated browser contexts OK; physical second device not inherently required), **native**, **UAT** (participant/stakeholder sessions — not founder-only).
 - `NOT IMPLEMENTED` is a capability disposition — **never** a PASS.
 - Keep **one** canonical inventory, rules/decision map, and issue register (no competing trackers).
 

@@ -16,7 +16,7 @@ Exhaustive page inventory → explicit product rules → complete issue register
 
 - **Cursor:** code + heavy tests  
 - **Codex:** review / coordination / non-code OCIF  
-- **Nouamane:** ambiguous product decisions + acceptance  
+- **Nouamane:** ambiguous product decisions; UAT means stakeholder/participant sessions, not founder-only  
 
 ## Constraints
 
@@ -24,7 +24,7 @@ Exhaustive page inventory → explicit product rules → complete issue register
 - No giant fix-everything passes.  
 - Statuses: `NOT CHECKED` | `FAILED` | `FIXED AWAITING RETEST` | `VERIFIED` | `BLOCKED`.  
 - `NOT IMPLEMENTED` is never PASS.  
-- Separate demo / hosted / cross-device / native / UAT evidence.  
+- Separate demo / hosted / multi-context / native / UAT evidence.  
 - Deployment ≠ product verification.  
 - One inventory, one rules map, one issue register.
 

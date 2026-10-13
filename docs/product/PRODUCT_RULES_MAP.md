@@ -1,8 +1,9 @@
 # Product Rules / Decision Map (canonical)
 
 **Branch:** `cursor/green-home-ux-join-3184`  
-**SHA:** `10f01901b088474ba48c6783615c70fdb2cd5400`  
-**Legend:** **I** = implemented behavior in code · **R** = intended behavior supported by user requirements / prior agreement · **U** = unresolved (needs Nouamane)
+**Pinned product baseline:** `c46ce86478e26e0e523fd1fd227adaf3a792b6e4`  
+**Docs tip:** branch HEAD (documentation revision only)  
+**Legend:** **I** = implemented behavior in code · **R** = intended behavior supported by user requirements / prior agreement · **U** = unresolved (needs product decision)
 
 ---
 
@@ -12,31 +13,35 @@
 |------|---|---|---|-------|
 | Club membership is access boundary (`pending` \| `approved` \| …) | I | R | | Invite code → approved; name request → pending |
 | Outing attendance requires explicit S'inscrire / Quitter | I | R | | Membership must not auto-enroll outings |
-| Session creator auto-joins their new outing | I | | U | Documented in create flow; confirm if intended for members-only + public |
+| Session creator auto-joins their new outing | I | | **U** | Implemented in create flow; **not** user-approved as requirement — confirm for members-only and public |
 | Pace groups A–D are session/roster buckets, not membership | I | R | | Club home-group (TOI) separate from session groupId |
-| TOI uses same assignment as roster counts | I | R | | Fixed on this branch via `assignMemberToClubGroup` |
+| TOI uses same assignment as roster counts | I | R | | Code on tip via `assignMemberToClubGroup`; retest deferred to a later batch (not Batch 1) |
 | Assign/suggest ≠ joined | I | R | | Invariant (b) |
 
-## 2. Public / private (members-only)
+## 2. Visibility vs club association (do not conflate)
+
+**Visibility** (who may see/join) is distinct from **association** (whether an outing is linked to a club for discovery, branding, or roster context).
 
 | Rule | I | R | U | Notes |
 |------|---|---|---|-------|
-| `visibility: public` → `clubId` null on create | I | R | | Standalone must not inherit club |
+| Standalone public outing: no *inherited* club from focused membership | I | R | | Choosing public without opting into a club must not silently inherit focused `clubId` |
+| Every `visibility: public` create forces `clubId: null` | I | | **U** | Current code simplification — **not** a user-approved requirement. Does **not** establish that every public *club* outing must lose association |
+| Public outing that remains associated with a club (soft link) | | | **U** | Unresolved product question — see § Unresolved |
 | `visibility: members` ⇒ `clubId` required | I | R | | Invariant (a) |
-| Demo public seeds must not carry clubId | I | R | | Fixed in `demoSeed` on tip |
-| Members-only detail hidden from non-members (404) | I (demo mock + hosted GET) | R | | Direct-link privacy |
-| Members-only list filtered for non-members | I (hosted list) | R | | Demo list paths may still differ — verify per surface |
-| Outsiders see MEMBRES tag without logistics | | R | U | Prefer 404 vs teaser? Current: 404 when gated |
+| Demo public seeds must not carry accidental clubId | I | R | | Fixed in `demoSeed` on tip |
+| Members-only private logistics hidden from non-members | I (demo mock + hosted GET) | R | | **Current baseline — preserve.** Prefer gated 404 / inaccessible over leaking spot/time/private copy. No permission needed to keep this. |
+| Members-only list filtered for non-members | I (hosted list) | R | | Demo list paths may still differ — verify per surface in privacy batch |
+| Outsiders see MEMBRES tag / teaser without logistics | | | **U** | Optional UX later; **not** required to reopen privacy baseline |
 
 ## 3. Invitations / pending / approval
 
 | Rule | I | R | U | Notes |
 |------|---|---|---|-------|
 | Invite code joins the club that owns the code | I | R | | Unique codes; multi-club picker for generate |
-| Pending applicant is not approved member | I | R | | Session join blocked while pending |
+| Pending applicant is not approved member | I | R | | Session join blocked while pending; privacy negative control |
 | Approve/reject pending in admin UI | Partial I | R | U | Confirm connected API coverage |
 | Invite expiry | NOT IMPLEMENTED (UI never sets expiresAt; mock never expires) | | U | Do not PASS as supported |
-| Leave club / cancel pending client calls | I mock | R | | **Hosted routes missing** (ISSUE-004) |
+| Leave club / cancel pending client calls | I mock | R | | **Hosted routes missing** (ISSUE-004) — later batch |
 
 ## 4. Owner / organizer permissions
 
@@ -51,10 +56,10 @@
 
 | Rule | I | R | U | Notes |
 |------|---|---|---|-------|
-| Public outing independent of club membership | I | R | | |
+| Public outing usable without club membership | I | R | | Access ≠ association (see §2) |
 | Members-only bind to selected/focused club when multi-club | I | R | | Create club picker + focused club persistence |
 | Two clubs must never silently share invites/edits | Partial I | R | | Switcher exists; still needs journey VERIFIED |
-| Leaving club revokes members-only attendance for that club | I demo | R | U | Hosted leave route missing |
+| Leaving club revokes members-only attendance for that club | I demo | R | U | Hosted leave route missing; privacy retest in Batch 1 (demo) |
 
 ## 6. Cancellation / dates / persistence
 
@@ -63,37 +68,46 @@
 | Create uses real upcoming ISO dates | I | R | | |
 | Cancel club outing (status cancelled) | NOT IMPLEMENTED | | U | Only local delete for host custom |
 | Capacity full / waitlist | NOT IMPLEMENTED for Session | | U | Run capacity is separate/legacy |
-| Demo persistence = device localStorage mock | I | | | Not hosted |
-| Hosted / cross-device persistence | BLOCKED / NOT VERIFIED | R | | Separate evidence required |
+| Demo persistence = device localStorage mock | I | | | Not hosted — never claim hosted from mock |
+| Hosted account persistence | BLOCKED without hosted env/creds | R | | Two **isolated browser contexts** (or equivalent) can exercise same-account persistence — a physical second device is **not** inherently required |
+| Cross-device / native | Separate surfaces | R | | Only when those environments exist |
 | Join/leave updates detail + Mes sorties after reload | I demo (audit S5) | R | | Re-verify with correct-screen assertions |
 
-## 7. Walking / language / community
+## 7. Walking / language / community (user-required)
 
 | Rule | I | R | U | Notes |
 |------|---|---|---|-------|
+| Club purposes are **not** runners-only | | **R** | | User already requires unrestricted club purposes — **do not re-ask** whether runners-only framing is acceptable |
 | Discover can filter/label Marche | I | R | | |
-| Walk/language complete journey without running PR/pace assumptions | Partial | R | U | Same `/session/[id]` chrome; S8 was incomplete (ISSUE-003) |
-| Home previews should not dump users into training PRs | Failed I | R | | ISSUE-002 |
+| Walk / language journeys must be **usable** end-to-end | Partial | **R** | | Propose → publish → open → join (or equivalent) without mandatory running PR/pace/coach framing. Distinct chrome polish may still be U; usability is **not** optional. ISSUE-003 — later batch |
+| Home previews should not dump users into training PRs | Failed I | R | | ISSUE-002 — later batch |
 
 ## 8. Testing / audit honesty
 
 | Rule | I | R | U | Notes |
 |------|---|---|---|-------|
 | PASS requires correct screen + successful setup + actual effects | | R | | Method doctrine; S6 violated historically (ISSUE-001) |
-| Unsupported ≠ PASS | | R | | |
-| Audit report SHA must match delivered tip or call out lag | Partial | R | | ISSUE-005 |
+| Private logistics assertion = known unique private fields **absent**, not merely “no join button” | | R | | Batch 1 privacy evidence standard |
+| Unsupported ≠ PASS; mock ≠ hosted claim | | R | | |
+| Audit / evidence must record tested SHA + environment | Partial | R | | ISSUE-005 |
 | Auth journey evidence = real UI OTP (agreed surface) | I in audit script | R | | |
+| UAT = actual participant / stakeholder sessions | | R | | **Not** founder acceptance alone |
 
 ---
 
-## Unresolved questions (Nouamane)
+## Unresolved questions (product — only true open items)
 
-1. After leave-club, should ex-members see a teaser (“demande l'accès”) or strict introuvable for that club’s members-only outings?  
-2. Should creating a public outing ever keep a soft club association for discovery, or always `clubId: null`?  
-3. Is walk/language a first-class session type with distinct detail chrome, or is shared running detail acceptable for MVP?  
-4. Should invite codes expire, and what UX states are required?  
-5. Is outing cancellation (vs delete) required before UAT?  
-6. Should home “aperçus” open a dedicated preview, club access, or stay non-navigating?
+1. **Public + club association:** May a public outing keep a soft `clubId` (or equivalent) for discovery/branding, or must association always be cleared? (Current code always nulls — treat as **I**, not **R**.)
+2. **Creator auto-attendance:** Should the creator always appear as joined on create for public and members-only outings?
+3. **Invite expiry:** Should invite codes expire, and what UX states are required?
+4. **Outing cancellation:** Is status-cancelled (vs host delete) required before stakeholder UAT?
+5. **Home “aperçus” target:** Dedicated preview, club access, or non-navigating? (ISSUE-002 — later batch.)
+
+**Not unresolved (do not re-open):**
+
+- Private members-only logistics stay hidden from outsiders/pending — current baseline.
+- Walk/language journeys must be usable; runners-only framing is not an acceptable product default.
+- Unrestricted club purposes (not sport-runners-only).
 
 ---
 
@@ -102,7 +116,7 @@
 | Surface | Meaning |
 |---------|---------|
 | Demo | `EXPO_PUBLIC_DEMO_MODE` mock + localStorage |
-| Hosted | Real API / Prisma / preview URL |
-| Cross-device | Same account, two devices |
+| Hosted | Real API / Prisma / preview URL + credentials |
+| Cross-device / multi-context | Same account in two isolated browser contexts (or two devices when available) |
 | Native | iOS/Android build |
-| UAT | Nouamane acceptance |
+| UAT | Actual participant / stakeholder sessions — not founder-only sign-off |
