@@ -22,16 +22,16 @@ const variantStyles: Record<
   { borderColor: string; backgroundColor: string }
 > = {
   info: {
-    borderColor: colors.accent.primary,
-    backgroundColor: "rgba(32, 129, 255, 0.16)",
+    borderColor: colors.accent.sage,
+    backgroundColor: colors.accent.sageDim,
   },
   success: {
-    borderColor: colors.accent.success,
-    backgroundColor: "rgba(41, 208, 126, 0.16)",
+    borderColor: colors.accent.sage,
+    backgroundColor: colors.accent.sageDim,
   },
   error: {
-    borderColor: colors.accent.error,
-    backgroundColor: "rgba(255, 59, 48, 0.16)",
+    borderColor: colors.text.error,
+    backgroundColor: "rgba(255, 183, 170, 0.14)",
   },
 };
 
@@ -57,7 +57,8 @@ export function Toast({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    bottom: spacing.xl + spacing.lg,
+    // Sit above primary CTAs / tab bar so join·leave controls stay tappable
+    bottom: spacing.xl + spacing.lg + 72,
     left: spacing.lg,
     right: spacing.lg,
     zIndex: 50,

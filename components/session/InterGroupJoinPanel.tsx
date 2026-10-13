@@ -102,7 +102,7 @@ export function InterGroupJoinPanel({
         accessibilityLabel="Demander l'accès"
         testID="session-join-request"
       >
-        <Text style={styles.requestText}>Demander l'accès</Text>
+        <Text style={styles.requestText}>Demander l&apos;accès</Text>
       </Pressable>
     );
   }
@@ -115,8 +115,8 @@ export function InterGroupJoinPanel({
           <Text style={styles.bannerText}>{lockedMessage}</Text>
         </View>
         <View style={[styles.joinBtn, styles.joinBtnUnavailable]}>
-          <Text style={styles.joinBtnUnavailableText}>
-            S'inscrire — non disponible
+            <Text style={styles.joinBtnUnavailableText}>
+            S&apos;inscrire — non disponible
           </Text>
         </View>
       </View>
@@ -180,7 +180,7 @@ export function InterGroupJoinPanel({
       testID="session-join-btn"
     >
       <Text style={styles.joinBtnPrimaryText}>
-        {isPublishing ? "Inscription…" : "S'inscrire"}
+        {isPublishing ? "Inscription…" : "S&apos;inscrire"}
       </Text>
     </Pressable>
   );
