@@ -531,7 +531,13 @@ try {
 
   // Reload persistence
   await page.reload({ waitUntil: "networkidle0" });
-  await new Promise((r) => setTimeout(r, 1500));
+  await new Promise((r) => setTimeout(r, 2000));
+  await page.waitForFunction(
+    () =>
+      !!document.querySelector('[data-testid="session-joined-panel"]') ||
+      !!document.querySelector('[data-testid="session-join-btn"]'),
+    { timeout: 20000 },
+  );
   const joinedAfterReload = await page.evaluate(
     () => !!document.querySelector('[data-testid="session-joined-panel"]'),
   );
@@ -540,9 +546,14 @@ try {
     "join_persists_after_reload",
     joinedAfterReload &&
       (attReload.status === "joined" || attReload.localJoined),
-    JSON.stringify(attReload),
+    JSON.stringify({ joinedAfterReload, ...attReload }),
   );
   await shot(page, "08-joined-after-reload.png");
+  if (!joinedAfterReload) {
+    throw new Error(
+      "BLOCKED: joined panel missing after reload despite attendance — cannot test M06",
+    );
+  }
 
   // M06 cancel confirm
   await clickTestId(page, "session-leave-btn");

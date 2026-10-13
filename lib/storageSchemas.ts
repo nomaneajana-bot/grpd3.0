@@ -134,10 +134,11 @@ export function validateJoinedSession(data: unknown): JoinedSession | null {
 
   const obj = data as Record<string, unknown>;
 
+  // "open" = joined a walk/language outing without a pace group (Batch 2).
   if (
     typeof obj.sessionId !== 'string' ||
     typeof obj.groupId !== 'string' ||
-    !['A', 'B', 'C', 'D'].includes(obj.groupId)
+    !['A', 'B', 'C', 'D', 'open'].includes(obj.groupId)
   ) {
     return null;
   }

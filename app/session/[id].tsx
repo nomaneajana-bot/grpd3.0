@@ -400,9 +400,18 @@ export default function SessionScreen() {
       const savedJoined = await getJoinedSession(session.id);
       if (cancelled) return;
       if (savedJoined) {
-        setSelectedGroupId(savedJoined.groupId);
-        setJoinedGroupId(savedJoined.groupId);
+        const gid =
+          savedJoined.groupId === "open" ? null : savedJoined.groupId;
+        setSelectedGroupId(gid);
+        setJoinedGroupId(gid);
         setHasStoredJoin(true);
+      } else if (
+        session.attendanceStatus === "joined"
+      ) {
+        // API/mock attendance is authoritative when local store lacks a row
+        setHasStoredJoin(true);
+        setJoinedGroupId(session.attendanceGroupId ?? null);
+        setSelectedGroupId(session.attendanceGroupId ?? null);
       } else {
         const defaultId =
           session.recommendedGroupId || session.paceGroups[0]?.id || null;
