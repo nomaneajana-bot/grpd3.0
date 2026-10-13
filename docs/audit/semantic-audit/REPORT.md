@@ -1,6 +1,6 @@
 # Semantic / product-logic audit
 
-**SHA:** `c2a1e1eda1eb25597d69c45b6335cc89b56e5270`  
+**SHA:** `4d834055b501a25aae8c48b98e9070ecb8d19ea4`  
 **Generated:** 2026-10-13T03:46:56.814Z  
 **Surfaces:** demo (executed) · same-device switch (executed) · hosted (**BLOCKED**) · cross-device (**BLOCKED**)
 
