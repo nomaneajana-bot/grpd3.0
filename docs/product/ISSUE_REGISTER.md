@@ -2,7 +2,8 @@
 
 **Branch:** `cursor/green-home-ux-join-3184` (PR #6)  
 **Pinned product baseline (pre–Batch 1):** `c46ce86478e26e0e523fd1fd227adaf3a792b6e4`  
-**Batch 1 tip:** branch HEAD  
+**Batch 1 tip under test:** `959b1ac18db002ef90fc430c1662f750e4796acf`  
+**Evidence:** `docs/audit/batch1-privacy/evidence.json` (31/31 demo PASS; pending genuinely tested)  
 **Method:** Statuses are NOT CHECKED / FAILED / FIXED AWAITING RETEST / VERIFIED / BLOCKED.  
 **Capability:** IMPLEMENTED / PARTIAL / NOT IMPLEMENTED / UNSUPPORTED — never treat NOT IMPLEMENTED as PASS.
 
@@ -15,13 +16,13 @@
 |-------|-------|
 | Route / journey | Private outing access · `/session/:id` vs `/session/create` |
 | Expected meaning | Outsider / pending cannot access private logistics of a **published** members-only outing via direct link or list; approved member can |
-| Observed behavior (Batch 1) | Publish navigates to real `/session/<id>`; outsider/pending-equivalent see M08 inaccessible; unique spot absent; member sees unique spot + MEMBRES |
+| Observed behavior (Batch 1 corrected) | Publish → real `/session/<id>`; member unique logistics present; outsider + **genuine pending** (UI request, `approved=false`) see M08 / list without unique logistics; reload/re-login hold |
 | Capability | IMPLEMENTED (demo) |
 | Owner | Cursor |
-| Candidate SHA / env | Batch 1 tip · **demo** (`hosted_claim: false`) |
-| Evidence | `docs/audit/batch1-privacy/evidence.json`; artifacts under `/opt/cursor/artifacts/batch1-evidence/` |
-| Next action | Hosted retest when env/creds exist (separate lane) |
-| Status | **VERIFIED** (demo) |
+| Candidate SHA / env | `959b1ac` · **demo** (`hosted_claim: false`) |
+| Evidence | `docs/audit/batch1-privacy/evidence.json` (repo-relative screenshots) |
+| Next action | Codex re-review; hosted retest later (separate lane) |
+| Status | **FIXED AWAITING RETEST** (demo re-run PASS; Batch 1 open for Codex) |
 
 ### ISSUE-002 — P1 — FAILED
 | Field | Value |
@@ -94,16 +95,16 @@
 | Next action | Unsupported cancellation must stay disabled/explained — no fake success |
 | Status | **NOT CHECKED** |
 
-### ISSUE-010 — P1 — VERIFIED (privacy, demo)
+### ISSUE-010 — P1 — FIXED AWAITING RETEST (privacy evidence corrected; awaiting Codex)
 | Field | Value |
 |-------|-------|
-| Route / journey | Leave club → revoke members-only access; privacy gates |
-| Observed behavior | Member B sees outing; after leave club → M08 inaccessible; unique logistics absent |
-| Capability | IMPLEMENTED (demo mock leave cleanup) |
+| Route / journey | Leave club → revoke members-only access; privacy gates + pending gates |
+| Observed behavior | Member B sees outing; after leave → M08; unique logistics absent. Pending path re-tested with genuine pending membership (not outsider substitute). |
+| Capability | IMPLEMENTED (demo mock leave cleanup + pending 404) |
 | Owner | Cursor |
-| Evidence | Batch 1 checks `ISSUE-010_*` in evidence.json |
-| Next action | Hosted leave route is ISSUE-004 (later) |
-| Status | **VERIFIED** (privacy, demo) |
+| Evidence | `docs/audit/batch1-privacy/evidence.json` checks `ISSUE-010_*` + `pending_*` |
+| Next action | Codex re-review Batch 1; hosted leave is ISSUE-004 (later) |
+| Status | **FIXED AWAITING RETEST** (demo evidence re-run PASS; Batch 1 open for Codex) |
 
 ### ISSUE-011 — P1 — FIXED AWAITING RETEST
 | Field | Value |
@@ -114,20 +115,23 @@
 
 ---
 
-## Batch 1 — CLOSED (awaiting Codex review)
+## Batch 1 — OPEN (corrected evidence; awaiting Codex)
 
 **Theme:** PRIVATE OUTING ACCESS + TRUSTWORTHY EVIDENCE  
 **Included:** ISSUE-001, ISSUE-005, ISSUE-010 privacy  
 **Excluded (queued):** ISSUE-002, ISSUE-003, ISSUE-004, ISSUE-011, M01/M02/M03/M06
 
-### Exit criteria met (demo)
+### Exit criteria (demo) — corrected run
 
 - [x] Real outing id after publish  
 - [x] Member positive control + unique logistics present  
-- [x] Outsider / pending-equivalent negative controls (link + list); logistics absent  
-- [x] Reload / re-login  
+- [x] Outsider negative controls (link + list + re-login)  
+- [x] **Genuine pending** for exact target club (`pending` + `approved=false`); setup fails if missing — never outsider substitute  
+- [x] Pending direct-link + list + reload + re-login; unique logistics absent  
+- [x] Ex-member after leave gated  
+- [x] All screenshot paths repo-resolvable  
 - [x] `tested_sha` + environment; no hosted claim from mock  
-- [x] STOP for Codex  
+- [ ] Codex acceptance  
 
 ---
 
@@ -135,8 +139,8 @@
 
 | Status | Count |
 |--------|------:|
-| VERIFIED | 3 (001 demo, 005, 010 privacy demo) |
+| FIXED AWAITING RETEST | 3 (001, 010 privacy — awaiting Codex; 011 TOI later) |
+| VERIFIED | 1 (005 evidence hygiene for this harness) |
 | FAILED | 3 (002, 003, 004 hosted) |
-| FIXED AWAITING RETEST | 1 (011) |
 | NOT CHECKED | 3 (006, 007, 009) |
 | BLOCKED | 1 (008) |

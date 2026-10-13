@@ -1,54 +1,67 @@
 # Batch 1 evidence
 
-- **tested_sha:** `25d843f49830605627dc0c80914fb909b57100da`
+- **tested_sha:** `959b1ac18db002ef90fc430c1662f750e4796acf`
 - **environment:** `demo` (hosted_claim=false)
-- **outing_id:** `session_1791915973458_4may873l`
-- **unique logistics:** `ZB1V70HR6W`
-- **summary:** 25 PASS / 0 FAIL / 25 total
+- **outing_id:** `session_1791934667801_kd1fz215`
+- **target_club:** `Batch1 Club ZB1V7BMEXH`
+- **unique logistics:** `ZB1V7BMEXH`
+- **summary:** 31 PASS / 0 FAIL / 31 total
 - **issues:** ISSUE-001, ISSUE-005, ISSUE-010-privacy
+- **screenshot paths:** repo-relative under `docs/audit/batch1-privacy/screenshots/` (18 files)
 
 ## Checks
 
 - PASS `login_member_host` — 0611111111 (new club admin)
 - PASS `host_club_created` — http://localhost:8081/club
 - PASS `audience_club_selected` — 
-- PASS `unique_spot_seeded` — ZB1V70HR6W
-- PASS `ISSUE-001_publish_real_outing_id` — /session/session_1791915973458_4may873l
-- PASS `member_positive_control_detail` — unique logistics visible: ZB1V70HR6W
-- PASS `member_not_inaccessible_state` — http://localhost:8081/session/session_1791915973458_4may873l
-- PASS `member_reload_still_accessible` — /session/session_1791915973458_4may873l
-- PASS `discover_list_hides_unique_private_spot` — ZB1V70HR6W
+- PASS `unique_spot_seeded` — ZB1V7BMEXH
+- PASS `ISSUE-001_publish_real_outing_id` — /session/session_1791934667801_kd1fz215
+- PASS `member_positive_control_detail` — unique logistics visible: ZB1V7BMEXH
+- PASS `member_not_inaccessible_state` — http://localhost:8081/session/session_1791934667801_kd1fz215
+- PASS `member_reload_still_accessible` — /session/session_1791934667801_kd1fz215
+- PASS `discover_list_hides_unique_private_spot` — ZB1V7BMEXH
 - PASS `login_outsider` — 0699999999
-- PASS `outsider_direct_link_inaccessible` — http://localhost:8081/session/session_1791915973458_4may873l
+- PASS `outsider_direct_link_inaccessible` — http://localhost:8081/session/session_1791934667801_kd1fz215
 - PASS `outsider_unique_logistics_absent` — absent
 - PASS `outsider_no_join_only_is_insufficient` — assert inaccessible + logistics absent, not merely no join button
-- PASS `outsider_list_unique_logistics_absent` — ZB1V70HR6W
-- PASS `pending_request_attempt` — 
-- PASS `M07_pending_club_state_visible_or_outsider` — outsider-no-pending
-- PASS `pending_direct_link_inaccessible` — http://localhost:8081/session/session_1791915973458_4may873l
+- PASS `outsider_list_unique_logistics_absent` — ZB1V7BMEXH
+- PASS `outsider_relogin_still_gated` — http://localhost:8081/session/session_1791934667801_kd1fz215
+- PASS `login_pending_identity` — 0688888888
+- PASS `pending_request_submit_clicked` — Batch1 Club ZB1V7BMEXH
+- PASS `pending_setup_membership_pending_not_approved` — {"userId":"user_1791934708531_ou4fmryh","clubId":"club_1791934660146_0yg6j97n","status":"pending","approved":false,"pending":true}
+- PASS `M07_pending_club_state_visible` — pending for Batch1 Club ZB1V7BMEXH
+- PASS `pending_direct_link_inaccessible` — http://localhost:8081/session/session_1791934667801_kd1fz215
 - PASS `pending_unique_logistics_absent` — absent
-- PASS `outsider_relogin_still_gated` — http://localhost:8081/session/session_1791915973458_4may873l
-- PASS `invite_for_leave_test` — BATCHZ8E
-- PASS `ISSUE-010_approved_member_positive_before_leave` — http://localhost:8081/session/session_1791915973458_4may873l
+- PASS `pending_list_unique_logistics_absent` — ZB1V7BMEXH
+- PASS `pending_reload_still_gated` — {"userId":"user_1791934708531_ou4fmryh","clubId":"club_1791934660146_0yg6j97n","status":"pending","approved":false,"pending":true}
+- PASS `pending_relogin_still_pending_not_approved` — {"userId":"user_1791934708531_ou4fmryh","clubId":"club_1791934660146_0yg6j97n","status":"pending","approved":false,"pending":true}
+- PASS `pending_relogin_still_gated` — http://localhost:8081/session/session_1791934667801_kd1fz215
+- PASS `invite_for_leave_test` — BATCHU6X
+- PASS `ISSUE-010_approved_member_positive_before_leave` — http://localhost:8081/session/session_1791934667801_kd1fz215
 - PASS `member_b_left_club` — 
-- PASS `ISSUE-010_after_leave_inaccessible` — http://localhost:8081/session/session_1791915973458_4may873l
+- PASS `ISSUE-010_after_leave_inaccessible` — http://localhost:8081/session/session_1791934667801_kd1fz215
 - PASS `ISSUE-010_after_leave_logistics_absent` — absent
 - PASS `M08_design_annotation_not_in_product` — annotation must stay design-only
 
 ## Screenshots
 
-- /opt/cursor/artifacts/batch1-evidence/screenshots/01-member-home.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/01b-club-created.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/02-create-form-members.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/03-member-detail-after-publish.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/04-member-reload.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/05-discover-list.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/06-outsider-direct-link.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/07-outsider-list.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/08-club-pending-or-outsider.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/09-pending-or-outsider-direct-link.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/10-outsider-relogin.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/11-member-b-before-leave.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/12-member-b-after-leave-club.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/13-member-b-outing-after-leave.png
-- /opt/cursor/artifacts/batch1-evidence/screenshots/14-m08-product-check.png
+- `docs/audit/batch1-privacy/screenshots/01-member-home.png`
+- `docs/audit/batch1-privacy/screenshots/01b-club-created.png`
+- `docs/audit/batch1-privacy/screenshots/02-create-form-members.png`
+- `docs/audit/batch1-privacy/screenshots/03-member-detail-after-publish.png`
+- `docs/audit/batch1-privacy/screenshots/04-member-reload.png`
+- `docs/audit/batch1-privacy/screenshots/05-discover-list.png`
+- `docs/audit/batch1-privacy/screenshots/06-outsider-direct-link.png`
+- `docs/audit/batch1-privacy/screenshots/07-outsider-list.png`
+- `docs/audit/batch1-privacy/screenshots/08-outsider-relogin.png`
+- `docs/audit/batch1-privacy/screenshots/09-club-pending.png`
+- `docs/audit/batch1-privacy/screenshots/10-pending-direct-link.png`
+- `docs/audit/batch1-privacy/screenshots/11-pending-list.png`
+- `docs/audit/batch1-privacy/screenshots/12-pending-reload.png`
+- `docs/audit/batch1-privacy/screenshots/13-pending-relogin.png`
+- `docs/audit/batch1-privacy/screenshots/14-member-b-before-leave.png`
+- `docs/audit/batch1-privacy/screenshots/15-member-b-after-leave-club.png`
+- `docs/audit/batch1-privacy/screenshots/16-member-b-outing-after-leave.png`
+- `docs/audit/batch1-privacy/screenshots/17-m08-product-check.png`
+
+
