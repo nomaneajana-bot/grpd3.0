@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type {
+  ApiSession,
   AuthUser,
   Club,
   ClubCreateInput,
@@ -22,6 +23,7 @@ import type {
   DeviceRegistrationResult,
   LogoutInput,
   LogoutResult,
+  MySessionsResult,
   OtpRequestInput,
   OtpRequestResult,
   OtpVerifyInput,
@@ -37,14 +39,19 @@ import type {
   RunLeaveResult,
   RunMatchResult,
   RunMember,
-  UpcomingRunsResult,
+  SessionCreateInput,
+  SessionJoinInput,
   SessionJoinRequestResult,
-  SessionParticipantsResult,
+  SessionJoinResult,
+  SessionLeaveResult,
   SessionParticipant,
+  SessionParticipantsResult,
+  UpcomingRunsResult,
   UpdateMyPrsInput,
   UpdateMyPrsResult,
 } from '../../types/api';
 import { getAuthUser } from '../authStore';
+import { DEMO_MODE, DEMO_OTP_CODE } from '../featureFlags';
 import { getJoinedSessions, upsertJoinedSession } from '../joinedSessionsStore';
 import {
   getRunnerProfile,
@@ -57,6 +64,24 @@ import {
   upsertStoredRun,
   updateStoredRun,
 } from '../runStore';
+import {
+  DEMO_CLUB_ID,
+  DEMO_CLUB_NAME as CASA_CLUB_NAME,
+  MOCK_CLUBS_KEY,
+  MOCK_MEMBERSHIPS_KEY,
+  MOCK_OTP_KEY,
+  MOCK_PINS_KEY,
+  MOCK_USERS_KEY,
+  buildParticipantsResult,
+  ensureDemoUserMembership,
+  ensureDemoWorld,
+  readAttendanceForSession,
+  readDemoSession,
+  readDemoSessions,
+  resetDemoData as resetDemoDataImpl,
+  upsertAttendance,
+  writeDemoSession,
+} from './demoSeed';
 import { ApiError } from './errors';
 
 type MockOtpRecord = {
@@ -71,24 +96,20 @@ type MockPinMap = Record<string, string>;
 type MockClubMap = Record<string, Club & { code: string }>;
 type MockMembershipMap = Record<string, ClubMembership>;
 
-const MOCK_OTP_KEY = 'mock:otp';
-const MOCK_USERS_KEY = 'mock:users';
-const MOCK_PINS_KEY = 'mock:pins';
-const MOCK_CLUBS_KEY = 'mock:clubs';
-const MOCK_MEMBERSHIPS_KEY = 'mock:club_memberships';
 const DEMO_PHONE = '0708060337';
 const DEMO_PIN = '123456';
-const DEMO_CLUB_NAME = "j'aime courir";
+const DEMO_CLUB_NAME = DEMO_MODE ? CASA_CLUB_NAME : "j'aime courir";
 /** ~7:45/km — maps to Groupe D in clubPaceGroups */
 const DEMO_USER_PACE_SECONDS_PER_KM = 465;
 
 const ACCESS_TOKEN_TTL = 60 * 60; // 1h
 const REFRESH_TOKEN_TTL = 60 * 60 * 24 * 30; // 30d
 
-export function isMockEnabled(baseUrl?: string): boolean {
-  const explicit = process.env.EXPO_PUBLIC_USE_MOCK_API === 'true';
-  const hasBaseUrl = Boolean((baseUrl ?? process.env.EXPO_PUBLIC_API_URL ?? '').trim());
-  return explicit || !hasBaseUrl;
+export { isMockEnabled } from './mode';
+
+/** Clear AsyncStorage and reseed Casablanca demo world. */
+export async function resetDemoData(): Promise<void> {
+  await resetDemoDataImpl();
 }
 
 function randomId(prefix: string): string {
@@ -178,16 +199,19 @@ function isDemoPhone(phone: string): boolean {
 async function ensureDemoRunnerProfile(): Promise<void> {
   const existing = await getRunnerProfile();
   const base: RunnerProfile = existing ?? {
-    name: 'Sara B.',
+    name: DEMO_MODE ? 'Camille Dupont' : 'Sara B.',
     vo2max: null,
     weightKg: null,
     mainGoal: '10k',
   };
+  // Invariant (c): no profile-level group identity
+  const { defaultGroup: _omitGroup, ...rest } = base as RunnerProfile & {
+    defaultGroup?: string;
+  };
   await saveRunnerProfile({
-    ...base,
-    name: base.name || 'Sara B.',
+    ...rest,
+    name: rest.name || (DEMO_MODE ? 'Camille Dupont' : 'Sara B.'),
     clubName: DEMO_CLUB_NAME,
-    defaultGroup: 'D',
   });
 }
 
@@ -257,6 +281,10 @@ async function ensureSeedRoster(clubId: string): Promise<void> {
 }
 
 async function ensureSeedClub(): Promise<Club & { code: string }> {
+  if (DEMO_MODE) {
+    return await ensureDemoWorld();
+  }
+
   const clubs = await readJson<MockClubMap>(MOCK_CLUBS_KEY, {});
   const existing = Object.values(clubs)[0];
 
@@ -294,7 +322,7 @@ async function ensureSeedClub(): Promise<Club & { code: string }> {
 }
 
 async function mockCreateClub(
-  input: ClubCreateInput & { slug?: string },
+  input: ClubCreateInput & { slug?: string; purpose?: string | null; description?: string | null },
 ): Promise<Club> {
   const user = await getAuthUser();
   if (!user) throw new ApiError(401, 'Unauthorized');
@@ -304,13 +332,18 @@ async function mockCreateClub(
   if (!name) throw new ApiError(400, 'Name required');
   const slug = input.slug?.trim() || slugify(name);
   const id = randomId('club');
+  const purpose =
+    input.purpose?.trim() ||
+    input.description?.trim() ||
+    null;
+  const visibility = input.visibility === 'members' ? 'members' : 'public';
   const club: Club & { code: string } = {
     id,
     name,
     slug,
     city: input.city?.trim() || null,
-    description: null,
-    visibility: 'public',
+    description: purpose,
+    visibility,
     createdAt: new Date().toISOString(),
     createdById: user.id,
     code: makeInviteCode(slug),
@@ -326,6 +359,22 @@ async function mockCreateClub(
   });
 
   return club;
+}
+
+async function mockCancelClubRequest(clubId: string): Promise<{ ok: true }> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+  const memberships = await readMemberships();
+  const entry = Object.values(memberships).find(
+    (m) =>
+      m.userId === user.id &&
+      m.clubId === clubId &&
+      m.status === 'pending',
+  );
+  if (!entry) throw new ApiError(404, 'Demande introuvable');
+  delete memberships[entry.id];
+  await writeMemberships(memberships);
+  return { ok: true };
 }
 
 async function readClubs(): Promise<MockClubMap> {
@@ -472,10 +521,13 @@ async function mockOtpRequest(input: OtpRequestInput): Promise<OtpRequestResult>
   const record: MockOtpRecord = {
     phone: input.phone,
     requestId,
-    code: '123456',
+    code: DEMO_MODE ? DEMO_OTP_CODE : '123456',
     expiresAt: Date.now() + 5 * 60 * 1000,
   };
   await writeJson(MOCK_OTP_KEY, record);
+  if (DEMO_MODE) {
+    await ensureDemoWorld();
+  }
   return {
     requestId,
     expiresInSeconds: 5 * 60,
@@ -485,16 +537,30 @@ async function mockOtpRequest(input: OtpRequestInput): Promise<OtpRequestResult>
 
 async function mockOtpVerify(input: OtpVerifyInput): Promise<OtpVerifyResult> {
   const record = await readJson<MockOtpRecord | null>(MOCK_OTP_KEY, null);
-  if (!record || record.phone !== input.phone) {
-    throw new ApiError(400, 'Code invalide');
+  const demoCodeOk = DEMO_MODE && input.code === DEMO_OTP_CODE;
+
+  if (!demoCodeOk) {
+    if (!record || record.phone !== input.phone) {
+      throw new ApiError(400, 'Code invalide');
+    }
+    if (record.requestId && input.requestId && record.requestId !== input.requestId) {
+      throw new ApiError(400, 'Code invalide');
+    }
+    if (record.code !== input.code) {
+      throw new ApiError(400, 'Code invalide');
+    }
   }
-  if (record.requestId && input.requestId && record.requestId !== input.requestId) {
-    throw new ApiError(400, 'Code invalide');
-  }
-  if (record.code !== input.code) {
-    throw new ApiError(400, 'Code invalide');
-  }
+
   const user = await getOrCreateUser(input.phone);
+  if (DEMO_MODE) {
+    await ensureDemoWorld();
+    await ensureDemoUserMembership(user);
+    await ensureDemoRunnerProfile();
+  } else if (isDemoPhone(input.phone)) {
+    await ensureSeedClub();
+    await ensureDemoRunnerProfile();
+    await normalizeDemoJoinedSessionsGroup();
+  }
   return {
     user,
     tokens: createTokens(),
@@ -540,7 +606,11 @@ async function mockPinLogin(input: PinLoginInput): Promise<PinAuthResult> {
       ? normalizedPhone
       : `+${normalizedPhone}`,
   );
-  if (isDemoPhone(normalizedPhone)) {
+  if (DEMO_MODE) {
+    await ensureDemoWorld();
+    await ensureDemoUserMembership(user);
+    await ensureDemoRunnerProfile();
+  } else if (isDemoPhone(normalizedPhone)) {
     await ensureSeedClub();
     await ensureDemoRunnerProfile();
     await normalizeDemoJoinedSessionsGroup();
@@ -683,7 +753,9 @@ async function mockGetMemberships(): Promise<ClubMembershipsResult> {
     return { memberships: [] };
   }
   const club = await ensureSeedClub();
-  if (isDemoPhone(user.phone)) {
+  if (DEMO_MODE) {
+    await ensureDemoUserMembership(user);
+  } else if (isDemoPhone(user.phone)) {
     await ensureDemoClubMembership(club.id);
   }
   const clubs = await readClubs();
@@ -695,6 +767,227 @@ async function mockGetMemberships(): Promise<ClubMembershipsResult> {
       club: clubs[m.clubId],
     }));
   return { memberships: list };
+}
+
+async function mockListSessions(query: {
+  clubId?: string | null;
+}): Promise<{ sessions: ApiSession[] }> {
+  if (DEMO_MODE) {
+    let sessions = await readDemoSessions();
+    if (query.clubId) {
+      sessions = sessions.filter((s) => s.clubId === query.clubId);
+    }
+    const user = await getAuthUser();
+    if (user) {
+      const attendanceAll = await Promise.all(
+        sessions.map(async (s) => ({
+          session: s,
+          rows: await readAttendanceForSession(s.id),
+        })),
+      );
+      sessions = attendanceAll.map(({ session, rows }) => {
+        const mine = rows.find((r) => r.userId === user.id);
+        return {
+          ...session,
+          attendanceStatus: mine?.status ?? null,
+          attendanceGroupId: mine?.groupId ?? null,
+        };
+      });
+    }
+    return { sessions };
+  }
+  return { sessions: [] };
+}
+
+async function mockGetSession(sessionId: string): Promise<ApiSession> {
+  if (DEMO_MODE) {
+    const session = await readDemoSession(sessionId);
+    if (!session) throw new ApiError(404, 'Session not found');
+    const user = await getAuthUser();
+    if (user) {
+      const rows = await readAttendanceForSession(sessionId);
+      const mine = rows.find((r) => r.userId === user.id);
+      return {
+        ...session,
+        attendanceStatus: mine?.status ?? null,
+        attendanceGroupId: mine?.groupId ?? null,
+      };
+    }
+    return session;
+  }
+  throw new ApiError(404, 'Session not found');
+}
+
+async function mockCreateSession(input: SessionCreateInput): Promise<ApiSession> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+
+  const visibility = input.visibility ?? 'public';
+  const clubId = input.clubId ?? null;
+  // Invariant (a): members ⇒ clubId
+  if (visibility === 'members' && !clubId) {
+    throw new ApiError(400, 'clubId required for members-only sessions');
+  }
+
+  const session: ApiSession = {
+    id: randomId('session'),
+    title: input.title,
+    spot: input.spot,
+    dateLabel: input.dateLabel,
+    dateISO: input.dateISO ?? null,
+    timeMinutes: input.timeMinutes ?? null,
+    typeLabel: input.typeLabel,
+    volume: input.volume,
+    targetPace: input.targetPace,
+    estimatedDistanceKm: input.estimatedDistanceKm,
+    recommendedGroupId: input.recommendedGroupId,
+  clubId: visibility === 'members' ? clubId : clubId ?? null,
+  visibility,
+    genderRestriction: input.genderRestriction ?? 'none',
+    hostUserId: user.id,
+    workoutId: input.workoutId ?? null,
+    isCustom: input.isCustom ?? true,
+    createdAt: new Date().toISOString(),
+    paceGroups: input.paceGroups ?? [],
+    hostGroupName: input.hostGroupName ?? null,
+    meetingPoint: input.meetingPoint ?? null,
+    coachAdvice: input.coachAdvice ?? null,
+    coachPhone: input.coachPhone ?? null,
+    coachName: input.coachName ?? null,
+    attendanceStatus: null,
+    attendanceGroupId: null,
+  };
+
+  if (DEMO_MODE) {
+    await writeDemoSession(session);
+  }
+  return session;
+}
+
+async function mockJoinSession(
+  sessionId: string,
+  input: SessionJoinInput,
+): Promise<SessionJoinResult> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+  if (!DEMO_MODE) throw new ApiError(404, 'Not found');
+
+  const session = await readDemoSession(sessionId);
+  if (!session) throw new ApiError(404, 'Session not found');
+
+  // Invariant (a) for members-only: must be club member
+  if (session.visibility === 'members') {
+    const memberships = await readMemberships();
+    const isMember = Object.values(memberships).some(
+      (m) =>
+        m.userId === user.id &&
+        m.clubId === session.clubId &&
+        m.status === 'approved',
+    );
+    if (!isMember) throw new ApiError(403, 'Members only');
+  }
+
+  const profile = await getRunnerProfile();
+  const displayName = profile?.firstName ?? profile?.name ?? user.phone;
+  const groupId = (input.groupId as 'A' | 'B' | 'C' | 'D') || null;
+  const id = `att_${sessionId}_${user.id}`;
+  // Invariant (b)/(no auto-confirm): join is an explicit runner action → status joined
+  await upsertAttendance({
+    id,
+    sessionId,
+    userId: user.id,
+    displayName,
+    groupId,
+    status: 'joined',
+  });
+  await upsertJoinedSession(sessionId, groupId ?? 'C');
+
+  return {
+    id,
+    sessionId,
+    userId: user.id,
+    groupId,
+    status: 'joined',
+  };
+}
+
+async function mockLeaveSession(sessionId: string): Promise<SessionLeaveResult> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+  if (!DEMO_MODE) throw new ApiError(404, 'Not found');
+
+  const id = `att_${sessionId}_${user.id}`;
+  const rows = await readAttendanceForSession(sessionId);
+  const existing = rows.find((r) => r.userId === user.id);
+  await upsertAttendance({
+    id: existing?.id ?? id,
+    sessionId,
+    userId: user.id,
+    displayName: existing?.displayName ?? user.phone,
+    groupId: existing?.groupId ?? null,
+    status: 'left',
+  });
+
+  return {
+    attendance: {
+      id: existing?.id ?? id,
+      sessionId,
+      userId: user.id,
+      status: 'left',
+      groupId: existing?.groupId ?? null,
+    },
+  };
+}
+
+async function mockMySessions(): Promise<MySessionsResult> {
+  if (!DEMO_MODE) return { sessions: [] };
+  const user = await getAuthUser();
+  if (!user) return { sessions: [] };
+  const sessions = await readDemoSessions();
+  const withMine: ApiSession[] = [];
+  for (const session of sessions) {
+    const rows = await readAttendanceForSession(session.id);
+    const mine = rows.find(
+      (r) => r.userId === user.id && r.status === 'joined',
+    );
+    if (mine) {
+      withMine.push({
+        ...session,
+        attendanceStatus: 'joined',
+        attendanceGroupId: mine.groupId,
+      });
+    }
+  }
+  return { sessions: withMine };
+}
+
+async function mockSessionParticipants(
+  sessionId: string,
+): Promise<SessionParticipantsResult> {
+  if (DEMO_MODE) {
+    const session = await readDemoSession(sessionId);
+    if (!session) throw new ApiError(404, 'Session not found');
+
+    // Members-only gate: non-members cannot list participants
+    if (session.visibility === 'members') {
+      const user = await getAuthUser();
+      if (!user) throw new ApiError(401, 'Unauthorized');
+      const memberships = await readMemberships();
+      const isMember = Object.values(memberships).some(
+        (m) =>
+          m.userId === user.id &&
+          m.clubId === (session.clubId ?? DEMO_CLUB_ID) &&
+          m.status === 'approved',
+      );
+      if (!isMember) throw new ApiError(403, 'Members only');
+    }
+
+    const attendance = await readAttendanceForSession(sessionId);
+    return buildParticipantsResult(session, attendance);
+  }
+
+  // Legacy screenshot fixture for non-demo mock
+  return buildScreenshotDemoSessionParticipants(sessionId);
 }
 
 async function mockLeaveClub(clubId: string): Promise<{ ok: true }> {
@@ -1235,6 +1528,12 @@ export async function mockApiRequest<T>(
   if (clubLeaveMatch && method === 'POST') {
     return (await mockLeaveClub(clubLeaveMatch[1])) as T;
   }
+  const clubCancelMatch = path.match(
+    /^\/api\/v1\/clubs\/([^/]+)\/cancel-request$/,
+  );
+  if (clubCancelMatch && method === 'POST') {
+    return (await mockCancelClubRequest(clubCancelMatch[1])) as T;
+  }
   if (path.startsWith('/api/v1/clubs/') && path.endsWith('/request')) {
     const clubId = path.split('/api/v1/clubs/')[1]?.split('/')[0];
     return (await mockRequestJoin(clubId, body as ClubRequestInput)) as T;
@@ -1268,6 +1567,34 @@ export async function mockApiRequest<T>(
     const clubId = path.split('/api/v1/clubs/')[1];
     return (await mockGetClubDetail(clubId)) as T;
   }
+
+  if (path === '/api/v1/me/sessions' && method === 'GET') {
+    return (await mockMySessions()) as T;
+  }
+
+  if (
+    (path === '/api/v1/sessions' || path.startsWith('/api/v1/sessions?')) &&
+    method === 'GET'
+  ) {
+    const qs = path.includes('?') ? path.split('?')[1] ?? '' : '';
+    const params = new URLSearchParams(qs);
+    return (await mockListSessions({ clubId: params.get('clubId') })) as T;
+  }
+  if (path === '/api/v1/sessions' && method === 'POST') {
+    return (await mockCreateSession(body as SessionCreateInput)) as T;
+  }
+
+  const sessionJoinMatch = path.match(/^\/api\/v1\/sessions\/([^/]+)\/join$/);
+  if (sessionJoinMatch && method === 'POST') {
+    return (await mockJoinSession(
+      sessionJoinMatch[1],
+      body as SessionJoinInput,
+    )) as T;
+  }
+  const sessionLeaveMatch = path.match(/^\/api\/v1\/sessions\/([^/]+)\/leave$/);
+  if (sessionLeaveMatch && method === 'POST') {
+    return (await mockLeaveSession(sessionLeaveMatch[1])) as T;
+  }
   if (path.startsWith('/api/v1/sessions/') && path.endsWith('/request')) {
     return (await mockRequestSessionJoin('')) as T;
   }
@@ -1276,8 +1603,12 @@ export async function mockApiRequest<T>(
     /^\/api\/v1\/sessions\/([^/]+)\/participants$/,
   );
   if (participantsMatch && method === 'GET') {
-    const sessionId = participantsMatch[1];
-    return buildScreenshotDemoSessionParticipants(sessionId) as T;
+    return (await mockSessionParticipants(participantsMatch[1])) as T;
+  }
+
+  const sessionGetMatch = path.match(/^\/api\/v1\/sessions\/([^/]+)$/);
+  if (sessionGetMatch && method === 'GET') {
+    return (await mockGetSession(sessionGetMatch[1])) as T;
   }
 
   throw new ApiError(404, 'Not found');

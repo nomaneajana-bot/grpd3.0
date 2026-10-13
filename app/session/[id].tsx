@@ -26,6 +26,12 @@ import {
 } from "../../components/session/SessionRunnersPanel";
 import { InterGroupJoinPanel } from "../../components/session/InterGroupJoinPanel";
 import { borderRadius, colors, hairline, typography } from "../../constants/ui";
+import {
+  formatSessionDistanceKm,
+  formatSessionDistanceLabel,
+  formatSessionPaceLabel,
+} from "../../lib/sessionDisplay";
+
 import { buildCoachContext, type CoachContext } from "../../lib/coach";
 import {
     getJoinedSession,
@@ -67,7 +73,6 @@ import {
 import {
   getAllSessionsIncludingStored,
   getSessionById,
-  SESSION_MAP,
   apiSessionToSessionData,
   type SessionData,
 } from "../../lib/sessionData";
@@ -84,13 +89,9 @@ import type { WorkoutBlock, WorkoutStep } from "../../lib/workoutTypes";
 
 function formatSessionDetailSubtitle(s: import("../../lib/sessionData").SessionData): string {
   const spot = (s.spot || "").trim();
-  const datePart = s.dateLabel || "";
-  const tm = s.timeMinutes;
-  const timeStr =
-    tm != null && Number.isFinite(tm)
-      ? `${Math.floor(tm / 60)}:${String(tm % 60).padStart(2, "0")}`
-      : "";
-  const parts = [datePart, timeStr, spot].filter(Boolean);
+  // dateLabel already includes HH:MM when built via formatDateLabel — do not append time again
+  const datePart = (s.dateLabel || "").trim();
+  const parts = [datePart, spot].filter(Boolean);
   return parts.join(" · ");
 }
 
@@ -174,11 +175,8 @@ export default function SessionScreen() {
       } catch (err) {
         console.warn("API get session failed, trying local:", err);
       }
-      if (SESSION_MAP[id]) {
-        setSession(SESSION_MAP[id]);
-        setSessionLoadState("ready");
-        return;
-      }
+      // Always use getSessionById so seed sessions get shiftSeedSessionToFuture
+      // (Home and detail must show the same date).
       try {
         const storedSession = await getSessionById(id);
         if (storedSession) {
@@ -827,7 +825,7 @@ export default function SessionScreen() {
                 sessionDetailTab === "info" && styles.tabLabelActive,
               ]}
             >
-              Info
+              Infos
             </Text>
             {sessionDetailTab === "info" ? (
               <View style={styles.tabUnderline} />
@@ -846,7 +844,7 @@ export default function SessionScreen() {
                   sessionDetailTab === "runners" && styles.tabLabelActive,
                 ]}
               >
-                Runners
+                Coureurs
               </Text>
               {sessionDetailTab === "runners" ? (
                 <View style={styles.tabUnderline} />
@@ -885,12 +883,12 @@ export default function SessionScreen() {
         <StatGrid3
           cells={[
             {
-              value: String(session.estimatedDistanceKm),
+              value: formatSessionDistanceKm(session.estimatedDistanceKm),
               sub: "km",
               label: "Distance",
             },
             {
-              value: session.targetPace.replace(/\s*\/km\s*/i, "").trim(),
+              value: formatSessionPaceLabel(session.targetPace),
               label: "/km",
               valueColor: colors.text.accent,
             },
@@ -899,10 +897,11 @@ export default function SessionScreen() {
                 session.paceGroups.reduce((a, g) => a + g.runnersCount, 0) ||
                   "—",
               ),
-              label: "Runners",
+              label: "Coureurs",
             },
           ]}
         />
+
 
         {/* Session Details Card - on top (Type de course first) */}
         <View style={styles.card}>
@@ -922,7 +921,7 @@ export default function SessionScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Distance</Text>
             <Text style={styles.infoValue}>
-              {session.estimatedDistanceKm} km
+              {formatSessionDistanceLabel(session.estimatedDistanceKm)}
             </Text>
           </View>
 
@@ -1190,6 +1189,9 @@ export default function SessionScreen() {
                               ]}
                               activeOpacity={0.8}
                               onPress={() => setSelectedGroupId(group.id)}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Groupe ${group.label}`}
+                              testID={`session-group-${group.id}`}
                             >
                               <View style={styles.groupLeft}>
                                 <View style={styles.groupLabelRow}>
@@ -1413,6 +1415,9 @@ export default function SessionScreen() {
                 style={styles.leaveButton}
                 activeOpacity={0.8}
                 onPress={handleLeave}
+                accessibilityRole="button"
+                accessibilityLabel="Quitter cette séance"
+                testID="session-leave-btn"
               >
                 <Text style={styles.leaveButtonText}>
                   Quitter cette séance

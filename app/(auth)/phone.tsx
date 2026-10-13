@@ -9,8 +9,9 @@ import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
 import { OnboardingTitle } from "@/components/onboarding/OnboardingTitle";
 import { authTheme } from "@/constants/authTheme";
 import { colors, typography } from "@/constants/ui";
-import { createApiClient, requestOtp } from "@/lib/api";
+import { ApiError, createApiClient, requestOtp } from "@/lib/api";
 import { getAuthData, getDeviceId, setUseMockApi } from "@/lib/authStore";
+import { DEMO_MODE } from "@/lib/featureFlags";
 import { setLoginOtpRequest, setLoginPhone } from "@/lib/loginFlowStore";
 
 const DEMO_PHONE = "0708060337";
@@ -42,7 +43,8 @@ export default function PhoneScreen() {
     setError(null);
     setLoading(true);
     const phone = local.startsWith("0") ? `+212${local.slice(1)}` : `+212${local}`;
-    const useMock = isDemoPhone(local);
+    // Explicit mock only: DEMO_MODE, dedicated demo phone, or env mock — never silent fallback.
+    const useMock = DEMO_MODE || isDemoPhone(local);
     try {
       await setUseMockApi(useMock);
       await setLoginPhone(phone);
@@ -50,12 +52,21 @@ export default function PhoneScreen() {
       try {
         const otp = await requestOtp(client, { phone, channel: "sms" });
         await setLoginOtpRequest({ phone, requestId: otp.requestId });
-      } catch {
+      } catch (otpErr: unknown) {
+        // Connected misconfig must surface; PIN-only backends may omit OTP.
+        if (
+          otpErr instanceof ApiError &&
+          otpErr.code === "MISSING_API_URL"
+        ) {
+          throw otpErr;
+        }
         // PIN-only backends: verify screen falls back to loginWithPin.
       }
       router.push("/(auth)/verify" as Href);
     } catch (err: unknown) {
-      if (err instanceof Error) {
+      if (err instanceof ApiError && err.code === "MISSING_API_URL") {
+        setError(err.message);
+      } else if (err instanceof Error) {
         setError(err.message || "Impossible d'envoyer le code.");
       } else {
         setError("Impossible d'envoyer le code.");

@@ -22,10 +22,13 @@ import { GroupedList } from "@/components/redesign/GroupedList";
 import { SectionHeader } from "@/components/redesign/SectionHeader";
 import { SectionLabel } from "@/components/redesign/SectionLabel";
 import { redesignTheme } from "@/constants/redesignTheme";
+import { ScreenContainer } from "@/components/ui/ScreenContainer";
 import { Toast } from "@/components/ui/Toast";
 import { colors, spacing } from "@/constants/ui";
+
 import { useToast } from "@/hooks/useToast";
 import {
+  cancelClubRequest,
   createApiClient,
   getClubRoster,
   getMyMemberships,
@@ -177,6 +180,32 @@ export default function ClubScreen() {
     }
   };
 
+  const handleCancelPending = async () => {
+    if (!primaryMembership?.clubId || primaryMembership.status !== "pending") {
+      return;
+    }
+    const ok = await confirmAction({
+      title: "Annuler la demande",
+      message: `Retirer ta demande pour ${club?.name ?? "ce club"} ?`,
+      confirmLabel: "Annuler la demande",
+      destructive: true,
+    });
+    if (!ok) return;
+    setIsSubmitting(true);
+    try {
+      const client = createApiClient();
+      await cancelClubRequest(client, primaryMembership.clubId);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast("Demande annulée.", "success");
+      await loadData(true);
+    } catch (error) {
+      console.warn("Cancel club request failed:", error);
+      showToast("Impossible d'annuler la demande.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleJoinByCode = async () => {
     if (!inviteCode.trim()) {
       showToast("Ajoute un code d'invitation.", "error");
@@ -214,7 +243,8 @@ export default function ClubScreen() {
     : "Espace privé · validation admin.";
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScreenContainer>
       {toast && (
         <Toast
           message={toast.message}
@@ -224,12 +254,16 @@ export default function ClubScreen() {
       )}
 
       <View style={styles.toprow}>
-        <Text style={styles.pg}>Club</Text>
+        <Text style={styles.pg} accessibilityRole="header">
+          Clubs
+        </Text>
         <Text style={styles.roleSub}>{roleSubtitle}</Text>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
+        testID="clubs-scroll"
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -370,6 +404,18 @@ export default function ClubScreen() {
             <Text style={styles.pendingHint}>
               Ta demande est en cours de validation par un responsable du club.
             </Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.quitZone,
+                pressed && { opacity: 0.5 },
+              ]}
+              onPress={() => void handleCancelPending()}
+              disabled={isSubmitting}
+              accessibilityRole="button"
+              accessibilityLabel="Annuler la demande"
+            >
+              <Text style={styles.quitText}>Annuler la demande</Text>
+            </Pressable>
           </>
         ) : (
           <>
@@ -406,6 +452,7 @@ export default function ClubScreen() {
           </>
         )}
       </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }

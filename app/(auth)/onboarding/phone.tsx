@@ -64,13 +64,13 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
   },
   legal: {
-    color: colors.text.tertiary,
+    color: colors.text.secondary,
     fontSize: typography.sizes.sm,
     lineHeight: 18,
     marginTop: 16,
   },
   link: {
-    color: colors.text.secondary,
+    color: colors.accent.sage,
     textDecorationLine: "underline",
   },
 });

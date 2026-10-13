@@ -63,18 +63,14 @@ import {
     markWorkoutUsed,
     type WorkoutEntity,
 } from "../../lib/workoutStore";
+import {
+  todayISO,
+  upcomingDateOptions,
+} from "../../lib/dateHelpers";
 import type { ScrollEndEvent } from "../../types/events";
 
-// Static options (spots will be stateful)
-const DATE_OPTIONS = [
-  "LUNDI 10",
-  "MARDI 11",
-  "MERCREDI 12",
-  "JEUDI 13",
-  "VENDREDI 14",
-  "SAMEDI 15",
-  "DIMANCHE 16",
-];
+// Real upcoming calendar days (no invented "LUNDI 10")
+const DATE_CHOICES = upcomingDateOptions(14);
 
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i); // 0-23
 const MINUTE_OPTIONS = [0, 15, 30, 45];
@@ -1448,8 +1444,10 @@ export default function CreateSessionScreen() {
     loadMemberships();
   }, []);
 
-  // Date and time state
-  const [dateLabel, setDateLabel] = useState<string>("LUNDI 10");
+  // Date and time state — real calendar ISO, never invented weekday stubs
+  const [dateISO, setDateISO] = useState<string>(todayISO());
+  const dateLabel =
+    DATE_CHOICES.find((d) => d.dateISO === dateISO)?.label ?? dateISO;
   const [selectedHour, setSelectedHour] = useState<number>(6);
   const [selectedMinute, setSelectedMinute] = useState<number>(0);
 
@@ -1810,12 +1808,17 @@ export default function CreateSessionScreen() {
           setSelectedMinute(minute);
         }
 
-        // Extract date part (everything before the time)
-        const datePart = existingSession.dateLabel.replace(
-          /\s+\d{2}:\d{2}$/,
-          "",
-        );
-        setDateLabel(datePart);
+        // Prefer stored ISO; fall back to matching label among upcoming choices
+        if (existingSession.dateISO) {
+          setDateISO(existingSession.dateISO);
+        } else {
+          const datePart = existingSession.dateLabel.replace(
+            /\s+\d{2}:\d{2}$/,
+            "",
+          );
+          const match = DATE_CHOICES.find((d) => d.label === datePart);
+          setDateISO(match?.dateISO ?? todayISO());
+        }
 
         // Set spot
         setSpot(existingSession.spot);
@@ -1920,7 +1923,7 @@ export default function CreateSessionScreen() {
     () =>
       JSON.stringify({
         spot,
-        dateLabel,
+        dateISO,
         selectedHour,
         selectedMinute,
         sessionMode,
@@ -1932,7 +1935,7 @@ export default function CreateSessionScreen() {
       }),
     [
       spot,
-      dateLabel,
+      dateISO,
       selectedHour,
       selectedMinute,
       sessionMode,
@@ -2018,7 +2021,7 @@ export default function CreateSessionScreen() {
         // Update existing session
         const { session, defaultGroupId } = buildSessionFromForm({
           spot,
-          dateLabel,
+          dateISO,
           timeLabel,
           sessionType: effectiveSessionType,
           groupConfigs: submittedGroups,
@@ -2054,7 +2057,7 @@ export default function CreateSessionScreen() {
         // Create new session (API first; fallback to local if API unavailable)
         const { id, session, defaultGroupId } = buildSessionFromForm({
           spot,
-          dateLabel,
+          dateISO,
           timeLabel,
           sessionType: effectiveSessionType,
           groupConfigs: submittedGroups,
@@ -2135,10 +2138,11 @@ export default function CreateSessionScreen() {
     } catch (error) {
       console.error("Failed to publish session:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(
-        "Publication impossible",
-        "Ta séance n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.",
-      );
+      const message =
+        error instanceof Error && error.message.startsWith("PAST_DATE")
+          ? "Choisis une date d'aujourd'hui ou dans le futur."
+          : "Ta séance n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.";
+      Alert.alert("Publication impossible", message);
     } finally {
       setIsPublishing(false);
     }
@@ -2331,10 +2335,10 @@ export default function CreateSessionScreen() {
                 onPress={() => setShowWorkoutPicker(true)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.fieldLabel}>Workout associé</Text>
+                <Text style={styles.fieldLabel}>Entraînement associé</Text>
                 <View style={styles.fieldInputRow}>
                   <Text style={styles.fieldInput}>
-                    {selectedWorkoutName ?? "Aucun workout associé"}
+                    {selectedWorkoutName ?? "Aucun entraînement associé"}
                   </Text>
                   <Text style={styles.fieldChevron}>›</Text>
                 </View>
@@ -2381,7 +2385,7 @@ export default function CreateSessionScreen() {
               <Text style={styles.cardTitle}>Groupes & allures</Text>
             </View>
             <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>Utiliser des groupes d'allure</Text>
+              <Text style={styles.fieldLabel}>Utiliser des groupes d&apos;allure</Text>
               <Switch
                 value={usePaceGroups}
                 onValueChange={setUsePaceGroups}
@@ -2538,6 +2542,11 @@ export default function CreateSessionScreen() {
           style={[styles.ctaButton, isPublishing && styles.ctaButtonDisabled]}
           onPress={handlePublish}
           disabled={isPublishing}
+          accessibilityRole="button"
+          accessibilityLabel={
+            isEditMode ? "Mettre à jour la séance" : "Publier la séance"
+          }
+          testID="session-publish-btn"
         >
           <Text style={styles.ctaButtonText}>
             {isPublishing
@@ -2572,10 +2581,13 @@ export default function CreateSessionScreen() {
       <OptionPicker
         visible={showDatePicker}
         title="Choisir une date"
-        options={DATE_OPTIONS}
+        options={DATE_CHOICES.map((d) => d.label)}
         selectedValue={dateLabel}
         onClose={() => setShowDatePicker(false)}
-        onSelect={(value) => setDateLabel(value)}
+        onSelect={(value) => {
+          const match = DATE_CHOICES.find((d) => d.label === value);
+          if (match) setDateISO(match.dateISO);
+        }}
       />
       <TimePicker
         visible={showTimePicker}
@@ -3008,17 +3020,17 @@ const styles = StyleSheet.create({
   ctaButton: {
     backgroundColor: colors.accent.primary,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 26,
+    paddingVertical: 17,
+    borderRadius: 16,
     alignItems: "center",
   },
   ctaButtonDisabled: {
     opacity: 0.6,
   },
   ctaButtonText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.background.primary,
+    fontSize: 15,
+    fontWeight: "700",
   },
   modalBackdrop: {
     flex: 1,

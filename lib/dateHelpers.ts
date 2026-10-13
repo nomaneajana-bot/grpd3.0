@@ -85,7 +85,7 @@ export function formatDateLabel(date: Date, timeMinutes: number): string {
 }
 
 /**
- * Check if date is in the future
+ * Check if date is in the future (calendar day >= today)
  */
 export function isFutureDate(dateISO: string): boolean {
   if (!dateISO) return false;
@@ -102,6 +102,69 @@ export function isFutureDate(dateISO: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** Today as YYYY-MM-DD in local time. */
+export function todayISO(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+    now.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+/**
+ * Next `count` calendar days starting from today (inclusive), as ISO dates.
+ * Used by session create date picker — real dates, never invented weekdays.
+ */
+export function upcomingDateOptions(count = 14): {
+  dateISO: string;
+  label: string;
+}[] {
+  const options: { dateISO: string; label: string }[] = [];
+  const dayNames = [
+    "DIMANCHE",
+    "LUNDI",
+    "MARDI",
+    "MERCREDI",
+    "JEUDI",
+    "VENDREDI",
+    "SAMEDI",
+  ];
+  const monthNames = [
+    "JANVIER",
+    "FÉVRIER",
+    "MARS",
+    "AVRIL",
+    "MAI",
+    "JUIN",
+    "JUILLET",
+    "AOÛT",
+    "SEPTEMBRE",
+    "OCTOBRE",
+    "NOVEMBRE",
+    "DÉCEMBRE",
+  ];
+  const start = new Date();
+  start.setHours(12, 0, 0, 0);
+  for (let i = 0; i < count; i += 1) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const dateISO = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate(),
+    ).padStart(2, "0")}`;
+    options.push({
+      dateISO,
+      label: `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]}`,
+    });
+  }
+  return options;
+}
+
+/**
+ * Reject past calendar days. Returns false for invalid ISO.
+ */
+export function isSelectableOutingDate(dateISO: string): boolean {
+  return isFutureDate(dateISO);
 }
 
 /**

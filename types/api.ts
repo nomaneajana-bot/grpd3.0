@@ -214,6 +214,10 @@ export type ClubMembershipsResult = {
 export type ClubCreateInput = {
   name: string;
   city?: string | null;
+  /** Free-form purpose / description (unrestricted). */
+  purpose?: string | null;
+  /** Public = discoverable; members = private club. Default public. */
+  visibility?: ClubVisibility;
 };
 
 export type ClubUpdateInput = {

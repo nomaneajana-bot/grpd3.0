@@ -12,9 +12,9 @@ import { welcomeTheme } from "@/components/onboarding/onboardingTheme";
 
 /** Stacked CSS backgrounds — matches Présence HTML export (top layer first). */
 const WEB_BACKGROUND_IMAGE = [
-  "linear-gradient(to top, rgba(0, 0, 0, 0) 40%, rgb(0, 0, 0) 100%)",
-  "radial-gradient(circle at 50% 38%, rgba(47, 123, 255, 0.55) 0%, rgba(0, 0, 0, 0) 62%)",
-  "rgb(0, 0, 0)",
+  "linear-gradient(to top, rgba(17, 18, 20, 0) 40%, rgb(17, 18, 20) 100%)",
+  "radial-gradient(circle at 50% 38%, rgba(195, 213, 179, 0.35) 0%, rgba(17, 18, 20, 0) 62%)",
+  "rgb(17, 18, 20)",
 ].join(", ");
 
 const webLayerStyle: React.CSSProperties = {
@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
   wrap: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 0,
+    pointerEvents: "none",
   },
   linear: {
     ...StyleSheet.absoluteFillObject,

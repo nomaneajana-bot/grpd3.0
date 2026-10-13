@@ -70,7 +70,13 @@ export function InterGroupJoinPanel({
 
   if (hasStoredJoin) {
     return (
-      <Pressable style={styles.leaveBtn} onPress={onLeave}>
+      <Pressable
+        style={styles.leaveBtn}
+        onPress={onLeave}
+        accessibilityRole="button"
+        accessibilityLabel="Quitter cette séance"
+        testID="session-leave-btn"
+      >
         <Text style={styles.leaveText}>Quitter cette séance</Text>
       </Pressable>
     );
@@ -89,7 +95,13 @@ export function InterGroupJoinPanel({
 
   if (!canJoin) {
     return (
-      <Pressable style={styles.requestBtn} onPress={onRequestJoin}>
+      <Pressable
+        style={styles.requestBtn}
+        onPress={onRequestJoin}
+        accessibilityRole="button"
+        accessibilityLabel="Demander l'accès"
+        testID="session-join-request"
+      >
         <Text style={styles.requestText}>Demander l'accès</Text>
       </Pressable>
     );
@@ -97,7 +109,7 @@ export function InterGroupJoinPanel({
 
   if (joinState === "locked") {
     return (
-      <View>
+      <View testID="session-join-locked">
         <View style={styles.bannerOrange}>
           <Text style={styles.bannerIcon}>🔒</Text>
           <Text style={styles.bannerText}>{lockedMessage}</Text>
@@ -139,6 +151,9 @@ export function InterGroupJoinPanel({
             ]}
             onPress={onJoin}
             disabled={isPublishing}
+            accessibilityRole="button"
+            accessibilityLabel="Confirmer l'inscription"
+            testID="session-join-confirm"
           >
             <Text style={styles.joinBtnPrimaryText}>
               {isPublishing ? "Inscription…" : "Confirmer"}
@@ -160,6 +175,9 @@ export function InterGroupJoinPanel({
       ]}
       onPress={onJoin}
       disabled={isPublishing}
+      accessibilityRole="button"
+      accessibilityLabel="S'inscrire à la séance"
+      testID="session-join-btn"
     >
       <Text style={styles.joinBtnPrimaryText}>
         {isPublishing ? "Inscription…" : "S'inscrire"}

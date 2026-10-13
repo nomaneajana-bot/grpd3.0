@@ -12,15 +12,19 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
 
+import { SelectableChip } from "@/components/ui/SelectableChip";
 import { Card } from "@/components/ui/Card";
 import { Toast } from "@/components/ui/Toast";
-import { colors, spacing } from "@/constants/ui";
+import { colors, spacing, typography } from "@/constants/ui";
 import { useToast } from "@/hooks/useToast";
 import { createApiClient, createClub } from "@/lib/api";
+import type { ClubVisibility } from "@/types/api";
 
 export default function ClubCreateScreen() {
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [visibility, setVisibility] = useState<ClubVisibility>("public");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
@@ -35,6 +39,8 @@ export default function ClubCreateScreen() {
       await createClub(client, {
         name: name.trim(),
         city: city.trim() || undefined,
+        purpose: purpose.trim() || undefined,
+        visibility,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/club");
@@ -66,7 +72,11 @@ export default function ClubCreateScreen() {
         <Text style={styles.screenTitle}>Créer un club</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <Card style={styles.card}>
           <View style={styles.fieldRow}>
             <Text style={styles.fieldLabel}>Nom du club</Text>
@@ -74,23 +84,61 @@ export default function ClubCreateScreen() {
               style={styles.textInput}
               value={name}
               onChangeText={setName}
-              placeholder="Nom du club"
-              placeholderTextColor="#666"
+              placeholder="Ex. Casa Running Club"
+              placeholderTextColor={colors.text.secondary}
               autoCapitalize="words"
               editable={!isSubmitting}
+              accessibilityLabel="Nom du club"
+              testID="club-name-input"
             />
           </View>
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Ville (optionnel)</Text>
+            <Text style={styles.fieldLabel}>Ville</Text>
             <TextInput
               style={styles.textInput}
               value={city}
               onChangeText={setCity}
-              placeholder="Ville"
-              placeholderTextColor="#666"
+              placeholder="Casablanca"
+              placeholderTextColor={colors.text.secondary}
               autoCapitalize="words"
               editable={!isSubmitting}
+              accessibilityLabel="Ville"
+              testID="club-city-input"
             />
+          </View>
+          <View style={styles.fieldRow}>
+            <Text style={styles.fieldLabel}>Objectif du club</Text>
+            <Text style={styles.fieldHint}>
+              Course, marche, networking, mixte… libre.
+            </Text>
+            <TextInput
+              style={[styles.textInput, styles.textArea]}
+              value={purpose}
+              onChangeText={setPurpose}
+              placeholder="Décris le but de la communauté"
+              placeholderTextColor={colors.text.secondary}
+              multiline
+              numberOfLines={3}
+              editable={!isSubmitting}
+              accessibilityLabel="Objectif du club"
+            />
+          </View>
+          <View style={styles.fieldRow}>
+            <Text style={styles.fieldLabel}>Visibilité</Text>
+            <View style={styles.chips}>
+              <SelectableChip
+                label="Public"
+                selected={visibility === "public"}
+                showCheckmark
+                onPress={() => setVisibility("public")}
+              />
+              <SelectableChip
+                label="Privé (membres)"
+                selected={visibility === "members"}
+                showCheckmark
+                onPress={() => setVisibility("members")}
+              />
+            </View>
           </View>
           <Pressable
             style={({ pressed }) => [
@@ -99,8 +147,13 @@ export default function ClubCreateScreen() {
             ]}
             onPress={handleSubmit}
             disabled={isSubmitting}
+            accessibilityRole="button"
+            accessibilityLabel="Créer le club"
+            testID="club-create-submit"
           >
-            <Text style={styles.primaryButtonText}>Créer le club</Text>
+            <Text style={styles.primaryButtonText}>
+              {isSubmitting ? "Création…" : "Créer le club"}
+            </Text>
           </Pressable>
         </Card>
       </ScrollView>
@@ -121,61 +174,77 @@ const styles = StyleSheet.create({
   backRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: spacing.md,
+    gap: 6,
+    marginBottom: 12,
   },
   backIcon: {
-    color: colors.text.accent,
+    color: colors.text.primary,
     fontSize: 18,
-    marginRight: 6,
   },
   backLabel: {
-    color: colors.text.accent,
-    fontSize: 16,
-    fontWeight: "500",
+    color: colors.text.secondary,
+    fontSize: typography.sizes.base,
   },
   screenTitle: {
     color: colors.text.primary,
-    fontSize: 22,
+    fontSize: typography.sizes["2xl"],
     fontWeight: "700",
   },
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: 48,
   },
   card: {
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    gap: 4,
   },
   fieldRow: {
-    marginBottom: spacing.sm,
+    marginBottom: 14,
   },
   fieldLabel: {
     color: colors.text.secondary,
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
+    fontWeight: "600",
     marginBottom: 6,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  fieldHint: {
+    color: colors.text.secondary,
+    fontSize: typography.sizes.sm,
+    marginBottom: 8,
   },
   textInput: {
     backgroundColor: colors.background.input,
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
     color: colors.text.primary,
-    fontSize: 14,
+    fontSize: typography.sizes.base,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  textArea: {
+    minHeight: 88,
+    textAlignVertical: "top",
+  },
+  chips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
   },
   primaryButton: {
-    marginTop: spacing.sm,
+    marginTop: 8,
     backgroundColor: colors.accent.primary,
-    paddingVertical: 12,
-    borderRadius: 999,
+    borderRadius: 14,
+    paddingVertical: 15,
     alignItems: "center",
   },
   primaryButtonPressed: {
-    opacity: 0.8,
+    opacity: 0.85,
   },
   primaryButtonText: {
-    color: colors.text.primary,
-    fontSize: 15,
-    fontWeight: "600",
+    color: "#FFFFFF",
+    fontSize: typography.sizes.base,
+    fontWeight: "700",
   },
 });
