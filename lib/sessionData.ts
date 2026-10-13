@@ -77,6 +77,8 @@ export type SessionData = {
   genderRestriction?: "women_only" | null; // Optional gender restriction (e.g., girls-only runs)
   /** Set when session is from API (club-linked). Used for matching membership. */
   clubId?: string | null;
+  /** Organizer identity when known (API). Used to gate modify/delete vs join/leave. */
+  hostUserId?: string | null;
   attendanceStatus?:
     | "joined"
     | "suggested"
@@ -113,6 +115,7 @@ export function apiSessionToSessionData(api: {
   coachName?: string | null;
   workoutId?: string | null;
   isCustom?: boolean;
+  hostUserId?: string | null;
   paceGroups?: { id: string; label: string; paceRange: string; runnersCount?: number; avgPaceSecondsPerKm?: number }[];
   attendanceStatus?:
     | "joined"
@@ -166,6 +169,7 @@ export function apiSessionToSessionData(api: {
     coachPhone: api.coachPhone ?? undefined,
     coachName: api.coachName ?? undefined,
     clubId: api.clubId ?? null,
+    hostUserId: api.hostUserId ?? null,
     genderRestriction:
       api.genderRestriction === "women" || api.genderRestriction === "women_only"
         ? "women_only"

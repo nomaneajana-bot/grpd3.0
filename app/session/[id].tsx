@@ -151,6 +151,7 @@ export default function SessionScreen() {
   const [session, setSession] = useState<SessionData | undefined>(undefined);
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
   // Load session: API first, then SESSION_MAP, then stored sessions
@@ -199,8 +200,12 @@ export default function SessionScreen() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const runner = await getRunnerProfile();
+        const [runner, auth] = await Promise.all([
+          getRunnerProfile(),
+          getAuthUser(),
+        ]);
         setProfile(runner);
+        setAuthUserId(auth?.id ?? null);
       } catch (error) {
         console.warn("Failed to load profile for session:", error);
       }
@@ -267,18 +272,19 @@ export default function SessionScreen() {
         })
       : null;
   const membershipStatus = matchingMembership?.status ?? null;
-  const profileClubMatch =
-    normalizedHost &&
-    profile?.clubName?.toLowerCase().trim() === normalizedHost;
-  const isApprovedMember =
-    membershipStatus === "approved" ||
-    (membershipStatus === null && Boolean(profileClubMatch));
+  // Membership status is authoritative — profile.clubName must not silently grant access
+  const isApprovedMember = membershipStatus === "approved";
   const isPendingMember = membershipStatus === "pending";
   const isCoachOrAdmin =
     membershipStatus === "approved" &&
     (matchingMembership?.role === "coach" ||
       matchingMembership?.role === "admin");
   const clubId = matchingMembership?.clubId ?? null;
+  // Organizer controls require host identity — isCustom alone is not ownership
+  const isOrganizer =
+    Boolean(authUserId) &&
+    Boolean(session?.hostUserId) &&
+    session!.hostUserId === authUserId;
 
   useEffect(() => {
     const loadRoster = async () => {
@@ -1251,7 +1257,7 @@ export default function SessionScreen() {
           </View>
         ) : null}
 
-        {!session.isCustom ? (
+        {!isOrganizer ? (
           <View style={styles.actionButtonContainer}>
             <InterGroupJoinPanel
               memberGroupId={memberHomeGroupId}
@@ -1387,8 +1393,8 @@ export default function SessionScreen() {
           </View>
         )}
 
-        {/* Footer with buttons */}
-        {session.isCustom ? (
+        {/* Footer: organizer-only modify/delete (hostUserId), not merely isCustom */}
+        {isOrganizer ? (
           <View style={styles.footer}>
             <TouchableOpacity
               style={styles.modifyButton}
@@ -1399,6 +1405,7 @@ export default function SessionScreen() {
                   params: { sessionId: session.id },
                 });
               }}
+              testID="session-modify-btn"
             >
               <Text style={styles.modifyButtonText}>Modifier</Text>
             </TouchableOpacity>
@@ -1407,6 +1414,7 @@ export default function SessionScreen() {
               activeOpacity={0.8}
               onPress={() => setShowDeleteModal(true)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              testID="session-delete-btn"
             >
               <Text style={styles.deleteButtonText}>Supprimer la séance</Text>
             </TouchableOpacity>

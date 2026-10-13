@@ -597,8 +597,12 @@ async function mockOtpVerify(input: OtpVerifyInput): Promise<OtpVerifyResult> {
   const user = await getOrCreateUser(input.phone);
   if (DEMO_MODE) {
     await ensureDemoWorld();
-    await ensureDemoUserMembership(user);
-    await ensureDemoRunnerProfile();
+    // Only the canonical demo phone is pre-approved into Casa club.
+    // Other numbers stay outsiders so invite/pending/outsider journeys remain meaningful.
+    if (isDemoPhone(input.phone)) {
+      await ensureDemoUserMembership(user);
+      await ensureDemoRunnerProfile();
+    }
   } else if (isDemoPhone(input.phone)) {
     await ensureSeedClub();
     await ensureDemoRunnerProfile();
@@ -651,8 +655,10 @@ async function mockPinLogin(input: PinLoginInput): Promise<PinAuthResult> {
   );
   if (DEMO_MODE) {
     await ensureDemoWorld();
-    await ensureDemoUserMembership(user);
-    await ensureDemoRunnerProfile();
+    if (isDemoPhone(normalizedPhone)) {
+      await ensureDemoUserMembership(user);
+      await ensureDemoRunnerProfile();
+    }
   } else if (isDemoPhone(normalizedPhone)) {
     await ensureSeedClub();
     await ensureDemoRunnerProfile();
@@ -796,9 +802,10 @@ async function mockGetMemberships(): Promise<ClubMembershipsResult> {
     return { memberships: [] };
   }
   const club = await ensureSeedClub();
-  if (DEMO_MODE) {
+  // Do not silently approve every DEMO_MODE user into Casa — only the demo phone.
+  if (DEMO_MODE && isDemoPhone(user.phone)) {
     await ensureDemoUserMembership(user);
-  } else if (isDemoPhone(user.phone)) {
+  } else if (!DEMO_MODE && isDemoPhone(user.phone)) {
     await ensureDemoClubMembership(club.id);
   }
   const clubs = await readClubs();
@@ -884,7 +891,8 @@ async function mockCreateSession(input: SessionCreateInput): Promise<ApiSession>
     targetPace: input.targetPace,
     estimatedDistanceKm: input.estimatedDistanceKm,
     recommendedGroupId: input.recommendedGroupId,
-  clubId: visibility === 'members' ? clubId : clubId ?? null,
+  // Public outings must not inherit club context
+  clubId: visibility === 'members' ? clubId : null,
   visibility,
     genderRestriction: input.genderRestriction ?? 'none',
     hostUserId: user.id,
