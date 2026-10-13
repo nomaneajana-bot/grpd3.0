@@ -393,9 +393,9 @@ function buildDemoSessions(): ApiSession[] {
       ? PACE_GROUPS_ABCD.map((g) => ({ ...g }))
       : [];
 
-    // Invariant (a): members ⇒ clubId
+    // Invariant (a): members ⇒ clubId; public must not inherit club context
     const clubId =
-      spec.visibility === "members" ? DEMO_CLUB_ID : DEMO_CLUB_ID;
+      spec.visibility === "members" ? DEMO_CLUB_ID : null;
 
     return {
       id: spec.id,

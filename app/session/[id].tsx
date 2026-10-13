@@ -1313,6 +1313,9 @@ export default function SessionScreen() {
               onRequestJoin={handleRequestJoin}
               onLeave={handleLeave}
               onGoToClub={() => router.push("/(tabs)/club")}
+              onCancelWarn={() =>
+                setSelectedGroupId(memberHomeGroupId ?? sessionAnchorGroupId)
+              }
             />
           </View>
         ) : null}

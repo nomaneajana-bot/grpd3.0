@@ -24,6 +24,8 @@ type InterGroupJoinPanelProps = {
   onRequestJoin: () => void;
   onLeave: () => void;
   onGoToClub: () => void;
+  /** Dismiss cross-group warn state (Annuler). */
+  onCancelWarn?: () => void;
 };
 
 export function InterGroupJoinPanel({
@@ -40,6 +42,7 @@ export function InterGroupJoinPanel({
   onRequestJoin,
   onLeave,
   onGoToClub,
+  onCancelWarn,
 }: InterGroupJoinPanelProps) {
   const sessionTargetGroupId = (selectedGroupId ??
     sessionAnchorGroupId) as ClubPaceGroupId | null;
@@ -102,7 +105,7 @@ export function InterGroupJoinPanel({
         accessibilityLabel="Demander l'accès"
         testID="session-join-request"
       >
-        <Text style={styles.requestText}>Demander l&apos;accès</Text>
+        <Text style={styles.requestText}>Demander l'accès</Text>
       </Pressable>
     );
   }
@@ -116,7 +119,7 @@ export function InterGroupJoinPanel({
         </View>
         <View style={[styles.joinBtn, styles.joinBtnUnavailable]}>
             <Text style={styles.joinBtnUnavailableText}>
-            S&apos;inscrire — non disponible
+            S'inscrire — non disponible
           </Text>
         </View>
       </View>
@@ -138,6 +141,10 @@ export function InterGroupJoinPanel({
               styles.halfBtn,
               pressed && styles.joinBtnPressed,
             ]}
+            onPress={onCancelWarn}
+            accessibilityRole="button"
+            accessibilityLabel="Annuler"
+            testID="session-join-cancel-warn"
           >
             <Text style={styles.joinBtnGhostText}>Annuler</Text>
           </Pressable>
@@ -180,7 +187,7 @@ export function InterGroupJoinPanel({
       testID="session-join-btn"
     >
       <Text style={styles.joinBtnPrimaryText}>
-        {isPublishing ? "Inscription…" : "S&apos;inscrire"}
+        {isPublishing ? "Inscription…" : "S'inscrire"}
       </Text>
     </Pressable>
   );

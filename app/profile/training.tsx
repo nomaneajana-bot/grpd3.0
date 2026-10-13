@@ -106,8 +106,14 @@ export default function TrainingScreen() {
   );
 
   const accessibleSessions = useMemo(
-    () => sessions.filter((s) => isSessionVisibleToProfile(s, profile)),
-    [sessions, profile],
+    () =>
+      sessions.filter(
+        (s) =>
+          isSessionVisibleToProfile(s, profile, {
+            hasJoined: joinedIds.has(s.id),
+          }) || joinedIds.has(s.id),
+      ),
+    [sessions, profile, joinedIds],
   );
   const sessionsCount = useMemo(
     () => countAttendedSessions(accessibleSessions, joinedIds),

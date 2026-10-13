@@ -304,10 +304,12 @@ EXPO_PUBLIC_DEMO_MODE=true npx expo start --web --port 8081
 | Past / full / cancelled outing lifecycle | UNSUPPORTED in demo mock | No expire/cancel/capacity enforcement exercised |
 | Hosted journey | BLOCKED | No hosted preview URL in cloud agent |
 | Cross-device persistence | BLOCKED | Requires hosted API + second device |
-| Expired invites | UNSUPPORTED | Mock invite codes do not expire |
+| Expired invites | UNSUPPORTED | Mock invite codes do not expire / UI never sets expiresAt |
 | Toast overlapping form labels on Accès club | Visual QA | Absolute toast can cover section headers |
 | Leave club while attending members-only | Closed this run | S14 PASS — attendance revoked; direct link introuvable |
 | Pace-group TOI vs roster counts | Closed this run | S15 PASS — TOI on group with count ≥ 1 |
+| Walking / language outings share running session chrome | Known product gap | Same `/session/[id]` + pace groups; previews deep-link `/profile/training` — not reinvented this run |
+| Real API club leave / cancel-request routes | Mock-only | Client calls exist; hosted routes still missing under `app/api/v1/clubs` |
 
 
 ## Fixes applied during this audit (within existing behavior)
