@@ -1,17 +1,17 @@
 # Semantic / product-logic audit
 
-**SHA:** `1948883cef375a3babe1c9e8fbf8a32f15dc73be`  
-**Generated:** 2026-10-13T03:02:19.582Z  
+**SHA:** `94626f7056f8794b8b09aa19cb6435135cf42cc7`  
+**Generated:** 2026-10-13T03:05:52.202Z  
 **Surfaces:** demo (executed) · same-device switch (executed) · hosted (**BLOCKED**) · cross-device (**BLOCKED**)
 
 ## Summary
 
 | Result | Count |
 |--------|------:|
-| PASS | 10 |
-| FAIL | 1 |
+| PASS | 11 |
+| FAIL | 0 |
 | BLOCKED | 2 |
-| Contradictions flagged | 3 |
+| Contradictions flagged | 2 |
 
 Green design preserved. This is **not** an MVP-ready claim.
 
@@ -28,17 +28,12 @@ Green design preserved. This is **not** an MVP-ready claim.
 
 ## Ranked contradiction register
 
-### 1. [P0] Two clubs share or lack distinct invite codes
-- **Impact:** Invite intended for Club A may join Club B or fail silently
-- **Scenario:** S1-two-clubs
-- **Evidence:** clubsVisible A=true B=true; codeA=AUDIT8NZ codeB=AUDIT8NZ; betaFocused=true
-
-### 2. [P2] UNSUPPORTED: hosted cross-device persistence not verified in this run
+### 1. [P2] UNSUPPORTED: hosted cross-device persistence not verified in this run
 - **Impact:** Cannot claim attendance survives devices/backends
 - **Scenario:** S10-unsupported-policies
 - **Evidence:** No hosted preview URL/credentials in cloud agent
 
-### 3. [P2] UNSUPPORTED: expired invites / cancel outing / capacity-full lifecycle
+### 2. [P2] UNSUPPORTED: expired invites / cancel outing / capacity-full lifecycle
 - **Impact:** No product path exercised for expire/cancel/full in demo mock
 - **Scenario:** S10-unsupported-policies
 - **Evidence:** Mock invite codes do not expire; no cancel-outing control found
@@ -46,7 +41,7 @@ Green design preserved. This is **not** an MVP-ready claim.
 
 ## Scenario log
 
-### S1-two-clubs — FAIL
+### S1-two-clubs — PASS
 - **Title:** Organizer creates two distinct clubs with distinct invites
 - **Persona:** organizer
 - **Setup:** Fresh DEMO_MODE; real OTP login
@@ -56,14 +51,14 @@ Green design preserved. This is **not** an MVP-ready claim.
   1. Create Club Beta + generate invite
   1. Verify Clubs list shows both; codes differ
 - **Expected meaning:** Each club is a separate membership boundary with its own invite code
-- **Actual:** clubsVisible A=true B=true; codeA=AUDIT8NZ codeB=AUDIT8NZ; betaFocused=true
+- **Actual:** clubsVisible A=true B=true; codeA=AUDITRNJ codeB=AUDITGLE; betaFocused=true
 - **Surface:** demo
 - **Screenshot:** screenshots/S1-club-b-invite.png
 
 ### S2-invite-joins-intended-club — PASS
 - **Title:** Invite code joins the intended club; membership ≠ attendance
 - **Persona:** member
-- **Setup:** Fresh login; use invite AUDIT8NZ
+- **Setup:** Fresh login; use invite AUDITRNJ
 - **Steps:** 
   1. Login as member phone
   1. Club access → enter Club A invite → Rejoindre
@@ -153,7 +148,7 @@ Cette séance n'existe plus ou n'est pas accessible.
   1. Publish
   1. Assert no members-only club framing
 - **Expected meaning:** Public outings are independent of club membership
-- **Actual:** url=http://localhost:8081/session/session_1791860476442_p7f2cp1n; inheritedClub=false; looksPublic=true; snippet=‹
+- **Actual:** url=http://localhost:8081/session/session_1791860689231_s1wn3ykq; inheritedClub=false; looksPublic=true; snippet=‹
 Marina
 Modifier
 FARTLEK
@@ -264,3 +259,26 @@ EXPO_PUBLIC_DEMO_MODE=true npx expo start --web --port 8081
 ```
 
 No merge / production / spend / credential changes / OCIF submission.
+
+
+## Remaining gaps (honest / not silently invented)
+
+| Gap | Status | Notes |
+|-----|--------|-------|
+| Leave club while still attending that club's members-only outing | Not fully UI-tested this run | Membership leave exists; attendance cleanup policy not asserted end-to-end |
+| Past / full / cancelled outing lifecycle | UNSUPPORTED in demo mock | No expire/cancel/capacity enforcement exercised |
+| Hosted journey | BLOCKED | No hosted preview URL in cloud agent |
+| Cross-device persistence | BLOCKED | Requires hosted API + second device |
+| Pace group "TOI" vs member counts | Observed earlier | User marked TOI on group B while counts showed 0 — worth a follow-up |
+| Toast overlapping form labels on Accès club | Visual QA | Absolute toast can cover section headers |
+
+## Fixes applied during this audit (within existing behavior)
+
+1. DEMO_MODE no longer auto-approves every phone into Casa (demo phone only)
+2. Organizer Modifier/Supprimer gated on `hostUserId` (not mere `isCustom`)
+3. Public sessions force `clubId: null`
+4. Multi-club switcher on Clubs + invite club picker on Accès
+5. Invite codes made unique (no slug collisions)
+6. Profile.clubName no longer silently grants approved access
+
+Green design preserved. **Not an MVP-ready claim.**
