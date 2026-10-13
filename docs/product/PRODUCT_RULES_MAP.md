@@ -1,7 +1,7 @@
 # Product Rules / Decision Map (canonical)
 
 **Branch:** `cursor/green-home-ux-join-3184`  
-**SHA:** `05a387426fde099cae415a8b4a98e964bd2e98e3`  
+**SHA:** `10f01901b088474ba48c6783615c70fdb2cd5400`  
 **Legend:** **I** = implemented behavior in code · **R** = intended behavior supported by user requirements / prior agreement · **U** = unresolved (needs Nouamane)
 
 ---
