@@ -307,27 +307,17 @@ try {
   );
   await shot(page, "03-walk-mode-no-pace.png");
 
-  // Capture dialog for missing title
-  let missingTitleBlocked = false;
-  const dialogHandler = async (dialog) => {
-    const msg = dialog.message() || "";
-    if (/Titre requis|Objectif requis|Lieu requis|Langue/i.test(msg)) {
-      missingTitleBlocked = true;
-    }
-    try {
-      await dialog.accept();
-    } catch {
-      /* */
-    }
-  };
-  page.off("dialog");
-  page.on("dialog", dialogHandler);
   await clickTestId(page, "session-publish-btn");
   await new Promise((r) => setTimeout(r, 800));
+  const formErr = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="session-form-error"]');
+    return el?.textContent?.trim() || "";
+  });
+  const stayedOnCreate = /\/session\/create/.test(page.url());
   record(
     "missing_title_blocks_publish",
-    missingTitleBlocked,
-    missingTitleBlocked ? "alert shown" : "NO ALERT",
+    stayedOnCreate && /Titre requis/i.test(formErr),
+    formErr || (stayedOnCreate ? "stayed on create, no error text" : page.url()),
   );
 
   await typeTestId(page, "session-title-input", TITLE);

@@ -1478,6 +1478,8 @@ export default function CreateSessionScreen() {
   /** Optional language — only when toggle on; never default to English. */
   const [includeLanguage, setIncludeLanguage] = useState(false);
   const [outingLanguage, setOutingLanguage] = useState("");
+  /** Inline validation (web Alert dialogs are unreliable for harness). */
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Track if we've loaded the existing session (to prevent re-initialization)
   const [hasLoadedExistingSession, setHasLoadedExistingSession] =
@@ -2041,31 +2043,30 @@ export default function CreateSessionScreen() {
       if (sessionMode === "walking") {
         if (!outingTitle.trim()) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          Alert.alert("Titre requis", "Donne un titre à ta sortie marche.");
+          setFormError("Titre requis — donne un titre à ta sortie marche.");
           return;
         }
         if (!outingPurpose.trim()) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          Alert.alert(
-            "Objectif requis",
-            "Décris l’objectif ou ce à quoi s’attendre.",
+          setFormError(
+            "Objectif requis — décris l’objectif ou ce à quoi s’attendre.",
           );
           return;
         }
         if (!spot.trim()) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          Alert.alert("Lieu requis", "Choisis un lieu de rendez-vous.");
+          setFormError("Lieu requis — choisis un lieu de rendez-vous.");
           return;
         }
         if (includeLanguage && !outingLanguage.trim()) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          Alert.alert(
-            "Langue",
-            "Indique la langue, ou désactive l’option langue.",
+          setFormError(
+            "Langue — indique la langue, ou désactive l’option langue.",
           );
           return;
         }
       }
+      setFormError(null);
 
       // Build effective groups from groupConfigs — walks never require pace groups.
       const effectiveGroups = groupConfigs
@@ -2372,7 +2373,18 @@ export default function CreateSessionScreen() {
                 testID="session-purpose-input"
                 accessibilityLabel="Objectif de la sortie"
               />
-              <View style={[styles.fieldRow, { marginTop: 12 }]}>
+              <Pressable
+                style={[styles.fieldRow, { marginTop: 12 }]}
+                onPress={() => {
+                  const next = !includeLanguage;
+                  setIncludeLanguage(next);
+                  if (!next) setOutingLanguage("");
+                }}
+                testID="session-language-toggle"
+                accessibilityRole="switch"
+                accessibilityState={{ checked: includeLanguage }}
+                accessibilityLabel="Inclure une langue"
+              >
                 <Text style={styles.fieldLabel}>Inclure une langue</Text>
                 <Switch
                   value={includeLanguage}
@@ -2382,9 +2394,8 @@ export default function CreateSessionScreen() {
                   }}
                   trackColor={{ false: "#2a2f3a", true: colors.accent.primary }}
                   thumbColor="#ffffff"
-                  testID="session-language-toggle"
                 />
-              </View>
+              </Pressable>
               {includeLanguage ? (
                 <>
                   <Text style={[styles.fieldLabel, { marginTop: 8 }]}>
@@ -2400,6 +2411,11 @@ export default function CreateSessionScreen() {
                     accessibilityLabel="Langue de la sortie"
                   />
                 </>
+              ) : null}
+              {formError ? (
+                <Text style={styles.formErrorText} testID="session-form-error">
+                  {formError}
+                </Text>
               ) : null}
             </View>
           ) : null}
@@ -2968,6 +2984,13 @@ const styles = StyleSheet.create({
   walkTextArea: {
     minHeight: 72,
     textAlignVertical: "top",
+  },
+  formErrorText: {
+    marginTop: 12,
+    color: colors.text.error,
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 18,
   },
   fieldRow: {
     flexDirection: "row",
