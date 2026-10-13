@@ -3,8 +3,8 @@
 **Updated:** 2026-10-13  
 **Working branch:** `cursor/green-home-ux-join-3184` (PR #6)  
 **Pinned product baseline (pre–Batch 1):** `c46ce86478e26e0e523fd1fd227adaf3a792b6e4`  
-**Batch 1 tip under test:** `959b1ac18db002ef90fc430c1662f750e4796acf`  
-**Docs tip:** branch HEAD after corrected evidence  
+**Batch 1 tip under test:** `959b1ac18db002ef90fc430c1662f750e4796acf` (script + request testIDs)  
+**Docs tip:** `97ee1ba4cdd0aaa0fe03700bbb8242edb90ab3a8` (evidence + register/checkpoint only)  
 **Evidence `tested_sha`:** `959b1ac18db002ef90fc430c1662f750e4796acf` · env `demo` · hosted_claim `false`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
