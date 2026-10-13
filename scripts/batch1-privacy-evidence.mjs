@@ -19,15 +19,28 @@ import path from "node:path";
 import puppeteer from "puppeteer-core";
 
 const BASE = process.env.E2E_BASE_URL || "http://localhost:8081";
-const OUT = "/opt/cursor/artifacts/batch1-evidence";
-const SHOTS = path.join(OUT, "screenshots");
-fs.mkdirSync(SHOTS, { recursive: true });
+const REPO_ROOT = execSync("git rev-parse --show-toplevel", {
+  encoding: "utf8",
+}).trim();
+const REPO_EVIDENCE_REL = "docs/audit/batch1-privacy";
+const REPO_EVIDENCE = path.join(REPO_ROOT, REPO_EVIDENCE_REL);
+const REPO_SHOTS = path.join(REPO_EVIDENCE, "screenshots");
+const ARTIFACT_OUT = "/opt/cursor/artifacts/batch1-evidence";
+const ARTIFACT_SHOTS = path.join(ARTIFACT_OUT, "screenshots");
+fs.mkdirSync(REPO_SHOTS, { recursive: true });
+fs.mkdirSync(ARTIFACT_SHOTS, { recursive: true });
+fs.mkdirSync(path.join(REPO_EVIDENCE, "side-by-side"), { recursive: true });
 
 const testedSha = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
 const branch = execSync("git branch --show-current", { encoding: "utf8" }).trim();
 
 const UNIQUE_SPOT = `ZB1${Date.now().toString(36).slice(-7).toUpperCase()}`;
 const UNIQUE_TITLE_TOKEN = UNIQUE_SPOT;
+/** Dedicated pending identity — never reuse outsider phone for pending checks. */
+const PENDING_PHONE = "0688888888";
+const OUTSIDER_PHONE = "0699999999";
+const HOST_PHONE = "0611111111";
+const MEMBER_B_PHONE = "0622222222";
 
 const evidence = {
   batch: "Batch 1 — PRIVATE OUTING ACCESS + TRUSTWORTHY EVIDENCE",
@@ -38,8 +51,9 @@ const evidence = {
   environment: "demo",
   hosted_claim: false,
   note:
-    "DEMO_MODE mock only. Server/hosted list+GET filters exist separately; this run does not claim hosted.",
+    "DEMO_MODE mock only. Server/hosted list+GET filters exist separately; this run does not claim hosted. Pending membership is established via UI request for the exact target club — outsider is never substituted for pending.",
   unique_logistics: { spot: UNIQUE_SPOT, titleToken: UNIQUE_TITLE_TOKEN },
+  target_club_name: null,
   checks: {},
   screenshots: [],
   outing_id: null,
@@ -52,10 +66,45 @@ function record(name, ok, detail = "") {
 }
 
 async function shot(page, name) {
-  const file = path.join(SHOTS, name);
-  await page.screenshot({ path: file, fullPage: false });
-  evidence.screenshots.push(file);
-  return file;
+  const repoAbs = path.join(REPO_SHOTS, name);
+  const artAbs = path.join(ARTIFACT_SHOTS, name);
+  await page.screenshot({ path: repoAbs, fullPage: false });
+  fs.copyFileSync(repoAbs, artAbs);
+  const rel = `${REPO_EVIDENCE_REL}/screenshots/${name}`;
+  evidence.screenshots.push(rel);
+  return rel;
+}
+
+/** Read mock memberships for current auth user; return status for target club name. */
+async function readMembershipForClub(page, clubName) {
+  return page.evaluate((name) => {
+    try {
+      const auth = JSON.parse(localStorage.getItem("grpd_auth_user_v1") || "null");
+      const memberships = JSON.parse(
+        localStorage.getItem("mock:club_memberships") || "{}",
+      );
+      const clubs = JSON.parse(localStorage.getItem("mock:clubs") || "{}");
+      if (!auth?.id) return { userId: null, status: null, approved: false };
+      const targetClub = Object.values(clubs).find(
+        (c) => (c.name || "").toLowerCase() === name.toLowerCase(),
+      );
+      if (!targetClub) {
+        return { userId: auth.id, status: null, approved: false, clubId: null };
+      }
+      const mine = Object.values(memberships).find(
+        (m) => m.userId === auth.id && m.clubId === targetClub.id,
+      );
+      return {
+        userId: auth.id,
+        clubId: targetClub.id,
+        status: mine?.status ?? null,
+        approved: mine?.status === "approved",
+        pending: mine?.status === "pending",
+      };
+    } catch {
+      return { userId: null, status: null, approved: false, pending: false };
+    }
+  }, clubName);
 }
 
 async function bodyText(page) {
@@ -231,11 +280,12 @@ page.on("dialog", async (dialog) => {
 try {
   // --- Identity A: organizer creates club (admin) then members-only outing ---
   await clearAuth(page, { preserveMockWorld: false });
-  await loginViaUi(page, "0611111111", "000000");
-  record("login_member_host", true, "0611111111 (new club admin)");
+  await loginViaUi(page, HOST_PHONE, "000000");
+  record("login_member_host", true, `${HOST_PHONE} (new club admin)`);
   await shot(page, "01-member-home.png");
 
   const clubName = `Batch1 Club ${UNIQUE_SPOT}`;
+  evidence.target_club_name = clubName;
   await page.goto(BASE + "/club/create", {
     waitUntil: "networkidle0",
     timeout: 90000,
@@ -426,10 +476,10 @@ try {
   );
   await shot(page, "05-discover-list.png");
 
-  // --- Outsider negative control ---
+  // --- Outsider negative control (no membership at all) ---
   await clearAuth(page, { preserveMockWorld: true });
-  await loginViaUi(page, "0699999999", "000000");
-  record("login_outsider", true, "0699999999");
+  await loginViaUi(page, OUTSIDER_PHONE, "000000");
+  record("login_outsider", true, OUTSIDER_PHONE);
 
   await page.goto(BASE + `/session/${outingId}`, {
     waitUntil: "networkidle0",
@@ -470,43 +520,76 @@ try {
   );
   await shot(page, "07-outsider-list.png");
 
-  // --- Pending negative control: request join then hit direct link ---
+  // Re-login outsider persistence (still outsider — not pending)
+  await clearAuth(page, { preserveMockWorld: true });
+  await loginViaUi(page, OUTSIDER_PHONE, "000000");
+  await page.goto(BASE + `/session/${outingId}`, {
+    waitUntil: "networkidle0",
+  });
+  await new Promise((r) => setTimeout(r, 2000));
+  const relogText = await bodyText(page);
+  const relogOk =
+    (Boolean(await page.$('[data-testid="session-inaccessible"]')) ||
+      /n'est pas accessible|introuvable/i.test(relogText)) &&
+    !privateMarkers.some((m) => m && relogText.includes(m));
+  record("outsider_relogin_still_gated", relogOk, page.url());
+  await shot(page, "08-outsider-relogin.png");
+
+  // --- Pending negative control: MUST be genuinely pending for target club ---
+  // Never substitute outsider. Fail/block setup if pending is missing.
+  await clearAuth(page, { preserveMockWorld: true });
+  await loginViaUi(page, PENDING_PHONE, "000000");
+  record("login_pending_identity", true, PENDING_PHONE);
+
   await page.goto(BASE + "/club/access", { waitUntil: "networkidle0" });
   await new Promise((r) => setTimeout(r, 1200));
-  // Name-request path if present
   try {
-    const requested = await page.evaluate(async () => {
-      const btn = Array.from(
-        document.querySelectorAll('[role="button"], button, [data-testid]'),
-      ).find((n) =>
-        /Demander|demande d'accès|Rejoindre/i.test(n.textContent || ""),
-      );
-      if (btn) {
-        btn.click();
-        return true;
-      }
-      return false;
-    });
-    record("pending_request_attempt", requested);
+    await typeTestId(page, "club-request-name-input", clubName);
+    await clickTestId(page, "club-request-submit");
+    await new Promise((r) => setTimeout(r, 2500));
+    record("pending_request_submit_clicked", true, clubName);
   } catch (e) {
-    record("pending_request_attempt", false, String(e.message || e));
+    record("pending_request_submit_clicked", false, String(e.message || e));
   }
-  await new Promise((r) => setTimeout(r, 1500));
+
   await page.goto(BASE + "/club", { waitUntil: "networkidle0" });
-  await new Promise((r) => setTimeout(r, 1200));
+  await new Promise((r) => setTimeout(r, 1500));
   const clubPendingText = await bodyText(page);
   const pendingUi =
     Boolean(await page.$('[data-testid="club-pending-panel"]')) ||
-    /EN ATTENTE|demande est envoyée|en cours de validation/i.test(
-      clubPendingText,
-    );
+    /EN ATTENTE D'APPROBATION|demande est envoyée/i.test(clubPendingText);
+  const memBefore = await readMembershipForClub(page, clubName);
+  const pendingSetupOk =
+    pendingUi &&
+    memBefore.pending === true &&
+    memBefore.approved === false &&
+    memBefore.status === "pending";
   record(
-    "M07_pending_club_state_visible_or_outsider",
-    true,
-    pendingUi ? "pending" : "outsider-no-pending",
+    "pending_setup_membership_pending_not_approved",
+    pendingSetupOk,
+    JSON.stringify(memBefore),
   );
-  await shot(page, "08-club-pending-or-outsider.png");
+  record(
+    "M07_pending_club_state_visible",
+    pendingUi && pendingSetupOk,
+    pendingSetupOk
+      ? `pending for ${clubName}`
+      : `SETUP FAILED — refuse outsider substitute; ui=${pendingUi} mem=${JSON.stringify(memBefore)}`,
+  );
+  await shot(page, "09-club-pending.png");
 
+  if (!pendingSetupOk) {
+    record(
+      "pending_privacy_tests",
+      false,
+      "BLOCKED: genuine pending membership not established for target club",
+    );
+    throw new Error(
+      `BLOCKED: pending membership setup failed for club "${clubName}" — will not substitute outsider. mem=${JSON.stringify(memBefore)}`,
+    );
+  }
+
+  // Pending direct-link privacy
   await page.goto(BASE + `/session/${outingId}`, {
     waitUntil: "networkidle0",
   });
@@ -528,27 +611,64 @@ try {
     !pendingLeak,
     pendingLeak ? "LEAK" : "absent",
   );
-  await shot(page, "09-pending-or-outsider-direct-link.png");
+  await shot(page, "10-pending-direct-link.png");
 
-  // Re-login outsider persistence
+  // Pending list privacy
+  await page.goto(BASE + "/", { waitUntil: "networkidle0" });
+  await new Promise((r) => setTimeout(r, 1500));
+  const pendingList = await bodyText(page);
+  record(
+    "pending_list_unique_logistics_absent",
+    !pendingList.includes(UNIQUE_SPOT) &&
+      !pendingList.includes(UNIQUE_TITLE_TOKEN),
+    UNIQUE_SPOT,
+  );
+  await shot(page, "11-pending-list.png");
+
+  // Pending reload on direct link
+  await page.goto(BASE + `/session/${outingId}`, {
+    waitUntil: "networkidle0",
+  });
+  await new Promise((r) => setTimeout(r, 1000));
+  await page.reload({ waitUntil: "networkidle0" });
+  await new Promise((r) => setTimeout(r, 1500));
+  const pendingReloadText = await bodyText(page);
+  const pendingReloadOk =
+    (Boolean(await page.$('[data-testid="session-inaccessible"]')) ||
+      /n'est pas accessible|introuvable/i.test(pendingReloadText)) &&
+    !privateMarkers.some((m) => m && pendingReloadText.includes(m));
+  const memReload = await readMembershipForClub(page, clubName);
+  record(
+    "pending_reload_still_gated",
+    pendingReloadOk && memReload.pending === true && !memReload.approved,
+    JSON.stringify(memReload),
+  );
+  await shot(page, "12-pending-reload.png");
+
+  // Pending re-login persistence
   await clearAuth(page, { preserveMockWorld: true });
-  await loginViaUi(page, "0699999999", "000000");
+  await loginViaUi(page, PENDING_PHONE, "000000");
+  const memRelogin = await readMembershipForClub(page, clubName);
+  record(
+    "pending_relogin_still_pending_not_approved",
+    memRelogin.pending === true && memRelogin.approved === false,
+    JSON.stringify(memRelogin),
+  );
   await page.goto(BASE + `/session/${outingId}`, {
     waitUntil: "networkidle0",
   });
   await new Promise((r) => setTimeout(r, 2000));
-  const relogText = await bodyText(page);
-  const relogOk =
+  const pendingRelogText = await bodyText(page);
+  const pendingRelogOk =
     (Boolean(await page.$('[data-testid="session-inaccessible"]')) ||
-      /n'est pas accessible|introuvable/i.test(relogText)) &&
-    !privateMarkers.some((m) => m && relogText.includes(m));
-  record("outsider_relogin_still_gated", relogOk, page.url());
-  await shot(page, "10-outsider-relogin.png");
+      /n'est pas accessible|introuvable/i.test(pendingRelogText)) &&
+    !privateMarkers.some((m) => m && pendingRelogText.includes(m));
+  record("pending_relogin_still_gated", pendingRelogOk, page.url());
+  await shot(page, "13-pending-relogin.png");
 
   // ISSUE-010 privacy: leave club as member then lose access
   await clearAuth(page, { preserveMockWorld: true });
-  await loginViaUi(page, "0611111111", "000000");
-  // Positive leave-revoke: member B joins via invite, opens outing, leaves club, loses access.
+  await loginViaUi(page, HOST_PHONE, "000000");
   await page.goto(BASE + "/club/access", { waitUntil: "networkidle0" });
   await new Promise((r) => setTimeout(r, 1200));
   let inviteCode = null;
@@ -573,7 +693,7 @@ try {
 
   if (inviteCode) {
     await clearAuth(page, { preserveMockWorld: true });
-    await loginViaUi(page, "0622222222", "000000");
+    await loginViaUi(page, MEMBER_B_PHONE, "000000");
     await page.goto(BASE + "/club/access", { waitUntil: "networkidle0" });
     await new Promise((r) => setTimeout(r, 1000));
     try {
@@ -597,9 +717,8 @@ try {
       bCanSee,
       page.url(),
     );
-    await shot(page, "11-member-b-before-leave.png");
+    await shot(page, "14-member-b-before-leave.png");
 
-    // Join outing if join control present
     try {
       const joinBtn = await page.$('[data-testid="session-join-btn"]');
       if (joinBtn) {
@@ -619,7 +738,7 @@ try {
     } catch (e) {
       record("member_b_left_club", false, String(e.message || e));
     }
-    await shot(page, "12-member-b-after-leave-club.png");
+    await shot(page, "15-member-b-after-leave-club.png");
 
     await page.goto(BASE + `/session/${outingId}`, {
       waitUntil: "networkidle0",
@@ -631,10 +750,18 @@ try {
       /n'est pas accessible|introuvable/i.test(bAfter);
     const noLeak = !privateMarkers.some((m) => m && bAfter.includes(m));
     record("ISSUE-010_after_leave_inaccessible", gated, page.url());
-    record("ISSUE-010_after_leave_logistics_absent", noLeak, noLeak ? "absent" : "LEAK");
-    await shot(page, "13-member-b-outing-after-leave.png");
+    record(
+      "ISSUE-010_after_leave_logistics_absent",
+      noLeak,
+      noLeak ? "absent" : "LEAK",
+    );
+    await shot(page, "16-member-b-outing-after-leave.png");
   } else {
-    record("ISSUE-010_approved_member_positive_before_leave", false, "no invite");
+    record(
+      "ISSUE-010_approved_member_positive_before_leave",
+      false,
+      "no invite",
+    );
     record("ISSUE-010_after_leave_inaccessible", false, "skipped");
     record("ISSUE-010_after_leave_logistics_absent", false, "skipped");
   }
@@ -650,7 +777,7 @@ try {
     !/Aucun nom de club, lieu, date ou participant privé/i.test(m08Text),
     "annotation must stay design-only",
   );
-  await shot(page, "14-m08-product-check.png");
+  await shot(page, "17-m08-product-check.png");
 } catch (err) {
   evidence.errors.push(String(err?.stack || err));
   console.error("BATCH1_FATAL", err);
@@ -665,17 +792,27 @@ const passed = Object.values(evidence.checks).filter((c) => c.ok).length;
 const failed = Object.values(evidence.checks).filter((c) => !c.ok).length;
 evidence.summary = { passed, failed, total: passed + failed };
 evidence.generated_at = new Date().toISOString();
-fs.writeFileSync(path.join(OUT, "evidence.json"), JSON.stringify(evidence, null, 2));
-fs.writeFileSync(
-  path.join(OUT, "EVIDENCE.md"),
-  `# Batch 1 evidence
+
+// Verify every screenshot path is repo-resolvable
+const missingShots = evidence.screenshots.filter(
+  (rel) => !fs.existsSync(path.join(REPO_ROOT, rel)),
+);
+if (missingShots.length) {
+  evidence.errors.push(`Missing screenshot files: ${missingShots.join(", ")}`);
+  console.error("MISSING_SCREENSHOTS", missingShots);
+}
+
+const evidenceJson = JSON.stringify(evidence, null, 2);
+const evidenceMd = `# Batch 1 evidence
 
 - **tested_sha:** \`${evidence.tested_sha}\`
 - **environment:** \`${evidence.environment}\` (hosted_claim=${evidence.hosted_claim})
 - **outing_id:** \`${evidence.outing_id || "none"}\`
+- **target_club:** \`${evidence.target_club_name || "none"}\`
 - **unique logistics:** \`${UNIQUE_SPOT}\`
 - **summary:** ${passed} PASS / ${failed} FAIL / ${evidence.summary.total} total
 - **issues:** ${evidence.issues.join(", ")}
+- **screenshot paths:** repo-relative under \`${REPO_EVIDENCE_REL}/screenshots/\` (${evidence.screenshots.length} files)
 
 ## Checks
 
@@ -685,10 +822,17 @@ ${Object.entries(evidence.checks)
 
 ## Screenshots
 
-${evidence.screenshots.map((s) => `- ${s}`).join("\n")}
-`,
-);
+${evidence.screenshots.map((s) => `- \`${s}\``).join("\n")}
+
+${evidence.errors.length ? `\n## Errors\n\n${evidence.errors.map((e) => `- ${e}`).join("\n")}\n` : ""}
+`;
+
+fs.writeFileSync(path.join(REPO_EVIDENCE, "evidence.json"), evidenceJson);
+fs.writeFileSync(path.join(REPO_EVIDENCE, "EVIDENCE.md"), evidenceMd);
+fs.writeFileSync(path.join(ARTIFACT_OUT, "evidence.json"), evidenceJson);
+fs.writeFileSync(path.join(ARTIFACT_OUT, "EVIDENCE.md"), evidenceMd);
 console.log("SUMMARY", evidence.summary);
-console.log("EVIDENCE", path.join(OUT, "evidence.json"));
+console.log("EVIDENCE", path.join(REPO_EVIDENCE, "evidence.json"));
+console.log("SCREENSHOTS", evidence.screenshots.length, "repo-relative");
 await browser.close();
-process.exit(failed > 0 ? 1 : 0);
+process.exit(failed > 0 || missingShots.length > 0 ? 1 : 0);

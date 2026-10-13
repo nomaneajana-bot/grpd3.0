@@ -322,6 +322,8 @@ export default function ClubAccessScreen() {
               placeholderTextColor={colors.text.secondary}
               autoCapitalize="none"
               editable={!isSubmitting}
+              accessibilityLabel="Nom du club"
+              testID="club-request-name-input"
             />
             <Text style={styles.helperText}>
               Si tu n&apos;as pas de code, entre le nom du club.
@@ -337,6 +339,7 @@ export default function ClubAccessScreen() {
               placeholderTextColor={colors.text.secondary}
               autoCapitalize="sentences"
               editable={!isSubmitting}
+              testID="club-request-message-input"
             />
           </View>
           <Pressable
@@ -346,6 +349,9 @@ export default function ClubAccessScreen() {
             ]}
             onPress={handleRequestJoin}
             disabled={isSubmitting || isPendingMember}
+            accessibilityRole="button"
+            accessibilityLabel="Envoyer la demande"
+            testID="club-request-submit"
           >
             <Text style={styles.secondaryButtonText}>
               {isPendingMember ? "Demande en attente" : "Envoyer la demande"}
