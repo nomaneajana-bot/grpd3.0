@@ -406,83 +406,172 @@ try {
   await new Promise((r) => setTimeout(r, 2000));
   await shot("14-session-detail.png");
 
-  // Join / leave if buttons present (RN ScrollView — scroll element into view)
+  // Join / leave — try public session cards until a joinable control appears
   try {
-    // Select a pace group first when tiles are present
-    await page.evaluate(() => {
-      const group = document.querySelector('[data-testid^="session-group-"]');
-      if (group) {
-        group.scrollIntoView({ block: "center" });
-        group.click();
-      }
-    });
-    await new Promise((r) => setTimeout(r, 400));
-    const joinReady = await page.evaluate(async () => {
-      const pick = () =>
-        document.querySelector('[data-testid="session-join-btn"]') ||
-        document.querySelector('[data-testid="session-join-confirm"]') ||
-        Array.from(document.querySelectorAll('[role="button"], button')).find(
-          (n) =>
-            /S'inscrire|Confirmer|Demander l'accès/i.test(
-              (n.textContent || "").trim(),
-            ),
-        );
-      let btn = pick();
-      if (!btn) {
+    let joined = false;
+    let joinDetail = "";
+    const cards = await page.$$('[data-testid^="session-card-"]');
+    const tryIds = [];
+    for (const card of cards.slice(0, 6)) {
+      const id = await page.evaluate(
+        (el) => el.getAttribute("data-testid"),
+        card,
+      );
+      if (id) tryIds.push(id.replace("session-card-", ""));
+    }
+    // Also try current URL session if already on detail
+    if (/\/session\//.test(page.url())) {
+      tryIds.unshift(page.url().split("/session/")[1]?.split("?")[0] || "");
+    }
+    for (const sid of [...new Set(tryIds.filter(Boolean))]) {
+      await page.goto(BASE + `/session/${sid}`, {
+        waitUntil: "networkidle0",
+        timeout: 60000,
+      });
+      await new Promise((r) => setTimeout(r, 1200));
+      // Select a group tile if present
+      await page.evaluate(() => {
+        const group = document.querySelector('[data-testid^="session-group-"]');
+        group?.scrollIntoView({ block: "center" });
+        group?.click();
+      });
+      await new Promise((r) => setTimeout(r, 400));
+      // Scroll nested scroll views to bottom
+      await page.evaluate(() => {
         document.querySelectorAll("div").forEach((el) => {
-          if (el.scrollHeight > el.clientHeight + 40) {
+          if (el.scrollHeight > el.clientHeight + 80) {
             el.scrollTop = el.scrollHeight;
           }
         });
-        await new Promise((r) => setTimeout(r, 200));
-        btn = pick();
-      }
-      if (!btn) {
-        return {
-          ok: false,
-          reason: "no btn",
-          tail: document.body.innerText.slice(-400),
-        };
-      }
-      btn.scrollIntoView({ block: "center" });
-      btn.click();
-      return { ok: true, label: (btn.textContent || "").slice(0, 40) };
-    });
-    record(
-      "session_join_clicked",
-      Boolean(joinReady?.ok),
-      joinReady?.label || joinReady?.reason || "",
-    );
-    await new Promise((r) => setTimeout(r, 1500));
-    await shot("15-session-joined.png");
-    const left = await page.evaluate(() => {
-      const leave =
-        document.querySelector('[data-testid="session-leave-btn"]') ||
-        Array.from(document.querySelectorAll('[role="button"], button')).find(
-          (n) => /Quitter cette séance/i.test(n.textContent || ""),
-        );
-      if (!leave) return false;
-      leave.scrollIntoView({ block: "center" });
-      leave.click();
-      return true;
-    });
-    if (left) {
-      await new Promise((r) => setTimeout(r, 800));
-      await page.evaluate(() => {
-        const nodes = Array.from(
-          document.querySelectorAll('[role="button"], button'),
-        );
-        const conf = nodes.find((n) =>
-          /^Quitter$/i.test((n.textContent || "").trim()),
-        );
-        conf?.click();
+        window.scrollTo(0, document.body.scrollHeight);
       });
-      record("session_leave_clicked", true);
-    } else {
-      record("session_leave_clicked", false, "leave btn absent after join");
+      await new Promise((r) => setTimeout(r, 400));
+      const state = await page.evaluate(() => {
+        const join =
+          document.querySelector('[data-testid="session-join-btn"]') ||
+          document.querySelector('[data-testid="session-join-confirm"]');
+        const locked = document.querySelector(
+          '[data-testid="session-join-locked"]',
+        );
+        const request = document.querySelector(
+          '[data-testid="session-join-request"]',
+        );
+        const leave = document.querySelector(
+          '[data-testid="session-leave-btn"]',
+        );
+        return {
+          hasJoin: Boolean(join),
+          hasLocked: Boolean(locked),
+          hasRequest: Boolean(request),
+          hasLeave: Boolean(leave),
+          joinLabel: join?.textContent?.trim()?.slice(0, 40) || "",
+        };
+      });
+      if (state.hasLeave) {
+        // Already joined — exercise leave
+        await page.evaluate(() => {
+          document
+            .querySelector('[data-testid="session-leave-btn"]')
+            ?.scrollIntoView({ block: "center" });
+          document.querySelector('[data-testid="session-leave-btn"]')?.click();
+        });
+        await new Promise((r) => setTimeout(r, 600));
+        await page.evaluate(() => {
+          const nodes = Array.from(
+            document.querySelectorAll('[role="button"], button'),
+          );
+          nodes
+            .find((n) => /^Quitter$/i.test((n.textContent || "").trim()))
+            ?.click();
+        });
+        await new Promise((r) => setTimeout(r, 1000));
+        // Re-open and join again
+        await page.goto(BASE + `/session/${sid}`, {
+          waitUntil: "networkidle0",
+        });
+        await new Promise((r) => setTimeout(r, 1000));
+        await page.evaluate(() => {
+          document
+            .querySelector('[data-testid^="session-group-"]')
+            ?.click();
+        });
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      if (state.hasJoin || state.hasLeave) {
+        await page.evaluate(() => {
+          const join =
+            document.querySelector('[data-testid="session-join-btn"]') ||
+            document.querySelector('[data-testid="session-join-confirm"]');
+          join?.scrollIntoView({ block: "center" });
+          join?.click();
+        });
+        // warn confirm path
+        await new Promise((r) => setTimeout(r, 500));
+        await page.evaluate(() => {
+          document
+            .querySelector('[data-testid="session-join-confirm"]')
+            ?.click();
+        });
+        await new Promise((r) => setTimeout(r, 1500));
+        const after = await page.evaluate(() => ({
+          leave: Boolean(
+            document.querySelector('[data-testid="session-leave-btn"]'),
+          ),
+          text: document.body.innerText.slice(0, 500),
+        }));
+        if (after.leave || /Inscription enregistrée|Quitter/i.test(after.text)) {
+          joined = true;
+          joinDetail = `session ${sid}`;
+          await shot("15-session-joined.png");
+          // Leave / cancel
+          await page.evaluate(() => {
+            document
+              .querySelector('[data-testid="session-leave-btn"]')
+              ?.scrollIntoView({ block: "center" });
+            document
+              .querySelector('[data-testid="session-leave-btn"]')
+              ?.click();
+          });
+          await new Promise((r) => setTimeout(r, 600));
+          await page.evaluate(() => {
+            const nodes = Array.from(
+              document.querySelectorAll('[role="button"], button'),
+            );
+            nodes
+              .find((n) => /^Quitter$/i.test((n.textContent || "").trim()))
+              ?.click();
+          });
+          await new Promise((r) => setTimeout(r, 1000));
+          const leftOk = await page.evaluate(
+            () =>
+              !document.querySelector('[data-testid="session-leave-btn"]') ||
+              Boolean(
+                document.querySelector('[data-testid="session-join-btn"]') ||
+                  document.querySelector(
+                    '[data-testid="session-join-confirm"]',
+                  ),
+              ),
+          );
+          record("session_leave_clicked", leftOk, `session ${sid}`);
+          break;
+        }
+        joinDetail = `join clicked but no leave state on ${sid}`;
+      } else {
+        joinDetail = state.hasLocked
+          ? `locked on ${sid}`
+          : state.hasRequest
+            ? `request-only on ${sid}`
+            : `no join control on ${sid}`;
+      }
+    }
+    record("session_join_clicked", joined, joinDetail);
+    if (!joined) {
+      record("session_leave_clicked", false, "join never succeeded");
+      await shot("15-session-join-failed.png");
     }
   } catch (e) {
     record("session_join_clicked", false, String(e.message || e));
+    record("session_leave_clicked", false, "exception");
   }
 
   // Bad input: empty club create

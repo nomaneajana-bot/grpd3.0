@@ -95,7 +95,13 @@ export function InterGroupJoinPanel({
 
   if (!canJoin) {
     return (
-      <Pressable style={styles.requestBtn} onPress={onRequestJoin}>
+      <Pressable
+        style={styles.requestBtn}
+        onPress={onRequestJoin}
+        accessibilityRole="button"
+        accessibilityLabel="Demander l'accès"
+        testID="session-join-request"
+      >
         <Text style={styles.requestText}>Demander l'accès</Text>
       </Pressable>
     );
@@ -103,7 +109,7 @@ export function InterGroupJoinPanel({
 
   if (joinState === "locked") {
     return (
-      <View>
+      <View testID="session-join-locked">
         <View style={styles.bannerOrange}>
           <Text style={styles.bannerIcon}>🔒</Text>
           <Text style={styles.bannerText}>{lockedMessage}</Text>

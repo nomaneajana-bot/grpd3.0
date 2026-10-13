@@ -12,9 +12,13 @@ function currentPath(pathname: string | undefined): string {
   return "";
 }
 
-/** Public pitch page — never force onboarding. */
+/** Public pitch / design-reference pages — never force onboarding. */
 function isPublicVisionRoute(path: string): boolean {
-  return path === "/avenir" || path.endsWith("/avenir");
+  return (
+    path === "/avenir" ||
+    path.endsWith("/avenir") ||
+    path.includes("/reference/")
+  );
 }
 
 /** Auth / onboarding routes — do not redirect away mid-flow. */

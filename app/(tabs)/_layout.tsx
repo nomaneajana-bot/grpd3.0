@@ -11,7 +11,8 @@ import {
   TabIconWorkouts,
 } from "@/components/navigation/tab-icons";
 import { HapticTab } from "@/components/haptic-tab";
-import { colors, hairline, typography } from "@/constants/ui";
+import { experienceTheme } from "@/components/experiences/ExperienceUI";
+import { colors, typography } from "@/constants/ui";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -27,12 +28,12 @@ export default function TabLayout() {
           backgroundColor: colors.background.primary,
         },
         tabBarButton: HapticTab,
-        tabBarActiveTintColor: colors.accent.primary,
-        tabBarInactiveTintColor: colors.text.secondary,
+        tabBarActiveTintColor: experienceTheme.accent,
+        tabBarInactiveTintColor: experienceTheme.muted,
         tabBarStyle: {
-          backgroundColor: colors.background.primary,
-          borderTopWidth: hairline,
-          borderTopColor: colors.border.default,
+          backgroundColor: experienceTheme.bg,
+          borderTopWidth: 1,
+          borderTopColor: experienceTheme.line,
           paddingTop: 10,
           paddingBottom: tabBarBottom,
           height: 56 + tabBarBottom + 10,
@@ -41,9 +42,10 @@ export default function TabLayout() {
         },
         tabBarLabelStyle: {
           fontSize: typography.sizes.tab,
-          fontWeight: "500",
+          fontWeight: "600",
           marginTop: 3,
         },
+        tabBarActiveBackgroundColor: "transparent",
         tabBarIcon: ({ color }) => {
           const c = color ?? colors.text.tertiary;
           if (route.name === "index") {

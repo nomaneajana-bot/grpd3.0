@@ -32,6 +32,13 @@ export type LegacySessionGroupOverride = {
   paceSecondsPerKm?: number | null;
 };
 
+/** Optional D03 community outing metadata (green home filters). */
+export type SessionExperience = {
+  kind?: "community" | "training";
+  format?: "language" | "community" | string;
+  activity?: "walk" | "run";
+};
+
 export type SessionData = {
   id: string;
   title: string;
@@ -40,6 +47,7 @@ export type SessionData = {
   dateISO?: string; // NEW: ISO date string (YYYY-MM-DD) for proper date handling
   timeMinutes?: number; // NEW: Minutes since midnight (0-1439) for time handling
   typeLabel: string;
+  experience?: SessionExperience;
   volume: string;
   targetPace: string;
   paceGroups: PaceGroup[]; // Legacy: kept for backward compatibility and display (computed from paceGroupsOverride when available)

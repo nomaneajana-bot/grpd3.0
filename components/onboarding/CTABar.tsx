@@ -76,7 +76,7 @@ export function CTABar({
         disabled={primaryDisabled || primaryLoading}
       >
         {primaryLoading ? (
-          <ActivityIndicator color={colors.text.primary} />
+          <ActivityIndicator color={colors.background.primary} />
         ) : (
           <Text
             style={[
@@ -131,19 +131,20 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     backgroundColor: colors.accent.primary,
-    borderRadius: borderRadius.pill,
-    paddingVertical: 16,
+    borderRadius: 16,
+    paddingVertical: 17,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 52,
+    minHeight: 56,
   },
   primaryDisabled: {
     opacity: 0.45,
   },
   primaryText: {
-    color: colors.text.primary,
+    /** Dark on sage CTA — matches D03 Action */
+    color: colors.background.primary,
     fontSize: welcomeTheme.primaryLabelSize,
-    fontWeight: welcomeTheme.primaryLabelWeight,
+    fontWeight: "700",
   },
   primaryTextWelcome: {
     fontFamily: welcomeTheme.fontFamily.semibold,

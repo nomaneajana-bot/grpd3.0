@@ -1,9 +1,9 @@
 import React from "react";
 import { Platform, StyleSheet, View, type ViewStyle } from "react-native";
 
-import { colors } from "@/constants/ui";
+import { experienceTheme } from "@/components/experiences/ExperienceUI";
 
-const DESKTOP_MAX = 520;
+const DESKTOP_MAX = 960;
 
 type ScreenContainerProps = {
   children: React.ReactNode;
@@ -38,7 +38,7 @@ export function ScreenContainer({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: experienceTheme.bg,
     alignItems: Platform.OS === "web" ? "center" : "stretch",
   },
   inner: {

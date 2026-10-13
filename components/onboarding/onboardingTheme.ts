@@ -38,7 +38,7 @@ export const welcomeTheme = {
   featureDescWeight: "400" as const,
   badgeSize: 32,
   badgeRadius: 10,
-  badgeBg: "rgba(17, 32, 68, 0.85)",
+  badgeBg: "rgba(26, 34, 24, 0.9)",
   badgeNumberSize: 11,
   badgeNumberWeight: "600" as const,
   badgeNumberColor: colors.accent.primary,

@@ -3020,17 +3020,17 @@ const styles = StyleSheet.create({
   ctaButton: {
     backgroundColor: colors.accent.primary,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 26,
+    paddingVertical: 17,
+    borderRadius: 16,
     alignItems: "center",
   },
   ctaButtonDisabled: {
     opacity: 0.6,
   },
   ctaButtonText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.background.primary,
+    fontSize: 15,
+    fontWeight: "700",
   },
   modalBackdrop: {
     flex: 1,
