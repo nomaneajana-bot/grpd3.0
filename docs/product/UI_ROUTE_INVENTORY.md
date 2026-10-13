@@ -217,3 +217,40 @@ Source-reviewed associations only — **not runtime VERIFIED**.
 - Raw `<Modal>` sites in app screens: **19** · Distinct Modal flows listed: **19** (OV-01…19)  
 - Extra component overlays: **6** (OV-20…25)  
 - Alternate states catalogued: **20** (ST-01…20)  
+
+---
+
+## Information-architecture proposal (not authorization to remove)
+
+**Status:** Proposal only — does **not** authorize deleting approved deliverables.  
+**Design reference:** `product/design/community-journey-v1/maquettes.html` (M01–M08; fictional data).
+
+| ID | Route | IA class | Rationale |
+|----|-------|----------|-----------|
+| UI-01 | `/onboarding` | essential | Entry |
+| UI-02…UI-11 | onboarding steps | secondary | Funnel; keep |
+| UI-12…UI-13 | `/phone`, `/verify` | essential | Returning auth |
+| UI-14 | `/` Découvrir | essential | Primary discovery |
+| UI-15 | `/my-sessions` | essential | Attendance surface |
+| UI-16 | `/workouts` | secondary | Advanced training |
+| UI-17 | `/club` | essential | Membership hub (M03/M07 states) |
+| UI-18 | `/profile` | essential | Community profile |
+| UI-19 | `/club/access` | essential | Join / invite / request |
+| UI-20 | `/club/create` | essential | Purpose-led create (M02 later batch) |
+| UI-21…UI-23 | admin / roster / settings | secondary | Coach tools |
+| UI-24…UI-25 | group-detail / group-create | secondary | Pace groups |
+| UI-26 | `/club/group-edit` | redundant | Deprecated redirect |
+| UI-27 | `/club/policy-preview` | secondary | Policy preview |
+| UI-28 | `/session/[id]` | essential | Outing detail + M04/M05/M08 states |
+| UI-29 | `/session/create` | essential | Publish outings |
+| UI-30 | `/run/setup` | redundant | Orphan |
+| UI-31 | `/run/confirm` | secondary | Legacy run confirm |
+| UI-32…UI-33 | workout detail/edit | secondary | Training editor |
+| UI-34 | `/profile/settings` | essential | Settings / logout |
+| UI-35 | `/profile/training` | secondary | PR hub (preview nav ISSUE-002) |
+| UI-36…UI-37 | update-tests / custom-pr | secondary | PR tools |
+| UI-38 | `/profile/test-history` | redundant | Orphan |
+| UI-39 | `/inbox` | secondary | Activity feed |
+| UI-40 | `/reference/green-home` | reference-only | Design twin |
+
+**Queued later batches (not Batch 1):** M01 idea preview, M02 purpose-led create club, M03 member club polish, M06 cancel confirmation overlay, full walk/language journey (ISSUE-003), preview cards (ISSUE-002), hosted leave endpoints (ISSUE-004), TOI counts (ISSUE-011).

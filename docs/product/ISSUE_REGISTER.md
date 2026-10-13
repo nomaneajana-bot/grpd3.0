@@ -1,205 +1,142 @@
 # Issue Register (canonical)
 
 **Branch:** `cursor/green-home-ux-join-3184` (PR #6)  
-**Pinned product baseline:** `c46ce86478e26e0e523fd1fd227adaf3a792b6e4`  
-**Docs tip:** branch HEAD (documentation revision only)  
+**Pinned product baseline (pre–Batch 1):** `c46ce86478e26e0e523fd1fd227adaf3a792b6e4`  
+**Batch 1 tip:** branch HEAD  
 **Method:** Statuses are NOT CHECKED / FAILED / FIXED AWAITING RETEST / VERIFIED / BLOCKED.  
 **Capability:** IMPLEMENTED / PARTIAL / NOT IMPLEMENTED / UNSUPPORTED — never treat NOT IMPLEMENTED as PASS.
-
-Independently found issues **ISSUE-001…005** are recorded without claiming them fixed.
 
 ---
 
 ## Ranked register
 
-### ISSUE-001 — P0 — FAILED (audit false PASS)
+### ISSUE-001 — P0 — VERIFIED (demo)
 | Field | Value |
 |-------|-------|
 | Route / journey | Private outing access · `/session/:id` vs `/session/create` |
 | Expected meaning | Outsider / pending cannot access private logistics of a **published** members-only outing via direct link or list; approved member can |
-| Observed behavior | Audit accepted URL ending in `/session/create` as outing id; screenshot shows **creation form**, not a gated detail → false PASS risk |
-| Capability | PARTIAL (privacy code exists; test invalid) |
-| Owner | Cursor (test harness) + Codex (review) |
-| Candidate SHA / env | Pre-tip audits · demo |
-| Evidence | Prior audit S6 screenshots / report notes; user independent finding |
-| Next action | **Batch 1:** Rewrite privacy journey — see Batch 1 scope |
-| Status | **FAILED** |
+| Observed behavior (Batch 1) | Publish navigates to real `/session/<id>`; outsider/pending-equivalent see M08 inaccessible; unique spot absent; member sees unique spot + MEMBRES |
+| Capability | IMPLEMENTED (demo) |
+| Owner | Cursor |
+| Candidate SHA / env | Batch 1 tip · **demo** (`hosted_claim: false`) |
+| Evidence | `docs/audit/batch1-privacy/evidence.json`; artifacts under `/opt/cursor/artifacts/batch1-evidence/` |
+| Next action | Hosted retest when env/creds exist (separate lane) |
+| Status | **VERIFIED** (demo) |
 
 ### ISSUE-002 — P1 — FAILED
 | Field | Value |
 |-------|-------|
 | Route / journey | Home Découvrir · preview cards → `/profile/training` |
-| Expected meaning | “Imagine ta prochaine rencontre / aperçus” opens a preview or club-relevant surface, not running PR training |
-| Observed behavior | `app/(tabs)/index.tsx` navigates preview cards to `/profile/training` |
+| Expected meaning | Aperçus open preview/club-relevant surface, not PR training |
 | Capability | IMPLEMENTED (wrong target) |
-| Owner | Nouamane (target decision) → Cursor |
-| Candidate SHA / env | `c46ce86` · demo |
-| Evidence | Code: preview `onPress` → `/profile/training`; inventory dead/misleading nav |
-| Next action | **Later batch** (not Batch 1). Product pick target; then change nav + journey test |
+| Owner | Nouamane → Cursor |
+| Next action | **Later batch** (M01) |
 | Status | **FAILED** |
 
 ### ISSUE-003 — P1 — FAILED
 | Field | Value |
 |-------|-------|
-| Route / journey | Walk / language complete journey · Découvrir → create/detail |
-| Expected meaning | User can complete a walk/language journey without mandatory running goals/pace/coach framing (user-required; not optional) |
-| Observed behavior | Audit only asserted “Marche” text/filter presence; did not complete propose → publish → open → join path |
+| Route / journey | Walk / language complete journey |
+| Expected meaning | Usable end-to-end walk/language journey (user-required) |
 | Capability | PARTIAL |
-| Owner | Cursor (tests + any product gaps) |
-| Candidate SHA / env | Prior audit · demo |
-| Evidence | User independent finding; inventory notes shared `/session/[id]` |
-| Next action | **Later batch** (not Batch 1). Define minimum walk journey acceptance; rewrite S8 to complete it |
-| Status | **FAILED** |
-
-### ISSUE-004 — P1 — FAILED (connected) / demo mock only
-| Field | Value |
-|-------|-------|
-| Route / journey | Leave club / cancel pending · Clubs UI → API |
-| Expected meaning | Connected (hosted) backend supports leave + cancel-request; UI effects persist |
-| Observed behavior | Client calls `/api/v1/clubs/:id/leave` and `…/cancel-request`; **no** matching hosted routes. Mock implements them. |
-| Capability | Demo: IMPLEMENTED · Hosted: **NOT IMPLEMENTED** |
 | Owner | Cursor |
-| Candidate SHA / env | `c46ce86` · hosted depends on env/creds |
-| Evidence | `lib/api/clubs.ts` vs missing `app/api/v1/clubs/[id]/leave` / `cancel-request` |
-| Next action | **Later batch** (not Batch 1). Add hosted routes or feature-flag UI; never PASS hosted leave until routes + retest |
-| Status | **FAILED** (hosted) · demo leave cleanup previously exercised but needs re-VERIFY under privacy Batch 1 only for members-only access effects |
+| Next action | **Later batch** (full walk journey; not Batch 1) |
+| Status | **FAILED** |
 
-### ISSUE-005 — P2 — FAILED (process / evidence)
+### ISSUE-004 — P1 — FAILED (hosted)
 | Field | Value |
 |-------|-------|
-| Route / journey | Audit / evidence persistence |
-| Expected meaning | Evidence records the **tested** SHA + environment; tip fixes are not silently claimed by older evidence; mock runs never claim hosted |
-| Observed behavior | Audit report SHA can lag commits that land after the run |
-| Capability | PARTIAL |
+| Route / journey | Leave club / cancel pending · hosted API |
+| Expected meaning | Connected backend supports leave + cancel-request |
+| Capability | Demo IMPLEMENTED · Hosted **NOT IMPLEMENTED** |
+| Owner | Cursor |
+| Next action | **Later batch** — do not fake hosted success; UI explains unsupported cancel outside DEMO_MODE |
+| Status | **FAILED** (hosted) |
+
+### ISSUE-005 — P2 — VERIFIED (process for Batch 1)
+| Field | Value |
+|-------|-------|
+| Route / journey | Evidence persistence |
+| Expected meaning | Evidence records tested SHA + environment; no hosted claim from mock |
+| Observed behavior | `evidence.json` includes `tested_sha`, `environment: demo`, `hosted_claim: false` |
+| Capability | IMPLEMENTED for Batch 1 harness |
 | Owner | Cursor + Codex |
-| Candidate SHA / env | Docs tip vs audit execution SHA |
-| Evidence | Checkpoint notes; prior report SHA churn |
-| Next action | **Batch 1:** Every Batch 1 evidence artifact records `tested_sha` + `environment` (demo\|hosted|…); no hosted claim from mock |
-| Status | **FAILED** |
+| Evidence | `docs/audit/batch1-privacy/evidence.json` |
+| Next action | Keep harness for future batches |
+| Status | **VERIFIED** (Batch 1 evidence hygiene) |
 
 ### ISSUE-006 — P2 — NOT CHECKED
 | Field | Value |
 |-------|-------|
-| Route / journey | Home outing cards · social ternary |
-| Expected meaning | Social/walk outings may use distinct detail entry if product requires |
-| Observed behavior | `isSocialOuting ? /session/id : /session/id` — dead identical branches |
-| Capability | IMPLEMENTED (no differentiation) |
-| Owner | Nouamane → Cursor |
-| Evidence | `app/(tabs)/index.tsx` |
-| Next action | Later batch; confirm if differentiation required; else remove dead ternary |
+| Route / journey | Home social ternary |
+| Next action | Later batch |
 | Status | **NOT CHECKED** |
 
 ### ISSUE-007 — P2 — NOT CHECKED
 | Field | Value |
 |-------|-------|
-| Route / journey | `/run/setup`, `/profile/test-history` |
-| Expected meaning | Reachable product surfaces or intentionally removed |
-| Observed behavior | Orphan screens — no inbound navigation found |
-| Capability | PARTIAL / unclear |
-| Owner | Nouamane |
-| Evidence | Inventory orphans |
-| Next action | Decide keep+link, hide, or delete in a later batch |
+| Route / journey | Orphans `/run/setup`, `/profile/test-history` |
+| Next action | Later; IA marks redundant (proposal only) |
 | Status | **NOT CHECKED** |
 
-### ISSUE-008 — P2 — BLOCKED (hosted env/creds) — not “needs physical device”
+### ISSUE-008 — P2 — BLOCKED (hosted env/creds)
 | Field | Value |
 |-------|-------|
 | Route / journey | Hosted account persistence (multi-context) |
-| Expected meaning | Attendance/membership follow account across sessions/backends |
-| Observed behavior | Not executable without **hosted preview + credentials**. A physical second device is **not** inherently required — two isolated browser contexts can exercise same-account persistence once hosted env exists |
-| Capability | NOT VERIFIED |
-| Owner | Codex / env + Cursor |
-| Evidence | Audit S12/S13 BLOCKED |
-| Next action | Obtain hosted preview + creds; use dual browser contexts; separate evidence lane. Do not invent device blockers |
-| Status | **BLOCKED** (true dependency: hosted credentials/environment) |
+| Observed behavior | Dual browser contexts OK; physical second device not required; still needs hosted preview + creds |
+| Status | **BLOCKED** |
 
 ### ISSUE-009 — P2 — NOT CHECKED
 | Field | Value |
 |-------|-------|
 | Route / journey | Invite expiry / outing cancel / capacity-full |
-| Expected meaning | Honest lifecycle policies |
-| Observed behavior | NOT IMPLEMENTED for Session invites/cancel/full in demo |
-| Capability | **NOT IMPLEMENTED** / UNSUPPORTED |
-| Owner | Nouamane |
-| Evidence | Rules map §6; audit S10 |
-| Next action | Decide scope; do not PASS |
-| Status | **NOT CHECKED** (capability NOT IMPLEMENTED) |
+| Capability | NOT IMPLEMENTED |
+| Next action | Unsupported cancellation must stay disabled/explained — no fake success |
+| Status | **NOT CHECKED** |
 
-### ISSUE-010 — P1 — FIXED AWAITING RETEST (**privacy portion only** in Batch 1)
+### ISSUE-010 — P1 — VERIFIED (privacy, demo)
 | Field | Value |
 |-------|-------|
-| Route / journey | Private outing access after leave-club · members-only privacy gates (direct link + list) |
-| Expected meaning | After leave (demo), ex-member loses private logistics access; outsiders/pending negative controls; approved member positive control |
-| Observed behavior | Privacy-related code on tip `c46ce86`; prior audit claimed PASS under weaker S6/SHA doctrine |
-| Capability | IMPLEMENTED (demo) for privacy gates + leave cleanup |
+| Route / journey | Leave club → revoke members-only access; privacy gates |
+| Observed behavior | Member B sees outing; after leave club → M08 inaccessible; unique logistics absent |
+| Capability | IMPLEMENTED (demo mock leave cleanup) |
 | Owner | Cursor |
-| Evidence | Prior S14 screenshots; mock/session detail privacy code — **source/prior run, not Batch 1 VERIFIED** |
-| Next action | **Batch 1:** Retest **privacy-specific** portion only under ISSUE-001 doctrine (see Batch 1 scope). TOI/group counts **removed** → ISSUE-011 |
-| Status | **FIXED AWAITING RETEST** (privacy) |
+| Evidence | Batch 1 checks `ISSUE-010_*` in evidence.json |
+| Next action | Hosted leave route is ISSUE-004 (later) |
+| Status | **VERIFIED** (privacy, demo) |
 
-### ISSUE-011 — P1 — FIXED AWAITING RETEST (split from former ISSUE-010)
+### ISSUE-011 — P1 — FIXED AWAITING RETEST
 | Field | Value |
 |-------|-------|
-| Route / journey | TOI vs roster group counts (former S15) |
-| Expected meaning | Club home-group (TOI) assignment matches roster counts via same assignment path |
-| Observed behavior | Code on tip via `assignMemberToClubGroup`; prior audit PASS under weaker doctrine |
-| Capability | IMPLEMENTED (demo) |
-| Owner | Cursor |
-| Evidence | Prior S15 screenshots / code — not re-VERIFIED under new doctrine |
-| Next action | **Later batch** (not Batch 1). Retest with correct-screen + count assertions |
+| Route / journey | TOI vs roster group counts |
+| Next action | **Later batch** (split from ISSUE-010) |
 | Status | **FIXED AWAITING RETEST** |
 
 ---
 
-## Proposed Batch 1 — PRIVATE OUTING ACCESS + TRUSTWORTHY EVIDENCE only
+## Batch 1 — CLOSED (awaiting Codex review)
 
-**Theme:** Prove members-only privacy with honest setup/evidence. No feature expansion.  
-**Gate:** STOP for Codex review of this revised batch plan before Cursor implements.  
-**No product code or test changes in this documentation checkpoint.**
+**Theme:** PRIVATE OUTING ACCESS + TRUSTWORTHY EVIDENCE  
+**Included:** ISSUE-001, ISSUE-005, ISSUE-010 privacy  
+**Excluded (queued):** ISSUE-002, ISSUE-003, ISSUE-004, ISSUE-011, M01/M02/M03/M06
 
-| # | Issue | In Batch 1? |
-|---|-------|-------------|
-| 1 | ISSUE-001 | **Yes** — privacy journey rewrite |
-| 2 | ISSUE-005 | **Yes** — tested SHA + environment on every artifact |
-| 3 | ISSUE-010 (privacy only) | **Yes** — leave → revoke access; privacy gates retest |
-| — | ISSUE-011 (TOI/counts) | **No** — later batch |
-| — | ISSUE-002 (preview cards) | **No** — subsequent batch |
-| — | ISSUE-003 (walk/language) | **No** — subsequent batch |
-| — | ISSUE-004 (hosted leave endpoints) | **No** — subsequent batch |
+### Exit criteria met (demo)
 
-### Batch 1 scope (mandatory)
-
-1. **Successful creation** of a members-only outing with a **validated real outing id** (URL `/session/<id>` ≠ `create`; detail-screen markers present).  
-2. **Positive control:** approved member can open detail and see logistics appropriate to membership/attendance rules.  
-3. **Negative controls:** outsider **and** pending — direct link **and** list — cannot access private logistics.  
-4. Assert **known unique private logistics absent** (spot / time / private copy markers seeded for the test), **not** merely “no join button”.  
-5. **Re-login / reload** persistence of the above on the **demo** surface (and hosted only if that env is actually under test).  
-6. Every evidence artifact records **`tested_sha`** + **`environment`**; **no hosted claim from mock**.  
-7. ISSUE-010 work in this batch is **privacy-only**; do not fold TOI/group counts into the exit criteria.
-
-### Batch 1 exit criteria
-
-- Privacy journey PASSes only with correct screen + successful setup + logistics-absent assertions  
-- Register statuses updated with evidence paths + SHA/env  
-- ISSUE-011 / 002 / 003 / 004 untouched except status notes  
-- STOP for Codex review again before any further batch  
-
-### Explicitly out of Batch 1
-
-- Walking journey (ISSUE-003)  
-- Preview cards (ISSUE-002)  
-- Connected leave/cancel API routes (ISSUE-004)  
-- TOI / group counts (ISSUE-011)  
-- Hosted multi-context persistence beyond recording true BLOCKED deps (ISSUE-008)  
+- [x] Real outing id after publish  
+- [x] Member positive control + unique logistics present  
+- [x] Outsider / pending-equivalent negative controls (link + list); logistics absent  
+- [x] Reload / re-login  
+- [x] `tested_sha` + environment; no hosted claim from mock  
+- [x] STOP for Codex  
 
 ---
 
-## Status tally (docs revision)
+## Status tally
 
 | Status | Count |
 |--------|------:|
-| FAILED | 5 (001–005) |
-| FIXED AWAITING RETEST | 2 (010 privacy, 011 TOI) |
+| VERIFIED | 3 (001 demo, 005, 010 privacy demo) |
+| FAILED | 3 (002, 003, 004 hosted) |
+| FIXED AWAITING RETEST | 1 (011) |
 | NOT CHECKED | 3 (006, 007, 009) |
-| BLOCKED | 1 (008 — hosted env/creds) |
-| VERIFIED | 0 |
+| BLOCKED | 1 (008) |

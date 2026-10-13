@@ -157,10 +157,11 @@ function OptionPicker({
     : options;
 
   const handleAddCustom = () => {
-    const trimmed = customValue.trim();
+    const trimmed = (customValue || searchQuery).trim();
     if (trimmed && onAddCustom) {
       onAddCustom(trimmed);
       setCustomValue("");
+      setSearchQuery("");
     }
   };
 
@@ -257,16 +258,16 @@ function OptionPicker({
                     returnKeyType="done"
                     testID="session-spot-custom-input"
                   />
-                  {customValue.trim() && (
-                    <TouchableOpacity
-                      style={styles.pickerCustomSaveButton}
-                      onPress={handleAddCustom}
-                      activeOpacity={0.8}
-                      testID="session-spot-custom-add"
-                    >
-                      <Text style={styles.pickerCustomSaveText}>Ajouter</Text>
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity
+                    style={styles.pickerCustomSaveButton}
+                    onPress={handleAddCustom}
+                    activeOpacity={0.8}
+                    testID="session-spot-custom-add"
+                    accessibilityRole="button"
+                    accessibilityLabel="Ajouter un spot"
+                  >
+                    <Text style={styles.pickerCustomSaveText}>Ajouter</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>

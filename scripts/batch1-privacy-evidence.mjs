@@ -26,8 +26,8 @@ fs.mkdirSync(SHOTS, { recursive: true });
 const testedSha = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
 const branch = execSync("git branch --show-current", { encoding: "utf8" }).trim();
 
-const UNIQUE_SPOT = `PHARE-BATCH1-${Date.now().toString(36).toUpperCase()}`;
-const UNIQUE_TITLE_TOKEN = `BATCH1PRIV${Date.now().toString(36).slice(-4).toUpperCase()}`;
+const UNIQUE_SPOT = `ZB1${Date.now().toString(36).slice(-7).toUpperCase()}`;
+const UNIQUE_TITLE_TOKEN = UNIQUE_SPOT;
 
 const evidence = {
   batch: "Batch 1 — PRIVATE OUTING ACCESS + TRUSTWORTHY EVIDENCE",
@@ -127,85 +127,72 @@ async function clickTestId(page, testId, ariaLabel = null) {
 
 async function typeTestId(page, testId, value) {
   await page.waitForSelector(`[data-testid="${testId}"]`, { timeout: 15000 });
-  await page.evaluate(
-    (id, val) => {
-      const el = document.querySelector(`[data-testid="${id}"]`);
-      if (!el) return;
-      el.focus();
-      const proto =
-        el.tagName === "TEXTAREA"
-          ? window.HTMLTextAreaElement.prototype
-          : window.HTMLInputElement.prototype;
-      const desc = Object.getOwnPropertyDescriptor(proto, "value");
-      desc?.set?.call(el, val);
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-    },
-    testId,
-    value,
-  );
+  await page.evaluate((id) => {
+    const el = Array.from(
+      document.querySelectorAll(`[data-testid="${id}"]`),
+    ).find((n) => n.getBoundingClientRect().width > 0);
+    if (!el) throw new Error(`No visible ${id}`);
+    el.focus();
+    const proto =
+      el.tagName === "TEXTAREA"
+        ? window.HTMLTextAreaElement.prototype
+        : window.HTMLInputElement.prototype;
+    const desc = Object.getOwnPropertyDescriptor(proto, "value");
+    desc?.set?.call(el, "");
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }, testId);
+  await page.keyboard.type(value, { delay: 20 });
+}
+
+async function enterOtp(page, code) {
+  for (let i = 0; i < code.length; i++) {
+    const sel = `[data-testid="otp-digit-${i}"]`;
+    await page.waitForSelector(sel, { visible: true, timeout: 15000 });
+    await page.click(sel);
+    await page.keyboard.type(code[i]);
+  }
 }
 
 async function loginViaUi(page, phone, otp) {
-  await page.goto(BASE + "/phone", { waitUntil: "networkidle0", timeout: 90000 });
+  await page.goto(BASE + "/onboarding", {
+    waitUntil: "networkidle0",
+    timeout: 90000,
+  });
   await new Promise((r) => setTimeout(r, 800));
-  // Prefer testIDs when present
-  const phoneSel = await page.$('[data-testid="auth-phone-input"]');
-  if (phoneSel) {
-    await typeTestId(page, "auth-phone-input", phone);
-    await clickTestId(page, "auth-phone-submit");
-  } else {
-    await page.evaluate((p) => {
-      const input = document.querySelector('input[type="tel"], input');
-      if (!input) return;
-      input.focus();
-      const desc = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        "value",
-      );
-      desc?.set?.call(input, p);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    }, phone);
-    await page.evaluate(() => {
-      const btn = Array.from(
-        document.querySelectorAll('[role="button"], button'),
-      ).find((n) => /Recevoir|code|Continuer/i.test(n.textContent || ""));
-      btn?.click();
-    });
+  await clickTestId(page, "cta-secondary", "J'ai déjà un compte");
+  await page.waitForFunction(() => /\/phone/.test(location.pathname), {
+    timeout: 15000,
+  });
+  await new Promise((r) => setTimeout(r, 600));
+  await page.evaluate(() => {
+    const el = Array.from(
+      document.querySelectorAll('[data-testid="phone-input"]'),
+    ).find((n) => n.getBoundingClientRect().width > 0);
+    el?.focus();
+  });
+  await page.keyboard.down("Control");
+  await page.keyboard.press("KeyA");
+  await page.keyboard.up("Control");
+  await page.keyboard.press("Backspace");
+  await page.keyboard.type(phone, { delay: 25 });
+  await new Promise((r) => setTimeout(r, 400));
+  await clickTestId(page, "cta-primary", "Recevoir le code");
+  await page.waitForFunction(() => /verify/i.test(location.pathname), {
+    timeout: 20000,
+  });
+  await enterOtp(page, otp);
+  await new Promise((r) => setTimeout(r, 400));
+  try {
+    await clickTestId(page, "cta-primary", "Vérifier");
+  } catch {
+    /* may auto-navigate */
   }
   await page.waitForFunction(
-    () => /verify|Vérifier|code/i.test(location.href + document.body.innerText),
-    { timeout: 20000 },
-  );
-  await new Promise((r) => setTimeout(r, 800));
-  const otpSel = await page.$('[data-testid="auth-otp-input"]');
-  if (otpSel) {
-    await typeTestId(page, "auth-otp-input", otp);
-    await clickTestId(page, "auth-otp-submit");
-  } else {
-    await page.evaluate((code) => {
-      const input = document.querySelector('input');
-      if (!input) return;
-      input.focus();
-      const desc = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        "value",
-      );
-      desc?.set?.call(input, code);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    }, otp);
-    await page.evaluate(() => {
-      const btn = Array.from(
-        document.querySelectorAll('[role="button"], button'),
-      ).find((n) => /Vérifier|Continuer/i.test(n.textContent || ""));
-      btn?.click();
-    });
-  }
-  await page.waitForFunction(
-    () => !/\/(phone|verify|onboarding)/i.test(location.pathname),
+    () =>
+      /Découvrir|Mes sorties|Clubs|Profil/i.test(document.body.innerText || ""),
     { timeout: 45000 },
   );
-  await new Promise((r) => setTimeout(r, 1500));
+  await new Promise((r) => setTimeout(r, 1200));
   return true;
 }
 
@@ -242,11 +229,40 @@ page.on("dialog", async (dialog) => {
 });
 
 try {
-  // --- Identity A: demo approved member / host ---
+  // --- Identity A: organizer creates club (admin) then members-only outing ---
   await clearAuth(page, { preserveMockWorld: false });
   await loginViaUi(page, "0611111111", "000000");
-  record("login_member_host", true, "0611111111");
+  record("login_member_host", true, "0611111111 (new club admin)");
   await shot(page, "01-member-home.png");
+
+  const clubName = `Batch1 Club ${UNIQUE_SPOT}`;
+  await page.goto(BASE + "/club/create", {
+    waitUntil: "networkidle0",
+    timeout: 90000,
+  });
+  await new Promise((r) => setTimeout(r, 1000));
+  await typeTestId(page, "club-name-input", clubName);
+  await typeTestId(page, "club-city-input", "Casablanca");
+  await page.evaluate(() => {
+    const purpose = document.querySelector(
+      'textarea, [aria-label="Objectif du club"]',
+    );
+    if (!purpose) return;
+    purpose.focus();
+    const proto = window.HTMLTextAreaElement.prototype;
+    const desc = Object.getOwnPropertyDescriptor(proto, "value");
+    desc?.set?.call(purpose, "Sorties privées batch1 — marche et rencontre");
+    purpose.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await clickTestId(page, "club-create-submit");
+  await new Promise((r) => setTimeout(r, 2500));
+  const clubText = await bodyText(page);
+  record(
+    "host_club_created",
+    /membre|club|Batch1|Quitter/i.test(clubText),
+    page.url(),
+  );
+  await shot(page, "01b-club-created.png");
 
   // Create members-only outing with unique logistics
   await page.goto(BASE + "/session/create", {
@@ -270,27 +286,72 @@ try {
     await page.waitForSelector('[data-testid="session-spot-custom-input"]', {
       timeout: 10000,
     });
-    await typeTestId(page, "session-spot-custom-input", UNIQUE_SPOT);
-    await new Promise((r) => setTimeout(r, 300));
-    await clickTestId(page, "session-spot-custom-add");
-    await new Promise((r) => setTimeout(r, 800));
-    const spotValue = await page.evaluate(
+    await new Promise((r) => setTimeout(r, 500));
+    // Prefer keyboard into focused custom input (updates React state)
+    await page.evaluate(() => {
+      document.querySelector('[data-testid="session-spot-custom-input"]')?.focus();
+    });
+    await page.keyboard.type(UNIQUE_SPOT, { delay: 30 });
+    await new Promise((r) => setTimeout(r, 400));
+    await page.evaluate(() => {
+      document.querySelector('[data-testid="session-spot-custom-add"]')?.click();
+    });
+    await new Promise((r) => setTimeout(r, 1000));
+    let spotValue = await page.evaluate(
       () =>
         document.querySelector('[data-testid="session-spot-value"]')
           ?.textContent || "",
     );
+    if (!spotValue.includes(UNIQUE_SPOT)) {
+      // Fallback: type into search field then Ajouter (reads searchQuery)
+      await clickTestId(page, "session-spot-field");
+      await new Promise((r) => setTimeout(r, 400));
+      await page.evaluate(() => {
+        const search = document.querySelector(
+          'input[placeholder="Rechercher un spot..."]',
+        );
+        search?.focus();
+      });
+      await page.keyboard.type(UNIQUE_SPOT, { delay: 30 });
+      await new Promise((r) => setTimeout(r, 300));
+      await page.evaluate(() => {
+        document
+          .querySelector('[data-testid="session-spot-custom-add"]')
+          ?.click();
+      });
+      await new Promise((r) => setTimeout(r, 1000));
+      spotValue = await page.evaluate(
+        () =>
+          document.querySelector('[data-testid="session-spot-value"]')
+            ?.textContent || "",
+      );
+    }
     spotSeeded = spotValue.includes(UNIQUE_SPOT);
   } catch (e) {
     record("unique_spot_seeded", false, String(e.message || e));
   }
-  record("unique_spot_seeded", spotSeeded, UNIQUE_SPOT);
+  if (!evidence.checks.unique_spot_seeded) {
+    record("unique_spot_seeded", spotSeeded, UNIQUE_SPOT);
+  }
 
   await shot(page, "02-create-form-members.png");
   await clickTestId(page, "session-publish-btn");
-  await page.waitForFunction(
-    () => /\/session\/[^/]+$/.test(location.pathname),
-    { timeout: 30000 },
-  );
+  try {
+    await page.waitForFunction(
+      () => {
+        const path = location.pathname;
+        return /^\/session\/(?!create$)[^/]+$/.test(path);
+      },
+      { timeout: 30000 },
+    );
+  } catch {
+    const stuck = await bodyText(page);
+    record(
+      "publish_navigation",
+      false,
+      `still on ${page.url()} · ${stuck.slice(0, 180)}`,
+    );
+  }
   await new Promise((r) => setTimeout(r, 2000));
 
   const afterPublish = assertOutingUrl(page.url());
@@ -303,21 +364,16 @@ try {
   await shot(page, "03-member-detail-after-publish.png");
 
   const memberText = await bodyText(page);
-  const logisticsPresent =
-    memberText.includes(UNIQUE_SPOT) ||
-    memberText.includes(UNIQUE_TITLE_TOKEN) ||
-    /MEMBRES|Club uniquement|M'inscrire|INSCRIPTION|Organisateur|Rendez-vous/i.test(
-      memberText,
-    );
-  // Stronger: if we seeded UNIQUE_SPOT into UI fields that persist
-  const uniquePresent =
-    memberText.includes(UNIQUE_SPOT) || memberText.includes(UNIQUE_TITLE_TOKEN);
+  const uniquePresent = memberText.includes(UNIQUE_SPOT);
   record(
     "member_positive_control_detail",
-    afterPublish.ok && logisticsPresent && !/n'est pas accessible/i.test(memberText),
+    afterPublish.ok &&
+      uniquePresent &&
+      /MEMBRES/i.test(memberText) &&
+      !/n'est pas accessible/i.test(memberText),
     uniquePresent
       ? `unique logistics visible: ${UNIQUE_SPOT}`
-      : "detail loaded (unique may be in spot picker option not custom)",
+      : `missing unique spot in detail; body=${memberText.slice(0, 160)}`,
   );
   record(
     "member_not_inaccessible_state",
@@ -438,11 +494,17 @@ try {
   await new Promise((r) => setTimeout(r, 1500));
   await page.goto(BASE + "/club", { waitUntil: "networkidle0" });
   await new Promise((r) => setTimeout(r, 1200));
-  const clubText = await bodyText(page);
+  const clubPendingText = await bodyText(page);
   const pendingUi =
     Boolean(await page.$('[data-testid="club-pending-panel"]')) ||
-    /EN ATTENTE|demande est envoyée|en cours de validation/i.test(clubText);
-  record("M07_pending_club_state_visible_or_outsider", true, pendingUi ? "pending" : "outsider-no-pending");
+    /EN ATTENTE|demande est envoyée|en cours de validation/i.test(
+      clubPendingText,
+    );
+  record(
+    "M07_pending_club_state_visible_or_outsider",
+    true,
+    pendingUi ? "pending" : "outsider-no-pending",
+  );
   await shot(page, "08-club-pending-or-outsider.png");
 
   await page.goto(BASE + `/session/${outingId}`, {
@@ -486,13 +548,14 @@ try {
   // ISSUE-010 privacy: leave club as member then lose access
   await clearAuth(page, { preserveMockWorld: true });
   await loginViaUi(page, "0611111111", "000000");
-  // Create a second identity path: use a non-host approved member if possible.
-  // For demo phone host — leave would remove membership; then host may still see as host.
-  // Positive leave-revoke: join as identity B via invite, then leave, then check.
+  // Positive leave-revoke: member B joins via invite, opens outing, leaves club, loses access.
   await page.goto(BASE + "/club/access", { waitUntil: "networkidle0" });
-  await new Promise((r) => setTimeout(r, 1000));
+  await new Promise((r) => setTimeout(r, 1200));
   let inviteCode = null;
   try {
+    await page.waitForSelector('[data-testid="club-generate-invite"]', {
+      timeout: 12000,
+    });
     await clickTestId(page, "club-generate-invite");
     await page.waitForSelector('[data-testid="club-invite-code"]', {
       timeout: 10000,
@@ -503,8 +566,8 @@ try {
           .querySelector('[data-testid="club-invite-code"]')
           ?.textContent?.trim() || null,
     );
-  } catch {
-    /* optional */
+  } catch (e) {
+    record("invite_for_leave_test", false, String(e.message || e));
   }
   record("invite_for_leave_test", Boolean(inviteCode), inviteCode || "");
 
