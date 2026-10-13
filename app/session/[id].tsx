@@ -399,26 +399,40 @@ export default function SessionScreen() {
     const loadJoinedSession = async () => {
       const savedJoined = await getJoinedSession(session.id);
       if (cancelled) return;
+      const apiStatus = session.attendanceStatus ?? null;
+      const defaultId =
+        session.recommendedGroupId || session.paceGroups[0]?.id || null;
+      // Per-user API/mock attendance wins over device-global joinedSessions
+      // (local store is not keyed by userId — must not show host join to participant).
+      if (apiStatus === "joined") {
+        const gid = session.attendanceGroupId ?? savedJoined?.groupId ?? null;
+        const uiGid = gid === "open" ? null : gid;
+        setSelectedGroupId(uiGid);
+        setJoinedGroupId(uiGid);
+        setHasStoredJoin(true);
+        return;
+      }
+      if (
+        apiStatus === "left" ||
+        apiStatus === "declined" ||
+        (apiStatus == null && session.hostUserId)
+      ) {
+        setSelectedGroupId(defaultId || null);
+        setJoinedGroupId(null);
+        setHasStoredJoin(false);
+        return;
+      }
       if (savedJoined) {
         const gid =
           savedJoined.groupId === "open" ? null : savedJoined.groupId;
         setSelectedGroupId(gid);
         setJoinedGroupId(gid);
         setHasStoredJoin(true);
-      } else if (
-        session.attendanceStatus === "joined"
-      ) {
-        // API/mock attendance is authoritative when local store lacks a row
-        setHasStoredJoin(true);
-        setJoinedGroupId(session.attendanceGroupId ?? null);
-        setSelectedGroupId(session.attendanceGroupId ?? null);
-      } else {
-        const defaultId =
-          session.recommendedGroupId || session.paceGroups[0]?.id || null;
-        setSelectedGroupId(defaultId);
-        setJoinedGroupId(null);
-        setHasStoredJoin(false);
+        return;
       }
+      setSelectedGroupId(defaultId || null);
+      setJoinedGroupId(null);
+      setHasStoredJoin(false);
     };
     void loadJoinedSession();
     return () => {
