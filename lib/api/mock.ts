@@ -974,9 +974,14 @@ async function mockJoinSession(
 
   const profile = await getRunnerProfile();
   const displayName = profile?.firstName ?? profile?.name ?? user.phone;
-  const groupId = (input.groupId as 'A' | 'B' | 'C' | 'D') || null;
+  const rawGroup = (input.groupId || '').trim();
+  const groupId =
+    rawGroup && rawGroup !== 'open'
+      ? (rawGroup as 'A' | 'B' | 'C' | 'D')
+      : null;
   const id = `att_${sessionId}_${user.id}`;
   // Invariant (b)/(no auto-confirm): join is an explicit runner action → status joined
+  // Walk/language outings may join without a pace group (groupId null / "open").
   await upsertAttendance({
     id,
     sessionId,
@@ -985,7 +990,7 @@ async function mockJoinSession(
     groupId,
     status: 'joined',
   });
-  await upsertJoinedSession(sessionId, groupId ?? 'C');
+  await upsertJoinedSession(sessionId, groupId ?? 'open');
 
   return {
     id,

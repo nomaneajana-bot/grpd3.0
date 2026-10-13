@@ -1471,6 +1471,13 @@ export default function CreateSessionScreen() {
   const [sessionType, setSessionType] = useState<
     "FARTLEK" | "SORTIE LONGUE" | "SEUIL"
   >("FARTLEK");
+  /** User-entered title — required for walk (must agree on detail). */
+  const [outingTitle, setOutingTitle] = useState("");
+  /** User-entered purpose / “à quoi s’attendre”. */
+  const [outingPurpose, setOutingPurpose] = useState("");
+  /** Optional language — only when toggle on; never default to English. */
+  const [includeLanguage, setIncludeLanguage] = useState(false);
+  const [outingLanguage, setOutingLanguage] = useState("");
 
   // Track if we've loaded the existing session (to prevent re-initialization)
   const [hasLoadedExistingSession, setHasLoadedExistingSession] =
@@ -1947,6 +1954,10 @@ export default function CreateSessionScreen() {
         sessionAudience,
         usePaceGroups,
         groupConfigs,
+        outingTitle,
+        outingPurpose,
+        includeLanguage,
+        outingLanguage,
       }),
     [
       spot,
@@ -1959,6 +1970,10 @@ export default function CreateSessionScreen() {
       sessionAudience,
       usePaceGroups,
       groupConfigs,
+      outingTitle,
+      outingPurpose,
+      includeLanguage,
+      outingLanguage,
     ],
   );
 
@@ -2023,14 +2038,51 @@ export default function CreateSessionScreen() {
         effectiveSessionType = sessionType;
       }
 
-      // Build effective groups from groupConfigs
+      if (sessionMode === "walking") {
+        if (!outingTitle.trim()) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          Alert.alert("Titre requis", "Donne un titre à ta sortie marche.");
+          return;
+        }
+        if (!outingPurpose.trim()) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          Alert.alert(
+            "Objectif requis",
+            "Décris l’objectif ou ce à quoi s’attendre.",
+          );
+          return;
+        }
+        if (!spot.trim()) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          Alert.alert("Lieu requis", "Choisis un lieu de rendez-vous.");
+          return;
+        }
+        if (includeLanguage && !outingLanguage.trim()) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          Alert.alert(
+            "Langue",
+            "Indique la langue, ou désactive l’option langue.",
+          );
+          return;
+        }
+      }
+
+      // Build effective groups from groupConfigs — walks never require pace groups.
       const effectiveGroups = groupConfigs
         .filter((g) => g.isActive && g.paceSecondsPerKm !== null)
         .map((g) => ({
           ...g,
           effectivePaceSecondsPerKm: g.paceSecondsPerKm! as number,
         }));
-      const submittedGroups = usePaceGroups ? effectiveGroups : [];
+      const walkSkipsPace = sessionMode === "walking";
+      const submittedGroups =
+        walkSkipsPace || !usePaceGroups ? [] : effectiveGroups;
+      const walkTitle = outingTitle.trim() || null;
+      const walkPurpose = outingPurpose.trim() || null;
+      const walkLanguage =
+        includeLanguage && outingLanguage.trim()
+          ? outingLanguage.trim()
+          : null;
 
       if (isEditMode && editSessionId) {
         // Update existing session
@@ -2044,6 +2096,9 @@ export default function CreateSessionScreen() {
           visibility: sessionVisibility,
           hostGroupName,
           genderRestriction: genderRestrictionUi,
+          title: walkTitle,
+          purpose: walkPurpose,
+          language: walkLanguage,
         });
         const sessionWithAudience = {
           ...session,
@@ -2080,6 +2135,9 @@ export default function CreateSessionScreen() {
           visibility: sessionVisibility,
           hostGroupName,
           genderRestriction: genderRestrictionUi,
+          title: walkTitle,
+          purpose: walkPurpose,
+          language: walkLanguage,
         });
 
         const apiPayload: SessionCreateInput = {
@@ -2092,15 +2150,15 @@ export default function CreateSessionScreen() {
           volume: session.volume,
           targetPace: session.targetPace,
           estimatedDistanceKm: session.estimatedDistanceKm,
-          recommendedGroupId: session.recommendedGroupId,
-          paceGroups: usePaceGroups ? session.paceGroups : [],
+          recommendedGroupId: session.recommendedGroupId || "open",
+          paceGroups: walkSkipsPace || !usePaceGroups ? [] : session.paceGroups,
           clubId: sessionVisibility === "members" ? primaryClubId : null,
           visibility: sessionVisibility,
           genderRestriction: audienceFields.genderRestriction,
           workoutId: session.workoutId ?? null,
           isCustom: true,
           hostGroupName: session.hostGroupName ?? null,
-          meetingPoint: session.meetingPoint ?? null,
+          meetingPoint: session.meetingPoint ?? session.spot ?? null,
           coachAdvice: session.coachAdvice ?? null,
           coachPhone: session.coachPhone ?? null,
           coachName: session.coachName ?? null,
@@ -2270,8 +2328,10 @@ export default function CreateSessionScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setSessionMode("walking");
                 setSelectedWorkoutId(null);
+                setUsePaceGroups(false);
               }}
               activeOpacity={0.7}
+              testID="session-mode-walking"
             >
               <Text
                 style={[
@@ -2283,6 +2343,66 @@ export default function CreateSessionScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {sessionMode === "walking" ? (
+            <View style={styles.walkMetaBlock} testID="session-walk-fields">
+              <Text style={[styles.cardSubtitle, styles.sessionTypeSubtitle]}>
+                Titre, objectif et lieu doivent correspondre sur le détail.
+              </Text>
+              <Text style={styles.fieldLabel}>Titre</Text>
+              <TextInput
+                style={styles.walkTextInput}
+                value={outingTitle}
+                onChangeText={setOutingTitle}
+                placeholder="Ex. Marche du dimanche"
+                placeholderTextColor={colors.text.tertiary}
+                testID="session-title-input"
+                accessibilityLabel="Titre de la sortie"
+              />
+              <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
+                Objectif / à quoi s&apos;attendre
+              </Text>
+              <TextInput
+                style={[styles.walkTextInput, styles.walkTextArea]}
+                value={outingPurpose}
+                onChangeText={setOutingPurpose}
+                placeholder="Décris la sortie en une ou deux phrases"
+                placeholderTextColor={colors.text.tertiary}
+                multiline
+                testID="session-purpose-input"
+                accessibilityLabel="Objectif de la sortie"
+              />
+              <View style={[styles.fieldRow, { marginTop: 12 }]}>
+                <Text style={styles.fieldLabel}>Inclure une langue</Text>
+                <Switch
+                  value={includeLanguage}
+                  onValueChange={(on) => {
+                    setIncludeLanguage(on);
+                    if (!on) setOutingLanguage("");
+                  }}
+                  trackColor={{ false: "#2a2f3a", true: colors.accent.primary }}
+                  thumbColor="#ffffff"
+                  testID="session-language-toggle"
+                />
+              </View>
+              {includeLanguage ? (
+                <>
+                  <Text style={[styles.fieldLabel, { marginTop: 8 }]}>
+                    Langue (optionnelle — aucune valeur par défaut)
+                  </Text>
+                  <TextInput
+                    style={styles.walkTextInput}
+                    value={outingLanguage}
+                    onChangeText={setOutingLanguage}
+                    placeholder="Ex. Français, darija…"
+                    placeholderTextColor={colors.text.tertiary}
+                    testID="session-language-input"
+                    accessibilityLabel="Langue de la sortie"
+                  />
+                </>
+              ) : null}
+            </View>
+          ) : null}
 
           {sessionMode === "workout" ? (
             <>
@@ -2430,9 +2550,10 @@ export default function CreateSessionScreen() {
           ) : null}
         </View>
 
-        {/* Card 2 - Groupes & allures */}
-        {(selectedWorkoutId || sessionMode !== "workout") && (
-          <View style={[styles.card, styles.groupsCard]}>
+        {/* Groupes & allures — hidden for walking (no running pace/workout/PR required). */}
+        {sessionMode !== "walking" &&
+          (selectedWorkoutId || sessionMode !== "workout") && (
+          <View style={[styles.card, styles.groupsCard]} testID="session-pace-groups-card">
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardTitle}>Groupes & allures</Text>
             </View>
@@ -2828,6 +2949,25 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     marginBottom: 16,
     lineHeight: 16,
+  },
+  walkMetaBlock: {
+    marginTop: 8,
+  },
+  walkTextInput: {
+    backgroundColor: colors.background.input,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "500",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 6,
+  },
+  walkTextArea: {
+    minHeight: 72,
+    textAlignVertical: "top",
   },
   fieldRow: {
     flexDirection: "row",

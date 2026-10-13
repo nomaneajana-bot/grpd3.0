@@ -3,17 +3,16 @@
 **Updated:** 2026-10-13  
 **Working branch:** `cursor/green-home-ux-join-3184` (PR #6)  
 **Pinned product baseline (pre–Batch 1):** `c46ce86478e26e0e523fd1fd227adaf3a792b6e4`  
-**Batch 1 tip under test:** `959b1ac18db002ef90fc430c1662f750e4796acf` (script + request testIDs)  
-**Docs tip:** `97ee1ba4cdd0aaa0fe03700bbb8242edb90ab3a8` (evidence + register/checkpoint only)  
-**Evidence `tested_sha`:** `959b1ac18db002ef90fc430c1662f750e4796acf` · env `demo` · hosted_claim `false`  
+**Batch 1 tip under test:** `959b1ac18db002ef90fc430c1662f750e4796acf`  
+**Batch 1 DEMO gate:** **CLEARED** (Codex accepted pending setup + 18 resolvable screenshots)  
+**Batch 2 tip under test:** _(set after product commits; see evidence `tested_sha`)_  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
 
-**BATCH 1 STILL OPEN — STOP for Codex review (corrected evidence).**  
-Prior acceptance blocked: pending-member privacy was not tested (unconditional PASS / outsider substitute).  
-Corrected run establishes genuine pending via UI for the exact target club, asserts `pending` + `approved=false`, then runs pending direct-link/list/reload/re-login privacy.  
-Do **not** start Batch 2 until Codex clears this gate.
+**BATCH 2 IN PROGRESS → STOP for Codex when evidence ready.**  
+Theme: WALK / LANGUAGE OUTING CREATE → DETAIL → JOIN → CANCEL (+ M06 confirm, M07 gutters).  
+Batch 1 **demo** evidence gate is cleared. Hosted / native / UAT remain **not** accepted.
 
 ## Design / scope lock
 
@@ -22,37 +21,44 @@ Do **not** start Batch 2 until Codex clears this gate.
 - M08 design annotation must never appear in product UI.
 - No merge, production deploy, new spending, credential changes, or OCIF submission.
 - No hosted claim from demo.
+- Do not decide creator auto-attendance or public-club association — preserve current behavior; report as unresolved.
 
-## Batch 1 corrected evidence
+## Batch 1 — DEMO gate CLEARED
+
+| Surface | Status |
+|---------|--------|
+| Demo | **CLEARED** — `docs/audit/batch1-privacy/evidence.json` 31/31; `tested_sha` `959b1ac` |
+| Hosted | Not claimed / not accepted |
+| Native | Not verified |
+| UAT | Not run |
+
+Issues: ISSUE-001, ISSUE-005, ISSUE-010 **privacy** — VERIFIED on **demo** only.
+
+## Batch 2 — OPEN
 
 | Item | Detail |
 |------|--------|
-| Issues | ISSUE-001, ISSUE-005, ISSUE-010 privacy |
-| Pending setup | UI request for exact `target_club_name`; fail/block if not pending |
-| Controls | Member positive · outsider negative · **genuine pending** negative · ex-member after leave |
-| Evidence | `docs/audit/batch1-privacy/evidence.json` — **31/31 PASS** |
-| Screenshots | All paths repo-relative under `docs/audit/batch1-privacy/screenshots/` (18 files) |
+| Issues | ISSUE-003; ISSUE-010 participation (join/cancel); M04/M05/M06; M07 gutters |
+| Journey | Create walk/language → detail → join (2nd user) → cancel confirm → persistence |
+| Evidence | `docs/audit/batch2-walk-join/` (demo only; hosted separate) |
+| Regression | Preserve Batch 1 private-access checks |
 
-### Evidence summary (demo)
+### Unresolved (report only — do not decide)
 
-- Real `/session/<id>` ≠ `create` after members-only publish  
-- Approved member: unique logistics present  
-- Outsider: direct link + list + re-login — logistics absent  
-- **Pending:** membership `status=pending`, `approved=false`, M07 UI visible; direct link + list + reload + re-login — logistics absent  
-- Leave club → inaccessible; logistics absent  
-- `tested_sha` + `environment: demo`; `hosted_claim: false`
+1. **Creator auto-attendance** — current create flow auto-joins host; not a cleared product rule.
+2. **Public + club association** — current code nulls `clubId` for public; not a cleared product rule.
 
 ## Exact next action
 
-1. **Codex** re-reviews corrected Batch 1 evidence (pending genuinely tested; screenshots resolvable).  
-2. Only after clearance: later batches (M01/M02/M03/M06, walk, previews, hosted leave, TOI).  
-3. No next implementation batch in this turn.
+1. Finish Batch 2 implementation + demo evidence (actual checks, no word-only / unconditional PASS).  
+2. **STOP for Codex** review of Batch 2.  
+3. No Batch 3 / home preview / new backend / merge / production.
 
 ## Surfaces
 
 | Surface | This checkpoint |
 |---------|-----------------|
-| Demo | Batch 1 corrected evidence **executed** (31/31) |
+| Demo | Batch 1 **CLEARED**; Batch 2 evidence in progress |
 | Hosted | Not claimed |
 | Multi-context | Not run |
 | Native | Not verified |

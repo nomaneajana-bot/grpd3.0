@@ -476,7 +476,7 @@ export default function ClubScreen() {
           </>
         ) : isPendingMember && club ? (
           <>
-            <View testID="club-pending-panel">
+            <View testID="club-pending-panel" style={styles.pendingPanel}>
               <Text style={styles.pendingTitle} testID="club-pending-title">
                 Ta demande est envoyée.
               </Text>
@@ -660,6 +660,15 @@ const styles = StyleSheet.create({
   loadingWrap: {
     paddingVertical: 48,
     alignItems: "center",
+  },
+  /** M07 — match heading/toprow gutters (24px); content must not flush to viewport edges. */
+  pendingPanel: {
+    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    paddingTop: 8,
+    paddingBottom: 16,
+    width: "100%",
+    maxWidth: "100%",
+    alignSelf: "stretch",
   },
   pendingTitle: {
     color: colors.text.primary,

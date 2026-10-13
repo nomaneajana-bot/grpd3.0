@@ -121,5 +121,38 @@ describe('sessionBuilder', () => {
     expect(result.session.estimatedDistanceKm).toBe(0);
     expect(result.session.targetPace).toBe('Allure libre');
     expect(result.session.volume).toMatch(/Marche/i);
+    expect(result.session.paceGroups).toEqual([]);
+    expect(result.defaultGroupId).toBe('open');
+  });
+
+  it('uses user title and purpose; language only when provided', () => {
+    const withLang = buildSessionFromForm({
+      spot: 'Phare Corniche',
+      dateISO: futureISO(),
+      timeLabel: '09:00',
+      sessionType: 'MARCHE',
+      groupConfigs: [],
+      title: 'English by the sea',
+      purpose: 'Une marche pour pratiquer, à ton rythme.',
+      language: 'Anglais',
+    });
+    expect(withLang.session.title).toBe('English by the sea');
+    expect(withLang.session.typeLabel).toBe('LANGUES · MARCHE');
+    expect(withLang.session.volume).toBe('Anglais');
+    expect(withLang.session.coachAdvice).toMatch(/pratiquer/);
+    expect(withLang.session.experience?.format).toBe('language');
+
+    const noLang = buildSessionFromForm({
+      spot: 'Phare Corniche',
+      dateISO: futureISO(),
+      timeLabel: '09:00',
+      sessionType: 'MARCHE',
+      groupConfigs: [],
+      title: 'Marche du dimanche',
+      purpose: 'Balade tranquille',
+    });
+    expect(noLang.session.typeLabel).toBe('MARCHE');
+    expect(noLang.session.volume).not.toMatch(/English|Anglais/i);
+    expect(noLang.session.experience?.format).toBe('community');
   });
 });

@@ -70,6 +70,15 @@ export function buildSessionFromForm(params: {
   estimatedDistanceKm?: number | null;
   /** Optional explicit target pace label — never invent for walks */
   targetPace?: string | null;
+  /** User-entered outing title (required for walk/language journeys) */
+  title?: string | null;
+  /** User-entered purpose / “à quoi s’attendre” — stored as coachAdvice */
+  purpose?: string | null;
+  /**
+   * Optional spoken language label when relevant (e.g. walk + language).
+   * Never invent a default language (no mandatory English).
+   */
+  language?: string | null;
 }): { id: string; session: SessionData; defaultGroupId: string } {
   const { spot, timeLabel, sessionType, groupConfigs, workoutId } = params;
   const visibility = params.visibility ?? "public";
@@ -77,7 +86,10 @@ export function buildSessionFromForm(params: {
   const genderRestriction = params.genderRestriction ?? null;
 
   const id = "custom-" + Date.now().toString();
-  const title = sessionType.toUpperCase();
+  const language = params.language?.trim() || "";
+  const purpose = params.purpose?.trim() || "";
+  const userTitle = params.title?.trim() || "";
+  const title = userTitle || sessionType.toUpperCase();
 
   const timeMatch = timeLabel.match(/(\d{2}):(\d{2})/);
   const hour = timeMatch ? parseInt(timeMatch[1], 10) : 6;
@@ -110,7 +122,6 @@ export function buildSessionFromForm(params: {
   const [y, m, d] = dateISO.split("-").map((n) => parseInt(n, 10));
   const sessionDate = new Date(y, m - 1, d, hour, minute, 0, 0);
   const fullDateLabel = formatDateLabel(sessionDate, timeMinutes);
-  const typeLabel = sessionType.toUpperCase();
 
   const isWalk =
     sessionType.includes("MARCHE") || sessionType.includes("WALKING");
@@ -119,6 +130,12 @@ export function buildSessionFromForm(params: {
     sessionType.includes("COURSE LIBRE") ||
     sessionType.includes("LIBRE") ||
     sessionType.includes("DÉCOUVERTE");
+
+  // Language is optional and only applied when the creator filled it (no English default).
+  const typeLabel =
+    isWalk && language
+      ? "LANGUES · MARCHE"
+      : sessionType.toUpperCase();
 
   let volume = "Séance personnalisée";
   if (sessionType.includes("FARTLEK")) {
@@ -131,6 +148,8 @@ export function buildSessionFromForm(params: {
     volume = "Course libre - chacun à son rythme";
   } else if (sessionType.includes("DÉCOUVERTE")) {
     volume = "Sortie découverte - exploration en groupe";
+  } else if (isWalk && language) {
+    volume = language;
   } else if (isWalk) {
     volume = "Marche en groupe - accessible à tous";
   }
@@ -226,7 +245,8 @@ export function buildSessionFromForm(params: {
     targetPace,
     estimatedDistanceKm,
     paceGroups,
-    recommendedGroupId: defaultGroupId,
+    // Walks without pace groups: no invented recommended group
+    recommendedGroupId: paceGroups.length > 0 ? defaultGroupId : "",
     isCustom: true,
     workoutId: workoutId ?? null,
     paceGroupsOverride:
@@ -234,7 +254,20 @@ export function buildSessionFromForm(params: {
     visibility,
     hostGroupName,
     genderRestriction,
+    coachAdvice: purpose || undefined,
+    meetingPoint: spot,
+    experience: isWalk
+      ? {
+          kind: "community",
+          activity: "walk",
+          format: language ? "language" : "community",
+        }
+      : undefined,
   };
 
-  return { id, session, defaultGroupId };
+  return {
+    id,
+    session,
+    defaultGroupId: paceGroups.length > 0 ? defaultGroupId : "open",
+  };
 }

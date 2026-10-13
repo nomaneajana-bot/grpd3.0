@@ -129,6 +129,7 @@ export function apiSessionToSessionData(api: {
 }): SessionData {
   const apiPaceGroups = api.paceGroups ?? null;
   const hasPaceGroupsField = Array.isArray(apiPaceGroups);
+  // Empty array must stay empty (walk/language without pace groups) — never invent a group.
   const paceGroups = hasPaceGroupsField
     ? apiPaceGroups.map((g) => ({
         id: g.id,
@@ -137,15 +138,22 @@ export function apiSessionToSessionData(api: {
         runnersCount: g.runnersCount ?? 0,
         avgPaceSecondsPerKm: g.avgPaceSecondsPerKm ?? 300,
       }))
-    : [
-        {
-          id: api.recommendedGroupId || "C",
-          label: `Groupe ${api.recommendedGroupId || "C"}`,
-          paceRange: api.targetPace,
-          runnersCount: 0,
-          avgPaceSecondsPerKm: 300,
-        },
-      ];
+    : api.recommendedGroupId
+      ? [
+          {
+            id: api.recommendedGroupId || "C",
+            label: `Groupe ${api.recommendedGroupId || "C"}`,
+            paceRange: api.targetPace,
+            runnersCount: 0,
+            avgPaceSecondsPerKm: 300,
+          },
+        ]
+      : [];
+  const typeUpper = (api.typeLabel || "").toUpperCase();
+  const isWalkLike =
+    typeUpper.includes("MARCHE") ||
+    typeUpper.includes("WALKING") ||
+    typeUpper.startsWith("LANGUES");
   return {
     id: api.id,
     title: api.title,
@@ -157,7 +165,16 @@ export function apiSessionToSessionData(api: {
     volume: api.volume,
     targetPace: api.targetPace,
     paceGroups,
-    recommendedGroupId: api.recommendedGroupId,
+    recommendedGroupId: api.recommendedGroupId || "",
+    experience: isWalkLike
+      ? {
+          kind: "community" as const,
+          activity: "walk" as const,
+          format: typeUpper.startsWith("LANGUES")
+            ? ("language" as const)
+            : ("community" as const),
+        }
+      : undefined,
     estimatedDistanceKm: api.estimatedDistanceKm,
     workoutId: api.workoutId ?? undefined,
     // API/club sessions are joinable by default; only explicit true means user-owned draft
