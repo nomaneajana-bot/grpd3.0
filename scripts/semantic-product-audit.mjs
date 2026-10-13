@@ -1310,43 +1310,70 @@ async function ensureMemberInClubA() {
   try {
     await ensureMemberInClubA();
 
-    // Ensure a members-only outing exists (reuse S6 id or create as org)
-    let outingId = membersOutingId;
-    if (!outingId) {
-      const okOrg = await loginViaUi(PERSONA_ORG.phone, {
-        label: "s14-org",
-        preserveMockWorld: true,
-      });
-      if (!okOrg) throw new Error("org login failed");
-      await goto("/session/create");
-      await new Promise((r) => setTimeout(r, 1200));
+    // Always mint a fresh members-only outing bound to Club Alpha (not Beta).
+    const okOrg = await loginViaUi(PERSONA_ORG.phone, {
+      label: "s14-org",
+      preserveMockWorld: true,
+    });
+    if (!okOrg) throw new Error("org login failed");
+    // Focus Alpha in Clubs so create prefers that clubId
+    await goto("/club");
+    await new Promise((r) => setTimeout(r, 1000));
+    await page.evaluate(() => {
+      const chip = [
+        ...document.querySelectorAll('[data-testid^="club-switch-"]'),
+      ].find((el) => /Alpha/i.test(el.textContent || ""));
+      chip?.click();
+    });
+    await new Promise((r) => setTimeout(r, 800));
+    await goto("/session/create");
+    await new Promise((r) => setTimeout(r, 1500));
+    // Select club-only audience
+    await page.evaluate(() => {
+      [...document.querySelectorAll('[role="button"],button,*')]
+        .find((n) =>
+          /Club uniquement|Membres|Privé \(membres\)|Réservé/i.test(
+            (n.textContent || "").trim(),
+          ),
+        )
+        ?.click();
+    });
+    await new Promise((r) => setTimeout(r, 600));
+    // Explicitly pick Alpha in create club picker if present
+    await page.evaluate(() => {
+      const chips = [
+        ...document.querySelectorAll('[data-testid^="create-club-"]'),
+      ];
+      const alpha = chips.find((c) => /Alpha/i.test(c.textContent || ""));
+      alpha?.querySelector('[role="button"]')?.click();
+      alpha?.click();
+    });
+    await new Promise((r) => setTimeout(r, 400));
+    try {
+      await clickTestId("session-publish-btn");
+    } catch {
       await page.evaluate(() => {
-        [...document.querySelectorAll('[role="button"],button,*')]
-          .find((n) =>
-            /Membres|Privé \(membres\)|Réservé/i.test(
-              (n.textContent || "").trim(),
-            ),
-          )
+        [...document.querySelectorAll('[role="button"],button')]
+          .find((n) => /Publier/i.test(n.textContent || ""))
           ?.click();
       });
-      await new Promise((r) => setTimeout(r, 400));
-      try {
-        await clickTestId("session-publish-btn");
-      } catch {
-        await page.evaluate(() => {
-          [...document.querySelectorAll('[role="button"],button')]
-            .find((n) => /Publier/i.test(n.textContent || ""))
-            ?.click();
-        });
-      }
-      await new Promise((r) => setTimeout(r, 2500));
-      outingId = page.url().includes("/session/")
-        ? page.url().split("/session/")[1]?.split("?")[0]
-        : null;
-      membersOutingId = outingId;
-      await ensureMemberInClubA();
     }
-    if (!outingId) throw new Error("no members-only outing id");
+    await new Promise((r) => setTimeout(r, 2800));
+    let outingId = page.url().includes("/session/")
+      ? page.url().split("/session/")[1]?.split("?")[0]
+      : null;
+    if (!outingId || outingId === "create") {
+      throw new Error(`members-only publish did not navigate; url=${page.url()}`);
+    }
+    membersOutingId = outingId;
+    // Organizer must be able to open it (proves session exists)
+    await goto(`/session/${outingId}`);
+    await new Promise((r) => setTimeout(r, 1200));
+    const orgSees = await bodyText();
+    if (/introuvable/i.test(orgSees)) {
+      throw new Error("org cannot open freshly published members-only outing");
+    }
+    await ensureMemberInClubA();
 
     // Join members-only outing as member
     await goto(`/session/${outingId}`);
@@ -1479,7 +1506,8 @@ async function ensureMemberInClubA() {
           `[data-testid="club-pace-group-${gid}"]`,
         );
         const text = row?.textContent || "";
-        const hasToi = /\bTOI\b/.test(text);
+        // RN-web may concatenate "Intermédiaire" + "TOI" without spaces
+        const hasToi = /TOI/.test(text);
         const countMatch = text.match(/(\d+)\s+membres?/);
         const count = countMatch ? Number(countMatch[1]) : null;
         return { gid, hasToi, count, text: text.slice(0, 120) };

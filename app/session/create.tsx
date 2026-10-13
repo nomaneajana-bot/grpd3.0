@@ -51,8 +51,9 @@ import {
   getClubAdminSettings,
   type ClubAdminGroupOverride,
 } from "../../lib/clubAdminStore";
+import { getFocusedClubId } from "../../lib/focusedClubStore";
 import { createSession as createSessionLocal, updateSession } from "../../lib/sessionStore";
-import type { SessionCreateInput } from "../../types/api";
+import type { ClubMembership, SessionCreateInput } from "../../types/api";
 import {
     getWorkoutBasePaceSeconds,
     getWorkoutIntervalDefaults,
@@ -1430,14 +1431,25 @@ export default function CreateSessionScreen() {
     loadProfile();
   }, [hasInitializedAudience, isEditMode]);
 
+  const [approvedClubs, setApprovedClubs] = useState<ClubMembership[]>([]);
+
   useEffect(() => {
     const loadMemberships = async () => {
       try {
         const client = createApiClient();
-        const result = await getMyMemberships(client);
-        const approved = (result.memberships ?? []).find((m) => m.status === "approved");
-        setPrimaryClubId(approved?.clubId ?? null);
+        const [result, focusedId] = await Promise.all([
+          getMyMemberships(client),
+          getFocusedClubId(),
+        ]);
+        const approved = (result.memberships ?? []).filter(
+          (m) => m.status === "approved",
+        );
+        setApprovedClubs(approved);
+        const preferred =
+          approved.find((m) => m.clubId === focusedId) ?? approved[0] ?? null;
+        setPrimaryClubId(preferred?.clubId ?? null);
       } catch {
+        setApprovedClubs([]);
         setPrimaryClubId(null);
       }
     };
@@ -2376,6 +2388,36 @@ export default function CreateSessionScreen() {
                 ?.hint
             }
           </Text>
+          {(sessionAudience === "club" || sessionAudience === "team") &&
+          approvedClubs.length > 1 ? (
+            <View style={styles.clubPickBlock} testID="create-club-picker">
+              <Text style={styles.clubPickLabel}>CLUB CIBLE</Text>
+              <View style={styles.audienceChips}>
+                {approvedClubs.map((m) => {
+                  const on = m.clubId === primaryClubId;
+                  const label = m.club?.name ?? m.clubId;
+                  return (
+                    <View key={m.clubId} testID={`create-club-${m.clubId}`}>
+                      <SelectableChip
+                        label={label}
+                        selected={on}
+                        showCheckmark
+                        accessibilityLabel={`Club ${label}`}
+                        labelStyle={styles.audienceChipLabel}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setPrimaryClubId(m.clubId);
+                        }}
+                      />
+                    </View>
+                  );
+                })}
+              </View>
+              <Text style={styles.audienceNote}>
+                La séance membres cible uniquement ce club — pas les autres.
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Card 2 - Groupes & allures */}
@@ -2847,6 +2889,16 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     fontSize: 12,
     marginTop: 8,
+  },
+  clubPickBlock: {
+    marginTop: 14,
+  },
+  clubPickLabel: {
+    color: colors.text.tertiary,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginBottom: 2,
   },
   divider: {
     height: StyleSheet.hairlineWidth,

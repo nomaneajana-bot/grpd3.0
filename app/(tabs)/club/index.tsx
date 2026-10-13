@@ -43,6 +43,10 @@ import {
 import { confirmAction } from "@/lib/confirmAction";
 import { getAuthUser } from "@/lib/authStore";
 import {
+  getFocusedClubId as readFocusedClubId,
+  setFocusedClubId as persistFocusedClubId,
+} from "@/lib/focusedClubStore";
+import {
   getClubAdminSettings,
   memberGroupFromSettings,
   type ClubAdminSettings,
@@ -96,7 +100,10 @@ export default function ClubScreen() {
         null;
 
       if (primary?.status === "approved" && primary.clubId) {
-        if (!focusedClubId) setFocusedClubId(primary.clubId);
+        if (!focusedClubId) {
+          setFocusedClubId(primary.clubId);
+          void persistFocusedClubId(primary.clubId);
+        }
         const [rosterResult, profile, joined, paces, adminCfg, mySessions] =
           await Promise.all([
             getClubRoster(client, primary.clubId),
@@ -149,6 +156,17 @@ export default function ClubScreen() {
     }
   }, [showToast, focusedClubId]);
 
+  React.useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const stored = await readFocusedClubId();
+      if (!cancelled && stored) setFocusedClubId(stored);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       void loadData();
@@ -187,7 +205,11 @@ export default function ClubScreen() {
       const leftClubId = primaryMembership.clubId;
       const client = createApiClient();
       await leaveClub(client, leftClubId);
-      setFocusedClubId((prev) => (prev === leftClubId ? null : prev));
+      setFocusedClubId((prev) => {
+        const next = prev === leftClubId ? null : prev;
+        void persistFocusedClubId(next);
+        return next;
+      });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast("Tu as quitté le club.", "success");
       await loadData(true);
@@ -310,7 +332,10 @@ export default function ClubScreen() {
                         accessibilityRole="button"
                         accessibilityState={{ selected: active }}
                         accessibilityLabel={m.club?.name ?? m.clubId}
-                        onPress={() => setFocusedClubId(m.clubId)}
+                        onPress={() => {
+                          setFocusedClubId(m.clubId);
+                          void persistFocusedClubId(m.clubId);
+                        }}
                         style={[
                           styles.clubSwitcherChip,
                           active && styles.clubSwitcherChipOn,

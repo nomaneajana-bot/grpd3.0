@@ -855,6 +855,24 @@ async function mockGetSession(sessionId: string): Promise<ApiSession> {
     const session = await resolveDemoSession(sessionId);
     if (!session) throw new ApiError(404, 'Session not found');
     const user = await getAuthUser();
+
+    // Members-only: hide existence from non-members (direct-link privacy).
+    // Host retains access even if they are no longer a member.
+    if (session.visibility === 'members') {
+      if (!user) throw new ApiError(404, 'Session not found');
+      const isHost = session.hostUserId === user.id;
+      if (!isHost) {
+        const memberships = await readMemberships();
+        const isMember = Object.values(memberships).some(
+          (m) =>
+            m.userId === user.id &&
+            m.clubId === session.clubId &&
+            m.status === 'approved',
+        );
+        if (!isMember) throw new ApiError(404, 'Session not found');
+      }
+    }
+
     if (user) {
       const rows = await readAttendanceForSession(sessionId);
       const mine = rows.find((r) => r.userId === user.id);
