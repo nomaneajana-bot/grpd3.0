@@ -3,7 +3,9 @@
 **Updated:** 2026-10-13  
 **Working branch:** `cursor/green-home-ux-join-3184` (PR #6)  
 **Pinned product baseline (pre–Batch 1):** `c46ce86478e26e0e523fd1fd227adaf3a792b6e4`  
-**Batch 1 tip:** branch HEAD after Batch 1 implementation + evidence  
+**Batch 1 product tip (code under test):** `25d843f49830605627dc0c80914fb909b57100da`  
+**Docs tip:** branch HEAD (evidence stamp may follow product tip)  
+**Evidence `tested_sha`:** `25d843f49830605627dc0c80914fb909b57100da` · env `demo` · hosted_claim `false`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
