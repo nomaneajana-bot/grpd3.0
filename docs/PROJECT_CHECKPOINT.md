@@ -3,7 +3,7 @@
 **Updated:** 2026-10-13  
 **Working branch:** `cursor/green-home-ux-join-3184` (PR #6)  
 **Last reviewed product tip (pre-method):** `c46ce86478e26e0e523fd1fd227adaf3a792b6e4`
-**Docs tip (this checkpoint):** `73b7258a0dc0278cedafda94d9b45da06d4f420a`  
+**Docs tip (this checkpoint):** `7d44de57d9f60c1183553b1f7de981522f1c9e2d`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
