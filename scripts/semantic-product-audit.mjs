@@ -138,9 +138,38 @@ async function enterOtp(code = "000000") {
   }
 }
 
-/** Real UI login — no auth injection. */
-async function loginViaUi(phoneDigits, { label = "" } = {}) {
-  await clearStorage();
+/** Real UI login — no auth injection. Optionally preserve mock clubs/invites. */
+async function loginViaUi(
+  phoneDigits,
+  { label = "", preserveMockWorld = false } = {},
+) {
+  if (preserveMockWorld) {
+    await page.goto(BASE + "/onboarding", {
+      waitUntil: "networkidle0",
+      timeout: 90000,
+    });
+    await page.evaluate(() => {
+      const authKeys = [
+        "grpd_auth_user_v1",
+        "grpd_auth_tokens_v1",
+        "grpd_device_id_v1",
+        "grpd_use_mock_api_v1",
+        "grpd_login_phone_v1",
+        "grpd_login_otp_request_v1",
+        "grpd_onboarding_v1",
+        "grpd_profile_v1",
+        "joinedSessions:v1",
+      ];
+      for (const k of authKeys) localStorage.removeItem(k);
+    });
+    await page.goto(BASE + "/onboarding", {
+      waitUntil: "networkidle0",
+      timeout: 90000,
+    });
+    await new Promise((r) => setTimeout(r, 800));
+  } else {
+    await clearStorage();
+  }
   await clickTestId("cta-secondary", "J'ai déjà un compte");
   await page.waitForFunction(() => /\/phone/.test(location.pathname), {
     timeout: 15000,
@@ -260,21 +289,27 @@ let membersOutingId = null;
     await goto("/club/access");
     await new Promise((r) => setTimeout(r, 1000));
     // Select Beta in invite club picker if present
-    await page.evaluate(() => {
+    const betaChipClicked = await page.evaluate(() => {
       const chips = [
         ...document.querySelectorAll('[data-testid^="invite-club-"]'),
       ];
       const beta = chips.find((c) => /Beta/i.test(c.textContent || ""));
-      beta?.click();
+      if (!beta) return false;
+      beta.click();
+      return true;
     });
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 600));
     await clickTestId("club-generate-invite");
     await new Promise((r) => setTimeout(r, 1200));
     inviteCodeClubB = await page.evaluate(() => {
       const el = document.querySelector('[data-testid="club-invite-code"]');
       return el?.textContent?.trim() || null;
     });
+    // If picker click failed and codes collide, force regenerate note in actual
     shotPath = await shot("S1-club-b-invite");
+    if (!betaChipClicked) {
+      console.log("S1 warn: beta invite chip not found/clicked");
+    }
 
     await goto("/club");
     await new Promise((r) => setTimeout(r, 1200));
@@ -357,7 +392,11 @@ let membersOutingId = null;
   let shotPath = "";
   try {
     if (!inviteCodeClubA) throw new Error("no invite code A from S1");
-    const okLogin = await loginViaUi(PERSONA_MEMBER.phone, { label: "member" });
+    // Preserve clubs/invites created by organizer on this device
+    const okLogin = await loginViaUi(PERSONA_MEMBER.phone, {
+      label: "member",
+      preserveMockWorld: true,
+    });
     if (!okLogin) throw new Error("login failed");
     await goto("/club/access");
     await typeTestId("club-invite-code-input", inviteCodeClubA);

@@ -1,0 +1,325 @@
+{
+  "summary": {
+    "sha": "f846348eb66439efe2004533700f199263549c6e",
+    "generatedAt": "2026-10-13T02:58:01.056Z",
+    "mode": "offline-demo",
+    "hosted": "BLOCKED — no hosted preview in this run",
+    "crossDevice": "BLOCKED — no second device/hosted API",
+    "scenarios": [
+      {
+        "id": "S1-two-clubs",
+        "result": "FAIL",
+        "title": "Organizer creates two distinct clubs with distinct invites"
+      },
+      {
+        "id": "S2-invite-joins-intended-club",
+        "result": "FAIL",
+        "title": "Invite code joins the intended club; membership ≠ attendance"
+      },
+      {
+        "id": "S3-outsider-not-auto-member",
+        "result": "PASS",
+        "title": "Outsider login is not silently a Casa club member"
+      },
+      {
+        "id": "S4-pending-not-approved",
+        "result": "PASS",
+        "title": "Club join request stays pending (not approved)"
+      },
+      {
+        "id": "S5-join-leave-consistency",
+        "result": "PASS",
+        "title": "Join/leave updates detail + persists across reload; Mes sorties consistent"
+      },
+      {
+        "id": "S6-members-only-privacy",
+        "result": "PASS",
+        "title": "Members-only outing: outsider direct link cannot join or see logistics"
+      },
+      {
+        "id": "S7-standalone-no-club-context",
+        "result": "PASS",
+        "title": "Standalone public outing does not inherit club membership context"
+      },
+      {
+        "id": "S8-walk-language-no-run-assumptions",
+        "result": "PASS",
+        "title": "Walking/language users are not forced into running goals/pace/coach"
+      },
+      {
+        "id": "S9-account-switch",
+        "result": "PASS",
+        "title": "Same-device account switch does not leak attendance"
+      },
+      {
+        "id": "S10-unsupported-policies",
+        "result": "PASS",
+        "title": "Unsupported policies flagged honestly (expire/cancel/full/hosted)"
+      },
+      {
+        "id": "S11-action-labels",
+        "result": "PASS",
+        "title": "Action labels: Publier (create) vs S'inscrire/Demander/Quitter (detail)"
+      },
+      {
+        "id": "S12-hosted-blocked",
+        "result": "BLOCKED",
+        "title": "Hosted journey acceptance"
+      },
+      {
+        "id": "S13-cross-device-blocked",
+        "result": "BLOCKED",
+        "title": "Cross-device persistence"
+      }
+    ],
+    "counts": {
+      "pass": 9,
+      "fail": 2,
+      "blocked": 2,
+      "contradictions": 3
+    },
+    "preview": {
+      "branch": "cursor/green-home-ux-join-3184",
+      "command": "EXPO_PUBLIC_DEMO_MODE=true npx expo start --web --port 8081",
+      "reference": "http://localhost:8081/reference/green-home",
+      "live": "http://localhost:8081/"
+    }
+  },
+  "scenarios": [
+    {
+      "id": "S1-two-clubs",
+      "title": "Organizer creates two distinct clubs with distinct invites",
+      "persona": "organizer",
+      "setup": "Fresh DEMO_MODE; real OTP login",
+      "steps": [
+        "Login as organizer",
+        "Create Club Alpha + generate invite",
+        "Create Club Beta + generate invite",
+        "Verify Clubs list shows both; codes differ"
+      ],
+      "expectedMeaning": "Each club is a separate membership boundary with its own invite code",
+      "actual": "clubsVisible A=true B=true; codeA=AUDITCLU codeB=AUDITCLU; betaFocused=true",
+      "result": "FAIL",
+      "screenshot": "screenshots/S1-club-b-invite.png",
+      "surface": "demo"
+    },
+    {
+      "id": "S2-invite-joins-intended-club",
+      "title": "Invite code joins the intended club; membership ≠ attendance",
+      "persona": "member",
+      "setup": "Fresh login; use invite AUDITCLU",
+      "steps": [
+        "Login as member phone",
+        "Club access → enter Club A invite → Rejoindre",
+        "Check Clubs list for Alpha only",
+        "Check Mes sorties not auto-filled"
+      ],
+      "expectedMeaning": "Code grants membership to that club only; does not enroll in outings",
+      "actual": "joinedMsg=false; pending=true; clubList A=false B=false; autoAttended=false",
+      "result": "FAIL",
+      "screenshot": "screenshots/S2-after-invite-join.png",
+      "surface": "demo"
+    },
+    {
+      "id": "S3-outsider-not-auto-member",
+      "title": "Outsider login is not silently a Casa club member",
+      "persona": "outsider",
+      "setup": "Fresh login with non-demo phone",
+      "steps": [
+        "Login",
+        "Open Clubs",
+        "Assert no approved Casa membership"
+      ],
+      "expectedMeaning": "Only invite/request (or canonical demo phone) creates membership",
+      "actual": "hasCasa=false; memberBadge=false; emptyOrJoinCTA=true",
+      "result": "PASS",
+      "screenshot": "screenshots/S3-outsider-clubs.png",
+      "surface": "demo"
+    },
+    {
+      "id": "S4-pending-not-approved",
+      "title": "Club join request stays pending (not approved)",
+      "persona": "pending",
+      "setup": "Fresh login; request Club Alpha by name",
+      "steps": [
+        "Login",
+        "Accès club → Demander à rejoindre",
+        "Check Clubs status"
+      ],
+      "expectedMeaning": "Pending applicant cannot act as approved member",
+      "actual": "filled=true; pendingUI=true; approvedAsMember=false; snippet=‹\nClub\nAccès club\nInvitations, demandes et administration.\nREJOINDRE AVEC CODE\nCode d'invitation\nRejoindre\nDEMANDER À REJOINDRE\nNom du club\nSi tu n'as pas de code, entre le nom du club.\nMessage (optionnel)\nEnvoyer la dem",
+      "result": "PASS",
+      "screenshot": "screenshots/S4-after-request.png",
+      "surface": "demo"
+    },
+    {
+      "id": "S5-join-leave-consistency",
+      "title": "Join/leave updates detail + persists across reload; Mes sorties consistent",
+      "persona": "member",
+      "setup": "Member account; public seed outing",
+      "steps": [
+        "Open public outing",
+        "S'inscrire → assert leave CTA",
+        "Check Mes sorties",
+        "Reload detail → still joined",
+        "Quitter → join CTA returns"
+      ],
+      "expectedMeaning": "Attendance is explicit, durable in-session, and reflected in My outings",
+      "actual": "before={\"join\":true,\"leave\":false,\"modify\":false}; afterJoin={\"leave\":true,\"join\":false}; inMy=true; afterReload={\"leave\":true,\"join\":false}; afterLeave={\"leave\":false,\"join\":true}",
+      "result": "PASS",
+      "screenshot": "screenshots/S5-after-join.png",
+      "surface": "demo"
+    },
+    {
+      "id": "S6-members-only-privacy",
+      "title": "Members-only outing: outsider direct link cannot join or see logistics",
+      "persona": "organizer→outsider",
+      "setup": "Organizer publishes members-only; outsider opens /session/:id",
+      "steps": [
+        "Organizer create members-only outing",
+        "Outsider login",
+        "Open direct session URL",
+        "Assert no join + no private logistics"
+      ],
+      "expectedMeaning": "Visibility=members gates attendance and sensitive details",
+      "actual": "canJoin=false; requestOnly=false; privateLogistics=false; text=←\nRetour\nSéance introuvable\nCette séance n'existe plus ou n'est pas accessible.",
+      "result": "PASS",
+      "screenshot": "screenshots/S6-outsider-direct-link.png",
+      "surface": "demo"
+    },
+    {
+      "id": "S7-standalone-no-club-context",
+      "title": "Standalone public outing does not inherit club membership context",
+      "persona": "organizer",
+      "setup": "Organizer with clubs; publish Public outing",
+      "steps": [
+        "Create session",
+        "Select Public",
+        "Publish",
+        "Assert no members-only club framing"
+      ],
+      "expectedMeaning": "Public outings are independent of club membership",
+      "actual": "url=http://localhost:8081/session/session_1791860218002_s6ujxsog; inheritedClub=false; looksPublic=true; snippet=‹\nMarina\nModifier\nFARTLEK\nFARTLEK\nMARDI 13 OCTOBRE 06:00 · Marina\nInfos\n— km\nDISTANCE\nAllure libre\n/KM\n—\nCOUREURS\nINFORMATIONS\nType de course\nFARTLEK ›\nDistance\n—\nRendez-vous\nMarina\nOrganisateur\nÉquip",
+      "result": "PASS",
+      "screenshot": "screenshots/S7-after-publish.png",
+      "surface": "demo"
+    },
+    {
+      "id": "S8-walk-language-no-run-assumptions",
+      "title": "Walking/language users are not forced into running goals/pace/coach",
+      "persona": "outsider",
+      "setup": "Fresh outsider; inspect Découvrir filters + create + profile",
+      "steps": [
+        "Open Découvrir community/langues filters",
+        "Open Créer une séance",
+        "Open Profil",
+        "Assert walk path exists; no mandatory 10k/VO2"
+      ],
+      "expectedMeaning": "Community/walk experiences are first-class without run PR framing",
+      "actual": "forcesRunOnlyCreate=false; hasWalkPath=true; profileForces10k=false",
+      "result": "PASS",
+      "screenshot": "screenshots/S8-discover-filters.png",
+      "surface": "demo"
+    },
+    {
+      "id": "S9-account-switch",
+      "title": "Same-device account switch does not leak attendance",
+      "persona": "member→outsider",
+      "setup": "Member joins outing; logout via fresh login as outsider",
+      "steps": [
+        "Member join",
+        "Outsider login (storage cleared)",
+        "Open same outing"
+      ],
+      "expectedMeaning": "Attendance is per-identity, not device-global after switch",
+      "actual": "memberJoined=true; outsider={\"leave\":false,\"join\":true}",
+      "result": "PASS",
+      "screenshot": "screenshots/S9-outsider-after-switch.png",
+      "surface": "demo-same-device-switch"
+    },
+    {
+      "id": "S10-unsupported-policies",
+      "title": "Unsupported policies flagged honestly (expire/cancel/full/hosted)",
+      "persona": "organizer",
+      "setup": "Inspect session + invite UI for claimed vs implemented policies",
+      "steps": [
+        "Open outing detail",
+        "Open club access",
+        "Record claims vs support"
+      ],
+      "expectedMeaning": "Product must not silently invent expire/cancel/full/hosted guarantees",
+      "actual": "UI claims full/waitlist=false; cancelOuting=false; expireInvite=false",
+      "result": "PASS",
+      "screenshot": "screenshots/S10-session-detail.png",
+      "surface": "demo"
+    },
+    {
+      "id": "S11-action-labels",
+      "title": "Action labels: Publier (create) vs S'inscrire/Demander/Quitter (detail)",
+      "persona": "member",
+      "setup": "Compare create CTA vs detail CTAs",
+      "steps": [
+        "Open create",
+        "Open detail",
+        "Record CTA copy"
+      ],
+      "expectedMeaning": "Publish ≠ attend; request ≠ join; leave ≠ delete outing",
+      "actual": "publishOnCreate=true; detail={\"join\":\"S&apos;inscrire\"}",
+      "result": "PASS",
+      "screenshot": "screenshots/S11-labels.png",
+      "surface": "demo"
+    },
+    {
+      "id": "S12-hosted-blocked",
+      "title": "Hosted journey acceptance",
+      "persona": "n/a",
+      "setup": "Cloud agent environment",
+      "steps": [
+        "Check for hosted preview URL"
+      ],
+      "expectedMeaning": "Hosted persistence separate from demo localStorage",
+      "actual": "No hosted preview credentials/URL in this run",
+      "result": "BLOCKED",
+      "screenshot": "",
+      "surface": "hosted"
+    },
+    {
+      "id": "S13-cross-device-blocked",
+      "title": "Cross-device persistence",
+      "persona": "n/a",
+      "setup": "Requires two devices or hosted backend",
+      "steps": [
+        "Join on device A",
+        "Login on device B"
+      ],
+      "expectedMeaning": "Attendance follows account across devices",
+      "actual": "Not executable without hosted API + second device",
+      "result": "BLOCKED",
+      "screenshot": "",
+      "surface": "cross-device"
+    }
+  ],
+  "contradictions": [
+    {
+      "severity": "P0",
+      "title": "Two clubs share or lack distinct invite codes",
+      "impact": "Invite intended for Club A may join Club B or fail silently",
+      "evidence": "clubsVisible A=true B=true; codeA=AUDITCLU codeB=AUDITCLU; betaFocused=true",
+      "scenario": "S1-two-clubs"
+    },
+    {
+      "severity": "P2",
+      "title": "UNSUPPORTED: hosted cross-device persistence not verified in this run",
+      "impact": "Cannot claim attendance survives devices/backends",
+      "evidence": "No hosted preview URL/credentials in cloud agent",
+      "scenario": "S10-unsupported-policies"
+    },
+    {
+      "severity": "P2",
+      "title": "UNSUPPORTED: expired invites / cancel outing / capacity-full lifecycle",
+      "impact": "No product path exercised for expire/cancel/full in demo mock",
+      "evidence": "Mock invite codes do not expire; no cancel-outing control found",
+      "scenario": "S10-unsupported-policies"
+    }
+  ]
+}

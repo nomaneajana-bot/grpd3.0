@@ -170,9 +170,10 @@ function slugify(value: string): string {
 }
 
 function makeInviteCode(slug: string): string {
-  const base = slug.replace(/[^a-z0-9]/g, '').toUpperCase();
-  if (base.length >= 6) return base.slice(0, 8);
-  return `CLUB${Math.floor(Math.random() * 900 + 100)}`;
+  const base = slug.replace(/[^a-z0-9]/g, '').toUpperCase().slice(0, 5);
+  const suffix = Math.random().toString(36).slice(2, 5).toUpperCase();
+  const code = `${base || 'CLUB'}${suffix}`;
+  return code.slice(0, 8);
 }
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {

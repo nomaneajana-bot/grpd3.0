@@ -23,7 +23,9 @@ export function ClubOverviewCard({
   status,
 }: ClubOverviewCardProps) {
   const initials = clubInitialsFromName(clubName);
-  const metaParts = [`${memberCount} membres`];
+  const metaParts = [
+    `${memberCount} membre${memberCount === 1 ? "" : "s"}`,
+  ];
   if (city?.trim()) metaParts.push(city.trim());
   else if (foundedYear) metaParts.push(`Fondé ${foundedYear}`);
 
