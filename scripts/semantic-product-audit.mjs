@@ -1389,14 +1389,35 @@ async function ensureMemberInClubA() {
     }
     await ensureMemberInClubA();
 
-    // Join members-only outing as member
+    // Join members-only outing as member (select pace group first, like S5)
     await goto(`/session/${outingId}`);
     await new Promise((r) => setTimeout(r, 1500));
-    const beforeJoin = await page.evaluate(() => ({
-      join: Boolean(document.querySelector('[data-testid="session-join-btn"]')),
-      leave: Boolean(document.querySelector('[data-testid="session-leave-btn"]')),
-      text: (document.body.innerText || "").slice(0, 200),
-    }));
+    await page.evaluate(() => {
+      document.querySelector('[data-testid^="session-group-"]')?.click();
+    });
+    await new Promise((r) => setTimeout(r, 400));
+    const beforeJoin = await page.evaluate(() => {
+      const joinBtn = document.querySelector('[data-testid="session-join-btn"]');
+      const confirmBtn = document.querySelector(
+        '[data-testid="session-join-confirm"]',
+      );
+      joinBtn?.scrollIntoView({ block: "center" });
+      confirmBtn?.scrollIntoView({ block: "center" });
+      return {
+        join: Boolean(joinBtn),
+        confirm: Boolean(confirmBtn),
+        leave: Boolean(
+          document.querySelector('[data-testid="session-leave-btn"]'),
+        ),
+        locked: Boolean(
+          document.querySelector('[data-testid="session-join-locked"]'),
+        ),
+        request: Boolean(
+          document.querySelector('[data-testid="session-join-request"]'),
+        ),
+        text: (document.body.innerText || "").slice(0, 240),
+      };
+    });
     if (beforeJoin.join) {
       await clickTestId("session-join-btn");
       await new Promise((r) => setTimeout(r, 800));
@@ -1405,6 +1426,9 @@ async function ensureMemberInClubA() {
           document.querySelector('[data-testid="session-join-confirm"]')?.click(),
         )
         .catch(() => null);
+      await new Promise((r) => setTimeout(r, 1500));
+    } else if (beforeJoin.confirm) {
+      await clickTestId("session-join-confirm");
       await new Promise((r) => setTimeout(r, 1500));
     }
     const afterJoin = await page.evaluate(() => ({
