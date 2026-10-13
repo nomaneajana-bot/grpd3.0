@@ -1055,6 +1055,28 @@ async function mockLeaveClub(clubId: string): Promise<{ ok: true }> {
     delete memberships[entry.id];
     await writeMemberships(memberships);
   }
+
+  // Leaving a club must revoke members-only attendance for that club
+  // (membership ≠ attendance, but members-only access requires membership).
+  if (DEMO_MODE) {
+    const { removeJoinedSession } = await import('../joinedSessionsStore');
+    const sessions = await readDemoSessions();
+    for (const session of sessions) {
+      if (session.clubId !== clubId || session.visibility !== 'members') {
+        continue;
+      }
+      const rows = await readAttendanceForSession(session.id);
+      const mine = rows.find((r) => r.userId === user.id);
+      if (mine && mine.status === 'joined') {
+        await upsertAttendance({
+          ...mine,
+          status: 'left',
+        });
+      }
+      await removeJoinedSession(session.id);
+    }
+  }
+
   return { ok: true };
 }
 

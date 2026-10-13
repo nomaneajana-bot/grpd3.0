@@ -73,8 +73,11 @@ export function ClubPaceGroupRow({
   if (onPress) {
     return (
       <Pressable
+        testID={`club-pace-group-${group.id}`}
         onPress={onPress}
         accessibilityRole="button"
+        accessibilityState={{ selected: isSelected }}
+        accessibilityLabel={`${group.label}${isUserGroup ? ", ton groupe" : ""}`}
         style={({ pressed }) => [
           styles.row,
           isSelected && styles.rowSelected,

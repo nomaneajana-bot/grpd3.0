@@ -48,6 +48,7 @@ import {
   type ClubAdminSettings,
 } from "@/lib/clubAdminStore";
 import {
+  assignMemberToClubGroup,
   bucketMembersByGroup,
   CLUB_PACE_GROUP_DEFS,
   countSessionsThisWeekForGroup,
@@ -110,14 +111,23 @@ export default function ClubScreen() {
           (mySessions.sessions ?? []).map(apiSessionToSessionData),
         );
         setAdminSettings(adminCfg);
+        // TOI must use the same assignment as roster bucket counts
+        // (assignMemberToClubGroup), not a separate profile/pace inference.
         const authUser = await getAuthUser();
-        const assigned =
-          authUser && adminCfg
-            ? memberGroupFromSettings(authUser.id, adminCfg)
-            : null;
-        setUserGroupId(
-          assigned ?? inferUserClubGroupId(profile, joined, paces),
-        );
+        const meOnRoster = authUser
+          ? (rosterResult.members ?? []).find((m) => m.userId === authUser.id)
+          : undefined;
+        if (meOnRoster) {
+          setUserGroupId(assignMemberToClubGroup(meOnRoster, adminCfg));
+        } else {
+          const assigned =
+            authUser && adminCfg
+              ? memberGroupFromSettings(authUser.id, adminCfg)
+              : null;
+          setUserGroupId(
+            assigned ?? inferUserClubGroupId(profile, joined, paces),
+          );
+        }
       } else {
         setRoster([]);
         setClubSessions([]);
@@ -174,8 +184,10 @@ export default function ClubScreen() {
     if (!ok) return;
     setIsSubmitting(true);
     try {
+      const leftClubId = primaryMembership.clubId;
       const client = createApiClient();
-      await leaveClub(client, primaryMembership.clubId);
+      await leaveClub(client, leftClubId);
+      setFocusedClubId((prev) => (prev === leftClubId ? null : prev));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast("Tu as quitté le club.", "success");
       await loadData(true);
@@ -423,6 +435,9 @@ export default function ClubScreen() {
             ) : null}
 
             <Pressable
+              testID="club-leave-btn"
+              accessibilityRole="button"
+              accessibilityLabel="Quitter le club"
               style={({ pressed }) => [
                 styles.quitZone,
                 pressed && { opacity: 0.5 },

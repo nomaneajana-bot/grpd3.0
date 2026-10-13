@@ -1213,6 +1213,278 @@ let membersOutingId = null;
   });
 }
 
+// --- S14: Leave club while attending members-only outing ---
+{
+  const id = "S14-leave-club-while-attending";
+  let result = "FAIL";
+  let actual = "";
+  let shotPath = "";
+  try {
+    // Ensure a members-only outing exists (reuse S6 id or create)
+    let outingId = membersOutingId;
+    if (!outingId) {
+      const okOrg = await loginViaUi(PERSONA_ORG.phone, {
+        label: "s14-org",
+        preserveMockWorld: true,
+      });
+      if (!okOrg) throw new Error("org login failed");
+      await goto("/session/create");
+      await new Promise((r) => setTimeout(r, 1200));
+      await page.evaluate(() => {
+        [...document.querySelectorAll('[role="button"],button,*')]
+          .find((n) =>
+            /Membres|Privé \(membres\)|Réservé/i.test(
+              (n.textContent || "").trim(),
+            ),
+          )
+          ?.click();
+      });
+      await new Promise((r) => setTimeout(r, 400));
+      try {
+        await clickTestId("session-publish-btn");
+      } catch {
+        await page.evaluate(() => {
+          [...document.querySelectorAll('[role="button"],button')]
+            .find((n) => /Publier/i.test(n.textContent || ""))
+            ?.click();
+        });
+      }
+      await new Promise((r) => setTimeout(r, 2500));
+      outingId = page.url().includes("/session/")
+        ? page.url().split("/session/")[1]?.split("?")[0]
+        : null;
+      membersOutingId = outingId;
+    }
+    if (!outingId) throw new Error("no members-only outing id");
+
+    // Member must be in Club Alpha; re-join invite if needed
+    const okMem = await loginViaUi(PERSONA_MEMBER.phone, {
+      label: "s14-member",
+      preserveMockWorld: true,
+    });
+    if (!okMem) throw new Error("member login failed");
+    await goto("/club");
+    await new Promise((r) => setTimeout(r, 1200));
+    let clubText = await bodyText();
+    if (!/Alpha/i.test(clubText) || /Quitter le club/i.test(clubText) === false) {
+      if (!inviteCodeClubA) throw new Error("no invite A to rejoin");
+      await goto("/club/access");
+      await typeTestId("club-invite-code-input", inviteCodeClubA);
+      await clickTestId("club-join-by-code");
+      await new Promise((r) => setTimeout(r, 2000));
+      await goto("/club");
+      clubText = await bodyText();
+    }
+    if (!/Quitter le club/i.test(clubText)) {
+      throw new Error("member not approved in club before leave test");
+    }
+
+    // Join members-only outing
+    await goto(`/session/${outingId}`);
+    await new Promise((r) => setTimeout(r, 1500));
+    const beforeJoin = await page.evaluate(() => ({
+      join: Boolean(document.querySelector('[data-testid="session-join-btn"]')),
+      leave: Boolean(document.querySelector('[data-testid="session-leave-btn"]')),
+    }));
+    if (beforeJoin.join) {
+      await clickTestId("session-join-btn");
+      await new Promise((r) => setTimeout(r, 800));
+      await page
+        .evaluate(() =>
+          document.querySelector('[data-testid="session-join-confirm"]')?.click(),
+        )
+        .catch(() => null);
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    const afterJoin = await page.evaluate(() => ({
+      join: Boolean(document.querySelector('[data-testid="session-join-btn"]')),
+      leave: Boolean(document.querySelector('[data-testid="session-leave-btn"]')),
+    }));
+    await shot("S14-joined-members-outing");
+    if (!afterJoin.leave) {
+      throw new Error(
+        `could not join members outing before leave; before=${JSON.stringify(beforeJoin)} after=${JSON.stringify(afterJoin)}`,
+      );
+    }
+
+    // Leave club
+    await goto("/club");
+    await new Promise((r) => setTimeout(r, 1200));
+    await clickTestId("club-leave-btn");
+    await new Promise((r) => setTimeout(r, 2000));
+    shotPath = await shot("S14-after-leave-club");
+    const afterLeaveClub = await bodyText();
+    const stillMember =
+      /Quitter le club/i.test(afterLeaveClub) && /Alpha/i.test(afterLeaveClub);
+    const leftOk =
+      /quitté|Rejoindre|Accès club|code d'invitation|DEMANDER/i.test(
+        afterLeaveClub,
+      ) || !stillMember;
+
+    // Members-only attendance must be revoked
+    await goto(`/session/${outingId}`);
+    await new Promise((r) => setTimeout(r, 1500));
+    await shot("S14-outing-after-leave");
+    const afterOuting = await page.evaluate(() => ({
+      join: Boolean(document.querySelector('[data-testid="session-join-btn"]')),
+      leave: Boolean(document.querySelector('[data-testid="session-leave-btn"]')),
+      missing: /introuvable|pas accessible|Demander/i.test(
+        document.body.innerText || "",
+      ),
+    }));
+    await goto("/my-sessions");
+    await new Promise((r) => setTimeout(r, 1000));
+    const myText = await bodyText();
+    const stillInMy =
+      /Audit Members|membres only|Réservé/i.test(myText) &&
+      !/Rien de prévu|Aucune séance|rejoins/i.test(myText);
+
+    actual = `leftOk=${leftOk}; stillMember=${stillMember}; outing=${JSON.stringify(afterOuting)}; stillInMy=${stillInMy}`;
+    const attendanceCleared = !afterOuting.leave;
+    result =
+      leftOk && !stillMember && attendanceCleared && !stillInMy
+        ? "PASS"
+        : "FAIL";
+    if (stillMember) {
+      flagContradiction({
+        severity: "P0",
+        title: "Leave club UI did not revoke membership",
+        impact: "User believes they left but still has club access",
+        evidence: actual,
+        scenario: id,
+      });
+    }
+    if (!attendanceCleared) {
+      flagContradiction({
+        severity: "P0",
+        title:
+          "Leaving club left members-only outing attendance intact",
+        impact:
+          "Ex-member still appears as attendee / keeps private logistics access",
+        evidence: actual,
+        scenario: id,
+      });
+    }
+  } catch (e) {
+    actual = String(e.message || e);
+    shotPath = await shot("S14-error");
+    result = "FAIL";
+  }
+  recordScenario({
+    id,
+    title:
+      "Leave club while attending members-only outing clears membership and attendance",
+    persona: PERSONA_MEMBER.id,
+    setup: "Member of Club Alpha attending a members-only outing of that club",
+    steps: [
+      "Ensure approved membership + members-only outing",
+      "S'inscrire on members-only outing",
+      "Quitter le club",
+      "Assert not member; outing attendance revoked; Mes sorties consistent",
+    ],
+    expectedMeaning:
+      "Leaving membership revokes members-only attendance (membership gate), without inventing public-outing cleanup",
+    actual,
+    result,
+    screenshot: shotPath,
+    surface: "demo",
+  });
+}
+
+// --- S15: Pace-group TOI matches roster bucket counts ---
+{
+  const id = "S15-toi-matches-roster-count";
+  let result = "FAIL";
+  let actual = "";
+  let shotPath = "";
+  try {
+    // Need an approved member again (S14 may have left)
+    const okMem = await loginViaUi(PERSONA_MEMBER.phone, {
+      label: "s15-member",
+      preserveMockWorld: true,
+    });
+    if (!okMem) throw new Error("member login failed");
+    if (inviteCodeClubA) {
+      await goto("/club/access");
+      await typeTestId("club-invite-code-input", inviteCodeClubA);
+      await clickTestId("club-join-by-code");
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+    await goto("/club");
+    await new Promise((r) => setTimeout(r, 1500));
+    shotPath = await shot("S15-pace-groups");
+    const groups = await page.evaluate(() => {
+      return ["A", "B", "C", "D"].map((gid) => {
+        const row = document.querySelector(
+          `[data-testid="club-pace-group-${gid}"]`,
+        );
+        const text = row?.textContent || "";
+        const hasToi = /\bTOI\b/.test(text);
+        const countMatch = text.match(/(\d+)\s+membres?/);
+        const count = countMatch ? Number(countMatch[1]) : null;
+        return { gid, hasToi, count, text: text.slice(0, 120) };
+      });
+    });
+    const toiRows = groups.filter((g) => g.hasToi);
+    const clubVisible = /Quitter le club|GROUPES DE PACE/i.test(
+      await bodyText(),
+    );
+    actual = `clubVisible=${clubVisible}; groups=${JSON.stringify(groups)}`;
+    if (!clubVisible) {
+      result = "BLOCKED";
+      flagContradiction({
+        severity: "P2",
+        title: "Could not reach approved club pace groups for TOI check",
+        impact: "TOI vs count consistency not proven this run",
+        evidence: actual,
+        scenario: id,
+      });
+    } else if (toiRows.length !== 1) {
+      result = "FAIL";
+      flagContradiction({
+        severity: "P1",
+        title: `TOI badge count unexpected (${toiRows.length})`,
+        impact: "User cannot tell which pace group they belong to",
+        evidence: actual,
+        scenario: id,
+      });
+    } else if (toiRows[0].count == null || toiRows[0].count < 1) {
+      result = "FAIL";
+      flagContradiction({
+        severity: "P0",
+        title: "TOI marks a pace group that shows 0 members",
+        impact:
+          "Product says you are in a group that the roster count says is empty — silent meaning contradiction",
+        evidence: actual,
+        scenario: id,
+      });
+    } else {
+      result = "PASS";
+    }
+  } catch (e) {
+    actual = String(e.message || e);
+    shotPath = await shot("S15-error");
+    result = "FAIL";
+  }
+  recordScenario({
+    id,
+    title: "Pace-group TOI uses same assignment as roster member counts",
+    persona: PERSONA_MEMBER.id,
+    setup: "Approved member viewing Clubs → Groupes de pace",
+    steps: [
+      "Join/open Club Alpha",
+      "Read TOI badge and member counts on pace rows",
+      "Assert exactly one TOI and that group's count ≥ 1",
+    ],
+    expectedMeaning:
+      "Your pace group label (TOI) must be the same bucket that counts you in the roster",
+    actual,
+    result,
+    screenshot: shotPath,
+    surface: "demo",
+  });
+}
+
 // --- Hosted / cross-device BLOCKED markers ---
 recordScenario({
   id: "S12-hosted-blocked",
@@ -1334,6 +1606,25 @@ EXPO_PUBLIC_DEMO_MODE=true npx expo start --web --port 8081
 # ${BASE}/reference/green-home
 # ${BASE}/
 \`\`\`
+
+## Remaining gaps (honest / not silently invented)
+
+| Gap | Status | Notes |
+|-----|--------|-------|
+| Past / full / cancelled outing lifecycle | UNSUPPORTED in demo mock | No expire/cancel/capacity enforcement exercised |
+| Hosted journey | BLOCKED | No hosted preview URL in cloud agent |
+| Cross-device persistence | BLOCKED | Requires hosted API + second device |
+| Expired invites | UNSUPPORTED | Mock invite codes do not expire |
+| Toast overlapping form labels on Accès club | Visual QA | Absolute toast can cover section headers |
+
+## Fixes applied during this audit (within existing behavior)
+
+1. Leaving a club in DEMO_MODE revokes members-only attendance for that club
+2. Pace-group TOI uses \`assignMemberToClubGroup\` (same as roster bucket counts)
+3. Leave-club clears focused club id; \`club-leave-btn\` / pace-group testIDs for audit
+4. Earlier: no silent Casa auto-approve; hostUserId organizer gate; public \`clubId: null\`; multi-club switcher; unique invites
+
+Green design preserved. **Not an MVP-ready claim.**
 
 No merge / production / spend / credential changes / OCIF submission.
 `;
