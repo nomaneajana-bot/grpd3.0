@@ -2,7 +2,8 @@
 
 **Updated:** 2026-10-13  
 **Working branch:** `cursor/green-home-ux-join-3184` (PR #6)  
-**Exact SHA:** `05a387426fde099cae415a8b4a98e964bd2e98e3`  
+**Last reviewed product tip (pre-method):** `c46ce86478e26e0e523fd1fd227adaf3a792b6e4`
+**Docs tip (this checkpoint):** `TBD_AFTER_COMMIT`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase

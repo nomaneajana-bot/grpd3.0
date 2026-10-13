@@ -1,6 +1,8 @@
-# GRPD workflow state (single source of truth)
+# GRPD workflow state (historical)
 
-**Branch:** `main`
+> **Canonical process moved.** Use `docs/PROJECT_METHOD.md`, `docs/PROJECT_CHECKPOINT.md`, and `docs/product/*` as the single source of truth for inventory, rules, and the issue register. This file is retained for historical commit notes only.
+
+**Branch (historical notes):** `main`
 
 ---
 
