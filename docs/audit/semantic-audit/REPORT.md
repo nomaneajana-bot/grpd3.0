@@ -1,6 +1,6 @@
 # Semantic / product-logic audit
 
-**SHA:** `4d834055b501a25aae8c48b98e9070ecb8d19ea4`  
+**SHA:** `f38943eeddac619d633a6560d3e5c885a6e42cab`  
 **Generated:** 2026-10-13T03:46:56.814Z  
 **Surfaces:** demo (executed) · same-device switch (executed) · hosted (**BLOCKED**) · cross-device (**BLOCKED**)
 
@@ -306,6 +306,9 @@ EXPO_PUBLIC_DEMO_MODE=true npx expo start --web --port 8081
 | Cross-device persistence | BLOCKED | Requires hosted API + second device |
 | Expired invites | UNSUPPORTED | Mock invite codes do not expire |
 | Toast overlapping form labels on Accès club | Visual QA | Absolute toast can cover section headers |
+| Leave club while attending members-only | Closed this run | S14 PASS — attendance revoked; direct link introuvable |
+| Pace-group TOI vs roster counts | Closed this run | S15 PASS — TOI on group with count ≥ 1 |
+
 
 ## Fixes applied during this audit (within existing behavior)
 
