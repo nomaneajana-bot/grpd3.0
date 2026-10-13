@@ -1077,13 +1077,20 @@ async function mockLeaveClub(clubId: string): Promise<{ ok: true }> {
   // Leaving a club must revoke members-only attendance for that club
   // (membership ≠ attendance, but members-only access requires membership).
   if (DEMO_MODE) {
-    const { removeJoinedSession } = await import('../joinedSessionsStore');
-    const sessions = await readDemoSessions();
-    for (const session of sessions) {
-      if (session.clubId !== clubId || session.visibility !== 'members') {
-        continue;
+    const { removeJoinedSession, getJoinedSessions } = await import(
+      '../joinedSessionsStore'
+    );
+    const { getUserSessions } = await import('../sessionStore');
+    const demoSessions = await readDemoSessions();
+    const localSessions = await getUserSessions().catch(() => []);
+    const membersOnlyIds = new Set<string>();
+    for (const session of [...demoSessions, ...localSessions]) {
+      if (session.clubId === clubId && session.visibility === 'members') {
+        membersOnlyIds.add(session.id);
       }
-      const rows = await readAttendanceForSession(session.id);
+    }
+    for (const sessionId of membersOnlyIds) {
+      const rows = await readAttendanceForSession(sessionId);
       const mine = rows.find((r) => r.userId === user.id);
       if (mine && mine.status === 'joined') {
         await upsertAttendance({
@@ -1091,7 +1098,14 @@ async function mockLeaveClub(clubId: string): Promise<{ ok: true }> {
           status: 'left',
         });
       }
-      await removeJoinedSession(session.id);
+      await removeJoinedSession(sessionId);
+    }
+    // Clear orphaned local joins that still point at this club's members-only ids
+    const joined = await getJoinedSessions();
+    for (const row of joined) {
+      if (membersOnlyIds.has(row.sessionId)) {
+        await removeJoinedSession(row.sessionId);
+      }
     }
   }
 

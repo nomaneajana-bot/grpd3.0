@@ -1436,8 +1436,11 @@ async function ensureMemberInClubA() {
       /Audit Members|membres only|Réservé/i.test(myText) &&
       !/Rien de prévu|Aucune séance|rejoins/i.test(myText);
 
-    actual = `leftOk=${leftOk}; stillMember=${stillMember}; outing=${JSON.stringify(afterOuting)}; stillInMy=${stillInMy}`;
+    // After leave: either introuvable (privacy) or visible without leave CTA
+    const privacyOrCleared =
+      afterOuting.missing || (!afterOuting.leave && !afterOuting.join);
     const attendanceCleared = !afterOuting.leave;
+    actual = `leftOk=${leftOk}; stillMember=${stillMember}; outing=${JSON.stringify(afterOuting)}; stillInMy=${stillInMy}; privacyOrCleared=${privacyOrCleared}`;
     result =
       leftOk && !stillMember && attendanceCleared && !stillInMy
         ? "PASS"
@@ -1458,6 +1461,15 @@ async function ensureMemberInClubA() {
           "Leaving club left members-only outing attendance intact",
         impact:
           "Ex-member still appears as attendee / keeps private logistics access",
+        evidence: actual,
+        scenario: id,
+      });
+    }
+    if (afterOuting.join && !afterOuting.missing) {
+      flagContradiction({
+        severity: "P0",
+        title: "Ex-member can still S'inscrire on that club's members-only outing",
+        impact: "Membership gate is not enforced after leave",
         evidence: actual,
         scenario: id,
       });

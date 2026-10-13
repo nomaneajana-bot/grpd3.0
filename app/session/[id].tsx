@@ -174,10 +174,20 @@ export default function SessionScreen() {
           return;
         }
       } catch (err) {
+        // Intentional API 403/404 (e.g. members-only privacy) must not be
+        // resurrected from a local cache copy — that would leak logistics.
+        const status =
+          err && typeof err === "object" && "status" in err
+            ? Number((err as { status?: number }).status)
+            : null;
+        if (status === 404 || status === 403) {
+          setSession(undefined);
+          setSessionLoadState("not_found");
+          return;
+        }
         console.warn("API get session failed, trying local:", err);
       }
-      // Always use getSessionById so seed sessions get shiftSeedSessionToFuture
-      // (Home and detail must show the same date).
+      // Offline / seed fallback only when the API did not deliberately hide it.
       try {
         const storedSession = await getSessionById(id);
         if (storedSession) {
@@ -582,15 +592,42 @@ export default function SessionScreen() {
     }
     try {
       const client = createApiClient();
+      let apiJoined = false;
       try {
         await joinSessionApi(client, session.id, { groupId: currentGroupId });
+        apiJoined = true;
       } catch (apiErr) {
+        const status =
+          apiErr && typeof apiErr === "object" && "status" in apiErr
+            ? Number((apiErr as { status?: number }).status)
+            : null;
+        // Members-only / auth failures must not fake success via local join.
+        if (
+          session.visibility === "members" ||
+          status === 401 ||
+          status === 403 ||
+          status === 404
+        ) {
+          console.warn("API join denied:", apiErr);
+          showToast(
+            status === 403 || session.visibility === "members"
+              ? "Réservé aux membres du club."
+              : "Impossible de t'inscrire pour le moment.",
+            "error",
+          );
+          return;
+        }
         console.warn("API join failed, saving locally:", apiErr);
       }
       await upsertJoinedSession(session.id, currentGroupId);
       setJoinedGroupId(currentGroupId);
       setHasStoredJoin(true);
-      showToast("Tu es inscrit à cette séance.", "success");
+      showToast(
+        apiJoined
+          ? "Tu es inscrit à cette séance."
+          : "Inscription enregistrée sur cet appareil.",
+        "success",
+      );
     } catch (error) {
       console.warn("Failed to save joined session:", error);
       showToast("Impossible d'enregistrer le groupe.", "error");
