@@ -37,6 +37,7 @@ export default function ClubAccessScreen() {
   const [requestMessage, setRequestMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+  const [inviteClubId, setInviteClubId] = useState<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
   const loadMemberships = useCallback(async () => {
@@ -58,11 +59,14 @@ export default function ClubAccessScreen() {
   }, [loadMemberships]);
 
   const approvedMemberships = memberships.filter((m) => m.status === "approved");
-  /** Prefer a club where the user can administer invites (multi-club safe). */
+  const adminMemberships = approvedMemberships.filter(
+    (m) => m.role === "admin" || m.role === "coach",
+  );
+  /** Prefer explicitly selected admin club, else first admin club (multi-club safe). */
   const adminMembership =
-    approvedMemberships.find(
-      (m) => m.role === "admin" || m.role === "coach",
-    ) ?? null;
+    adminMemberships.find((m) => m.clubId === inviteClubId) ??
+    adminMemberships[0] ??
+    null;
   const primaryMembership =
     adminMembership ??
     approvedMemberships[0] ??
@@ -88,7 +92,7 @@ export default function ClubAccessScreen() {
     } catch (error) {
       console.warn("Join by code failed:", error);
       showToast(
-        "Impossible de rejoindre ce club. Vérifie le code ou l'API.",
+        "Impossible de rejoindre ce club. Vérifie le code.",
         "error",
       );
     } finally {
@@ -182,6 +186,37 @@ export default function ClubAccessScreen() {
         {isCoachOrAdmin && (
           <Card style={styles.card}>
             <Text style={styles.cardLabel}>RESPONSABLE</Text>
+            {adminMemberships.length > 1 ? (
+              <View style={styles.clubPickRow} testID="invite-club-picker">
+                {adminMemberships.map((m) => {
+                  const active = m.clubId === primaryMembership?.clubId;
+                  return (
+                    <Pressable
+                      key={m.clubId}
+                      testID={`invite-club-${m.clubId}`}
+                      onPress={() => {
+                        setInviteClubId(m.clubId);
+                        setGeneratedInviteCode(null);
+                      }}
+                      style={[
+                        styles.clubPickChip,
+                        active && styles.clubPickChipOn,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.clubPickText,
+                          active && styles.clubPickTextOn,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {m.club?.name ?? "Club"}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
             <Pressable
               style={({ pressed }) => [
                 styles.secondaryButton,
@@ -207,6 +242,9 @@ export default function ClubAccessScreen() {
             >
               <Text style={styles.secondaryButtonText}>
                 Générer un code d&apos;invitation
+                {primaryMembership?.club?.name
+                  ? ` · ${primaryMembership.club.name}`
+                  : ""}
               </Text>
             </Pressable>
             {generatedInviteCode && (
@@ -351,6 +389,32 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  clubPickRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+  clubPickChip: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.elevated,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  clubPickChipOn: {
+    backgroundColor: colors.accent.sage,
+    borderColor: colors.accent.sage,
+  },
+  clubPickText: {
+    color: colors.text.primary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  clubPickTextOn: {
+    color: colors.accent.charcoal,
   },
   header: {
     paddingHorizontal: 14,

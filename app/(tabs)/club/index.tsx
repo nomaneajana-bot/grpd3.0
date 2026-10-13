@@ -74,6 +74,7 @@ export default function ClubScreen() {
     null,
   );
   const [clubSessions, setClubSessions] = useState<SessionData[]>([]);
+  const [focusedClubId, setFocusedClubId] = useState<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
   const loadData = useCallback(async (refresh = false) => {
@@ -86,12 +87,15 @@ export default function ClubScreen() {
       const list = result.memberships ?? [];
       setMemberships(list);
 
+      const approved = list.filter((m) => m.status === "approved");
       const primary =
-        list.find((m) => m.status === "approved") ??
+        approved.find((m) => m.clubId === focusedClubId) ??
+        approved[0] ??
         list.find((m) => m.status === "pending") ??
         null;
 
       if (primary?.status === "approved" && primary.clubId) {
+        if (!focusedClubId) setFocusedClubId(primary.clubId);
         const [rosterResult, profile, joined, paces, adminCfg, mySessions] =
           await Promise.all([
             getClubRoster(client, primary.clubId),
@@ -125,7 +129,7 @@ export default function ClubScreen() {
       setRoster([]);
       if (!refresh) {
         showToast(
-          "Impossible de charger le club. Vérifie l'API.",
+          "Impossible de charger le club. Réessaie.",
           "error",
         );
       }
@@ -133,7 +137,7 @@ export default function ClubScreen() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [showToast]);
+  }, [showToast, focusedClubId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -141,9 +145,12 @@ export default function ClubScreen() {
     }, [loadData]),
   );
 
+  const approvedMemberships = memberships.filter((m) => m.status === "approved");
+  const pendingMemberships = memberships.filter((m) => m.status === "pending");
   const primaryMembership =
-    memberships.find((m) => m.status === "approved") ??
-    memberships.find((m) => m.status === "pending") ??
+    approvedMemberships.find((m) => m.clubId === focusedClubId) ??
+    approvedMemberships[0] ??
+    pendingMemberships[0] ??
     null;
   const isApprovedMember = primaryMembership?.status === "approved";
   const isPendingMember = primaryMembership?.status === "pending";
@@ -278,6 +285,40 @@ export default function ClubScreen() {
           </View>
         ) : isApprovedMember && club ? (
           <>
+            {approvedMemberships.length > 1 ? (
+              <View style={styles.clubSwitcher} testID="club-switcher">
+                <Text style={styles.clubSwitcherLabel}>MES CLUBS</Text>
+                <View style={styles.clubSwitcherRow}>
+                  {approvedMemberships.map((m) => {
+                    const active = m.clubId === primaryMembership?.clubId;
+                    return (
+                      <Pressable
+                        key={m.clubId}
+                        testID={`club-switch-${m.clubId}`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        accessibilityLabel={m.club?.name ?? m.clubId}
+                        onPress={() => setFocusedClubId(m.clubId)}
+                        style={[
+                          styles.clubSwitcherChip,
+                          active && styles.clubSwitcherChipOn,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.clubSwitcherChipText,
+                            active && styles.clubSwitcherChipTextOn,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {m.club?.name ?? "Club"}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
             <ClubOverviewCard
               clubName={club.name}
               memberCount={memberCount ?? 1}
@@ -481,6 +522,43 @@ const styles = StyleSheet.create({
   feedBlock: {
     paddingHorizontal: redesignTheme.screen.horizontalPadding,
     marginBottom: 8,
+  },
+  clubSwitcher: {
+    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    marginBottom: 12,
+    gap: 8,
+  },
+  clubSwitcherLabel: {
+    color: colors.text.secondary,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+  },
+  clubSwitcherRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  clubSwitcherChip: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.card,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    maxWidth: "100%",
+  },
+  clubSwitcherChipOn: {
+    backgroundColor: colors.accent.sage,
+    borderColor: colors.accent.sage,
+  },
+  clubSwitcherChipText: {
+    color: colors.text.primary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  clubSwitcherChipTextOn: {
+    color: colors.accent.charcoal,
   },
   quitZone: {
     paddingVertical: 32,

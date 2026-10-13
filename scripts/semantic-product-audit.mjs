@@ -237,21 +237,15 @@ let membersOutingId = null;
     await clickTestId("club-create-submit");
     await new Promise((r) => setTimeout(r, 2000));
     shotPath = await shot("S1-club-a-created");
-    // Generate invite A
-    try {
-      await clickTestId("club-generate-invite");
-    } catch {
-      // try text
-      await page.evaluate(() => {
-        [...document.querySelectorAll('[role="button"],button')]
-          .find((n) => /Générer|invite|code/i.test(n.textContent || ""))
-          ?.click();
-      });
-    }
+    // Generate invite A from Accès club (admin CTA)
+    await goto("/club/access");
+    await new Promise((r) => setTimeout(r, 1000));
+    await clickTestId("club-generate-invite");
     await new Promise((r) => setTimeout(r, 1200));
-    const t1 = await bodyText();
-    const codeMatch = t1.match(/\b([A-Z0-9]{6,12})\b/);
-    inviteCodeClubA = codeMatch?.[1] || null;
+    inviteCodeClubA = await page.evaluate(() => {
+      const el = document.querySelector('[data-testid="club-invite-code"]');
+      return el?.textContent?.trim() || null;
+    });
     await shot("S1-club-a-invite");
 
     // Create club B
@@ -263,34 +257,65 @@ let membersOutingId = null;
     await clickTestId("club-create-submit");
     await new Promise((r) => setTimeout(r, 2000));
     await shot("S1-club-b-created");
-    try {
-      await clickTestId("club-generate-invite");
-    } catch {
-      await page.evaluate(() => {
-        [...document.querySelectorAll('[role="button"],button')]
-          .find((n) => /Générer|invite|code/i.test(n.textContent || ""))
-          ?.click();
-      });
-    }
+    await goto("/club/access");
+    await new Promise((r) => setTimeout(r, 1000));
+    // Select Beta in invite club picker if present
+    await page.evaluate(() => {
+      const chips = [
+        ...document.querySelectorAll('[data-testid^="invite-club-"]'),
+      ];
+      const beta = chips.find((c) => /Beta/i.test(c.textContent || ""));
+      beta?.click();
+    });
+    await new Promise((r) => setTimeout(r, 400));
+    await clickTestId("club-generate-invite");
     await new Promise((r) => setTimeout(r, 1200));
-    const t2 = await bodyText();
-    const codes = [...t2.matchAll(/\b([A-Z0-9]{6,12})\b/g)].map((m) => m[1]);
-    inviteCodeClubB = codes.find((c) => c !== inviteCodeClubA) || codes[0] || null;
+    inviteCodeClubB = await page.evaluate(() => {
+      const el = document.querySelector('[data-testid="club-invite-code"]');
+      return el?.textContent?.trim() || null;
+    });
     shotPath = await shot("S1-club-b-invite");
 
-    const clubsText = await (async () => {
-      await goto("/club");
-      return bodyText();
-    })();
-    const hasA = clubsText.includes("Alpha") || clubsText.includes(clubAName);
-    const hasB = clubsText.includes("Beta") || clubsText.includes(clubBName);
+    await goto("/club");
+    await new Promise((r) => setTimeout(r, 1200));
+    const clubsText = await bodyText();
+    const hasA = /Alpha/i.test(clubsText);
+    const hasB =
+      /Beta/i.test(clubsText) ||
+      Boolean(
+        await page.evaluate(() =>
+          [...document.querySelectorAll('[data-testid^="club-switch-"]')].some(
+            (el) => /Beta/i.test(el.textContent || ""),
+          ),
+        ),
+      );
+    // Switch to Beta chip if present
+    await page.evaluate(() => {
+      const chip = [...document.querySelectorAll('[data-testid^="club-switch-"]')]
+        .find((el) => /Beta/i.test(el.textContent || ""));
+      chip?.click();
+    });
+    await new Promise((r) => setTimeout(r, 1000));
+    const afterSwitch = await bodyText();
+    const betaFocused = /Beta/i.test(afterSwitch);
     const distinctCodes =
       inviteCodeClubA &&
       inviteCodeClubB &&
-      inviteCodeClubA !== inviteCodeClubB;
-    actual = `clubsVisible A=${hasA} B=${hasB}; codeA=${inviteCodeClubA} codeB=${inviteCodeClubB}`;
-    result = hasA && hasB && distinctCodes ? "PASS" : hasA && hasB ? "FAIL" : "FAIL";
-    if (hasA && hasB && !distinctCodes) {
+      inviteCodeClubA !== inviteCodeClubB &&
+      !/MEMBRE|ACTIVIT|CLUBS/i.test(inviteCodeClubA) &&
+      !/MEMBRE|ACTIVIT|CLUBS/i.test(inviteCodeClubB);
+    actual = `clubsVisible A=${hasA} B=${hasB||betaFocused}; codeA=${inviteCodeClubA} codeB=${inviteCodeClubB}; betaFocused=${betaFocused}`;
+    result = hasA && (hasB || betaFocused) && distinctCodes ? "PASS" : "FAIL";
+    if (hasA && !(hasB || betaFocused)) {
+      flagContradiction({
+        severity: "P0",
+        title: "Second club exists in data but is invisible / unswitchable in Clubs UI",
+        impact: "Edits and invites silently target the wrong club",
+        evidence: actual,
+        scenario: id,
+      });
+    }
+    if ((hasB || betaFocused) && !distinctCodes) {
       flagContradiction({
         severity: "P0",
         title: "Two clubs share or lack distinct invite codes",
