@@ -793,8 +793,9 @@ export default function SessionScreen() {
           <Text style={styles.headerLocation} numberOfLines={1}>
             {session.spot || "Séance"}
           </Text>
-          {session.isCustom === true ? (
+          {isOrganizer ? (
             <TouchableOpacity
+              testID="session-header-modify"
               onPress={() => {
                 router.push({
                   pathname: "/session/create",

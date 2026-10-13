@@ -2364,15 +2364,17 @@ export default function CreateSessionScreen() {
           <Text style={styles.cardSubtitle}>
             Qui peut voir et rejoindre cette séance ?
           </Text>
-          <View style={styles.audienceChips}>
+          <View style={styles.audienceChips} testID="session-audience-chips">
             {SESSION_AUDIENCE_OPTIONS.map((opt) => {
               const on = sessionAudience === opt.id;
               return (
                 <SelectableChip
                   key={opt.id}
+                  testID={`session-audience-${opt.id}`}
                   label={opt.label}
                   selected={on}
                   showCheckmark
+                  accessibilityLabel={opt.label}
                   labelStyle={styles.audienceChipLabel}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

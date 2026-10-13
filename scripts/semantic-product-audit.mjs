@@ -763,13 +763,21 @@ let membersOutingId = null;
     shotPath = await shot("S6-create-form");
     const createText = await bodyText();
     const hasVisibility = /Public|Membres|Privé|visibilité/i.test(createText);
-    // Try select members visibility
-    await page.evaluate(() => {
-      [...document.querySelectorAll('[role="button"],button,*')]
-        .find((n) => /Membres|Privé \(membres\)|Réservé/i.test((n.textContent || "").trim()))
-        ?.click();
-    });
-    await new Promise((r) => setTimeout(r, 400));
+    // Select club-only audience via stable testID when available
+    try {
+      await clickTestId("session-audience-club");
+    } catch {
+      await page.evaluate(() => {
+        [...document.querySelectorAll('[role="button"],button,*')]
+          .find((n) =>
+            /Club uniquement|Membres|Privé \(membres\)|Réservé/i.test(
+              (n.textContent || "").trim(),
+            ),
+          )
+          ?.click();
+      });
+    }
+    await new Promise((r) => setTimeout(r, 600));
     // Fill minimal and publish if fields exist
     await page.evaluate(() => {
       const title = document.querySelector('[data-testid="session-title-input"]') ||
@@ -1328,17 +1336,18 @@ async function ensureMemberInClubA() {
     await new Promise((r) => setTimeout(r, 800));
     await goto("/session/create");
     await new Promise((r) => setTimeout(r, 1500));
-    // Select club-only audience
-    await page.evaluate(() => {
-      [...document.querySelectorAll('[role="button"],button,*')]
-        .find((n) =>
-          /Club uniquement|Membres|Privé \(membres\)|Réservé/i.test(
-            (n.textContent || "").trim(),
-          ),
-        )
-        ?.click();
-    });
-    await new Promise((r) => setTimeout(r, 600));
+    // Select club-only audience via stable testID
+    try {
+      await clickTestId("session-audience-club");
+    } catch {
+      await page.evaluate(() => {
+        document.querySelector('[data-testid="session-audience-club"]')?.click();
+        [...document.querySelectorAll('[role="button"],button,*')]
+          .find((n) => /Club uniquement/i.test((n.textContent || "").trim()))
+          ?.click();
+      });
+    }
+    await new Promise((r) => setTimeout(r, 700));
     // Explicitly pick Alpha in create club picker if present
     await page.evaluate(() => {
       const chips = [
@@ -1366,12 +1375,17 @@ async function ensureMemberInClubA() {
       throw new Error(`members-only publish did not navigate; url=${page.url()}`);
     }
     membersOutingId = outingId;
-    // Organizer must be able to open it (proves session exists)
+    // Organizer must be able to open it AND see MEMBRES (not silent public)
     await goto(`/session/${outingId}`);
     await new Promise((r) => setTimeout(r, 1200));
     const orgSees = await bodyText();
     if (/introuvable/i.test(orgSees)) {
       throw new Error("org cannot open freshly published members-only outing");
+    }
+    if (!/MEMBRES/i.test(orgSees)) {
+      throw new Error(
+        `published outing is not members-only (no MEMBRES tag); snippet=${orgSees.slice(0, 200)}`,
+      );
     }
     await ensureMemberInClubA();
 
