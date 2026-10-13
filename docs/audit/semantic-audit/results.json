@@ -1,7 +1,7 @@
 {
   "summary": {
-    "sha": "f846348eb66439efe2004533700f199263549c6e",
-    "generatedAt": "2026-10-13T02:58:01.056Z",
+    "sha": "1948883cef375a3babe1c9e8fbf8a32f15dc73be",
+    "generatedAt": "2026-10-13T03:02:19.582Z",
     "mode": "offline-demo",
     "hosted": "BLOCKED — no hosted preview in this run",
     "crossDevice": "BLOCKED — no second device/hosted API",
@@ -13,7 +13,7 @@
       },
       {
         "id": "S2-invite-joins-intended-club",
-        "result": "FAIL",
+        "result": "PASS",
         "title": "Invite code joins the intended club; membership ≠ attendance"
       },
       {
@@ -73,8 +73,8 @@
       }
     ],
     "counts": {
-      "pass": 9,
-      "fail": 2,
+      "pass": 10,
+      "fail": 1,
       "blocked": 2,
       "contradictions": 3
     },
@@ -98,7 +98,7 @@
         "Verify Clubs list shows both; codes differ"
       ],
       "expectedMeaning": "Each club is a separate membership boundary with its own invite code",
-      "actual": "clubsVisible A=true B=true; codeA=AUDITCLU codeB=AUDITCLU; betaFocused=true",
+      "actual": "clubsVisible A=true B=true; codeA=AUDIT8NZ codeB=AUDIT8NZ; betaFocused=true",
       "result": "FAIL",
       "screenshot": "screenshots/S1-club-b-invite.png",
       "surface": "demo"
@@ -107,7 +107,7 @@
       "id": "S2-invite-joins-intended-club",
       "title": "Invite code joins the intended club; membership ≠ attendance",
       "persona": "member",
-      "setup": "Fresh login; use invite AUDITCLU",
+      "setup": "Fresh login; use invite AUDIT8NZ",
       "steps": [
         "Login as member phone",
         "Club access → enter Club A invite → Rejoindre",
@@ -115,8 +115,8 @@
         "Check Mes sorties not auto-filled"
       ],
       "expectedMeaning": "Code grants membership to that club only; does not enroll in outings",
-      "actual": "joinedMsg=false; pending=true; clubList A=false B=false; autoAttended=false",
-      "result": "FAIL",
+      "actual": "joinedMsg=true; pending=false; clubList A=true B=false; autoAttended=false",
+      "result": "PASS",
       "screenshot": "screenshots/S2-after-invite-join.png",
       "surface": "demo"
     },
@@ -199,7 +199,7 @@
         "Assert no members-only club framing"
       ],
       "expectedMeaning": "Public outings are independent of club membership",
-      "actual": "url=http://localhost:8081/session/session_1791860218002_s6ujxsog; inheritedClub=false; looksPublic=true; snippet=‹\nMarina\nModifier\nFARTLEK\nFARTLEK\nMARDI 13 OCTOBRE 06:00 · Marina\nInfos\n— km\nDISTANCE\nAllure libre\n/KM\n—\nCOUREURS\nINFORMATIONS\nType de course\nFARTLEK ›\nDistance\n—\nRendez-vous\nMarina\nOrganisateur\nÉquip",
+      "actual": "url=http://localhost:8081/session/session_1791860476442_p7f2cp1n; inheritedClub=false; looksPublic=true; snippet=‹\nMarina\nModifier\nFARTLEK\nFARTLEK\nMARDI 13 OCTOBRE 06:00 · Marina\nInfos\n— km\nDISTANCE\nAllure libre\n/KM\n—\nCOUREURS\nINFORMATIONS\nType de course\nFARTLEK ›\nDistance\n—\nRendez-vous\nMarina\nOrganisateur\nÉquip",
       "result": "PASS",
       "screenshot": "screenshots/S7-after-publish.png",
       "surface": "demo"
@@ -304,7 +304,7 @@
       "severity": "P0",
       "title": "Two clubs share or lack distinct invite codes",
       "impact": "Invite intended for Club A may join Club B or fail silently",
-      "evidence": "clubsVisible A=true B=true; codeA=AUDITCLU codeB=AUDITCLU; betaFocused=true",
+      "evidence": "clubsVisible A=true B=true; codeA=AUDIT8NZ codeB=AUDIT8NZ; betaFocused=true",
       "scenario": "S1-two-clubs"
     },
     {

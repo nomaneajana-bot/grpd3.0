@@ -1,15 +1,15 @@
 # Semantic / product-logic audit
 
-**SHA:** `f846348eb66439efe2004533700f199263549c6e`  
-**Generated:** 2026-10-13T02:58:01.056Z  
+**SHA:** `1948883cef375a3babe1c9e8fbf8a32f15dc73be`  
+**Generated:** 2026-10-13T03:02:19.582Z  
 **Surfaces:** demo (executed) · same-device switch (executed) · hosted (**BLOCKED**) · cross-device (**BLOCKED**)
 
 ## Summary
 
 | Result | Count |
 |--------|------:|
-| PASS | 9 |
-| FAIL | 2 |
+| PASS | 10 |
+| FAIL | 1 |
 | BLOCKED | 2 |
 | Contradictions flagged | 3 |
 
@@ -31,7 +31,7 @@ Green design preserved. This is **not** an MVP-ready claim.
 ### 1. [P0] Two clubs share or lack distinct invite codes
 - **Impact:** Invite intended for Club A may join Club B or fail silently
 - **Scenario:** S1-two-clubs
-- **Evidence:** clubsVisible A=true B=true; codeA=AUDITCLU codeB=AUDITCLU; betaFocused=true
+- **Evidence:** clubsVisible A=true B=true; codeA=AUDIT8NZ codeB=AUDIT8NZ; betaFocused=true
 
 ### 2. [P2] UNSUPPORTED: hosted cross-device persistence not verified in this run
 - **Impact:** Cannot claim attendance survives devices/backends
@@ -56,21 +56,21 @@ Green design preserved. This is **not** an MVP-ready claim.
   1. Create Club Beta + generate invite
   1. Verify Clubs list shows both; codes differ
 - **Expected meaning:** Each club is a separate membership boundary with its own invite code
-- **Actual:** clubsVisible A=true B=true; codeA=AUDITCLU codeB=AUDITCLU; betaFocused=true
+- **Actual:** clubsVisible A=true B=true; codeA=AUDIT8NZ codeB=AUDIT8NZ; betaFocused=true
 - **Surface:** demo
 - **Screenshot:** screenshots/S1-club-b-invite.png
 
-### S2-invite-joins-intended-club — FAIL
+### S2-invite-joins-intended-club — PASS
 - **Title:** Invite code joins the intended club; membership ≠ attendance
 - **Persona:** member
-- **Setup:** Fresh login; use invite AUDITCLU
+- **Setup:** Fresh login; use invite AUDIT8NZ
 - **Steps:** 
   1. Login as member phone
   1. Club access → enter Club A invite → Rejoindre
   1. Check Clubs list for Alpha only
   1. Check Mes sorties not auto-filled
 - **Expected meaning:** Code grants membership to that club only; does not enroll in outings
-- **Actual:** joinedMsg=false; pending=true; clubList A=false B=false; autoAttended=false
+- **Actual:** joinedMsg=true; pending=false; clubList A=true B=false; autoAttended=false
 - **Surface:** demo
 - **Screenshot:** screenshots/S2-after-invite-join.png
 
@@ -153,7 +153,7 @@ Cette séance n'existe plus ou n'est pas accessible.
   1. Publish
   1. Assert no members-only club framing
 - **Expected meaning:** Public outings are independent of club membership
-- **Actual:** url=http://localhost:8081/session/session_1791860218002_s6ujxsog; inheritedClub=false; looksPublic=true; snippet=‹
+- **Actual:** url=http://localhost:8081/session/session_1791860476442_p7f2cp1n; inheritedClub=false; looksPublic=true; snippet=‹
 Marina
 Modifier
 FARTLEK

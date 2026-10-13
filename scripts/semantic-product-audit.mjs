@@ -288,27 +288,47 @@ let membersOutingId = null;
     await shot("S1-club-b-created");
     await goto("/club/access");
     await new Promise((r) => setTimeout(r, 1000));
-    // Select Beta in invite club picker if present
-    const betaChipClicked = await page.evaluate(() => {
+    // Select Beta in invite club picker (Puppeteer click — RN-web Pressable)
+    const betaTestId = await page.evaluate(() => {
       const chips = [
         ...document.querySelectorAll('[data-testid^="invite-club-"]'),
       ];
       const beta = chips.find((c) => /Beta/i.test(c.textContent || ""));
-      if (!beta) return false;
-      beta.click();
-      return true;
+      return beta?.getAttribute("data-testid") || null;
     });
-    await new Promise((r) => setTimeout(r, 600));
+    if (betaTestId) {
+      await page.click(`[data-testid="${betaTestId}"]`);
+      await new Promise((r) => setTimeout(r, 800));
+      // Wait until generate CTA names Beta
+      await page
+        .waitForFunction(
+          () => {
+            const btn = document.querySelector(
+              '[data-testid="club-generate-invite"]',
+            );
+            return /Beta/i.test(btn?.textContent || "");
+          },
+          { timeout: 5000 },
+        )
+        .catch(() => null);
+    } else {
+      console.log("S1 warn: beta invite chip not found");
+    }
     await clickTestId("club-generate-invite");
     await new Promise((r) => setTimeout(r, 1200));
     inviteCodeClubB = await page.evaluate(() => {
       const el = document.querySelector('[data-testid="club-invite-code"]');
       return el?.textContent?.trim() || null;
     });
-    // If picker click failed and codes collide, force regenerate note in actual
+    const generateLabel = await page.evaluate(
+      () =>
+        document
+          .querySelector('[data-testid="club-generate-invite"]')
+          ?.textContent?.trim() || "",
+    );
     shotPath = await shot("S1-club-b-invite");
-    if (!betaChipClicked) {
-      console.log("S1 warn: beta invite chip not found/clicked");
+    if (!/Beta/i.test(generateLabel)) {
+      console.log("S1 warn: generate CTA still not Beta:", generateLabel);
     }
 
     await goto("/club");
