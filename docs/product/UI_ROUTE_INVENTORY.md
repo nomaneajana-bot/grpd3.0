@@ -1,7 +1,7 @@
 # UI Route Inventory (canonical)
 
 **Branch:** `cursor/green-home-ux-join-3184`  
-**SHA:** `c46ce86478e26e0e523fd1fd227adaf3a792b6e4`  
+**SHA:** `05a387426fde099cae415a8b4a98e964bd2e98e3`  
 **Generated:** 2026-10-13  
 **Review status column:** inventory checkpoint only — not product VERIFIED
 

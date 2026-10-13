@@ -1,7 +1,7 @@
 # Issue Register (canonical)
 
 **Branch:** `cursor/green-home-ux-join-3184` (PR #6)  
-**Register SHA:** `c46ce86478e26e0e523fd1fd227adaf3a792b6e4`  
+**Register SHA:** `05a387426fde099cae415a8b4a98e964bd2e98e3`  
 **Method:** Statuses are NOT CHECKED / FAILED / FIXED AWAITING RETEST / VERIFIED / BLOCKED.  
 **Capability:** IMPLEMENTED / PARTIAL / NOT IMPLEMENTED / UNSUPPORTED — never treat NOT IMPLEMENTED as PASS.
 
