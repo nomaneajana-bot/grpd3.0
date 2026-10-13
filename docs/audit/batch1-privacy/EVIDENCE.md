@@ -1,9 +1,9 @@
 # Batch 1 evidence
 
-- **tested_sha:** `6396c6fd7b02575abe03ed27062860d5ec07fc99`
+- **tested_sha:** `25d843f49830605627dc0c80914fb909b57100da`
 - **environment:** `demo` (hosted_claim=false)
-- **outing_id:** `session_1791915762366_8dqdvli7`
-- **unique logistics:** `ZB1V70D8BS`
+- **outing_id:** `session_1791915973458_4may873l`
+- **unique logistics:** `ZB1V70HR6W`
 - **summary:** 25 PASS / 0 FAIL / 25 total
 - **issues:** ISSUE-001, ISSUE-005, ISSUE-010-privacy
 
@@ -12,26 +12,26 @@
 - PASS `login_member_host` — 0611111111 (new club admin)
 - PASS `host_club_created` — http://localhost:8081/club
 - PASS `audience_club_selected` — 
-- PASS `unique_spot_seeded` — ZB1V70D8BS
-- PASS `ISSUE-001_publish_real_outing_id` — /session/session_1791915762366_8dqdvli7
-- PASS `member_positive_control_detail` — unique logistics visible: ZB1V70D8BS
-- PASS `member_not_inaccessible_state` — http://localhost:8081/session/session_1791915762366_8dqdvli7
-- PASS `member_reload_still_accessible` — /session/session_1791915762366_8dqdvli7
-- PASS `discover_list_hides_unique_private_spot` — ZB1V70D8BS
+- PASS `unique_spot_seeded` — ZB1V70HR6W
+- PASS `ISSUE-001_publish_real_outing_id` — /session/session_1791915973458_4may873l
+- PASS `member_positive_control_detail` — unique logistics visible: ZB1V70HR6W
+- PASS `member_not_inaccessible_state` — http://localhost:8081/session/session_1791915973458_4may873l
+- PASS `member_reload_still_accessible` — /session/session_1791915973458_4may873l
+- PASS `discover_list_hides_unique_private_spot` — ZB1V70HR6W
 - PASS `login_outsider` — 0699999999
-- PASS `outsider_direct_link_inaccessible` — http://localhost:8081/session/session_1791915762366_8dqdvli7
+- PASS `outsider_direct_link_inaccessible` — http://localhost:8081/session/session_1791915973458_4may873l
 - PASS `outsider_unique_logistics_absent` — absent
 - PASS `outsider_no_join_only_is_insufficient` — assert inaccessible + logistics absent, not merely no join button
-- PASS `outsider_list_unique_logistics_absent` — ZB1V70D8BS
+- PASS `outsider_list_unique_logistics_absent` — ZB1V70HR6W
 - PASS `pending_request_attempt` — 
 - PASS `M07_pending_club_state_visible_or_outsider` — outsider-no-pending
-- PASS `pending_direct_link_inaccessible` — http://localhost:8081/session/session_1791915762366_8dqdvli7
+- PASS `pending_direct_link_inaccessible` — http://localhost:8081/session/session_1791915973458_4may873l
 - PASS `pending_unique_logistics_absent` — absent
-- PASS `outsider_relogin_still_gated` — http://localhost:8081/session/session_1791915762366_8dqdvli7
-- PASS `invite_for_leave_test` — BATCHBB6
-- PASS `ISSUE-010_approved_member_positive_before_leave` — http://localhost:8081/session/session_1791915762366_8dqdvli7
+- PASS `outsider_relogin_still_gated` — http://localhost:8081/session/session_1791915973458_4may873l
+- PASS `invite_for_leave_test` — BATCHZ8E
+- PASS `ISSUE-010_approved_member_positive_before_leave` — http://localhost:8081/session/session_1791915973458_4may873l
 - PASS `member_b_left_club` — 
-- PASS `ISSUE-010_after_leave_inaccessible` — http://localhost:8081/session/session_1791915762366_8dqdvli7
+- PASS `ISSUE-010_after_leave_inaccessible` — http://localhost:8081/session/session_1791915973458_4may873l
 - PASS `ISSUE-010_after_leave_logistics_absent` — absent
 - PASS `M08_design_annotation_not_in_product` — annotation must stay design-only
 

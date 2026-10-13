@@ -5,15 +5,15 @@
     "ISSUE-005",
     "ISSUE-010-privacy"
   ],
-  "tested_sha": "6396c6fd7b02575abe03ed27062860d5ec07fc99",
-  "tip_sha": "6396c6fd7b02575abe03ed27062860d5ec07fc99",
+  "tested_sha": "25d843f49830605627dc0c80914fb909b57100da",
+  "tip_sha": "25d843f49830605627dc0c80914fb909b57100da",
   "branch": "cursor/green-home-ux-join-3184",
   "environment": "demo",
   "hosted_claim": false,
   "note": "DEMO_MODE mock only. Server/hosted list+GET filters exist separately; this run does not claim hosted.",
   "unique_logistics": {
-    "spot": "ZB1V70D8BS",
-    "titleToken": "ZB1V70D8BS"
+    "spot": "ZB1V70HR6W",
+    "titleToken": "ZB1V70HR6W"
   },
   "checks": {
     "login_member_host": {
@@ -30,27 +30,27 @@
     },
     "unique_spot_seeded": {
       "ok": true,
-      "detail": "ZB1V70D8BS"
+      "detail": "ZB1V70HR6W"
     },
     "ISSUE-001_publish_real_outing_id": {
       "ok": true,
-      "detail": "/session/session_1791915762366_8dqdvli7"
+      "detail": "/session/session_1791915973458_4may873l"
     },
     "member_positive_control_detail": {
       "ok": true,
-      "detail": "unique logistics visible: ZB1V70D8BS"
+      "detail": "unique logistics visible: ZB1V70HR6W"
     },
     "member_not_inaccessible_state": {
       "ok": true,
-      "detail": "http://localhost:8081/session/session_1791915762366_8dqdvli7"
+      "detail": "http://localhost:8081/session/session_1791915973458_4may873l"
     },
     "member_reload_still_accessible": {
       "ok": true,
-      "detail": "/session/session_1791915762366_8dqdvli7"
+      "detail": "/session/session_1791915973458_4may873l"
     },
     "discover_list_hides_unique_private_spot": {
       "ok": true,
-      "detail": "ZB1V70D8BS"
+      "detail": "ZB1V70HR6W"
     },
     "login_outsider": {
       "ok": true,
@@ -58,7 +58,7 @@
     },
     "outsider_direct_link_inaccessible": {
       "ok": true,
-      "detail": "http://localhost:8081/session/session_1791915762366_8dqdvli7"
+      "detail": "http://localhost:8081/session/session_1791915973458_4may873l"
     },
     "outsider_unique_logistics_absent": {
       "ok": true,
@@ -70,7 +70,7 @@
     },
     "outsider_list_unique_logistics_absent": {
       "ok": true,
-      "detail": "ZB1V70D8BS"
+      "detail": "ZB1V70HR6W"
     },
     "pending_request_attempt": {
       "ok": true,
@@ -82,7 +82,7 @@
     },
     "pending_direct_link_inaccessible": {
       "ok": true,
-      "detail": "http://localhost:8081/session/session_1791915762366_8dqdvli7"
+      "detail": "http://localhost:8081/session/session_1791915973458_4may873l"
     },
     "pending_unique_logistics_absent": {
       "ok": true,
@@ -90,15 +90,15 @@
     },
     "outsider_relogin_still_gated": {
       "ok": true,
-      "detail": "http://localhost:8081/session/session_1791915762366_8dqdvli7"
+      "detail": "http://localhost:8081/session/session_1791915973458_4may873l"
     },
     "invite_for_leave_test": {
       "ok": true,
-      "detail": "BATCHBB6"
+      "detail": "BATCHZ8E"
     },
     "ISSUE-010_approved_member_positive_before_leave": {
       "ok": true,
-      "detail": "http://localhost:8081/session/session_1791915762366_8dqdvli7"
+      "detail": "http://localhost:8081/session/session_1791915973458_4may873l"
     },
     "member_b_left_club": {
       "ok": true,
@@ -106,7 +106,7 @@
     },
     "ISSUE-010_after_leave_inaccessible": {
       "ok": true,
-      "detail": "http://localhost:8081/session/session_1791915762366_8dqdvli7"
+      "detail": "http://localhost:8081/session/session_1791915973458_4may873l"
     },
     "ISSUE-010_after_leave_logistics_absent": {
       "ok": true,
@@ -134,17 +134,17 @@
     "/opt/cursor/artifacts/batch1-evidence/screenshots/13-member-b-outing-after-leave.png",
     "/opt/cursor/artifacts/batch1-evidence/screenshots/14-m08-product-check.png"
   ],
-  "outing_id": "session_1791915762366_8dqdvli7",
+  "outing_id": "session_1791915973458_4may873l",
   "errors": [],
   "private_markers": [
-    "ZB1V70D8BS",
-    "ZB1V70D8BS",
-    "ZB1V70D8BS"
+    "ZB1V70HR6W",
+    "ZB1V70HR6W",
+    "ZB1V70HR6W"
   ],
   "summary": {
     "passed": 25,
     "failed": 0,
     "total": 25
   },
-  "generated_at": "2026-10-13T18:24:00.344Z"
+  "generated_at": "2026-10-13T18:27:31.745Z"
 }
