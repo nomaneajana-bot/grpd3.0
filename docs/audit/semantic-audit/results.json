@@ -1,10 +1,10 @@
 {
   "summary": {
-    "sha": "94626f7056f8794b8b09aa19cb6435135cf42cc7",
-    "generatedAt": "2026-10-13T03:05:52.202Z",
+    "sha": "9dbe7cf606b311c7063eb4c077cfc6ce20db514c",
+    "generatedAt": "2026-10-13T03:46:56.814Z",
     "mode": "offline-demo",
-    "hosted": "BLOCKED \u2014 no hosted preview in this run",
-    "crossDevice": "BLOCKED \u2014 no second device/hosted API",
+    "hosted": "BLOCKED — no hosted preview in this run",
+    "crossDevice": "BLOCKED — no second device/hosted API",
     "scenarios": [
       {
         "id": "S1-two-clubs",
@@ -14,7 +14,7 @@
       {
         "id": "S2-invite-joins-intended-club",
         "result": "PASS",
-        "title": "Invite code joins the intended club; membership \u2260 attendance"
+        "title": "Invite code joins the intended club; membership ≠ attendance"
       },
       {
         "id": "S3-outsider-not-auto-member",
@@ -62,6 +62,16 @@
         "title": "Action labels: Publier (create) vs S'inscrire/Demander/Quitter (detail)"
       },
       {
+        "id": "S14-leave-club-while-attending",
+        "result": "PASS",
+        "title": "Leave club while attending members-only outing clears membership and attendance"
+      },
+      {
+        "id": "S15-toi-matches-roster-count",
+        "result": "PASS",
+        "title": "Pace-group TOI uses same assignment as roster member counts"
+      },
+      {
         "id": "S12-hosted-blocked",
         "result": "BLOCKED",
         "title": "Hosted journey acceptance"
@@ -73,7 +83,7 @@
       }
     ],
     "counts": {
-      "pass": 11,
+      "pass": 13,
       "fail": 0,
       "blocked": 2,
       "contradictions": 2
@@ -83,8 +93,7 @@
       "command": "EXPO_PUBLIC_DEMO_MODE=true npx expo start --web --port 8081",
       "reference": "http://localhost:8081/reference/green-home",
       "live": "http://localhost:8081/"
-    },
-    "note": "demo 11 PASS / 0 FAIL / 2 BLOCKED; hosted+cross-device blocked"
+    }
   },
   "scenarios": [
     {
@@ -99,19 +108,19 @@
         "Verify Clubs list shows both; codes differ"
       ],
       "expectedMeaning": "Each club is a separate membership boundary with its own invite code",
-      "actual": "clubsVisible A=true B=true; codeA=AUDITRNJ codeB=AUDITGLE; betaFocused=true",
+      "actual": "clubsVisible A=true B=true; codeA=AUDIT2CR codeB=AUDITMQL; betaFocused=true",
       "result": "PASS",
       "screenshot": "screenshots/S1-club-b-invite.png",
       "surface": "demo"
     },
     {
       "id": "S2-invite-joins-intended-club",
-      "title": "Invite code joins the intended club; membership \u2260 attendance",
+      "title": "Invite code joins the intended club; membership ≠ attendance",
       "persona": "member",
-      "setup": "Fresh login; use invite AUDITRNJ",
+      "setup": "Fresh login; use invite AUDIT2CR",
       "steps": [
         "Login as member phone",
-        "Club access \u2192 enter Club A invite \u2192 Rejoindre",
+        "Club access → enter Club A invite → Rejoindre",
         "Check Clubs list for Alpha only",
         "Check Mes sorties not auto-filled"
       ],
@@ -144,11 +153,11 @@
       "setup": "Fresh login; request Club Alpha by name",
       "steps": [
         "Login",
-        "Acc\u00e8s club \u2192 Demander \u00e0 rejoindre",
+        "Accès club → Demander à rejoindre",
         "Check Clubs status"
       ],
       "expectedMeaning": "Pending applicant cannot act as approved member",
-      "actual": "filled=true; pendingUI=true; approvedAsMember=false; snippet=\u2039\nClub\nAcc\u00e8s club\nInvitations, demandes et administration.\nREJOINDRE AVEC CODE\nCode d'invitation\nRejoindre\nDEMANDER \u00c0 REJOINDRE\nNom du club\nSi tu n'as pas de code, entre le nom du club.\nMessage (optionnel)\nEnvoyer la dem",
+      "actual": "filled=true; pendingUI=true; approvedAsMember=false; snippet=‹\nClub\nAccès club\nInvitations, demandes et administration.\nREJOINDRE AVEC CODE\nCode d'invitation\nRejoindre\nDEMANDER À REJOINDRE\nNom du club\nSi tu n'as pas de code, entre le nom du club.\nMessage (optionnel)\nEnvoyer la dem",
       "result": "PASS",
       "screenshot": "screenshots/S4-after-request.png",
       "surface": "demo"
@@ -160,10 +169,10 @@
       "setup": "Member account; public seed outing",
       "steps": [
         "Open public outing",
-        "S'inscrire \u2192 assert leave CTA",
+        "S'inscrire → assert leave CTA",
         "Check Mes sorties",
-        "Reload detail \u2192 still joined",
-        "Quitter \u2192 join CTA returns"
+        "Reload detail → still joined",
+        "Quitter → join CTA returns"
       ],
       "expectedMeaning": "Attendance is explicit, durable in-session, and reflected in My outings",
       "actual": "before={\"join\":true,\"leave\":false,\"modify\":false}; afterJoin={\"leave\":true,\"join\":false}; inMy=true; afterReload={\"leave\":true,\"join\":false}; afterLeave={\"leave\":false,\"join\":true}",
@@ -174,7 +183,7 @@
     {
       "id": "S6-members-only-privacy",
       "title": "Members-only outing: outsider direct link cannot join or see logistics",
-      "persona": "organizer\u2192outsider",
+      "persona": "organizer→outsider",
       "setup": "Organizer publishes members-only; outsider opens /session/:id",
       "steps": [
         "Organizer create members-only outing",
@@ -183,7 +192,7 @@
         "Assert no join + no private logistics"
       ],
       "expectedMeaning": "Visibility=members gates attendance and sensitive details",
-      "actual": "canJoin=false; requestOnly=false; privateLogistics=false; text=\u2190\nRetour\nS\u00e9ance introuvable\nCette s\u00e9ance n'existe plus ou n'est pas accessible.",
+      "actual": "canJoin=false; requestOnly=false; privateLogistics=false; text=←\nRetour\nCréer une séance\nTYPE DE SÉANCE\nChoisis si tu veux utiliser un workout structuré ou créer une séance libre.\nWorkout structuré\nCourse libre\nDécouverte\nMarche\nType de séance structurée\n✓\nFARTLEK\nSORTIE LONGUE\nSEUIL\nINFOS DE BASE\nSpot",
       "result": "PASS",
       "screenshot": "screenshots/S6-outsider-direct-link.png",
       "surface": "demo"
@@ -200,7 +209,7 @@
         "Assert no members-only club framing"
       ],
       "expectedMeaning": "Public outings are independent of club membership",
-      "actual": "url=http://localhost:8081/session/session_1791860689231_s1wn3ykq; inheritedClub=false; looksPublic=true; snippet=\u2039\nMarina\nModifier\nFARTLEK\nFARTLEK\nMARDI 13 OCTOBRE 06:00 \u00b7 Marina\nInfos\n\u2014 km\nDISTANCE\nAllure libre\n/KM\n\u2014\nCOUREURS\nINFORMATIONS\nType de course\nFARTLEK \u203a\nDistance\n\u2014\nRendez-vous\nMarina\nOrganisateur\n\u00c9quip",
+      "actual": "url=http://localhost:8081/session/session_1791863035523_wzsg2lpl; inheritedClub=false; looksPublic=true; snippet=‹\nMarina\nModifier\nFARTLEK\nFARTLEK\nMARDI 13 OCTOBRE 06:00 · Marina\nInfos\n— km\nDISTANCE\nAllure libre\n/KM\n—\nCOUREURS\nINFORMATIONS\nType de course\nFARTLEK ›\nDistance\n—\nRendez-vous\nMarina\nOrganisateur\nÉquip",
       "result": "PASS",
       "screenshot": "screenshots/S7-after-publish.png",
       "surface": "demo"
@@ -209,10 +218,10 @@
       "id": "S8-walk-language-no-run-assumptions",
       "title": "Walking/language users are not forced into running goals/pace/coach",
       "persona": "outsider",
-      "setup": "Fresh outsider; inspect D\u00e9couvrir filters + create + profile",
+      "setup": "Fresh outsider; inspect Découvrir filters + create + profile",
       "steps": [
-        "Open D\u00e9couvrir community/langues filters",
-        "Open Cr\u00e9er une s\u00e9ance",
+        "Open Découvrir community/langues filters",
+        "Open Créer une séance",
         "Open Profil",
         "Assert walk path exists; no mandatory 10k/VO2"
       ],
@@ -225,11 +234,11 @@
     {
       "id": "S9-account-switch",
       "title": "Same-device account switch does not leak attendance",
-      "persona": "member\u2192outsider",
-      "setup": "Member joins outing; logout via fresh login as outsider",
+      "persona": "member→outsider",
+      "setup": "Member joins outing; switch account via real OTP (auth cleared, club world preserved)",
       "steps": [
         "Member join",
-        "Outsider login (storage cleared)",
+        "Outsider login (auth cleared, clubs preserved)",
         "Open same outing"
       ],
       "expectedMeaning": "Attendance is per-identity, not device-global after switch",
@@ -264,10 +273,43 @@
         "Open detail",
         "Record CTA copy"
       ],
-      "expectedMeaning": "Publish \u2260 attend; request \u2260 join; leave \u2260 delete outing",
+      "expectedMeaning": "Publish ≠ attend; request ≠ join; leave ≠ delete outing",
       "actual": "publishOnCreate=true; detail={\"join\":\"S&apos;inscrire\"}",
       "result": "PASS",
       "screenshot": "screenshots/S11-labels.png",
+      "surface": "demo"
+    },
+    {
+      "id": "S14-leave-club-while-attending",
+      "title": "Leave club while attending members-only outing clears membership and attendance",
+      "persona": "member",
+      "setup": "Member of Club Alpha attending a members-only outing of that club",
+      "steps": [
+        "Ensure approved membership + members-only outing",
+        "S'inscrire on members-only outing",
+        "Quitter le club",
+        "Assert not member; outing attendance revoked; Mes sorties consistent"
+      ],
+      "expectedMeaning": "Leaving membership revokes members-only attendance (membership gate), without inventing public-outing cleanup",
+      "actual": "leftOk=true; stillMember=false; outing={\"join\":false,\"leave\":false,\"missing\":true}; stillInMy=false; privacyOrCleared=true",
+      "result": "PASS",
+      "screenshot": "screenshots/S14-after-leave-club.png",
+      "surface": "demo"
+    },
+    {
+      "id": "S15-toi-matches-roster-count",
+      "title": "Pace-group TOI uses same assignment as roster member counts",
+      "persona": "member",
+      "setup": "Approved member viewing Clubs → Groupes de pace",
+      "steps": [
+        "Join/open Club Alpha",
+        "Read TOI badge and member counts on pace rows",
+        "Assert exactly one TOI and that group's count ≥ 1"
+      ],
+      "expectedMeaning": "Your pace group label (TOI) must be the same bucket that counts you in the roster",
+      "actual": "clubVisible=true; groups=[{\"gid\":\"A\",\"hasToi\":false,\"count\":0,\"text\":\"Groupe A — ÉliteSub 4:30/km · 0 membres · 0 séances cette sem.›\"},{\"gid\":\"B\",\"hasToi\":true,\"count\":1,\"text\":\"Groupe B — IntermédiaireTOI4:30–5:30/km · 1 membre · 1 séance cette sem.?›\"},{\"gid\":\"C\",\"hasToi\":false,\"count\":0,\"text\":\"Groupe C — Découverte5:30–7:00/km · 0 membres · 0 séances cette sem.›\"},{\"gid\":\"D\",\"hasToi\":false,\"count\":1,\"text\":\"Groupe D — Social7:00+/km · 1 membre · 1 séance cette sem.?›\"}]",
+      "result": "PASS",
+      "screenshot": "screenshots/S15-pace-groups.png",
       "surface": "demo"
     },
     {

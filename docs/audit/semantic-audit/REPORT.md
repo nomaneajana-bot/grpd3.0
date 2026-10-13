@@ -1,14 +1,14 @@
 # Semantic / product-logic audit
 
-**SHA:** `94626f7056f8794b8b09aa19cb6435135cf42cc7`  
-**Generated:** 2026-10-13T03:05:52.202Z  
+**SHA:** `9dbe7cf606b311c7063eb4c077cfc6ce20db514c`  
+**Generated:** 2026-10-13T03:46:56.814Z  
 **Surfaces:** demo (executed) · same-device switch (executed) · hosted (**BLOCKED**) · cross-device (**BLOCKED**)
 
 ## Summary
 
 | Result | Count |
 |--------|------:|
-| PASS | 11 |
+| PASS | 13 |
 | FAIL | 0 |
 | BLOCKED | 2 |
 | Contradictions flagged | 2 |
@@ -51,14 +51,14 @@ Green design preserved. This is **not** an MVP-ready claim.
   1. Create Club Beta + generate invite
   1. Verify Clubs list shows both; codes differ
 - **Expected meaning:** Each club is a separate membership boundary with its own invite code
-- **Actual:** clubsVisible A=true B=true; codeA=AUDITRNJ codeB=AUDITGLE; betaFocused=true
+- **Actual:** clubsVisible A=true B=true; codeA=AUDIT2CR codeB=AUDITMQL; betaFocused=true
 - **Surface:** demo
 - **Screenshot:** screenshots/S1-club-b-invite.png
 
 ### S2-invite-joins-intended-club — PASS
 - **Title:** Invite code joins the intended club; membership ≠ attendance
 - **Persona:** member
-- **Setup:** Fresh login; use invite AUDITRNJ
+- **Setup:** Fresh login; use invite AUDIT2CR
 - **Steps:** 
   1. Login as member phone
   1. Club access → enter Club A invite → Rejoindre
@@ -133,8 +133,20 @@ Envoyer la dem
 - **Expected meaning:** Visibility=members gates attendance and sensitive details
 - **Actual:** canJoin=false; requestOnly=false; privateLogistics=false; text=←
 Retour
-Séance introuvable
-Cette séance n'existe plus ou n'est pas accessible.
+Créer une séance
+TYPE DE SÉANCE
+Choisis si tu veux utiliser un workout structuré ou créer une séance libre.
+Workout structuré
+Course libre
+Découverte
+Marche
+Type de séance structurée
+✓
+FARTLEK
+SORTIE LONGUE
+SEUIL
+INFOS DE BASE
+Spot
 - **Surface:** demo
 - **Screenshot:** screenshots/S6-outsider-direct-link.png
 
@@ -148,7 +160,7 @@ Cette séance n'existe plus ou n'est pas accessible.
   1. Publish
   1. Assert no members-only club framing
 - **Expected meaning:** Public outings are independent of club membership
-- **Actual:** url=http://localhost:8081/session/session_1791860689231_s1wn3ykq; inheritedClub=false; looksPublic=true; snippet=‹
+- **Actual:** url=http://localhost:8081/session/session_1791863035523_wzsg2lpl; inheritedClub=false; looksPublic=true; snippet=‹
 Marina
 Modifier
 FARTLEK
@@ -190,10 +202,10 @@ Organisateur
 ### S9-account-switch — PASS
 - **Title:** Same-device account switch does not leak attendance
 - **Persona:** member→outsider
-- **Setup:** Member joins outing; logout via fresh login as outsider
+- **Setup:** Member joins outing; switch account via real OTP (auth cleared, club world preserved)
 - **Steps:** 
   1. Member join
-  1. Outsider login (storage cleared)
+  1. Outsider login (auth cleared, clubs preserved)
   1. Open same outing
 - **Expected meaning:** Attendance is per-identity, not device-global after switch
 - **Actual:** memberJoined=true; outsider={"leave":false,"join":true}
@@ -225,6 +237,33 @@ Organisateur
 - **Actual:** publishOnCreate=true; detail={"join":"S&apos;inscrire"}
 - **Surface:** demo
 - **Screenshot:** screenshots/S11-labels.png
+
+### S14-leave-club-while-attending — PASS
+- **Title:** Leave club while attending members-only outing clears membership and attendance
+- **Persona:** member
+- **Setup:** Member of Club Alpha attending a members-only outing of that club
+- **Steps:** 
+  1. Ensure approved membership + members-only outing
+  1. S'inscrire on members-only outing
+  1. Quitter le club
+  1. Assert not member; outing attendance revoked; Mes sorties consistent
+- **Expected meaning:** Leaving membership revokes members-only attendance (membership gate), without inventing public-outing cleanup
+- **Actual:** leftOk=true; stillMember=false; outing={"join":false,"leave":false,"missing":true}; stillInMy=false; privacyOrCleared=true
+- **Surface:** demo
+- **Screenshot:** screenshots/S14-after-leave-club.png
+
+### S15-toi-matches-roster-count — PASS
+- **Title:** Pace-group TOI uses same assignment as roster member counts
+- **Persona:** member
+- **Setup:** Approved member viewing Clubs → Groupes de pace
+- **Steps:** 
+  1. Join/open Club Alpha
+  1. Read TOI badge and member counts on pace rows
+  1. Assert exactly one TOI and that group's count ≥ 1
+- **Expected meaning:** Your pace group label (TOI) must be the same bucket that counts you in the roster
+- **Actual:** clubVisible=true; groups=[{"gid":"A","hasToi":false,"count":0,"text":"Groupe A — ÉliteSub 4:30/km · 0 membres · 0 séances cette sem.›"},{"gid":"B","hasToi":true,"count":1,"text":"Groupe B — IntermédiaireTOI4:30–5:30/km · 1 membre · 1 séance cette sem.?›"},{"gid":"C","hasToi":false,"count":0,"text":"Groupe C — Découverte5:30–7:00/km · 0 membres · 0 séances cette sem.›"},{"gid":"D","hasToi":false,"count":1,"text":"Groupe D — Social7:00+/km · 1 membre · 1 séance cette sem.?›"}]
+- **Surface:** demo
+- **Screenshot:** screenshots/S15-pace-groups.png
 
 ### S12-hosted-blocked — BLOCKED
 - **Title:** Hosted journey acceptance
@@ -258,27 +297,23 @@ EXPO_PUBLIC_DEMO_MODE=true npx expo start --web --port 8081
 # http://localhost:8081/
 ```
 
-No merge / production / spend / credential changes / OCIF submission.
-
-
 ## Remaining gaps (honest / not silently invented)
 
 | Gap | Status | Notes |
 |-----|--------|-------|
-| Leave club while still attending that club's members-only outing | Not fully UI-tested this run | Membership leave exists; attendance cleanup policy not asserted end-to-end |
 | Past / full / cancelled outing lifecycle | UNSUPPORTED in demo mock | No expire/cancel/capacity enforcement exercised |
 | Hosted journey | BLOCKED | No hosted preview URL in cloud agent |
 | Cross-device persistence | BLOCKED | Requires hosted API + second device |
-| Pace group "TOI" vs member counts | Observed earlier | User marked TOI on group B while counts showed 0 — worth a follow-up |
+| Expired invites | UNSUPPORTED | Mock invite codes do not expire |
 | Toast overlapping form labels on Accès club | Visual QA | Absolute toast can cover section headers |
 
 ## Fixes applied during this audit (within existing behavior)
 
-1. DEMO_MODE no longer auto-approves every phone into Casa (demo phone only)
-2. Organizer Modifier/Supprimer gated on `hostUserId` (not mere `isCustom`)
-3. Public sessions force `clubId: null`
-4. Multi-club switcher on Clubs + invite club picker on Accès
-5. Invite codes made unique (no slug collisions)
-6. Profile.clubName no longer silently grants approved access
+1. Leaving a club in DEMO_MODE revokes members-only attendance for that club
+2. Pace-group TOI uses `assignMemberToClubGroup` (same as roster bucket counts)
+3. Leave-club clears focused club id; `club-leave-btn` / pace-group testIDs for audit
+4. Earlier: no silent Casa auto-approve; hostUserId organizer gate; public `clubId: null`; multi-club switcher; unique invites
 
 Green design preserved. **Not an MVP-ready claim.**
+
+No merge / production / spend / credential changes / OCIF submission.
