@@ -1,10 +1,10 @@
 {
   "summary": {
-    "sha": "9dbe7cf606b311c7063eb4c077cfc6ce20db514c",
+    "sha": "c2a1e1eda1eb25597d69c45b6335cc89b56e5270",
     "generatedAt": "2026-10-13T03:46:56.814Z",
     "mode": "offline-demo",
-    "hosted": "BLOCKED — no hosted preview in this run",
-    "crossDevice": "BLOCKED — no second device/hosted API",
+    "hosted": "BLOCKED \u2014 no hosted preview in this run",
+    "crossDevice": "BLOCKED \u2014 no second device/hosted API",
     "scenarios": [
       {
         "id": "S1-two-clubs",
@@ -14,7 +14,7 @@
       {
         "id": "S2-invite-joins-intended-club",
         "result": "PASS",
-        "title": "Invite code joins the intended club; membership ≠ attendance"
+        "title": "Invite code joins the intended club; membership \u2260 attendance"
       },
       {
         "id": "S3-outsider-not-auto-member",
@@ -115,12 +115,12 @@
     },
     {
       "id": "S2-invite-joins-intended-club",
-      "title": "Invite code joins the intended club; membership ≠ attendance",
+      "title": "Invite code joins the intended club; membership \u2260 attendance",
       "persona": "member",
       "setup": "Fresh login; use invite AUDIT2CR",
       "steps": [
         "Login as member phone",
-        "Club access → enter Club A invite → Rejoindre",
+        "Club access \u2192 enter Club A invite \u2192 Rejoindre",
         "Check Clubs list for Alpha only",
         "Check Mes sorties not auto-filled"
       ],
@@ -153,11 +153,11 @@
       "setup": "Fresh login; request Club Alpha by name",
       "steps": [
         "Login",
-        "Accès club → Demander à rejoindre",
+        "Acc\u00e8s club \u2192 Demander \u00e0 rejoindre",
         "Check Clubs status"
       ],
       "expectedMeaning": "Pending applicant cannot act as approved member",
-      "actual": "filled=true; pendingUI=true; approvedAsMember=false; snippet=‹\nClub\nAccès club\nInvitations, demandes et administration.\nREJOINDRE AVEC CODE\nCode d'invitation\nRejoindre\nDEMANDER À REJOINDRE\nNom du club\nSi tu n'as pas de code, entre le nom du club.\nMessage (optionnel)\nEnvoyer la dem",
+      "actual": "filled=true; pendingUI=true; approvedAsMember=false; snippet=\u2039\nClub\nAcc\u00e8s club\nInvitations, demandes et administration.\nREJOINDRE AVEC CODE\nCode d'invitation\nRejoindre\nDEMANDER \u00c0 REJOINDRE\nNom du club\nSi tu n'as pas de code, entre le nom du club.\nMessage (optionnel)\nEnvoyer la dem",
       "result": "PASS",
       "screenshot": "screenshots/S4-after-request.png",
       "surface": "demo"
@@ -169,10 +169,10 @@
       "setup": "Member account; public seed outing",
       "steps": [
         "Open public outing",
-        "S'inscrire → assert leave CTA",
+        "S'inscrire \u2192 assert leave CTA",
         "Check Mes sorties",
-        "Reload detail → still joined",
-        "Quitter → join CTA returns"
+        "Reload detail \u2192 still joined",
+        "Quitter \u2192 join CTA returns"
       ],
       "expectedMeaning": "Attendance is explicit, durable in-session, and reflected in My outings",
       "actual": "before={\"join\":true,\"leave\":false,\"modify\":false}; afterJoin={\"leave\":true,\"join\":false}; inMy=true; afterReload={\"leave\":true,\"join\":false}; afterLeave={\"leave\":false,\"join\":true}",
@@ -183,7 +183,7 @@
     {
       "id": "S6-members-only-privacy",
       "title": "Members-only outing: outsider direct link cannot join or see logistics",
-      "persona": "organizer→outsider",
+      "persona": "organizer\u2192outsider",
       "setup": "Organizer publishes members-only; outsider opens /session/:id",
       "steps": [
         "Organizer create members-only outing",
@@ -192,7 +192,7 @@
         "Assert no join + no private logistics"
       ],
       "expectedMeaning": "Visibility=members gates attendance and sensitive details",
-      "actual": "canJoin=false; requestOnly=false; privateLogistics=false; text=←\nRetour\nCréer une séance\nTYPE DE SÉANCE\nChoisis si tu veux utiliser un workout structuré ou créer une séance libre.\nWorkout structuré\nCourse libre\nDécouverte\nMarche\nType de séance structurée\n✓\nFARTLEK\nSORTIE LONGUE\nSEUIL\nINFOS DE BASE\nSpot",
+      "actual": "canJoin=false; requestOnly=false; privateLogistics=false; text=\u2190\nRetour\nCr\u00e9er une s\u00e9ance\nTYPE DE S\u00c9ANCE\nChoisis si tu veux utiliser un workout structur\u00e9 ou cr\u00e9er une s\u00e9ance libre.\nWorkout structur\u00e9\nCourse libre\nD\u00e9couverte\nMarche\nType de s\u00e9ance structur\u00e9e\n\u2713\nFARTLEK\nSORTIE LONGUE\nSEUIL\nINFOS DE BASE\nSpot",
       "result": "PASS",
       "screenshot": "screenshots/S6-outsider-direct-link.png",
       "surface": "demo"
@@ -209,7 +209,7 @@
         "Assert no members-only club framing"
       ],
       "expectedMeaning": "Public outings are independent of club membership",
-      "actual": "url=http://localhost:8081/session/session_1791863035523_wzsg2lpl; inheritedClub=false; looksPublic=true; snippet=‹\nMarina\nModifier\nFARTLEK\nFARTLEK\nMARDI 13 OCTOBRE 06:00 · Marina\nInfos\n— km\nDISTANCE\nAllure libre\n/KM\n—\nCOUREURS\nINFORMATIONS\nType de course\nFARTLEK ›\nDistance\n—\nRendez-vous\nMarina\nOrganisateur\nÉquip",
+      "actual": "url=http://localhost:8081/session/session_1791863035523_wzsg2lpl; inheritedClub=false; looksPublic=true; snippet=\u2039\nMarina\nModifier\nFARTLEK\nFARTLEK\nMARDI 13 OCTOBRE 06:00 \u00b7 Marina\nInfos\n\u2014 km\nDISTANCE\nAllure libre\n/KM\n\u2014\nCOUREURS\nINFORMATIONS\nType de course\nFARTLEK \u203a\nDistance\n\u2014\nRendez-vous\nMarina\nOrganisateur\n\u00c9quip",
       "result": "PASS",
       "screenshot": "screenshots/S7-after-publish.png",
       "surface": "demo"
@@ -218,10 +218,10 @@
       "id": "S8-walk-language-no-run-assumptions",
       "title": "Walking/language users are not forced into running goals/pace/coach",
       "persona": "outsider",
-      "setup": "Fresh outsider; inspect Découvrir filters + create + profile",
+      "setup": "Fresh outsider; inspect D\u00e9couvrir filters + create + profile",
       "steps": [
-        "Open Découvrir community/langues filters",
-        "Open Créer une séance",
+        "Open D\u00e9couvrir community/langues filters",
+        "Open Cr\u00e9er une s\u00e9ance",
         "Open Profil",
         "Assert walk path exists; no mandatory 10k/VO2"
       ],
@@ -234,7 +234,7 @@
     {
       "id": "S9-account-switch",
       "title": "Same-device account switch does not leak attendance",
-      "persona": "member→outsider",
+      "persona": "member\u2192outsider",
       "setup": "Member joins outing; switch account via real OTP (auth cleared, club world preserved)",
       "steps": [
         "Member join",
@@ -273,7 +273,7 @@
         "Open detail",
         "Record CTA copy"
       ],
-      "expectedMeaning": "Publish ≠ attend; request ≠ join; leave ≠ delete outing",
+      "expectedMeaning": "Publish \u2260 attend; request \u2260 join; leave \u2260 delete outing",
       "actual": "publishOnCreate=true; detail={\"join\":\"S&apos;inscrire\"}",
       "result": "PASS",
       "screenshot": "screenshots/S11-labels.png",
@@ -300,14 +300,14 @@
       "id": "S15-toi-matches-roster-count",
       "title": "Pace-group TOI uses same assignment as roster member counts",
       "persona": "member",
-      "setup": "Approved member viewing Clubs → Groupes de pace",
+      "setup": "Approved member viewing Clubs \u2192 Groupes de pace",
       "steps": [
         "Join/open Club Alpha",
         "Read TOI badge and member counts on pace rows",
-        "Assert exactly one TOI and that group's count ≥ 1"
+        "Assert exactly one TOI and that group's count \u2265 1"
       ],
       "expectedMeaning": "Your pace group label (TOI) must be the same bucket that counts you in the roster",
-      "actual": "clubVisible=true; groups=[{\"gid\":\"A\",\"hasToi\":false,\"count\":0,\"text\":\"Groupe A — ÉliteSub 4:30/km · 0 membres · 0 séances cette sem.›\"},{\"gid\":\"B\",\"hasToi\":true,\"count\":1,\"text\":\"Groupe B — IntermédiaireTOI4:30–5:30/km · 1 membre · 1 séance cette sem.?›\"},{\"gid\":\"C\",\"hasToi\":false,\"count\":0,\"text\":\"Groupe C — Découverte5:30–7:00/km · 0 membres · 0 séances cette sem.›\"},{\"gid\":\"D\",\"hasToi\":false,\"count\":1,\"text\":\"Groupe D — Social7:00+/km · 1 membre · 1 séance cette sem.?›\"}]",
+      "actual": "clubVisible=true; groups=[{\"gid\":\"A\",\"hasToi\":false,\"count\":0,\"text\":\"Groupe A \u2014 \u00c9liteSub 4:30/km \u00b7 0 membres \u00b7 0 s\u00e9ances cette sem.\u203a\"},{\"gid\":\"B\",\"hasToi\":true,\"count\":1,\"text\":\"Groupe B \u2014 Interm\u00e9diaireTOI4:30\u20135:30/km \u00b7 1 membre \u00b7 1 s\u00e9ance cette sem.?\u203a\"},{\"gid\":\"C\",\"hasToi\":false,\"count\":0,\"text\":\"Groupe C \u2014 D\u00e9couverte5:30\u20137:00/km \u00b7 0 membres \u00b7 0 s\u00e9ances cette sem.\u203a\"},{\"gid\":\"D\",\"hasToi\":false,\"count\":1,\"text\":\"Groupe D \u2014 Social7:00+/km \u00b7 1 membre \u00b7 1 s\u00e9ance cette sem.?\u203a\"}]",
       "result": "PASS",
       "screenshot": "screenshots/S15-pace-groups.png",
       "surface": "demo"
