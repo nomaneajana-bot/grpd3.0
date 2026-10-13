@@ -24,7 +24,7 @@ import { SectionLabel } from "@/components/redesign/SectionLabel";
 import { redesignTheme } from "@/constants/redesignTheme";
 import { ScreenContainer } from "@/components/ui/ScreenContainer";
 import { Toast } from "@/components/ui/Toast";
-import { colors, spacing } from "@/constants/ui";
+import { borderRadius, colors, hairline, spacing, typography } from "@/constants/ui";
 
 import { useToast } from "@/hooks/useToast";
 import {
@@ -36,6 +36,7 @@ import {
   joinClubByCode,
   leaveClub,
 } from "@/lib/api";
+import { DEMO_MODE } from "@/lib/featureFlags";
 import {
   buildClubActivityFeed,
   EMPTY_FEED_PLACEHOLDER,
@@ -475,28 +476,70 @@ export default function ClubScreen() {
           </>
         ) : isPendingMember && club ? (
           <>
-            <SectionLabel>MON CLUB</SectionLabel>
-            <ClubOverviewCard
-              clubName={club.name}
-              memberCount={memberCount ?? 0}
-              foundedYear={foundedYear}
-              status="pending"
-            />
-            <Text style={styles.pendingHint}>
-              Ta demande est en cours de validation par un responsable du club.
-            </Text>
-            <Pressable
-              style={({ pressed }) => [
-                styles.quitZone,
-                pressed && { opacity: 0.5 },
-              ]}
-              onPress={() => void handleCancelPending()}
-              disabled={isSubmitting}
-              accessibilityRole="button"
-              accessibilityLabel="Annuler la demande"
-            >
-              <Text style={styles.quitText}>Annuler la demande</Text>
-            </Pressable>
+            <View testID="club-pending-panel">
+              <Text style={styles.pendingTitle} testID="club-pending-title">
+                Ta demande est envoyée.
+              </Text>
+              <Text style={styles.pendingClubName}>{club.name}</Text>
+              <Text style={styles.pendingTag}>EN ATTENTE D&apos;APPROBATION</Text>
+              <Text style={styles.pendingHint}>
+                Le club doit accepter ta demande avant que tu puisses accéder à
+                ses sorties privées.
+              </Text>
+              <View style={styles.pendingDivider} />
+              <Text style={styles.pendingSection}>Et maintenant ?</Text>
+              <Text style={styles.pendingHint}>
+                Tu peux continuer à découvrir les sorties publiques.
+              </Text>
+              <Text style={styles.pendingSmall}>
+                Une demande n&apos;est ni une adhésion confirmée ni une
+                inscription à une sortie.
+              </Text>
+              {DEMO_MODE ? (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.pendingCancelField,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                  onPress={() => void handleCancelPending()}
+                  disabled={isSubmitting}
+                  accessibilityRole="button"
+                  accessibilityLabel="Annuler ma demande"
+                  testID="club-cancel-pending-btn"
+                >
+                  <Text style={styles.pendingCancelText}>
+                    Annuler ma demande →
+                  </Text>
+                </Pressable>
+              ) : (
+                <View
+                  style={styles.pendingCancelDisabled}
+                  testID="club-cancel-pending-unsupported"
+                >
+                  <Text style={styles.pendingCancelDisabledText}>
+                    Annuler ma demande
+                  </Text>
+                  <Text style={styles.pendingSmall}>
+                    Non disponible sur ce serveur pour le moment (pas de succès
+                    simulé).
+                  </Text>
+                </View>
+              )}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.pendingPrimaryBtn,
+                  pressed && { opacity: 0.9 },
+                ]}
+                onPress={() => router.push("/(tabs)" as Href)}
+                accessibilityRole="button"
+                accessibilityLabel="Découvrir les sorties"
+                testID="club-pending-discover-cta"
+              >
+                <Text style={styles.pendingPrimaryBtnText}>
+                  Découvrir les sorties
+                </Text>
+              </Pressable>
+            </View>
           </>
         ) : (
           <>
@@ -617,6 +660,82 @@ const styles = StyleSheet.create({
   loadingWrap: {
     paddingVertical: 48,
     alignItems: "center",
+  },
+  pendingTitle: {
+    color: colors.text.primary,
+    fontSize: 30,
+    fontWeight: "700",
+    letterSpacing: -0.6,
+    lineHeight: 36,
+    marginBottom: 8,
+  },
+  pendingClubName: {
+    color: colors.text.secondary,
+    fontSize: typography.sizes.md,
+    marginBottom: 12,
+  },
+  pendingTag: {
+    color: colors.accent.sage,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    marginBottom: 12,
+  },
+  pendingDivider: {
+    height: hairline,
+    backgroundColor: colors.border.default,
+    marginVertical: 18,
+  },
+  pendingSection: {
+    color: colors.text.primary,
+    fontSize: typography.sizes.lg,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  pendingSmall: {
+    color: colors.text.tertiary,
+    fontSize: typography.sizes.sm,
+    lineHeight: 18,
+    marginTop: 8,
+  },
+  pendingCancelField: {
+    marginTop: 16,
+    backgroundColor: colors.background.card,
+    borderWidth: hairline,
+    borderColor: colors.border.default,
+    borderRadius: borderRadius.md,
+    padding: 16,
+  },
+  pendingCancelText: {
+    color: colors.text.primary,
+    fontSize: typography.sizes.md,
+    fontWeight: "600",
+  },
+  pendingCancelDisabled: {
+    marginTop: 16,
+    backgroundColor: colors.background.card,
+    borderWidth: hairline,
+    borderColor: colors.border.default,
+    borderRadius: borderRadius.md,
+    padding: 16,
+    opacity: 0.85,
+  },
+  pendingCancelDisabledText: {
+    color: colors.text.tertiary,
+    fontSize: typography.sizes.md,
+    fontWeight: "600",
+  },
+  pendingPrimaryBtn: {
+    marginTop: 20,
+    backgroundColor: colors.accent.sage,
+    borderRadius: 18,
+    paddingVertical: 17,
+    alignItems: "center",
+  },
+  pendingPrimaryBtnText: {
+    color: colors.accent.charcoal,
+    fontSize: typography.sizes.md,
+    fontWeight: "700",
   },
   pendingHint: {
     color: colors.text.secondary,

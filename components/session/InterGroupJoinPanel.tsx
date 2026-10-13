@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { borderRadius, colors, typography } from "@/constants/ui";
+import { borderRadius, colors, hairline, typography } from "@/constants/ui";
 import type { ClubAdminSettings } from "@/lib/clubAdminStore";
 import type { ClubPaceGroupId } from "@/lib/clubPaceGroups";
 import {
@@ -15,6 +15,8 @@ type InterGroupJoinPanelProps = {
   sessionAnchorGroupId: ClubPaceGroupId | null;
   selectedGroupId: ClubPaceGroupId | null;
   sessionPaceLabel?: string | null;
+  /** Real stored logistics line for joined confirmation (no invented place/date). */
+  joinedSummaryLine?: string | null;
   settings: ClubAdminSettings | null;
   hasStoredJoin: boolean;
   canJoin: boolean;
@@ -24,6 +26,7 @@ type InterGroupJoinPanelProps = {
   onRequestJoin: () => void;
   onLeave: () => void;
   onGoToClub: () => void;
+  onGoToMySessions?: () => void;
   /** Dismiss cross-group warn state (Annuler). */
   onCancelWarn?: () => void;
 };
@@ -33,6 +36,7 @@ export function InterGroupJoinPanel({
   sessionAnchorGroupId,
   selectedGroupId,
   sessionPaceLabel,
+  joinedSummaryLine,
   settings,
   hasStoredJoin,
   canJoin,
@@ -42,6 +46,7 @@ export function InterGroupJoinPanel({
   onRequestJoin,
   onLeave,
   onGoToClub,
+  onGoToMySessions,
   onCancelWarn,
 }: InterGroupJoinPanelProps) {
   const sessionTargetGroupId = (selectedGroupId ??
@@ -71,25 +76,63 @@ export function InterGroupJoinPanel({
     );
   }, [memberGroupId, sessionTargetGroupId, sessionPaceLabel]);
 
+  // M05 — participation confirmée (leave outing ≠ leave club)
   if (hasStoredJoin) {
     return (
-      <Pressable
-        style={styles.leaveBtn}
-        onPress={onLeave}
-        accessibilityRole="button"
-        accessibilityLabel="Quitter cette séance"
-        testID="session-leave-btn"
-      >
-        <Text style={styles.leaveText}>Quitter cette séance</Text>
-      </Pressable>
+      <View style={styles.joinedWrap} testID="session-joined-panel">
+        <Text style={styles.joinedTag}>INSCRIPTION CONFIRMÉE</Text>
+        {joinedSummaryLine ? (
+          <View style={styles.joinedCard}>
+            <Text style={styles.joinedCardText}>{joinedSummaryLine}</Text>
+          </View>
+        ) : null}
+        <Text style={styles.joinedHint}>
+          Retrouve cette sortie dans « Mes sorties ». Annuler ta participation ne
+          change pas ton adhésion au club.
+        </Text>
+        <Pressable
+          style={styles.leaveBtn}
+          onPress={onLeave}
+          accessibilityRole="button"
+          accessibilityLabel="Annuler ma participation"
+          testID="session-leave-btn"
+        >
+          <Text style={styles.leaveText}>Annuler ma participation →</Text>
+        </Pressable>
+        {onGoToMySessions ? (
+          <Pressable
+            style={({ pressed }) => [
+              styles.joinBtn,
+              styles.joinBtnPrimary,
+              pressed && styles.joinBtnPressed,
+              Platform.OS === "web" && styles.joinBtnWeb,
+            ]}
+            onPress={onGoToMySessions}
+            accessibilityRole="button"
+            accessibilityLabel="Voir mes sorties"
+            testID="session-joined-my-sessions"
+          >
+            <Text style={styles.joinBtnPrimaryText}>Voir mes sorties</Text>
+          </Pressable>
+        ) : null}
+      </View>
     );
   }
 
+  // Pending club membership — no private logistics here (detail already gated).
   if (isPendingMember) {
     return (
-      <View style={styles.pendingWrap}>
-        <Text style={styles.pendingText}>Demande en attente</Text>
-        <Pressable onPress={onGoToClub}>
+      <View style={styles.pendingWrap} testID="session-pending-panel">
+        <Text style={styles.pendingTag}>EN ATTENTE D&apos;APPROBATION</Text>
+        <Text style={styles.pendingText}>
+          Le club doit accepter ta demande avant que tu puisses t&apos;inscrire
+          aux sorties réservées aux membres.
+        </Text>
+        <Text style={styles.pendingSmall}>
+          Une demande n&apos;est ni une adhésion confirmée ni une inscription à
+          une sortie.
+        </Text>
+        <Pressable onPress={onGoToClub} testID="session-pending-club-link">
           <Text style={styles.link}>Voir mon statut club</Text>
         </Pressable>
       </View>
@@ -105,7 +148,7 @@ export function InterGroupJoinPanel({
         accessibilityLabel="Demander l'accès"
         testID="session-join-request"
       >
-        <Text style={styles.requestText}>Demander l'accès</Text>
+        <Text style={styles.requestText}>Demander l&apos;accès</Text>
       </Pressable>
     );
   }
@@ -118,8 +161,8 @@ export function InterGroupJoinPanel({
           <Text style={styles.bannerText}>{lockedMessage}</Text>
         </View>
         <View style={[styles.joinBtn, styles.joinBtnUnavailable]}>
-            <Text style={styles.joinBtnUnavailableText}>
-            S'inscrire — non disponible
+          <Text style={styles.joinBtnUnavailableText}>
+            S&apos;inscrire — non disponible
           </Text>
         </View>
       </View>
@@ -171,25 +214,29 @@ export function InterGroupJoinPanel({
     );
   }
 
+  // M04 — before join (member positive control)
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.joinBtn,
-        styles.joinBtnPrimary,
-        pressed && styles.joinBtnPressed,
-        isPublishing && styles.joinBtnFaded,
-        Platform.OS === "web" && styles.joinBtnWeb,
-      ]}
-      onPress={onJoin}
-      disabled={isPublishing}
-      accessibilityRole="button"
-      accessibilityLabel="S'inscrire à la séance"
-      testID="session-join-btn"
-    >
-      <Text style={styles.joinBtnPrimaryText}>
-        {isPublishing ? "Inscription…" : "S'inscrire"}
-      </Text>
-    </Pressable>
+    <View>
+      <Text style={styles.joinOnlyHint}>Tu rejoins cette sortie uniquement.</Text>
+      <Pressable
+        style={({ pressed }) => [
+          styles.joinBtn,
+          styles.joinBtnPrimary,
+          pressed && styles.joinBtnPressed,
+          isPublishing && styles.joinBtnFaded,
+          Platform.OS === "web" && styles.joinBtnWeb,
+        ]}
+        onPress={onJoin}
+        disabled={isPublishing}
+        accessibilityRole="button"
+        accessibilityLabel="M'inscrire à cette sortie"
+        testID="session-join-btn"
+      >
+        <Text style={styles.joinBtnPrimaryText}>
+          {isPublishing ? "Inscription…" : "M'inscrire à cette sortie"}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -276,6 +323,12 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.md,
     fontWeight: "600",
   },
+  joinOnlyHint: {
+    color: colors.text.secondary,
+    fontSize: typography.sizes.sm,
+    marginBottom: 10,
+    textAlign: "center",
+  },
   leaveBtn: {
     paddingVertical: 14,
     borderRadius: borderRadius.md,
@@ -283,6 +336,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border.default,
     backgroundColor: colors.background.card,
     alignItems: "center",
+    marginBottom: 12,
   },
   leaveText: {
     color: colors.text.error,
@@ -302,14 +356,55 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   pendingWrap: {
-    alignItems: "center",
-    gap: 8,
+    alignItems: "stretch",
+    gap: 10,
+  },
+  pendingTag: {
+    color: colors.accent.sage,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
   },
   pendingText: {
     color: colors.text.secondary,
+    fontSize: typography.sizes.md,
+    lineHeight: 22,
+  },
+  pendingSmall: {
+    color: colors.text.tertiary,
+    fontSize: typography.sizes.sm,
+    lineHeight: 18,
   },
   link: {
     color: colors.text.accent,
     fontWeight: "600",
+    marginTop: 4,
+  },
+  joinedWrap: {
+    gap: 10,
+  },
+  joinedTag: {
+    color: colors.accent.sage,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+  },
+  joinedCard: {
+    backgroundColor: colors.background.card,
+    borderWidth: hairline,
+    borderColor: colors.border.default,
+    borderRadius: borderRadius.lg,
+    padding: 16,
+  },
+  joinedCardText: {
+    color: colors.text.primary,
+    fontSize: typography.sizes.md,
+    fontWeight: "600",
+    lineHeight: 22,
+  },
+  joinedHint: {
+    color: colors.text.secondary,
+    fontSize: typography.sizes.sm,
+    lineHeight: 20,
   },
 });

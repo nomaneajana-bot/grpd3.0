@@ -537,22 +537,60 @@ export default function SessionScreen() {
   }
 
   if (sessionLoadState === "not_found" || !session) {
+    // M08 inaccessible — never reveal club name, spot, date, or private logistics.
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} testID="session-inaccessible">
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backRow}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Retour"
           >
             <Text style={styles.backIcon}>←</Text>
             <Text style={styles.backLabel}>Retour</Text>
           </TouchableOpacity>
-          <Text style={styles.screenTitle}>Séance introuvable</Text>
-          <Text style={styles.notFoundHint}>
-            Cette séance n&apos;existe plus ou n&apos;est pas accessible.
+        </View>
+        <View style={styles.inaccessibleBody}>
+          <Text style={styles.inaccessibleTitle} testID="session-inaccessible-title">
+            Cette sortie n&apos;est pas accessible.
           </Text>
+          <Text style={styles.notFoundHint}>
+            Elle est introuvable ou ton compte n&apos;y a pas accès.
+          </Text>
+          <View style={styles.inaccessibleCard}>
+            <Text style={styles.inaccessibleCardTitle}>Retrouvons ton chemin</Text>
+            <Text style={styles.inaccessibleCardBody}>
+              Vérifie que tu utilises le bon compte ou retourne à tes clubs.
+            </Text>
+          </View>
+          <Pressable
+            testID="session-inaccessible-clubs-cta"
+            accessibilityRole="button"
+            accessibilityLabel="Retour à mes clubs"
+            style={({ pressed }) => [
+              styles.inaccessiblePrimaryBtn,
+              pressed && { opacity: 0.9 },
+            ]}
+            onPress={() => router.replace("/(tabs)/club")}
+          >
+            <Text style={styles.inaccessiblePrimaryBtnText}>
+              Retour à mes clubs
+            </Text>
+          </Pressable>
+          <Pressable
+            testID="session-inaccessible-discover-cta"
+            accessibilityRole="button"
+            accessibilityLabel="Découvrir les sorties"
+            style={styles.secondaryLinkButton}
+            onPress={() => router.replace("/(tabs)")}
+          >
+            <Text style={styles.secondaryLinkButtonText}>
+              Découvrir les sorties
+            </Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -730,9 +768,10 @@ export default function SessionScreen() {
 
   const handleLeave = async () => {
     const ok = await confirmAction({
-      title: "Quitter la séance",
-      message: "Tu ne seras plus inscrit à cette séance. Continuer ?",
-      confirmLabel: "Quitter",
+      title: "Annuler ta participation ?",
+      message:
+        "Tu ne figureras plus parmi les participants à cette sortie. Ton adhésion au club reste inchangée.",
+      confirmLabel: "Confirmer l'annulation",
       destructive: true,
     });
     if (!ok) return;
@@ -927,27 +966,40 @@ export default function SessionScreen() {
           />
         ) : (
           <>
-        <StatGrid3
-          cells={[
-            {
-              value: formatSessionDistanceKm(session.estimatedDistanceKm),
-              sub: "km",
-              label: "Distance",
-            },
-            {
-              value: formatSessionPaceLabel(session.targetPace),
-              label: "/km",
-              valueColor: colors.text.accent,
-            },
-            {
-              value: String(
-                session.paceGroups.reduce((a, g) => a + g.runnersCount, 0) ||
-                  "—",
-              ),
-              label: "Coureurs",
-            },
-          ]}
-        />
+        {(() => {
+          const typeUpper = (session.typeLabel || "").toUpperCase();
+          const isCasualWalk =
+            typeUpper.includes("MARCHE") || typeUpper.includes("WALKING");
+          const dist = formatSessionDistanceKm(session.estimatedDistanceKm);
+          const pace = formatSessionPaceLabel(session.targetPace);
+          // No invented pace/distance for walk/casual — hide empty metric chrome.
+          if (isCasualWalk && dist === "—" && (pace === "—" || /allure\s+libre/i.test(pace))) {
+            return null;
+          }
+          return (
+            <StatGrid3
+              cells={[
+                {
+                  value: dist,
+                  sub: "km",
+                  label: "Distance",
+                },
+                {
+                  value: pace,
+                  label: "/km",
+                  valueColor: colors.text.accent,
+                },
+                {
+                  value: String(
+                    session.paceGroups.reduce((a, g) => a + g.runnersCount, 0) ||
+                      "—",
+                  ),
+                  label: isCasualWalk ? "Participants" : "Coureurs",
+                },
+              ]}
+            />
+          );
+        })()}
 
 
         {/* Session Details Card - on top (Type de course first) */}
@@ -956,29 +1008,28 @@ export default function SessionScreen() {
             <Text style={styles.cardLabel}>INFORMATIONS</Text>
           </View>
 
-          {/* Type de course — first row */}
+          {/* Type — first row (stored label; no M04 fixture fallback) */}
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Type de course</Text>
+            <Text style={styles.infoLabel}>Type</Text>
             <Text style={styles.infoValue}>{session.typeLabel} ›</Text>
           </View>
 
           <View style={styles.divider} />
 
-          {/* Compact info rows */}
+          {/* Compact info rows — omit empty distance for casual/walk */}
+          {formatSessionDistanceKm(session.estimatedDistanceKm) !== "—" ? (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Distance</Text>
             <Text style={styles.infoValue}>
               {formatSessionDistanceLabel(session.estimatedDistanceKm)}
             </Text>
           </View>
+          ) : null}
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Rendez-vous</Text>
             <Text style={styles.infoValue}>
-              {session.meetingPoint ||
-                (session.spot === "Spot 1"
-                  ? "Marina Casablanca"
-                  : session.spot)}
+              {session.meetingPoint?.trim() || session.spot?.trim() || "—"}
             </Text>
           </View>
 
@@ -1305,6 +1356,13 @@ export default function SessionScreen() {
                 session.paceGroups.find((g) => g.id === sessionAnchorGroupId)
                   ?.paceRange ?? session.targetPace
               }
+              joinedSummaryLine={[
+                session.dateLabel,
+                session.meetingPoint || session.spot,
+              ]
+                .map((p) => (p || "").trim())
+                .filter(Boolean)
+                .join(" · ")}
               settings={clubAdminSettings}
               hasStoredJoin={hasStoredJoin}
               canJoin={canJoin}
@@ -1313,6 +1371,7 @@ export default function SessionScreen() {
               onRequestJoin={handleRequestJoin}
               onLeave={handleLeave}
               onGoToClub={() => router.push("/(tabs)/club")}
+              onGoToMySessions={() => router.push("/(tabs)/my-sessions")}
               onCancelWarn={() =>
                 setSelectedGroupId(memberHomeGroupId ?? sessionAnchorGroupId)
               }
@@ -1740,18 +1799,64 @@ const styles = StyleSheet.create({
   },
   notFoundHint: {
     color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.md,
     marginTop: 8,
-    lineHeight: 20,
+    lineHeight: 22,
+  },
+  inaccessibleBody: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 32,
+  },
+  inaccessibleTitle: {
+    color: colors.text.primary,
+    fontSize: 30,
+    fontWeight: "700",
+    letterSpacing: -0.6,
+    lineHeight: 36,
+    marginBottom: 8,
+  },
+  inaccessibleCard: {
+    marginTop: 22,
+    marginBottom: 28,
+    backgroundColor: colors.background.card,
+    borderWidth: hairline,
+    borderColor: colors.border.default,
+    borderRadius: borderRadius.lg,
+    padding: 18,
+  },
+  inaccessibleCardTitle: {
+    color: colors.text.primary,
+    fontSize: typography.sizes.lg,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  inaccessibleCardBody: {
+    color: colors.text.secondary,
+    fontSize: typography.sizes.md,
+    lineHeight: 22,
+  },
+  inaccessiblePrimaryBtn: {
+    backgroundColor: colors.accent.sage,
+    borderRadius: 18,
+    paddingVertical: 17,
+    alignItems: "center",
+  },
+  inaccessiblePrimaryBtnText: {
+    color: colors.accent.charcoal,
+    fontSize: typography.sizes.md,
+    fontWeight: "700",
   },
   secondaryLinkButton: {
-    marginTop: 10,
-    alignSelf: "flex-start",
+    marginTop: 18,
+    alignSelf: "center",
   },
   secondaryLinkButtonText: {
-    color: colors.accent.primary,
+    color: colors.accent.sage,
     fontSize: typography.sizes.sm,
     fontWeight: "700",
+    textAlign: "center",
   },
   inlineErrorBanner: {
     backgroundColor: colors.accent.orangeDim,

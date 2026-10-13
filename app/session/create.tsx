@@ -255,12 +255,14 @@ function OptionPicker({
                     placeholderTextColor="#808080"
                     onSubmitEditing={handleAddCustom}
                     returnKeyType="done"
+                    testID="session-spot-custom-input"
                   />
                   {customValue.trim() && (
                     <TouchableOpacity
                       style={styles.pickerCustomSaveButton}
                       onPress={handleAddCustom}
                       activeOpacity={0.8}
+                      testID="session-spot-custom-add"
                     >
                       <Text style={styles.pickerCustomSaveText}>Ajouter</Text>
                     </TouchableOpacity>
@@ -2317,9 +2319,14 @@ export default function CreateSessionScreen() {
             style={styles.fieldRow}
             onPress={() => setShowSpotPicker(true)}
             activeOpacity={0.7}
+            testID="session-spot-field"
+            accessibilityRole="button"
+            accessibilityLabel="Choisir un spot"
           >
             <Text style={styles.fieldLabel}>Spot</Text>
-            <Text style={styles.fieldInput}>{spot}</Text>
+            <Text style={styles.fieldInput} testID="session-spot-value">
+              {spot}
+            </Text>
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity

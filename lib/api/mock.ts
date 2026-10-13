@@ -829,7 +829,20 @@ async function mockListSessions(query: {
       sessions = sessions.filter((s) => s.clubId === query.clubId);
     }
     const user = await getAuthUser();
+    // Align with hosted GET /api/v1/sessions: members-only logistics stay off lists
+    // for outsiders / pending. Host + approved members retain access.
     if (user) {
+      const memberships = await readMemberships();
+      const approvedClubIds = new Set(
+        Object.values(memberships)
+          .filter((m) => m.userId === user.id && m.status === 'approved')
+          .map((m) => m.clubId),
+      );
+      sessions = sessions.filter((session) => {
+        if (session.visibility !== 'members') return true;
+        if (session.hostUserId === user.id) return true;
+        return Boolean(session.clubId && approvedClubIds.has(session.clubId));
+      });
       const attendanceAll = await Promise.all(
         sessions.map(async (s) => ({
           session: s,
@@ -844,6 +857,8 @@ async function mockListSessions(query: {
           attendanceGroupId: mine?.groupId ?? null,
         };
       });
+    } else {
+      sessions = sessions.filter((s) => s.visibility !== 'members');
     }
     return { sessions };
   }
