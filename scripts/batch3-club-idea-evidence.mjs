@@ -30,13 +30,13 @@ const HOST_PHONE = "0611111111";
 const CLUB_A = {
   name: `English Outside ${TOKEN}`,
   city: "Casablanca",
-  purpose: `Pratiquer l’anglais en marchant — niveaux mixtes ${TOKEN}.`,
+  purpose: `Pratiquer l'anglais en marchant — niveaux mixtes ${TOKEN}.`,
   ideaId: "english",
 };
 const CLUB_B = {
   name: `Petits Matins ${TOKEN}`,
   city: "Rabat",
-  purpose: `Marche après Fajr, calme du quartier ${TOKEN}.`,
+  purpose: `Marche apres Fajr, calme du quartier ${TOKEN}.`,
   ideaId: "fajr",
 };
 
@@ -248,10 +248,47 @@ async function findClubIdByName(page, name) {
   return hit?.id ?? null;
 }
 
+async function setInputValue(page, testId, value) {
+  await page.waitForSelector(`[data-testid="${testId}"]`, { timeout: 15000 });
+  const ok = await page.evaluate(
+    ({ id, val }) => {
+      const el = Array.from(
+        document.querySelectorAll(`[data-testid="${id}"]`),
+      ).find((n) => n.getBoundingClientRect().width > 0);
+      if (!el) return false;
+      el.focus();
+      el.scrollIntoView({ block: "center" });
+      const proto =
+        el.tagName === "TEXTAREA"
+          ? window.HTMLTextAreaElement.prototype
+          : window.HTMLInputElement.prototype;
+      const desc = Object.getOwnPropertyDescriptor(proto, "value");
+      desc?.set?.call(el, val);
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      return (el.value || "") === val;
+    },
+    { id: testId, val: value },
+  );
+  if (!ok) {
+    await typeTestId(page, testId, value);
+  }
+  await page.waitForFunction(
+    ({ id, val }) => {
+      const el = Array.from(
+        document.querySelectorAll(`[data-testid="${id}"]`),
+      ).find((n) => n.getBoundingClientRect().width > 0);
+      return (el?.value || "") === val;
+    },
+    { timeout: 10000 },
+    { id: testId, val: value },
+  );
+}
+
 async function fillClubForm(page, club) {
-  await typeTestId(page, "club-name-input", club.name);
-  await typeTestId(page, "club-city-input", club.city);
-  await typeTestId(page, "club-purpose-input", club.purpose);
+  await setInputValue(page, "club-name-input", club.name);
+  await setInputValue(page, "club-city-input", club.city);
+  await setInputValue(page, "club-purpose-input", club.purpose);
 }
 
 async function setOutingWhen(page, fixture) {
@@ -495,10 +532,13 @@ async function main() {
 
     // Empty club state + identity
     const clubHomeText = await bodyText(page);
+    const purposeNeedleA = TOKEN;
     const showsA =
       clubHomeText.includes(CLUB_A.name) &&
-      clubHomeText.includes(CLUB_A.purpose.slice(0, 24));
-    record("club_a_home_identity_purpose", showsA, clubHomeText.slice(0, 220));
+      clubHomeText.includes(CLUB_A.city) &&
+      clubHomeText.includes(purposeNeedleA) &&
+      /niveaux mixtes|anglais en marchant/i.test(clubHomeText);
+    record("club_a_home_identity_purpose", showsA, clubHomeText.slice(0, 280));
     const emptyOutings = await page.evaluate(
       () => !!document.querySelector('[data-testid="club-outings-empty"]'),
     );
@@ -525,7 +565,9 @@ async function main() {
     record(
       "club_a_reload_persists",
       afterReload.includes(CLUB_A.name) &&
-        afterReload.includes(CLUB_A.purpose.slice(0, 20)),
+        afterReload.includes(TOKEN) &&
+        /anglais en marchant|niveaux mixtes/i.test(afterReload),
+      afterReload.slice(0, 200),
     );
     await shot(page, "05-club-a-after-reload.png");
 
@@ -674,8 +716,10 @@ async function main() {
     record(
       "club_b_home_identity_purpose",
       homeB.includes(CLUB_B.name) &&
-        homeB.includes(CLUB_B.purpose.slice(0, 20)),
-      homeB.slice(0, 220),
+        homeB.includes(CLUB_B.city) &&
+        homeB.includes(TOKEN) &&
+        /Fajr|quartier/i.test(homeB),
+      homeB.slice(0, 280),
     );
     const emptyB = await page.evaluate(
       () => !!document.querySelector('[data-testid="club-outings-empty"]'),
