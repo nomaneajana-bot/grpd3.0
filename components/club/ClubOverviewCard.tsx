@@ -1,9 +1,7 @@
-import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { Chip } from "@/components/ui/Chip";
-import { redesignTheme } from "@/constants/redesignTheme";
+import { experienceTheme as t } from "@/components/experiences/ExperienceUI";
 import { clubInitialsFromName } from "@/lib/clubPaceGroups";
 import { welcomeFontFamily } from "@/lib/welcomeFonts";
 
@@ -12,6 +10,8 @@ type ClubOverviewCardProps = {
   memberCount: number;
   foundedYear: string | null;
   city?: string | null;
+  purpose?: string | null;
+  visibility?: "public" | "members" | null;
   status: "member" | "pending";
 };
 
@@ -20,66 +20,84 @@ export function ClubOverviewCard({
   memberCount,
   foundedYear,
   city,
+  purpose,
+  visibility,
   status,
 }: ClubOverviewCardProps) {
   const initials = clubInitialsFromName(clubName);
-  const metaParts = [
-    `${memberCount} membre${memberCount === 1 ? "" : "s"}`,
-  ];
+  const accessLabel =
+    visibility === "members"
+      ? "Club sur invitation"
+      : visibility === "public"
+        ? "Club public"
+        : null;
+  const metaParts: string[] = [];
   if (city?.trim()) metaParts.push(city.trim());
-  else if (foundedYear) metaParts.push(`Fondé ${foundedYear}`);
+  if (accessLabel) metaParts.push(accessLabel);
+  metaParts.push(
+    `${memberCount} membre${memberCount === 1 ? "" : "s"}`,
+  );
+  if (foundedYear && !city?.trim()) metaParts.push(`Fondé ${foundedYear}`);
+
+  const statusLabel =
+    status === "member" ? "TU ES MEMBRE" : "EN ATTENTE D'APPROBATION";
 
   return (
-    <LinearGradient
-      colors={[
-        "rgba(47,123,255,0.12)",
-        redesignTheme.card.background,
-      ]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.card}
-    >
-      <View style={styles.logo}>
-        <Text style={styles.logoText}>{initials}</Text>
+    <View style={styles.card} testID="club-overview-card">
+      <View style={styles.row}>
+        <View style={styles.logo}>
+          <Text style={styles.logoText}>{initials}</Text>
+        </View>
+        <View style={styles.body}>
+          <Text style={styles.name} numberOfLines={2} testID="club-overview-name">
+            {clubName}
+          </Text>
+          <Text style={styles.meta} testID="club-overview-meta">
+            {metaParts.join(" · ")}
+          </Text>
+        </View>
       </View>
-      <View style={styles.body}>
-        <Text style={styles.name} numberOfLines={2}>
-          {clubName}
+      <View style={styles.tag} testID="club-overview-status">
+        <Text style={styles.tagText}>{statusLabel}</Text>
+      </View>
+      {purpose?.trim() ? (
+        <Text style={styles.purpose} testID="club-overview-purpose">
+          {purpose.trim()}
         </Text>
-        <Text style={styles.meta}>{metaParts.join(" · ")}</Text>
-      </View>
-      <Chip
-        label={status === "member" ? "MEMBRE" : "EN ATTENTE"}
-        variant="success"
-        style={styles.chip}
-        textStyle={styles.chipText}
-      />
-    </LinearGradient>
+      ) : (
+        <Text style={styles.purposeMuted} testID="club-overview-purpose-empty">
+          Aucun objectif renseigné pour ce club.
+        </Text>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
+    backgroundColor: t.card,
+    borderRadius: 22,
+    padding: 22,
+    gap: 12,
+    marginHorizontal: 24,
+    borderWidth: 1,
+    borderColor: t.line,
+  },
+  row: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: redesignTheme.card.radiusXl,
-    padding: 16,
     gap: 12,
-    marginHorizontal: redesignTheme.screen.horizontalPadding,
-    borderWidth: 1,
-    borderColor: redesignTheme.accent.blueBorder,
-    overflow: "hidden",
   },
   logo: {
     width: 50,
     height: 50,
     borderRadius: 14,
-    backgroundColor: redesignTheme.accent.blue,
+    backgroundColor: t.accent,
     alignItems: "center",
     justifyContent: "center",
   },
   logoText: {
-    color: "#FFFFFF",
+    color: t.bg,
     fontSize: 16,
     fontWeight: "800",
     letterSpacing: 0.5,
@@ -90,25 +108,40 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: welcomeFontFamily.bold,
-    fontSize: redesignTheme.type.title.fontSize,
+    fontSize: 22,
     fontWeight: "700",
-    letterSpacing: -0.3,
-    color: redesignTheme.text.primary,
+    letterSpacing: -0.4,
+    color: t.text,
   },
   meta: {
     fontFamily: welcomeFontFamily.regular,
-    fontSize: redesignTheme.type.caption.fontSize,
-    color: redesignTheme.text.dim,
+    fontSize: 13,
+    color: t.muted,
     marginTop: 3,
   },
-  chip: {
-    backgroundColor: "rgba(43,201,122,0.15)",
-    borderColor: "rgba(43,201,122,0.35)",
+  tag: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: `${t.accent}88`,
+    backgroundColor: `${t.accent}22`,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  chipText: {
-    color: redesignTheme.accent.green,
+  tagText: {
+    color: t.accent,
     fontWeight: "700",
-    fontSize: 10,
-    letterSpacing: 0.5,
+    fontSize: 11,
+    letterSpacing: 0.8,
+  },
+  purpose: {
+    color: t.text,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  purposeMuted: {
+    color: t.muted,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

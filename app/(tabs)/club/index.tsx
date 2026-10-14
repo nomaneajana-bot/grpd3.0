@@ -32,9 +32,9 @@ import {
   createApiClient,
   getClubRoster,
   getMyMemberships,
-  getMySessions,
   joinClubByCode,
   leaveClub,
+  listSessions,
 } from "@/lib/api";
 import { DEMO_MODE } from "@/lib/featureFlags";
 import {
@@ -80,6 +80,7 @@ export default function ClubScreen() {
     null,
   );
   const [clubSessions, setClubSessions] = useState<SessionData[]>([]);
+  const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
   const [focusedClubId, setFocusedClubId] = useState<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
@@ -105,19 +106,22 @@ export default function ClubScreen() {
           setFocusedClubId(primary.clubId);
           void persistFocusedClubId(primary.clubId);
         }
-        const [rosterResult, profile, joined, paces, adminCfg, mySessions] =
+        const [rosterResult, profile, joined, paces, adminCfg, clubSessionResult] =
           await Promise.all([
             getClubRoster(client, primary.clubId),
             getRunnerProfile(),
             getJoinedSessions(),
             getReferencePaces(),
             getClubAdminSettings(primary.clubId),
-            getMySessions(client),
+            listSessions(client, { clubId: primary.clubId }),
           ]);
         setRoster(rosterResult.members ?? []);
         setClubSessions(
-          (mySessions.sessions ?? []).map(apiSessionToSessionData),
+          (clubSessionResult.sessions ?? [])
+            .map(apiSessionToSessionData)
+            .filter((s) => s.clubId === primary.clubId),
         );
+        setJoinedIds(new Set((joined ?? []).map((j) => j.sessionId)));
         setAdminSettings(adminCfg);
         // TOI must use the same assignment as roster bucket counts
         // (assignMemberToClubGroup), not a separate profile/pace inference.
@@ -139,6 +143,7 @@ export default function ClubScreen() {
       } else {
         setRoster([]);
         setClubSessions([]);
+        setJoinedIds(new Set());
         setAdminSettings(null);
       }
     } catch (error) {
@@ -362,8 +367,90 @@ export default function ClubScreen() {
               memberCount={memberCount ?? 1}
               foundedYear={foundedYear}
               city={club.city}
+              purpose={club.description}
+              visibility={club.visibility}
               status="member"
             />
+
+            <View style={styles.clubOutingsBlock} testID="club-outings-section">
+              <Text style={styles.clubOutingsHeading}>Les sorties du club</Text>
+              <Text style={styles.clubOutingsHint}>
+                Chaque sortie a sa propre inscription. L’adhésion au club ne
+                t’inscrit à aucune sortie.
+              </Text>
+              {clubSessions.length === 0 ? (
+                <View style={styles.clubOutingsEmpty} testID="club-outings-empty">
+                  <Text style={styles.clubOutingsEmptyTitle}>
+                    Pas encore de sortie pour ce club.
+                  </Text>
+                  <Text style={styles.clubOutingsHint}>
+                    Organise la première — elle restera associée à{" "}
+                    {club.name}.
+                  </Text>
+                </View>
+              ) : (
+                clubSessions.map((session) => {
+                  const joined = joinedIds.has(session.id);
+                  const attendance =
+                    session.attendanceStatus === "joined" || joined
+                      ? "joined"
+                      : session.attendanceStatus === "left"
+                        ? "left"
+                        : "none";
+                  return (
+                    <Pressable
+                      key={session.id}
+                      testID={`club-outing-${session.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Voir la sortie ${session.title}`}
+                      onPress={() =>
+                        router.push(`/session/${session.id}` as Href)
+                      }
+                      style={styles.clubOutingCard}
+                    >
+                      <Text style={styles.clubOutingTag}>
+                        {(session.typeLabel || "SORTIE").toUpperCase()}
+                        {session.visibility === "members"
+                          ? " · MEMBRES"
+                          : " · PUBLIC"}
+                      </Text>
+                      <Text style={styles.clubOutingTitle}>{session.title}</Text>
+                      <Text style={styles.clubOutingMeta}>
+                        {session.dateLabel}
+                        {session.spot ? ` · ${session.spot}` : ""}
+                      </Text>
+                      <Text
+                        style={styles.clubOutingAttendance}
+                        testID={`club-outing-attendance-${session.id}`}
+                      >
+                        {attendance === "joined"
+                          ? "Tu es inscrit·e à cette sortie."
+                          : attendance === "left"
+                            ? "Tu as annulé ta participation."
+                            : "Tu n’es pas inscrit·e à cette sortie."}
+                      </Text>
+                      <Text style={styles.clubOutingLink}>Voir la sortie →</Text>
+                    </Pressable>
+                  );
+                })
+              )}
+              <Pressable
+                testID="club-organise-outing-cta"
+                accessibilityRole="button"
+                accessibilityLabel={`Organiser une sortie pour ${club.name}`}
+                onPress={() => {
+                  const clubId = primaryMembership?.clubId;
+                  if (!clubId) return;
+                  void persistFocusedClubId(clubId);
+                  router.push(
+                    `/session/create?clubId=${encodeURIComponent(clubId)}&audience=club` as Href,
+                  );
+                }}
+                style={styles.organiseBtn}
+              >
+                <Text style={styles.organiseBtnText}>Organiser une sortie</Text>
+              </Pressable>
+            </View>
 
             <SectionHeader
               label="FIL D'ACTIVITÉ"
@@ -572,6 +659,15 @@ export default function ClubScreen() {
                   Plus d&apos;options → Accès club
                 </Text>
               </Pressable>
+              <Pressable
+                testID="club-create-entry"
+                accessibilityRole="button"
+                accessibilityLabel="Créer un club"
+                onPress={() => router.push("/(tabs)/club/create" as Href)}
+                style={styles.moreLinkWrap}
+              >
+                <Text style={styles.moreLink}>Créer un club →</Text>
+              </Pressable>
             </View>
           </>
         )}
@@ -605,6 +701,82 @@ const styles = StyleSheet.create({
   feedBlock: {
     paddingHorizontal: redesignTheme.screen.horizontalPadding,
     marginBottom: 8,
+  },
+  clubOutingsBlock: {
+    paddingHorizontal: 24,
+    marginTop: 18,
+    marginBottom: 8,
+    gap: 12,
+  },
+  clubOutingsHeading: {
+    color: redesignTheme.text.primary,
+    fontSize: 20,
+    fontWeight: "700",
+    letterSpacing: -0.3,
+  },
+  clubOutingsHint: {
+    color: redesignTheme.text.dim,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  clubOutingsEmpty: {
+    backgroundColor: colors.background.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    padding: 18,
+    gap: 8,
+  },
+  clubOutingsEmptyTitle: {
+    color: redesignTheme.text.primary,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  clubOutingCard: {
+    backgroundColor: colors.background.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    padding: 18,
+    gap: 6,
+  },
+  clubOutingTag: {
+    color: colors.accent.sage,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+  clubOutingTitle: {
+    color: redesignTheme.text.primary,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  clubOutingMeta: {
+    color: redesignTheme.text.dim,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  clubOutingAttendance: {
+    color: redesignTheme.text.dim,
+    fontSize: 13,
+    marginTop: 4,
+  },
+  clubOutingLink: {
+    color: colors.accent.sage,
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: 6,
+  },
+  organiseBtn: {
+    backgroundColor: colors.accent.sage,
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  organiseBtnText: {
+    color: colors.accent.charcoal,
+    fontSize: 15,
+    fontWeight: "700",
   },
   clubSwitcher: {
     paddingHorizontal: redesignTheme.screen.horizontalPadding,

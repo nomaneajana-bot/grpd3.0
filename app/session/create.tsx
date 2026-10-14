@@ -1383,16 +1383,28 @@ function DistancePicker({
 // SessionGroupConfig is now imported from lib/sessionBuilder.ts
 
 export default function CreateSessionScreen() {
-  const { workoutId, sessionId } = useLocalSearchParams<{
-    workoutId?: string;
-    sessionId?: string;
-  }>();
+  const { workoutId, sessionId, clubId: clubIdParam, audience: audienceParam } =
+    useLocalSearchParams<{
+      workoutId?: string;
+      sessionId?: string;
+      clubId?: string;
+      audience?: string;
+    }>();
   const isEditMode = Boolean(sessionId && !Array.isArray(sessionId));
   const editSessionId = isEditMode
     ? Array.isArray(sessionId)
       ? sessionId[0]
       : sessionId
     : null;
+  const explicitClubId = (() => {
+    const raw = Array.isArray(clubIdParam) ? clubIdParam[0] : clubIdParam;
+    const id = raw?.trim();
+    return id ? id : null;
+  })();
+  const explicitAudience = (() => {
+    const raw = Array.isArray(audienceParam) ? audienceParam[0] : audienceParam;
+    return raw === "club" || raw === "team" || raw === "public" ? raw : null;
+  })();
 
   // Spots are loaded from persistent storage
   const [spots, setSpots] = useState<string[]>(["Marina", "Parc", "Piste"]);
@@ -1424,18 +1436,34 @@ export default function CreateSessionScreen() {
         const runner = await getRunnerProfile();
         setProfile(runner);
         if (!hasInitializedAudience && !isEditMode) {
-          if (runner?.clubName) {
-            setSessionAudience("club");
+          // Explicit organise-from-club binds members audience.
+          // Standalone create defaults to public so a stale focused club
+          // cannot silently attach a later outing.
+          if (explicitClubId || explicitAudience === "club" || explicitAudience === "team") {
+            setSessionAudience(explicitAudience === "team" ? "team" : "club");
+          } else if (explicitAudience === "public") {
+            setSessionAudience("public");
+          } else {
+            setSessionAudience("public");
           }
           setHasInitializedAudience(true);
         }
       } catch (error) {
         console.warn("Failed to load profile for session audience:", error);
+        if (!hasInitializedAudience && !isEditMode) {
+          setSessionAudience("public");
+          setHasInitializedAudience(true);
+        }
       }
     };
 
     loadProfile();
-  }, [hasInitializedAudience, isEditMode]);
+  }, [
+    hasInitializedAudience,
+    isEditMode,
+    explicitClubId,
+    explicitAudience,
+  ]);
 
   const [approvedClubs, setApprovedClubs] = useState<ClubMembership[]>([]);
 
@@ -1451,16 +1479,26 @@ export default function CreateSessionScreen() {
           (m) => m.status === "approved",
         );
         setApprovedClubs(approved);
-        const preferred =
-          approved.find((m) => m.clubId === focusedId) ?? approved[0] ?? null;
-        setPrimaryClubId(preferred?.clubId ?? null);
+        if (explicitClubId) {
+          const bound =
+            approved.find((m) => m.clubId === explicitClubId) ?? null;
+          setPrimaryClubId(bound?.clubId ?? explicitClubId);
+          return;
+        }
+        // Standalone create: do not auto-bind focused club. User must pick
+        // club audience + club explicitly when organising for members.
+        if (focusedId && approved.some((m) => m.clubId === focusedId)) {
+          setPrimaryClubId(null);
+        } else {
+          setPrimaryClubId(null);
+        }
       } catch {
         setApprovedClubs([]);
         setPrimaryClubId(null);
       }
     };
     loadMemberships();
-  }, []);
+  }, [explicitClubId]);
 
   // Date and time — default to an explicitly upcoming local slot (not past 06:00 today).
   const [dateISO, setDateISO] = useState<string>(DEFAULT_OUTING_WHEN.dateISO);
@@ -2569,6 +2607,14 @@ export default function CreateSessionScreen() {
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setSessionAudience(opt.id);
+                    if (opt.id === "public") {
+                      // Standalone public must not keep a stale club target.
+                      if (!explicitClubId) setPrimaryClubId(null);
+                    } else if (explicitClubId) {
+                      setPrimaryClubId(explicitClubId);
+                    } else if (!primaryClubId && approvedClubs.length === 1) {
+                      setPrimaryClubId(approvedClubs[0].clubId);
+                    }
                   }}
                 />
               );
@@ -2581,9 +2627,17 @@ export default function CreateSessionScreen() {
             }
           </Text>
           {(sessionAudience === "club" || sessionAudience === "team") &&
-          approvedClubs.length > 1 ? (
+          approvedClubs.length > 0 ? (
             <View style={styles.clubPickBlock} testID="create-club-picker">
               <Text style={styles.clubPickLabel}>CLUB CIBLE</Text>
+              {explicitClubId ? (
+                <Text style={styles.audienceNote} testID="create-club-bound">
+                  Sortie associée à{" "}
+                  {approvedClubs.find((m) => m.clubId === primaryClubId)?.club
+                    ?.name ?? primaryClubId}
+                  . Association explicite depuis le club.
+                </Text>
+              ) : null}
               <View style={styles.audienceChips}>
                 {approvedClubs.map((m) => {
                   const on = m.clubId === primaryClubId;
@@ -2606,9 +2660,16 @@ export default function CreateSessionScreen() {
                 })}
               </View>
               <Text style={styles.audienceNote}>
-                La séance membres cible uniquement ce club — pas les autres.
+                La séance membres cible uniquement ce club — pas les autres. Une
+                sortie publique n’hérite pas de ce club.
               </Text>
             </View>
+          ) : null}
+          {sessionAudience === "public" ? (
+            <Text style={styles.audienceNote} testID="create-public-no-club">
+              Sortie autonome : aucun club ne sera associé (règle actuelle
+              préservée).
+            </Text>
           ) : null}
         </View>
 

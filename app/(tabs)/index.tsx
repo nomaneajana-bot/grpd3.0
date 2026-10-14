@@ -312,11 +312,11 @@ export default function DiscoverScreen() {
         </View>
 
         {previews.length > 0 ? (
-          <View style={{ gap: 14 }}>
+          <View style={{ gap: 14 }} testID="discover-idea-section">
             <Text style={ui.heading}>Imagine ta prochaine rencontre</Text>
-            <Text style={ui.body}>
-              Des idées de clubs à découvrir. Ces exemples sont des aperçus,
-              sans date ni réservation ouverte.
+            <Text style={ui.body} testID="discover-idea-disclaimer">
+              Concepts illustratifs pour imaginer un club — pas des sorties
+              réelles, ni des événements réservables.
             </Text>
             <View
               style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}
@@ -324,9 +324,12 @@ export default function DiscoverScreen() {
               {previews.map((p) => (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Découvrir l’aperçu : ${p.subtitle}`}
+                  accessibilityLabel={`Idée illustrative : ${p.subtitle}. Pas une sortie réservable.`}
                   key={p.id}
-                  onPress={() => router.push(`/profile/training` as Href)}
+                  testID={`discover-idea-${p.id}`}
+                  onPress={() =>
+                    router.push(`/idea/${encodeURIComponent(p.id)}` as Href)
+                  }
                   style={[
                     ui.card,
                     {
@@ -348,7 +351,12 @@ export default function DiscoverScreen() {
                     >
                       {p.eyebrow}
                     </Text>
-                    <Text style={[ui.chipText, { fontSize: 10 }]}>APERÇU</Text>
+                    <Text
+                      style={[ui.chipText, { fontSize: 10 }]}
+                      testID={`discover-idea-badge-${p.id}`}
+                    >
+                      IDÉE ILLUSTRATIVE
+                    </Text>
                   </View>
                   <Text
                     style={[
@@ -368,8 +376,8 @@ export default function DiscoverScreen() {
                     {p.subtitle}
                   </Text>
                   <Text style={ui.body}>
-                    {p.activity === "walk" ? "Marche" : "Course facile"} ·{" "}
-                    {p.duration}{" "}
+                    {p.activity === "walk" ? "Marche" : "Course facile"} · format
+                    d’exemple{" "}
                     <Text style={{ color: p.color }}>↗</Text>
                   </Text>
                 </Pressable>
