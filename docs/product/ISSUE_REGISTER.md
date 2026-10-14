@@ -101,23 +101,22 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 ---
 
-## Batch 3 — OPEN (demo evidence PASS; awaiting Codex)
+## Batch 3 — OPEN (corrected demo evidence; awaiting Codex re-review)
 
 **Theme:** HOME IDEA → CREATE ANY-PURPOSE CLUB → CLUB HOME → ORGANISE OUTING (M01/M02/M03 + ISSUE-002)  
 **Excluded:** merge/production, hosted claims, deciding unresolved public-club / creator-attendance rules  
+**`tested_sha`:** `75356094d741c63cbfbfca2fa7301042784a2fbf`
 
-### Exit criteria (demo)
+### Exit criteria (demo) — Codex corrections
 
-- [x] Idea cards clearly illustrative / not bookable; open idea explanation — never training settings  
-- [x] Purpose-led club create; unrestricted purpose; no mandatory English/running fields  
-- [x] Two differently themed clubs without overwriting records  
-- [x] Each club home shows entered identity/purpose and its own outings (empty state then own list)  
-- [x] Organise outing carries explicit club association; standalone public keeps `clubId: null`  
-- [x] Form validation, cancel/back, duplicate-submit guard, reload, phone/desktop  
-- [x] Membership labels reflect actual state (`TU ES MEMBRE`)  
-- [x] No design annotations as product copy  
-- [x] Nested Batch1 privacy 31/31 + Batch2 walk 42/42  
-- [x] `tested_sha` + repo-relative current screenshots; `hosted_claim: false`  
+- [x] Idea cards illustrative; `/idea/:id`; never training  
+- [x] Actual idea CTA carries intended idea context (hint/prefill from params — no `?idea=` bypass for club A/B setup)  
+- [x] Controlled create failure/retry: no phantom record; inputs preserved  
+- [x] Rapid double submit → exactly **one** club + **one** approved membership for submitted identity  
+- [x] Stale association: unfinished club-bound form → app UI nav away → standalone via app UI → `clubId: null` (no reload shortcut)  
+- [x] Keyboard: reachable controls + Enter activation asserted; Tab focus-order **BLOCKED** honestly (RN web inputs)  
+- [x] Two themed clubs isolated; own outings; membership labels; nested privacy/walk regressions  
+- [x] Current screenshots only; prior run archived under `archive/pre-6779c19064f0/`  
 - [ ] Codex acceptance  
 
 ### Unresolved (not decided)
