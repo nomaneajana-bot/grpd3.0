@@ -253,4 +253,5 @@ Source-reviewed associations only — **not runtime VERIFIED**.
 | UI-39 | `/inbox` | secondary | Activity feed |
 | UI-40 | `/reference/green-home` | reference-only | Design twin |
 
-**Queued later batches (not Batch 1):** M01 idea preview, M02 purpose-led create club, M03 member club polish, M06 cancel confirmation overlay, full walk/language journey (ISSUE-003), preview cards (ISSUE-002), hosted leave endpoints (ISSUE-004), TOI counts (ISSUE-011).
+**Batch 2 (demo evidence executed, awaiting Codex):** walk/language journey (ISSUE-003), M04/M05 join panels, M06 cancel confirmation overlay, M07 pending gutters, ISSUE-010 participation.  
+**Queued later batches:** M01 idea preview, M02 purpose-led create club, M03 member club polish, preview cards (ISSUE-002), hosted leave endpoints (ISSUE-004), TOI counts (ISSUE-011).
