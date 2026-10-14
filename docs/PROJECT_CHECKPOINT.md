@@ -8,6 +8,7 @@
 **Batch 2 evidence:** `docs/audit/batch2-walk-join/evidence.json` — **42/42** · packaging current-only  
 **Batch 3 tip under test / `tested_sha`:** `75356094d741c63cbfbfca2fa7301042784a2fbf`  
 **Batch 3 evidence:** `docs/audit/batch3-club-idea/evidence.json` — **57 PASS / 0 FAIL / 1 BLOCKED** · env `demo` · `hosted_claim: false`  
+**Docs tip (evidence/register only):** `71386bd6682f36f24e5756e99b0b295c5deb44f5`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
