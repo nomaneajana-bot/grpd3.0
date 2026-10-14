@@ -1,5 +1,5 @@
 {
-  "batch": "Batch 3 — HOME IDEA → CREATE CLUB → CLUB HOME → ORGANISE OUTING",
+  "batch": "Batch 3 \u2014 HOME IDEA \u2192 CREATE CLUB \u2192 CLUB HOME \u2192 ORGANISE OUTING",
   "issues": [
     "ISSUE-002",
     "M01",
@@ -7,21 +7,21 @@
     "M03"
   ],
   "tested_sha": "6779c19064f01625a816d69d838726400f0d2a60",
-  "tip_sha": "6779c19064f01625a816d69d838726400f0d2a60",
+  "tip_sha": "16cd787fe0718a90713f4adafdf3dfc7abb7598e",
   "branch": "cursor/green-home-ux-join-3184",
   "environment": "demo",
   "hosted_claim": false,
-  "note": "DEMO_MODE only. Creator auto-attendance and public-club association remain unresolved — preserved, not decided. Design annotations (MAQUETTE) must never appear as product copy.",
+  "note": "DEMO_MODE only. Creator auto-attendance and public-club association remain unresolved \u2014 preserved, not decided. Design annotations (MAQUETTE) must never appear as product copy.",
   "unresolved_rules_reported": [
-    "creator_auto_attendance — preserved current auto-join of host on create; not decided",
-    "public_club_association — preserved current null clubId for public; not decided"
+    "creator_auto_attendance \u2014 preserved current auto-join of host on create; not decided",
+    "public_club_association \u2014 preserved current null clubId for public; not decided"
   ],
   "unique": {
     "token": "B3V7FRS0Z",
     "clubA": {
       "name": "English Outside B3V7FRS0Z",
       "city": "Casablanca",
-      "purpose": "Pratiquer l'anglais en marchant — niveaux mixtes B3V7FRS0Z.",
+      "purpose": "Pratiquer l'anglais en marchant \u2014 niveaux mixtes B3V7FRS0Z.",
       "ideaId": "english"
     },
     "clubB": {
@@ -42,7 +42,7 @@
       "id": "club_1791941626397_8v6c1953",
       "name": "English Outside B3V7FRS0Z",
       "city": "Casablanca",
-      "purpose": "Pratiquer l'anglais en marchant — niveaux mixtes B3V7FRS0Z.",
+      "purpose": "Pratiquer l'anglais en marchant \u2014 niveaux mixtes B3V7FRS0Z.",
       "ideaId": "english"
     },
     "b": {
@@ -90,7 +90,7 @@
     },
     "idea_screen_not_bookable_copy": {
       "ok": true,
-      "detail": "\nIDÉE ILLUSTRATIVE · LANGUES\nWalk a little.\nTalk a lot.\nEnglish Walk & Talk\nConcept illustratif pour imaginer ton club — ce n’est pas une sortie réelle, ni une inscription, ni une"
+      "detail": "\uf127\nID\u00c9E ILLUSTRATIVE \u00b7 LANGUES\nWalk a little.\nTalk a lot.\nEnglish Walk & Talk\nConcept illustratif pour imaginer ton club \u2014 ce n\u2019est pas une sortie r\u00e9elle, ni une inscription, ni une"
     },
     "idea_no_design_annotation": {
       "ok": true,
@@ -126,7 +126,7 @@
     },
     "club_a_home_identity_purpose": {
       "ok": true,
-      "detail": "Clubs\nMembre confirmé · Fondé 2026\nEOB\nEnglish Outside B3V7FRS0Z\nCasablanca · Club sur invitation · 1 membre\nTU ES MEMBRE\nPratiquer l'anglais en marchant — niveaux mixtes B3V7FRS0Z.\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucun"
+      "detail": "Clubs\nMembre confirm\u00e9 \u00b7 Fond\u00e9 2026\nEOB\nEnglish Outside B3V7FRS0Z\nCasablanca \u00b7 Club sur invitation \u00b7 1 membre\nTU ES MEMBRE\nPratiquer l'anglais en marchant \u2014 niveaux mixtes B3V7FRS0Z.\nLes sorties du club\nChaque sortie a sa propre inscription. L\u2019adh\u00e9sion au club ne t\u2019inscrit \u00e0 aucun"
     },
     "club_a_empty_outings_state": {
       "ok": true,
@@ -142,7 +142,7 @@
     },
     "club_a_reload_persists": {
       "ok": true,
-      "detail": "Clubs\nMembre confirmé · Fondé 2026\nEOB\nEnglish Outside B3V7FRS0Z\nCasablanca · Club sur invitation · 1 membre\nTU ES MEMBRE\nPratiquer l'anglais en marchant — niveaux mixtes B3V7FRS0Z.\nLes sorties du clu"
+      "detail": "Clubs\nMembre confirm\u00e9 \u00b7 Fond\u00e9 2026\nEOB\nEnglish Outside B3V7FRS0Z\nCasablanca \u00b7 Club sur invitation \u00b7 1 membre\nTU ES MEMBRE\nPratiquer l'anglais en marchant \u2014 niveaux mixtes B3V7FRS0Z.\nLes sorties du clu"
     },
     "organise_bound_a": {
       "ok": true,
@@ -178,7 +178,7 @@
     },
     "club_b_home_identity_purpose": {
       "ok": true,
-      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nEnglish Outside B3V7FRS0Z\nPetits Matins B3V7FRS0Z\nPMB\nPetits Matins B3V7FRS0Z\nRabat · Club sur invitation · 1 membre\nTU ES MEMBRE\nMarche apres Fajr, calme du quartier B3V7FRS0Z.\nLes sorties du club\nChaque sortie a sa propre inscription"
+      "detail": "Clubs\nMembre confirm\u00e9 \u00b7 Fond\u00e9 2026\nMES CLUBS\nEnglish Outside B3V7FRS0Z\nPetits Matins B3V7FRS0Z\nPMB\nPetits Matins B3V7FRS0Z\nRabat \u00b7 Club sur invitation \u00b7 1 membre\nTU ES MEMBRE\nMarche apres Fajr, calme du quartier B3V7FRS0Z.\nLes sorties du club\nChaque sortie a sa propre inscription"
     },
     "club_b_empty_before_own_outing": {
       "ok": true,
