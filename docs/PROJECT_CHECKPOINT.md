@@ -6,7 +6,8 @@
 **Batch 1 tip under test (DEMO gate CLEARED):** `959b1ac18db002ef90fc430c1662f750e4796acf`  
 **Batch 1 DEMO gate:** **CLEARED** (Codex) — hosted/native/UAT **not** accepted  
 **Batch 1 full regression after Batch 2 tip:** re-run PASS (31/31) — see `docs/audit/batch2-walk-join/batch1-full-regression-evidence.json`  
-**Batch 2 tip under test / `tested_sha`:** `6d36691` (exact: see evidence.json)  
+**Batch 2 tip under test / `tested_sha`:** `6d36691234ec4d8fbdddd4ff92ba818e02b1d957`  
+**Docs tip (evidence/register only):** `7e763bfe4bb8856691f3447777218e78ffeeb4c5`  
 **Batch 2 evidence:** `docs/audit/batch2-walk-join/evidence.json` — **42/42 PASS** · env `demo` · `hosted_claim: false`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
