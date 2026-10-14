@@ -1,63 +1,76 @@
-# Batch 2 evidence
+# Batch 2 evidence (Codex corrections)
 
-- **tested_sha:** `5991af54a0fae693c9dfc3d9def016f3c38c1c98`
+- **tested_sha:** `6d36691234ec4d8fbdddd4ff92ba818e02b1d957`
 - **environment:** `demo` (hosted_claim=false)
-- **summary:** 33 PASS / 0 FAIL / 33 total
-- **outing_id:** `session_1791935672171_yuct8rgf`
-- **unresolved:** creator_auto_attendance — preserved current auto-join of host on create; not decided; public_club_association — preserved current null clubId for public; not decided
+- **summary:** 42 PASS / 0 FAIL / 0 BLOCKED / 42 total
+- **future_fixture:** 2026-10-16 10:30
+- **outing_id:** `session_1791937096143_1rcp87rv`
+- **batch1_full_regression:** {"path":"docs/audit/batch2-walk-join/batch1-full-regression-evidence.json","tested_sha":"6d36691234ec4d8fbdddd4ff92ba818e02b1d957","summary":{"passed":31,"failed":0,"total":31},"environment":"demo","hosted_claim":false,"exit_code":0}
 
 ## Checks
 
 - PASS `login_host` — 0611111111
+- PASS `past_datetime_blocks_publish` — Date/heure invalide — choisis un créneau encore à venir. | form={"date":"MERCREDI 14 OCTOBRE","time":"00:00"}
+- PASS `future_datetime_fixture_selected` — {"date":"VENDREDI 16 OCTOBRE","time":"10:30"}
+- PASS `unique_spot_seeded` — Phare W2V7D2KZM
 - PASS `walk_hides_pace_groups_card` — absent
-- PASS `missing_title_blocks_publish` — Titre requis — donne un titre à ta sortie marche.
-- PASS `unique_spot_seeded` — Phare W2V7C82KK
-- PASS `language_no_english_default` — placeholder=Ex. Français, darija…
-- PASS `walk_publish_real_outing_id` — /session/session_1791935672171_yuct8rgf
-- PASS `detail_title_matches` — Marche W2V7C82KK
-- PASS `detail_purpose_matches` — Objectif unique W2V7C82KK — pratiquer à ton rythme.
-- PASS `detail_spot_matches` — Phare W2V7C82KK
-- PASS `detail_language_optional_shown` — Darija W2V7C82KK
-- PASS `detail_no_running_pace_required` — no pace demand on walk detail
-- PASS `creator_auto_attendance_observed` — status=joined localJoined=true (UNRESOLVED — not deciding)
-- PASS `second_outing_distinct_id` — session_1791935676762_vl2pfacw vs session_1791935672171_yuct8rgf
-- PASS `original_outing_not_overwritten` — session_1791935672171_yuct8rgf
-- PASS `unsaved_nav_away_guard_or_leave` — dialog=true url=http://localhost:8081/
+- PASS `language_no_english_default` — {"ph":"Ex. Français, darija…","val":""}
+- PASS `create_form_shows_future_fixture` — {"date":"VENDREDI 16 OCTOBRE","time":"10:30"}
+- PASS `walk_publish_real_outing_id` — /session/session_1791937096143_1rcp87rv
+- PASS `detail_title_matches` — Marche W2V7D2KZM
+- PASS `detail_purpose_matches` — Objectif unique W2V7D2KZM — pratiquer à ton rythme.
+- PASS `detail_spot_matches` — Phare W2V7D2KZM
+- PASS `detail_datetime_matches_entered` — detailDate=VENDREDI 16 OCTOBRE 10:30 · Phare W2V7D2KZM
+- PASS `detail_language_optional_shown` — Darija W2V7D2KZM
+- PASS `creator_auto_attendance_observed` — status=joined (UNRESOLVED — not deciding)
+- PASS `second_outing_distinct_id` — session_1791937101499_xz5z4cqx vs session_1791937096143_1rcp87rv
+- PASS `original_outing_not_overwritten` — session_1791937096143_1rcp87rv
 - PASS `login_participant` — 0622222222
-- PASS `m04_join_cta_visible` — session-join-btn
-- PASS `m05_joined_panel_and_attendance` — {"userId":"user_1791935687187_1adyuudt","status":"joined","groupId":"open","localJoined":true}
-- PASS `join_selected_outing_only` — {"userId":"user_1791935687187_1adyuudt","status":null,"groupId":"open","localJoined":true}
-- PASS `join_persists_after_reload` — {"joinedAfterReload":true,"userId":"user_1791935687187_1adyuudt","status":"joined","groupId":"open","localJoined":true}
-- PASS `m06_cancel_modal_visible` — {"visible":true,"keep":true,"confirm":true,"notLeaveClub":true,"impliesLeaveClub":false}
-- PASS `m06_does_not_imply_leave_club` — {"visible":true,"keep":true,"confirm":true,"notLeaveClub":true,"impliesLeaveClub":false}
+- PASS `other_outing_unjoined_ui_for_participant` — {"otherUi":{"join":true,"joined":false},"otherAtt":{"userId":"user_1791937108362_vnkz914m","status":null,"rows":0,"joinedRows":0,"groupId":null,"localJoined":false,"legacyGlobalLen":0}}
+- PASS `join_controlled_failure_recoverable` — {"afterFail":{"join":true,"joined":false,"flag":false},"attFail":{"userId":"user_1791937108362_vnkz914m","status":null,"rows":0,"joinedRows":0,"groupId":null,"localJoined":false,"legacyGlobalLen":0}}
+- PASS `join_rapid_double_single_attendance` — {"userId":"user_1791937108362_vnkz914m","status":"joined","rows":1,"joinedRows":1,"groupId":"open","localJoined":true,"legacyGlobalLen":0}
+- PASS `m05_joined_panel_and_attendance` — {"userId":"user_1791937108362_vnkz914m","status":"joined","rows":1,"joinedRows":1,"groupId":"open","localJoined":true,"legacyGlobalLen":0}
+- PASS `join_persists_after_reload` — {"joinedReload":true,"attReload":{"userId":"user_1791937108362_vnkz914m","status":"joined","rows":1,"joinedRows":1,"groupId":"open","localJoined":true,"legacyGlobalLen":0}}
+- PASS `m06_cancel_modal_french_no_bilingual` — {"visible":true,"bilingual":false,"frenchClub":true,"confirmReachable":true,"keepReachable":true,"vw":320,"vh":568}
+- PASS `m06_short_phone_controls_reachable` — {"visible":true,"bilingual":false,"frenchClub":true,"confirmReachable":true,"keepReachable":true,"vw":320,"vh":568}
 - PASS `m06_keep_place_retains_join` — kept
-- PASS `m06_confirm_cancels_attendance` — {"userId":"user_1791935687187_1adyuudt","status":"left","groupId":null,"localJoined":false}
-- PASS `cancel_not_leave_club_copy` — no club-leave success after outing cancel
-- PASS `cancel_persists_after_relogin` — {"userId":"user_1791935687187_1adyuudt","status":"left","groupId":null,"localJoined":false}
-- PASS `m07_gutters_phone` — {"viewportWidth":390,"titleLeft":24,"titleRightInset":24,"btnLeft":24,"btnRightInset":24,"panelLeft":0,"consistent":true}
-- PASS `m07_controls_focusable_unobstructed` — discover CTA
-- PASS `m07_gutters_desktop` — {"viewportWidth":1280,"titleLeft":184,"titleRightInset":184,"btnLeft":184,"btnRightInset":184,"panelLeft":160,"consistent":true}
-- PASS `batch1_regression_publish_members` — /session/session_1791935745349_ytcghkne
-- PASS `batch1_regression_member_sees_spot` — PRIVW2V7C82KK
-- PASS `batch1_regression_outsider_gated` — gated
-- PASS `empty_or_no_cancelled_as_joined` — cancelled walk not listed as joined
+- PASS `m06_confirm_cancels_attendance` — {"userId":"user_1791937108362_vnkz914m","status":"left","rows":1,"joinedRows":0,"groupId":null,"localJoined":false,"legacyGlobalLen":0}
+- PASS `cancelled_not_in_joined_attendance` — {"userId":"user_1791937108362_vnkz914m","status":"left","rows":1,"joinedRows":0,"groupId":null,"localJoined":false,"legacyGlobalLen":0}
+- PASS `cancelled_not_listed_as_joined_in_my_sessions` — {"hasTitle":false,"joinedHints":false,"path":"/my-sessions"}
+- PASS `m07_gutters_phone` — {"viewportWidth":390,"titleLeft":24,"btnLeft":24,"consistent":true}
+- PASS `m07_gutters_desktop` — {"viewportWidth":1280,"titleLeft":184,"btnLeft":184,"consistent":true}
+- PASS `batch1_invite_for_member` — PRIVW310
+- PASS `batch1_member_host_sees_logistics` — /session/session_1791937165182_9a44ics4
+- PASS `batch1_approved_member_sees_logistics` — PRIVW2V7D2KZM
+- PASS `batch1_member_b_left_club` — leave clicked
+- PASS `batch1_ex_member_gated` — gated
+- PASS `batch1_outsider_direct_link_gated` — gated
+- PASS `batch1_outsider_list_no_logistics` — PRIVW2V7D2KZM
+- PASS `batch1_pending_setup_genuine` — {"status":"pending","approved":false,"pending":true}
+- PASS `batch1_pending_direct_link_gated` — gated
+- PASS `batch1_pending_list_no_logistics` — PRIVW2V7D2KZM
+- PASS `m06_annotation_absent_from_product` — no bilingual annotation
+- PASS `batch1_full_script_regression` — {"passed":31,"failed":0,"total":31}
 
 ## Screenshots
 
 - `docs/audit/batch2-walk-join/screenshots/01-host-home.png`
-- `docs/audit/batch2-walk-join/screenshots/02-create-before-fill.png`
-- `docs/audit/batch2-walk-join/screenshots/03-walk-mode-no-pace.png`
-- `docs/audit/batch2-walk-join/screenshots/04-walk-form-filled.png`
-- `docs/audit/batch2-walk-join/screenshots/05-detail-after-publish.png`
+- `docs/audit/batch2-walk-join/screenshots/02-past-datetime-blocked.png`
+- `docs/audit/batch2-walk-join/screenshots/03-walk-form-future-filled.png`
+- `docs/audit/batch2-walk-join/screenshots/04-detail-after-publish.png`
+- `docs/audit/batch2-walk-join/screenshots/05-other-outing-unjoined.png`
 - `docs/audit/batch2-walk-join/screenshots/06-m04-before-join.png`
 - `docs/audit/batch2-walk-join/screenshots/07-m05-joined.png`
-- `docs/audit/batch2-walk-join/screenshots/08-joined-after-reload.png`
-- `docs/audit/batch2-walk-join/screenshots/09-m06-cancel-confirm.png`
-- `docs/audit/batch2-walk-join/screenshots/10-after-cancel.png`
+- `docs/audit/batch2-walk-join/screenshots/08-m06-short-phone.png`
+- `docs/audit/batch2-walk-join/screenshots/09-after-cancel.png`
+- `docs/audit/batch2-walk-join/screenshots/10-my-sessions-after-cancel.png`
 - `docs/audit/batch2-walk-join/screenshots/11-m07-after-phone.png`
 - `docs/audit/batch2-walk-join/screenshots/12-m07-after-desktop.png`
-- `docs/audit/batch2-walk-join/screenshots/13-batch1-regression-outsider.png`
-- `docs/audit/batch2-walk-join/screenshots/14-my-sessions-after-cancel.png`
+- `docs/audit/batch2-walk-join/screenshots/13-batch1-member-detail.png`
+- `docs/audit/batch2-walk-join/screenshots/14-batch1-member-b.png`
+- `docs/audit/batch2-walk-join/screenshots/15-batch1-ex-member.png`
+- `docs/audit/batch2-walk-join/screenshots/16-batch1-outsider.png`
+- `docs/audit/batch2-walk-join/screenshots/17-batch1-pending.png`
 - `docs/audit/batch2-walk-join/screenshots/m07-before-flush.png`
 - `docs/audit/batch2-walk-join/side-by-side/maquette-m04.png`
 - `docs/audit/batch2-walk-join/side-by-side/maquette-m05.png`

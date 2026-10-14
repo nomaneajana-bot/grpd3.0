@@ -1,10 +1,10 @@
 # Batch 1 evidence
 
-- **tested_sha:** `959b1ac18db002ef90fc430c1662f750e4796acf`
+- **tested_sha:** `6d36691234ec4d8fbdddd4ff92ba818e02b1d957`
 - **environment:** `demo` (hosted_claim=false)
-- **outing_id:** `session_1791934667801_kd1fz215`
-- **target_club:** `Batch1 Club ZB1V7BMEXH`
-- **unique logistics:** `ZB1V7BMEXH`
+- **outing_id:** `session_1791937226360_mig0h4hg`
+- **target_club:** `Batch1 Club ZB1V7D59V0`
+- **unique logistics:** `ZB1V7D59V0`
 - **summary:** 31 PASS / 0 FAIL / 31 total
 - **issues:** ISSUE-001, ISSUE-005, ISSUE-010-privacy
 - **screenshot paths:** repo-relative under `docs/audit/batch1-privacy/screenshots/` (18 files)
@@ -14,32 +14,32 @@
 - PASS `login_member_host` — 0611111111 (new club admin)
 - PASS `host_club_created` — http://localhost:8081/club
 - PASS `audience_club_selected` — 
-- PASS `unique_spot_seeded` — ZB1V7BMEXH
-- PASS `ISSUE-001_publish_real_outing_id` — /session/session_1791934667801_kd1fz215
-- PASS `member_positive_control_detail` — unique logistics visible: ZB1V7BMEXH
-- PASS `member_not_inaccessible_state` — http://localhost:8081/session/session_1791934667801_kd1fz215
-- PASS `member_reload_still_accessible` — /session/session_1791934667801_kd1fz215
-- PASS `discover_list_hides_unique_private_spot` — ZB1V7BMEXH
+- PASS `unique_spot_seeded` — ZB1V7D59V0
+- PASS `ISSUE-001_publish_real_outing_id` — /session/session_1791937226360_mig0h4hg
+- PASS `member_positive_control_detail` — unique logistics visible: ZB1V7D59V0
+- PASS `member_not_inaccessible_state` — http://localhost:8081/session/session_1791937226360_mig0h4hg
+- PASS `member_reload_still_accessible` — /session/session_1791937226360_mig0h4hg
+- PASS `discover_list_hides_unique_private_spot` — ZB1V7D59V0
 - PASS `login_outsider` — 0699999999
-- PASS `outsider_direct_link_inaccessible` — http://localhost:8081/session/session_1791934667801_kd1fz215
+- PASS `outsider_direct_link_inaccessible` — http://localhost:8081/session/session_1791937226360_mig0h4hg
 - PASS `outsider_unique_logistics_absent` — absent
 - PASS `outsider_no_join_only_is_insufficient` — assert inaccessible + logistics absent, not merely no join button
-- PASS `outsider_list_unique_logistics_absent` — ZB1V7BMEXH
-- PASS `outsider_relogin_still_gated` — http://localhost:8081/session/session_1791934667801_kd1fz215
+- PASS `outsider_list_unique_logistics_absent` — ZB1V7D59V0
+- PASS `outsider_relogin_still_gated` — http://localhost:8081/session/session_1791937226360_mig0h4hg
 - PASS `login_pending_identity` — 0688888888
-- PASS `pending_request_submit_clicked` — Batch1 Club ZB1V7BMEXH
-- PASS `pending_setup_membership_pending_not_approved` — {"userId":"user_1791934708531_ou4fmryh","clubId":"club_1791934660146_0yg6j97n","status":"pending","approved":false,"pending":true}
-- PASS `M07_pending_club_state_visible` — pending for Batch1 Club ZB1V7BMEXH
-- PASS `pending_direct_link_inaccessible` — http://localhost:8081/session/session_1791934667801_kd1fz215
+- PASS `pending_request_submit_clicked` — Batch1 Club ZB1V7D59V0
+- PASS `pending_setup_membership_pending_not_approved` — {"userId":"user_1791937266980_qig5ukg6","clubId":"club_1791937218742_iub2027h","status":"pending","approved":false,"pending":true}
+- PASS `M07_pending_club_state_visible` — pending for Batch1 Club ZB1V7D59V0
+- PASS `pending_direct_link_inaccessible` — http://localhost:8081/session/session_1791937226360_mig0h4hg
 - PASS `pending_unique_logistics_absent` — absent
-- PASS `pending_list_unique_logistics_absent` — ZB1V7BMEXH
-- PASS `pending_reload_still_gated` — {"userId":"user_1791934708531_ou4fmryh","clubId":"club_1791934660146_0yg6j97n","status":"pending","approved":false,"pending":true}
-- PASS `pending_relogin_still_pending_not_approved` — {"userId":"user_1791934708531_ou4fmryh","clubId":"club_1791934660146_0yg6j97n","status":"pending","approved":false,"pending":true}
-- PASS `pending_relogin_still_gated` — http://localhost:8081/session/session_1791934667801_kd1fz215
-- PASS `invite_for_leave_test` — BATCHU6X
-- PASS `ISSUE-010_approved_member_positive_before_leave` — http://localhost:8081/session/session_1791934667801_kd1fz215
+- PASS `pending_list_unique_logistics_absent` — ZB1V7D59V0
+- PASS `pending_reload_still_gated` — {"userId":"user_1791937266980_qig5ukg6","clubId":"club_1791937218742_iub2027h","status":"pending","approved":false,"pending":true}
+- PASS `pending_relogin_still_pending_not_approved` — {"userId":"user_1791937266980_qig5ukg6","clubId":"club_1791937218742_iub2027h","status":"pending","approved":false,"pending":true}
+- PASS `pending_relogin_still_gated` — http://localhost:8081/session/session_1791937226360_mig0h4hg
+- PASS `invite_for_leave_test` — BATCHSUB
+- PASS `ISSUE-010_approved_member_positive_before_leave` — http://localhost:8081/session/session_1791937226360_mig0h4hg
 - PASS `member_b_left_club` — 
-- PASS `ISSUE-010_after_leave_inaccessible` — http://localhost:8081/session/session_1791934667801_kd1fz215
+- PASS `ISSUE-010_after_leave_inaccessible` — http://localhost:8081/session/session_1791937226360_mig0h4hg
 - PASS `ISSUE-010_after_leave_logistics_absent` — absent
 - PASS `M08_design_annotation_not_in_product` — annotation must stay design-only
 
