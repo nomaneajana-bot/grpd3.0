@@ -6,10 +6,12 @@
 **Batch 1 DEMO gate:** **CLEARED** — hosted/native/UAT not accepted  
 **Batch 2 tip (DEMO gate CLEARED):** `6d36691234ec4d8fbdddd4ff92ba818e02b1d957`  
 **Batch 2 evidence:** `docs/audit/batch2-walk-join/evidence.json` (42/42 demo PASS; packaging current-only)  
-**Batch 3 tip under test:** `75356094d741c63cbfbfca2fa7301042784a2fbf`  
-**Batch 3 evidence:** `docs/audit/batch3-club-idea/evidence.json` (57 PASS / 0 FAIL / 1 BLOCKED after Codex corrections)  
+**Batch 3 tip (DEMO gate CLEARED):** `75356094d741c63cbfbfca2fa7301042784a2fbf`  
+**Batch 3 DEMO gate:** **CLEARED** (functional only) — Tab traversal supported via closeout diagnosis; **not** full accessibility/UAT; hosted/native not accepted  
+**Batch 3 evidence:** `docs/audit/batch3-club-idea/evidence.json` (57 PASS / 0 FAIL / 1 BLOCKED keyboard harness note)  
 **Batch 3 nested regressions:** privacy 31/31 + walk/join 42/42 under `docs/audit/batch3-club-idea/regressions/`  
-**Tab focus closeout:** `docs/audit/batch3-club-idea/tab-focus/` — real Tab traversal; classified **harness_limitation** (not product defect); keyboard **not** claimed fully accepted  
+**Tab focus closeout:** `docs/audit/batch3-club-idea/tab-focus/` — real Tab traversal; classified **harness_limitation** (not product defect); keyboard **OPEN** (ISSUE-012), not full a11y acceptance  
+**Batch 4 (in progress):** ISSUE-011 TOI / roster home-group counts — `docs/audit/batch4-toi-roster/`  
 **Method:** Statuses are NOT CHECKED / FAILED / FIXED AWAITING RETEST / VERIFIED / BLOCKED.  
 **Capability:** IMPLEMENTED / PARTIAL / NOT IMPLEMENTED / UNSUPPORTED — never treat NOT IMPLEMENTED as PASS.
 
@@ -30,7 +32,7 @@
 | Next action | Hosted later — **not** cleared by demo |
 | Status | **VERIFIED** (**demo** only) |
 
-### ISSUE-002 — P1 — FIXED AWAITING RETEST (demo evidence PASS; awaiting Codex)
+### ISSUE-002 — P1 — VERIFIED (demo only)
 | Field | Value |
 |-------|-------|
 | Route / journey | Home Découvrir idea cards → illustrative explanation → club create (never training) |
@@ -39,9 +41,9 @@
 | Capability | IMPLEMENTED (demo) |
 | Owner | Cursor |
 | Candidate SHA / env | `7535609` · **demo** |
-| Evidence | `docs/audit/batch3-club-idea/evidence.json` |
-| Next action | Codex DEMO re-review (corrected evidence + Tab diagnosis closeout) |
-| Status | **FIXED AWAITING RETEST** |
+| Evidence | `docs/audit/batch3-club-idea/evidence.json` + Tab closeout `tab-focus/` |
+| Next action | Hosted / full a11y / UAT later — **not** cleared by demo functional gate |
+| Status | **VERIFIED** (**demo** functional only) |
 
 ### ISSUE-003 — P1 — VERIFIED (demo only)
 | Field | Value |
@@ -142,16 +144,17 @@
 | Next action | Hosted surfaces later |
 | Status | **Privacy VERIFIED (demo)** · **Participation VERIFIED (demo)** |
 
-### ISSUE-011 — P1 — FIXED AWAITING RETEST (split from former ISSUE-010)
+### ISSUE-011 — P1 — FIXED AWAITING RETEST (Batch 4 in progress)
 | Field | Value |
 |-------|-------|
-| Route / journey | TOI vs roster group counts (former S15) |
-| Expected meaning | Club home-group (TOI) assignment matches roster counts via same assignment path |
-| Observed behavior | Code on tip via `assignMemberToClubGroup`; prior audit PASS under weaker doctrine — not re-VERIFIED under new doctrine |
+| Route / journey | Club home-group (TOI) assignment → roster/counts → identity switching |
+| Expected meaning | Same assignment path as roster buckets; exact counts; move +/− / no duplicates; reload; second identity; two clubs; empty/admin; home-group ≠ outing autojoin; pace optional walk/language |
+| Observed behavior | Code via `assignMemberToClubGroup` + admin `memberGroups`; Batch 4 evidence harness executing |
 | Capability | IMPLEMENTED (demo) |
 | Owner | Cursor |
-| Evidence | Prior S15 screenshots / code — not re-VERIFIED under new doctrine |
-| Next action | Later batch. Retest with correct-screen + count assertions |
+| Candidate SHA / env | Batch 4 tip · **demo** |
+| Evidence | `docs/audit/batch4-toi-roster/` (pending run) |
+| Next action | Complete Batch 4 evidence + STOP for Codex |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-012 — P2 — OPEN (keyboard / a11y closeout note)
@@ -187,22 +190,21 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 ---
 
-## Batch 3 — OPEN (corrected demo evidence; awaiting Codex re-review)
+## Batch 3 — DEMO gate CLEARED (functional only)
 
 **Theme:** HOME IDEA → CREATE ANY-PURPOSE CLUB → CLUB HOME → ORGANISE OUTING (M01/M02/M03 + ISSUE-002)  
-**Excluded:** merge/production, hosted claims, deciding unresolved public-club / creator-attendance rules  
+**Surfaces:** Demo **CLEARED** (functional) · Tab traversal **supported** (harness_limitation closeout) · full a11y / hosted / native / UAT **not** accepted  
 **`tested_sha`:** `75356094d741c63cbfbfca2fa7301042784a2fbf`
 
-### Exit criteria (demo) — Codex corrections
+### Exit criteria (demo)
 
 - [x] Idea cards illustrative; `/idea/:id`; never training  
-- [x] Actual idea CTA carries intended idea context (no `?idea=` bypass for club A/B setup)  
-- [x] Controlled create failure/retry: no phantom; inputs preserved  
-- [x] Rapid double submit → exactly one club + one approved membership  
-- [x] Stale association via app UI path → standalone `clubId: null`  
-- [x] Keyboard reachability + Enter activation; Tab focus-order harness BLOCKED retained; closeout diagnosis = harness_limitation (keyboard **not** fully accepted)  
+- [x] Actual idea CTA carries intended idea context  
+- [x] Controlled create failure/retry; rapid double submit → one club + one membership  
+- [x] Stale association → standalone `clubId: null`  
 - [x] Nested Batch1/Batch2 regressions  
-- [ ] Codex acceptance  
+- [x] Functional DEMO gate cleared (Codex)  
+- [ ] Full keyboard/a11y acceptance — **OPEN** as ISSUE-012  
 
 ### Unresolved (not decided)
 
@@ -211,28 +213,38 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 ---
 
+## Batch 4 — OPEN (ISSUE-011; demo evidence in progress)
+
+**Theme:** Club home-group (TOI) assignment → roster/counts → identity switching  
+**Excluded:** merge/production, hosted claims, credentials/security changes, OCIF, broad redesign, full a11y/UAT  
+**Evidence dir:** `docs/audit/batch4-toi-roster/`
+
+### Exit criteria (demo)
+
+- [ ] Same-user TOI + exact roster counts  
+- [ ] Move groups: decrement / increment / no duplicates  
+- [ ] Reload persistence  
+- [ ] Second identity + switch two clubs  
+- [ ] Empty / admin cases  
+- [ ] Home-group assign ≠ outing autojoin  
+- [ ] Pace optional for walk/language  
+- [ ] Nested Batch1/2/3 regressions  
+- [ ] STOP for Codex  
+
+---
+
 ## Ranked remaining MVP gaps (from this register)
 
 | Rank | Issue | Why next / not next |
 |------|-------|---------------------|
-| 1 | ISSUE-004 hosted leave/cancel-request | P1 capability hole on hosted; blocked on routes + env |
-| 2 | ISSUE-008 hosted multi-context persistence | P2 but gates real trust; needs hosted creds (SSO preview today) |
-| 3 | ISSUE-011 TOI/roster counts | P1 FIXED AWAITING RETEST; bounded club-home count journey |
-| 4 | ISSUE-002/Batch3 Codex acceptance | Demo evidence ready; gate not product work |
-| 5 | ISSUE-012 keyboard open note | Keep open; harness rewrite optional — not a product defect |
-| 6 | ISSUE-006 dead social ternary | P2 cleanup after Nouamane decision |
-| 7 | ISSUE-007 orphans | P2 product decision |
-| 8 | ISSUE-009 lifecycle (invite expiry/cancel/full) | NOT IMPLEMENTED — needs scope decision |
+| 1 | ISSUE-011 TOI/roster counts | Batch 4 in progress |
+| 2 | ISSUE-004 hosted leave/cancel-request | P1 capability hole on hosted; blocked on routes + env |
+| 3 | ISSUE-008 hosted multi-context persistence | Needs hosted creds (SSO preview today) |
+| 4 | ISSUE-012 keyboard open note | Keep open; not a Batch3 DEMO gate failure |
+| 5 | ISSUE-006 dead social ternary | P2 cleanup after Nouamane decision |
+| 6 | ISSUE-007 orphans | P2 product decision |
+| 7 | ISSUE-009 lifecycle (invite expiry/cancel/full) | NOT IMPLEMENTED — needs scope decision |
 | — | Unresolved rules | Creator auto-attendance; public+club association — Nouamane |
-
-### NEXT bounded journey proposal (not started)
-
-**Batch 4 candidate:** ISSUE-011 — Club home TOI / roster group counts  
-- Scope: focused club home → assert TOI assignment uses same path as roster bucket counts; switch clubs; empty/admin cases; demo only  
-- Exclude: hosted leave (004), multi-context (008), lifecycle invent (009), redesign, merge/prod  
-- Stop for Codex after evidence  
-
-*(Do not start until Codex clears Batch 3 closeout / DEMO review.)*
 
 ---
 
@@ -240,8 +252,8 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 | Status | Count |
 |--------|------:|
-| VERIFIED (demo) | 5 (001, 003, 005, 010 privacy, 010 participation) |
-| FIXED AWAITING RETEST | 2 (002, 011) |
+| VERIFIED (demo) | 6 (001, 002, 003, 005, 010 privacy, 010 participation) |
+| FIXED AWAITING RETEST | 1 (011) |
 | FAILED | 1 (004 hosted) |
 | NOT CHECKED | 3 (006, 007, 009) |
 | BLOCKED | 1 (008) |

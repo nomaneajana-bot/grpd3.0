@@ -248,7 +248,9 @@ export default function ClubGroupDetailScreen() {
           <SectionLabel>MEMBRES</SectionLabel>
           <View style={styles.card}>
             {membersInGroup.length === 0 ? (
-              <Text style={styles.hint}>Aucun membre dans ce groupe.</Text>
+              <Text style={styles.hint} testID="club-group-empty">
+                Aucun membre dans ce groupe.
+              </Text>
             ) : (
               membersInGroup.map((member) => (
                 <GroupMemberRow
@@ -257,6 +259,7 @@ export default function ClubGroupDetailScreen() {
                   initials={initials(member.displayName ?? "?")}
                   memberSinceLabel={memberSinceLabel()}
                   groupId={gid}
+                  memberUserId={member.userId}
                   onChangePress={
                     hasAdminAccess
                       ? () => setChangeMember(member)
@@ -339,8 +342,13 @@ export default function ClubGroupDetailScreen() {
         <Pressable
           style={styles.modalBackdrop}
           onPress={() => setChangeMember(null)}
+          testID="club-group-assign-backdrop"
         >
-          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
+          <Pressable
+            style={styles.modalCard}
+            onPress={(e) => e.stopPropagation()}
+            testID="club-group-assign-modal"
+          >
             <Text style={styles.modalTitle}>Changer de groupe</Text>
             {changeMember ? (
               <Text style={styles.modalSub}>
@@ -357,6 +365,10 @@ export default function ClubGroupDetailScreen() {
                 return (
                   <Pressable
                     key={id}
+                    testID={`club-group-assign-${id}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Assigner au groupe ${id}`}
+                    accessibilityState={{ selected: Boolean(isCurrent) }}
                     style={({ pressed }) => [
                       styles.modalChip,
                       isCurrent && styles.modalChipCurrent,

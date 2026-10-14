@@ -10,6 +10,7 @@ type GroupMemberRowProps = {
   initials: string;
   memberSinceLabel?: string;
   groupId?: ClubPaceGroupId;
+  memberUserId?: string;
   onChangePress?: () => void;
 };
 
@@ -18,6 +19,7 @@ export function GroupMemberRow({
   initials,
   memberSinceLabel,
   groupId,
+  memberUserId,
   onChangePress,
 }: GroupMemberRowProps) {
   const avatarColor = groupId
@@ -25,7 +27,12 @@ export function GroupMemberRow({
     : colors.accent.primary;
 
   return (
-    <View style={styles.row}>
+    <View
+      style={styles.row}
+      testID={
+        memberUserId ? `club-group-member-${memberUserId}` : undefined
+      }
+    >
       <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
         <Text style={styles.avatarText}>{initials}</Text>
       </View>
@@ -41,8 +48,14 @@ export function GroupMemberRow({
       </View>
       {onChangePress ? (
         <Pressable
+          testID={
+            memberUserId
+              ? `club-group-member-change-${memberUserId}`
+              : "club-group-member-change"
+          }
           onPress={onChangePress}
           accessibilityRole="button"
+          accessibilityLabel={`Changer le groupe de ${name}`}
           hitSlop={8}
           style={({ pressed }) => [
             styles.changeBtn,

@@ -257,4 +257,6 @@ Source-reviewed associations only — **not runtime VERIFIED**.
 
 **Batch 2 (DEMO CLEARED):** walk/language journey (ISSUE-003), M04/M05/M06/M07, ISSUE-010 participation.  
 **Batch 3 (demo evidence executed, awaiting Codex):** M01 `/idea/[id]`, M02 purpose-led `/club/create`, M03 club home purpose/outings + organise association, ISSUE-002.  
-**Queued later batches:** hosted leave endpoints (ISSUE-004), TOI counts (ISSUE-011).
+**Batch 3 (DEMO CLEARED functional):** idea → club create → club home → organise (ISSUE-002); Tab supported, not full a11y.  
+**Batch 4 (in progress):** TOI / roster home-group counts (ISSUE-011).  
+**Queued later:** hosted leave endpoints (ISSUE-004).

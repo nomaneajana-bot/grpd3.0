@@ -32,12 +32,17 @@
 - Added ISSUE-012 keyboard OPEN note from diagnosis  
 - Reconciled `/idea/[id]` as **UI-41**; FS + inventory page count **41**
 
-## NEXT bounded journey (proposal only — not started)
+## DEMO gate (Codex)
 
-**Batch 4 candidate:** ISSUE-011 TOI vs roster group counts on club home (demo only).  
+**CLEARED** for Batch 3 **functional** demo evidence only.  
+Tab traversal **supported** (closeout diagnosis). Full accessibility / UAT **not** accepted (ISSUE-012 remains OPEN).
+
+## NEXT bounded journey
+
+**Batch 4:** ISSUE-011 TOI vs roster group counts — started after functional DEMO clear.  
 Exclude hosted leave (004), multi-context (008), lifecycle invent (009), redesign, merge/prod.
 
 ## Constraints
 
-No next broad batch / merge / production / spending / credentials / OCIF.  
-Hosted / native / UAT remain distinct and uncleared.
+No merge / production / spending / credentials / OCIF.  
+Hosted / native / UAT remain distinct and uncleared. SSO302 = protection only, not user preview.

@@ -15,7 +15,7 @@
 | Outing attendance requires explicit S'inscrire / Quitter | I | R | | Membership must not auto-enroll outings |
 | Session creator auto-joins their new outing | I | | **U** | Implemented in create flow; **not** user-approved as requirement — confirm for members-only and public |
 | Pace groups A–D are session/roster buckets, not membership | I | R | | Club home-group (TOI) separate from session groupId |
-| TOI uses same assignment as roster counts | I | R | | Code on tip via `assignMemberToClubGroup`; retest deferred to a later batch (not Batch 1) |
+| TOI uses same assignment as roster counts | I | R | | `assignMemberToClubGroup` + `bucketMembersByGroup`; Batch 4 ISSUE-011 retest in progress |
 | Assign/suggest ≠ joined | I | R | | Invariant (b) |
 
 ## 2. Visibility vs club association (do not conflate)
@@ -80,7 +80,7 @@
 | Club purposes are **not** runners-only | | **R** | | User already requires unrestricted club purposes — **do not re-ask** whether runners-only framing is acceptable |
 | Discover can filter/label Marche | I | R | | |
 | Walk / language journeys must be **usable** end-to-end | I (demo) | **R** | | Batch 2: title/purpose/spot agree; walking hides pace groups; language optional (no English default); join without pace group; M06 cancel ≠ leave club. ISSUE-003 — demo evidence awaiting Codex; hosted not claimed |
-| Home idea cards are illustrative concepts (not bookable); open idea explanation / club-create — never training PRs | I (demo) | **R** | | ISSUE-002 — Batch 3 demo evidence awaiting Codex |
+| Home idea cards are illustrative concepts (not bookable); open idea explanation / club-create — never training PRs | I (demo) | **R** | | ISSUE-002 — Batch 3 DEMO CLEARED (functional) |
 | Club purposes unrestricted (no mandatory English/running fields) | I (demo) | **R** | | M02 Batch 3 |
 | Organise-from-club carries explicit clubId; standalone public does not inherit stale focused club | I (demo) | **R** | | M03 Batch 3; public still nulls clubId (unresolved association rule preserved) |
 
