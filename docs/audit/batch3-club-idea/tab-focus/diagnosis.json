@@ -1,0 +1,328 @@
+{
+  "purpose": "Diagnose desktop_club_create_keyboard_focus_order BLOCKED using real Tab keys",
+  "tested_sha": "ad83eaa0ea26c879fa45f8f85fc43f2f146eb3b1",
+  "method": "No element.focus(). Start from body click, then Tab N times. Record activeElement each step. Visible :focus outline screenshots.",
+  "environment": "demo",
+  "hosted_claim": false,
+  "sequence": [
+    {
+      "step": 0,
+      "action": "click_top_left_chrome",
+      "kind": "body_or_null",
+      "tag": "BODY",
+      "testId": null,
+      "role": null,
+      "tabIndex": null,
+      "type": null,
+      "label": null,
+      "className": null,
+      "outerSnippet": null,
+      "isContentEditable": false
+    },
+    {
+      "step": 1,
+      "action": "Tab",
+      "kind": "element",
+      "tag": "BUTTON",
+      "testId": "club-create-scroll",
+      "role": "button",
+      "tabIndex": 0,
+      "type": "button",
+      "label": "Retour",
+      "className": "css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignSelf-k200y r-borde",
+      "outerSnippet": "<button aria-label=\"Retour\" role=\"button\" tabindex=\"0\" class=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignSelf-k200y r-borderColor-ve3jmz r-borderRadius-1llaxt6 r",
+      "isContentEditable": false
+    },
+    {
+      "step": 2,
+      "action": "Tab",
+      "kind": "element",
+      "tag": "INPUT",
+      "testId": "club-name-input",
+      "role": null,
+      "tabIndex": 0,
+      "type": null,
+      "label": "Nom du club",
+      "className": "css-textinput-11aywtz r-placeholderTextColor-6taxm2 r-backgroundColor-1biw005 r-",
+      "outerSnippet": "<input placeholder=\"Ex. English, outside\" autocapitalize=\"words\" autocomplete=\"on\" autocorrect=\"on\" dir=\"auto\" rows=\"1\" spellcheck=\"true\" virtualkeyboardpolicy=\"auto\" aria-label=\"N",
+      "isContentEditable": false
+    },
+    {
+      "step": 3,
+      "action": "Tab",
+      "kind": "element",
+      "tag": "INPUT",
+      "testId": "club-city-input",
+      "role": null,
+      "tabIndex": 0,
+      "type": null,
+      "label": "Ville",
+      "className": "css-textinput-11aywtz r-placeholderTextColor-6taxm2 r-backgroundColor-1biw005 r-",
+      "outerSnippet": "<input placeholder=\"Casablanca\" autocapitalize=\"words\" autocomplete=\"on\" autocorrect=\"on\" dir=\"auto\" rows=\"1\" spellcheck=\"true\" virtualkeyboardpolicy=\"auto\" aria-label=\"Ville\" clas",
+      "isContentEditable": false
+    },
+    {
+      "step": 4,
+      "action": "Tab",
+      "kind": "element",
+      "tag": "TEXTAREA",
+      "testId": "club-purpose-input",
+      "role": null,
+      "tabIndex": 0,
+      "type": null,
+      "label": "Pourquoi vous retrouver",
+      "className": "css-textinput-11aywtz r-placeholderTextColor-6taxm2 r-backgroundColor-1biw005 r-",
+      "outerSnippet": "<textarea placeholder=\"Décris ce que vous voulez partager\" autocapitalize=\"sentences\" autocomplete=\"on\" autocorrect=\"on\" dir=\"auto\" rows=\"4\" spellcheck=\"true\" virtualkeyboardpolicy",
+      "isContentEditable": false
+    },
+    {
+      "step": 5,
+      "action": "Tab",
+      "kind": "element",
+      "tag": "BUTTON",
+      "testId": "club-visibility-members",
+      "role": "button",
+      "tabIndex": 0,
+      "type": "button",
+      "label": "Sur invitation",
+      "className": "css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1awozwy r-bo",
+      "outerSnippet": "<button role=\"button\" tabindex=\"0\" class=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1awozwy r-borderRadius-1h84pjw r-borderWidth-rs99b7 r-flexDirection-18",
+      "isContentEditable": false
+    },
+    {
+      "step": 6,
+      "action": "Tab",
+      "kind": "element",
+      "tag": "BUTTON",
+      "testId": "club-visibility-public",
+      "role": "button",
+      "tabIndex": 0,
+      "type": "button",
+      "label": "Public",
+      "className": "css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1awozwy r-bo",
+      "outerSnippet": "<button role=\"button\" tabindex=\"0\" class=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1awozwy r-borderColor-ve3jmz r-borderRadius-1h84pjw r-borderWidth-rs99",
+      "isContentEditable": false
+    },
+    {
+      "step": 7,
+      "action": "Tab",
+      "kind": "element",
+      "tag": "BUTTON",
+      "testId": "club-create-submit",
+      "role": "button",
+      "tabIndex": 0,
+      "type": "button",
+      "label": "Créer le club",
+      "className": "css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1awozwy r-ba",
+      "outerSnippet": "<button aria-label=\"Créer le club\" role=\"button\" tabindex=\"0\" class=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1awozwy r-backgroundColor-2lk8z7 r-borderRa",
+      "isContentEditable": false
+    },
+    {
+      "step": 8,
+      "action": "Tab",
+      "kind": "element",
+      "tag": "BUTTON",
+      "testId": "club-create-cancel",
+      "role": "button",
+      "tabIndex": 0,
+      "type": "button",
+      "label": "Annuler",
+      "className": "css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1awozwy r-bo",
+      "outerSnippet": "<button aria-label=\"Annuler\" role=\"button\" tabindex=\"0\" class=\"css-view-g5y9jx r-cursor-1loqt21 r-touchAction-1otgn73 r-alignItems-1awozwy r-borderRadius-1867qdf r-padding-qgi43r r",
+      "isContentEditable": false
+    },
+    {
+      "step": 9,
+      "action": "Tab",
+      "kind": "element",
+      "tag": "A",
+      "testId": null,
+      "role": "tab",
+      "tabIndex": 0,
+      "type": null,
+      "label": "Découvrir",
+      "className": "css-view-g5y9jx r-touchAction-1otgn73 r-borderCurve-1onu96p r-alignItems-1awozwy",
+      "outerSnippet": "<a href=\"/\" role=\"tab\" aria-selected=\"false\" tabindex=\"0\" class=\"css-view-g5y9jx r-touchAction-1otgn73 r-borderCurve-1onu96p r-alignItems-1awozwy r-flexDirection-18u37iz r-justifyC",
+      "isContentEditable": false
+    },
+    {
+      "step": 10,
+      "action": "Tab",
+      "kind": "element",
+      "tag": "A",
+      "testId": null,
+      "role": "tab",
+      "tabIndex": 0,
+      "type": null,
+      "label": "Mes sorties",
+      "className": "css-view-g5y9jx r-touchAction-1otgn73 r-borderCurve-1onu96p r-alignItems-1awozwy",
+      "outerSnippet": "<a href=\"/my-sessions\" role=\"tab\" aria-selected=\"false\" tabindex=\"0\" class=\"css-view-g5y9jx r-touchAction-1otgn73 r-borderCurve-1onu96p r-alignItems-1awozwy r-flexDirection-18u37iz",
+      "isContentEditable": false
+    },
+    {
+      "step": 11,
+      "action": "Tab",
+      "kind": "element",
+      "tag": "A",
+      "testId": null,
+      "role": "tab",
+      "tabIndex": 0,
+      "type": null,
+      "label": "Clubs",
+      "className": "css-view-g5y9jx r-touchAction-1otgn73 r-borderCurve-1onu96p r-alignItems-1awozwy",
+      "outerSnippet": "<a href=\"/club\" role=\"tab\" aria-selected=\"true\" tabindex=\"0\" class=\"css-view-g5y9jx r-touchAction-1otgn73 r-borderCurve-1onu96p r-alignItems-1awozwy r-flexDirection-18u37iz r-justi",
+      "isContentEditable": false
+    },
+    {
+      "step": 12,
+      "action": "Tab",
+      "kind": "element",
+      "tag": "A",
+      "testId": null,
+      "role": "tab",
+      "tabIndex": 0,
+      "type": null,
+      "label": "Profil",
+      "className": "css-view-g5y9jx r-touchAction-1otgn73 r-borderCurve-1onu96p r-alignItems-1awozwy",
+      "outerSnippet": "<a href=\"/profile\" role=\"tab\" aria-selected=\"false\" tabindex=\"0\" class=\"css-view-g5y9jx r-touchAction-1otgn73 r-borderCurve-1onu96p r-alignItems-1awozwy r-flexDirection-18u37iz r-j",
+      "isContentEditable": false
+    }
+  ],
+  "conclusion": "Real Tab traversal reaches name → city → purpose in order. Prior BLOCKED was harness limitation (programmatic focus / activeElement testId mismatch), not a product Tab-order defect.",
+  "classification": "harness_limitation",
+  "product_fix_applied": false,
+  "screenshots": [
+    "docs/audit/batch3-club-idea/tab-focus/00-before-tab.png",
+    "docs/audit/batch3-club-idea/tab-focus/01-after-tab.png",
+    "docs/audit/batch3-club-idea/tab-focus/02-after-tab.png",
+    "docs/audit/batch3-club-idea/tab-focus/03-after-tab.png",
+    "docs/audit/batch3-club-idea/tab-focus/04-after-tab.png",
+    "docs/audit/batch3-club-idea/tab-focus/05-after-tab.png",
+    "docs/audit/batch3-club-idea/tab-focus/06-after-tab.png",
+    "docs/audit/batch3-club-idea/tab-focus/07-after-tab.png",
+    "docs/audit/batch3-club-idea/tab-focus/08-after-tab.png",
+    "docs/audit/batch3-club-idea/tab-focus/09-after-tab.png",
+    "docs/audit/batch3-club-idea/tab-focus/10-after-tab.png",
+    "docs/audit/batch3-club-idea/tab-focus/11-after-tab.png",
+    "docs/audit/batch3-club-idea/tab-focus/12-after-tab.png"
+  ],
+  "tabbable_candidates": [
+    {
+      "tag": "BUTTON",
+      "testId": "club-create-scroll",
+      "tabIndex": 0,
+      "role": "button",
+      "type": "button",
+      "aria": "Retour"
+    },
+    {
+      "tag": "INPUT",
+      "testId": "club-name-input",
+      "tabIndex": 0,
+      "role": null,
+      "type": null,
+      "aria": "Nom du club"
+    },
+    {
+      "tag": "INPUT",
+      "testId": "club-city-input",
+      "tabIndex": 0,
+      "role": null,
+      "type": null,
+      "aria": "Ville"
+    },
+    {
+      "tag": "TEXTAREA",
+      "testId": "club-purpose-input",
+      "tabIndex": 0,
+      "role": null,
+      "type": null,
+      "aria": "Pourquoi vous retrouver"
+    },
+    {
+      "tag": "BUTTON",
+      "testId": "club-visibility-members",
+      "tabIndex": 0,
+      "role": "button",
+      "type": "button",
+      "aria": null
+    },
+    {
+      "tag": "BUTTON",
+      "testId": "club-visibility-public",
+      "tabIndex": 0,
+      "role": "button",
+      "type": "button",
+      "aria": null
+    },
+    {
+      "tag": "BUTTON",
+      "testId": "club-create-submit",
+      "tabIndex": 0,
+      "role": "button",
+      "type": "button",
+      "aria": "Créer le club"
+    },
+    {
+      "tag": "BUTTON",
+      "testId": "club-create-cancel",
+      "tabIndex": 0,
+      "role": "button",
+      "type": "button",
+      "aria": "Annuler"
+    },
+    {
+      "tag": "A",
+      "testId": null,
+      "tabIndex": 0,
+      "role": "tab",
+      "type": null,
+      "aria": null
+    },
+    {
+      "tag": "A",
+      "testId": null,
+      "tabIndex": 0,
+      "role": "tab",
+      "type": null,
+      "aria": null
+    },
+    {
+      "tag": "A",
+      "testId": null,
+      "tabIndex": 0,
+      "role": "tab",
+      "type": null,
+      "aria": null
+    },
+    {
+      "tag": "A",
+      "testId": null,
+      "tabIndex": 0,
+      "role": "tab",
+      "type": null,
+      "aria": null
+    }
+  ],
+  "focus_hits": {
+    "uniqueHits": [
+      "club-name-input",
+      "club-city-input",
+      "club-purpose-input",
+      "club-visibility-members",
+      "club-visibility-public",
+      "club-create-submit",
+      "club-create-cancel"
+    ],
+    "hitIds": [
+      "club-name-input",
+      "club-city-input",
+      "club-purpose-input",
+      "club-visibility-members",
+      "club-visibility-public",
+      "club-create-submit",
+      "club-create-cancel"
+    ],
+    "orderOk": true
+  }
+}

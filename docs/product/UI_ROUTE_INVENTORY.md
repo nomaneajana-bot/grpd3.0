@@ -10,10 +10,10 @@
 
 | Bucket | Count | Rule |
 |--------|------:|------|
-| UI page screens (`.tsx` under `app/`, excluding layouts/`+html`/api) | **40** | Counted as pages |
+| UI page screens (`.tsx` under `app/`, excluding layouts/`+html`/api) | **41** | Counted as pages (includes `/idea/[id]` from Batch 3) |
 | Layout / html shells | **7** | Excluded (not user pages) |
 | API route modules under `app/api/` | **20** | Excluded (not UI pages) |
-| Inventory page rows | **40** | Must equal FS UI screens |
+| Inventory page rows | **41** | Must equal FS UI screens |
 | Missing from inventory | **0** | — |
 | Extra in inventory vs FS | **0** | — |
 | RN `<Modal>` JSX sites in `app/**/*.tsx` (excl. api) | **19** | Codex-confirmed raw count |
@@ -41,8 +41,8 @@
 | Club stack | **9** |
 | Session / run / workout | **6** |
 | Profile secondary | 5 |
-| Other | 2 |
-| **Total pages** | **40** |
+| Other (incl. idea) | **3** |
+| **Total pages** | **41** |
 
 ---
 
@@ -76,7 +76,7 @@ Legend — **Reachability:** Primary · Secondary · Orphan · Deprecated redire
 | UI-14 | `/` | `(tabs)/index.tsx` | Découvrir | Tabs | session, create, inbox, `/idea/:id` (illustrative), club create | Authed | Filter, open, propose | Sessions + idea previews | Primary tab | FIXED AWAITING RETEST (Batch 3 demo) |
 | UI-15 | `/my-sessions` | `my-sessions.tsx` | Mes sorties | Tabs | session, create, run/confirm | Authed | Open, create | My sessions + joined | Primary tab | NOT CHECKED |
 | UI-16 | `/workouts` | `workouts.tsx` | Advanced training | Hidden tab; training links | workout detail/edit | Authed | Create/open | Workout store | Secondary | NOT CHECKED |
-| UI-17 | `/club` | `club/index.tsx` | Clubs hub | Tabs | access, admin, settings, group-detail, inbox | Member/pending/outsider | Join code, leave, switch | Memberships + roster | Primary tab | NOT CHECKED |
+| UI-17 | `/club` | `club/index.tsx` | Clubs hub | Tabs | access, admin, settings, group-detail, inbox, organise outing | Member/pending/outsider | Join code, leave, switch, organise | Memberships + roster + club sessions | Primary tab | FIXED AWAITING RETEST (Batch 3 demo M03) |
 | UI-18 | `/profile` | `profile.tsx` | Community profile | Tabs | settings, training | Authed | Open settings/training | Profile + clubs | Primary tab | NOT CHECKED |
 
 ### Club stack (9)
@@ -84,7 +84,7 @@ Legend — **Reachability:** Primary · Secondary · Orphan · Deprecated redire
 | ID | Route | File | Purpose | Entry | Exit | Role | Actions | Data | Reachability | Review |
 |----|-------|------|---------|-------|------|------|---------|------|--------------|--------|
 | UI-19 | `/club/access` | `access.tsx` | Invites / join / request | Club cards | create, admin | Authed | Generate, join, request | Clubs API/mock | Secondary | NOT CHECKED |
-| UI-20 | `/club/create` | `create.tsx` | Create club | Access / home | `/club` | Authed | Submit | Clubs API/mock | Secondary | NOT CHECKED |
+| UI-20 | `/club/create` | `create.tsx` | Create club (purpose-led) | Access / home / idea CTA | `/club` | Authed | Submit | Clubs API/mock | Secondary | FIXED AWAITING RETEST (Batch 3 demo M02) |
 | UI-21 | `/club/admin` | `admin.tsx` | Pending validations | Club / access | roster | Coach/admin | Approve/reject UI | Memberships | Secondary | NOT CHECKED |
 | UI-22 | `/club/roster` | `roster.tsx` | Members & PRs | Admin | Back | Coach/admin | Search/filter | Roster | Secondary | NOT CHECKED |
 | UI-23 | `/club/settings` | `settings.tsx` | Club params / groups | Club / profile settings | group-detail | Coach/admin | Edit groups/policy | Admin store + roster | Secondary | NOT CHECKED |
@@ -109,17 +109,18 @@ Legend — **Reachability:** Primary · Secondary · Orphan · Deprecated redire
 | ID | Route | File | Purpose | Entry | Exit | Role | Actions | Data | Reachability | Review |
 |----|-------|------|---------|-------|------|------|---------|------|--------------|--------|
 | UI-34 | `/profile/settings` | `settings.tsx` | Settings / logout / demo reset | Profile | phone, club/settings | Authed | Save, logout, reset | Profile + flags | Secondary | NOT CHECKED |
-| UI-35 | `/profile/training` | `training.tsx` | PRs / streak hub | Profile; **also home previews** | settings, update-tests, workouts | Authed | Edit tests | Sessions + tests | Secondary (misleading entry) | NOT CHECKED |
+| UI-35 | `/profile/training` | `training.tsx` | PRs / streak hub | Profile only (home ideas no longer deep-link here) | settings, update-tests, workouts | Authed | Edit tests | Sessions + tests | Secondary | NOT CHECKED |
 | UI-36 | `/profile/update-tests` | `update-tests.tsx` | Add/update PR tests | Training | custom-pr-models | Authed | Save tests | Profile tests | Secondary | NOT CHECKED |
 | UI-37 | `/profile/custom-pr-models` | `custom-pr-models.tsx` | Custom PR models | update-tests | Back | Authed | Edit models | Profile | Secondary | NOT CHECKED |
 | UI-38 | `/profile/test-history` | `test-history.tsx` | Test history | **No inbound nav** | Back | Authed | View | Profile tests | Orphan | NOT CHECKED |
 
-### Other (2)
+### Other (3)
 
 | ID | Route | File | Purpose | Entry | Exit | Role | Actions | Data | Reachability | Review |
 |----|-------|------|---------|-------|------|------|---------|------|--------------|--------|
 | UI-39 | `/inbox` | `inbox/index.tsx` | Activity list | Home / club feed | `actionPath` | Authed | Open item | Feed | Secondary | NOT CHECKED |
 | UI-40 | `/reference/green-home` | `reference/green-home.tsx` | D03 design twin | Direct URL | None | Any | View | Static | Reference-only | NOT CHECKED |
+| UI-41 | `/idea/[id]` | `idea/[id].tsx` | Illustrative club idea (M01) | Home idea cards | `/club/create` (params.idea), Découvrir | Authed | Create club / back | `EXPERIENCE_PREVIEWS` editorial only | Secondary | FIXED AWAITING RETEST (Batch 3 demo) |
 
 ---
 
@@ -212,7 +213,7 @@ Source-reviewed associations only — **not runtime VERIFIED**.
 
 ## Counts checklist
 
-- Pages: **40** (13+5+**9**+**6**+5+2)  
+- Pages: **41** (13+5+**9**+**6**+5+**3**)  
 - Layouts/shells: **7** · API modules: **20**  
 - Raw `<Modal>` sites in app screens: **19** · Distinct Modal flows listed: **19** (OV-01…19)  
 - Extra component overlays: **6** (OV-20…25)  
@@ -237,7 +238,7 @@ Source-reviewed associations only — **not runtime VERIFIED**.
 | UI-18 | `/profile` | essential | Community profile |
 | UI-19 | `/club/access` | essential | Join / invite / request |
 | UI-20 | `/club/create` | essential | Purpose-led create (M02 — Batch 3 demo) |
-| UI-idea | `/idea/[id]` | essential | Illustrative club idea (M01 — Batch 3 demo) |
+| UI-41 | `/idea/[id]` | essential | Illustrative club idea (M01 — Batch 3 demo) |
 | UI-21…UI-23 | admin / roster / settings | secondary | Coach tools |
 | UI-24…UI-25 | group-detail / group-create | secondary | Pace groups |
 | UI-26 | `/club/group-edit` | redundant | Deprecated redirect |
