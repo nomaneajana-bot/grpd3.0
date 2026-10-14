@@ -9,7 +9,7 @@
 **Batch 2 DEMO gate:** **CLEARED** (Codex) — packaging archived superseded side-by-side; hosted/native/UAT **not** accepted  
 **Batch 2 evidence:** `docs/audit/batch2-walk-join/evidence.json` — **42/42 PASS** · env `demo` · `hosted_claim: false`  
 **Batch 3 tip under test / `tested_sha`:** `6779c19064f01625a816d69d838726400f0d2a60`  
-**Docs tip (evidence/register only):** `16cd787fe0718a90713f4adafdf3dfc7abb7598e`  
+**Docs tip (evidence/register only):** `780e1cd4c815c16789e0e3596e29b36f5ab7af71`  
 **Batch 3 evidence:** `docs/audit/batch3-club-idea/evidence.json` — **41/41 PASS** · env `demo` · `hosted_claim: false`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
