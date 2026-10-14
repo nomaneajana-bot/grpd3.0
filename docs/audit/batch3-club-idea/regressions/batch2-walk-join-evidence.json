@@ -8,8 +8,8 @@
     "M06",
     "M07-gutters"
   ],
-  "tested_sha": "6779c19064f01625a816d69d838726400f0d2a60",
-  "tip_sha": "6779c19064f01625a816d69d838726400f0d2a60",
+  "tested_sha": "75356094d741c63cbfbfca2fa7301042784a2fbf",
+  "tip_sha": "75356094d741c63cbfbfca2fa7301042784a2fbf",
   "branch": "cursor/green-home-ux-join-3184",
   "environment": "demo",
   "hosted_claim": false,
@@ -27,11 +27,11 @@
     "dateLabelNeedle": "VENDREDI 16 OCTOBRE 10:30"
   },
   "unique": {
-    "token": "W2V7FVSSP",
-    "title": "Marche W2V7FVSSP",
-    "purpose": "Objectif unique W2V7FVSSP — pratiquer à ton rythme.",
-    "spot": "Phare W2V7FVSSP",
-    "language": "Darija W2V7FVSSP"
+    "token": "W2V7HC6VT",
+    "title": "Marche W2V7HC6VT",
+    "purpose": "Objectif unique W2V7HC6VT — pratiquer à ton rythme.",
+    "spot": "Phare W2V7HC6VT",
+    "language": "Darija W2V7HC6VT"
   },
   "checks": {
     "login_host": {
@@ -48,7 +48,7 @@
     },
     "unique_spot_seeded": {
       "ok": true,
-      "detail": "Phare W2V7FVSSP"
+      "detail": "Phare W2V7HC6VT"
     },
     "walk_hides_pace_groups_card": {
       "ok": true,
@@ -64,27 +64,27 @@
     },
     "walk_publish_real_outing_id": {
       "ok": true,
-      "detail": "/session/session_1791941818222_dk8xugyt"
+      "detail": "/session/session_1791944262593_z0o5p33h"
     },
     "detail_title_matches": {
       "ok": true,
-      "detail": "Marche W2V7FVSSP"
+      "detail": "Marche W2V7HC6VT"
     },
     "detail_purpose_matches": {
       "ok": true,
-      "detail": "Objectif unique W2V7FVSSP — pratiquer à ton rythme."
+      "detail": "Objectif unique W2V7HC6VT — pratiquer à ton rythme."
     },
     "detail_spot_matches": {
       "ok": true,
-      "detail": "Phare W2V7FVSSP"
+      "detail": "Phare W2V7HC6VT"
     },
     "detail_datetime_matches_entered": {
       "ok": true,
-      "detail": "detailDate=VENDREDI 16 OCTOBRE 10:30 · Phare W2V7FVSSP"
+      "detail": "detailDate=VENDREDI 16 OCTOBRE 10:30 · Phare W2V7HC6VT"
     },
     "detail_language_optional_shown": {
       "ok": true,
-      "detail": "Darija W2V7FVSSP"
+      "detail": "Darija W2V7HC6VT"
     },
     "creator_auto_attendance_observed": {
       "ok": true,
@@ -92,11 +92,11 @@
     },
     "second_outing_distinct_id": {
       "ok": true,
-      "detail": "session_1791941823467_vf9sxoy2 vs session_1791941818222_dk8xugyt"
+      "detail": "session_1791944267821_t0e61raw vs session_1791944262593_z0o5p33h"
     },
     "original_outing_not_overwritten": {
       "ok": true,
-      "detail": "session_1791941818222_dk8xugyt"
+      "detail": "session_1791944262593_z0o5p33h"
     },
     "login_participant": {
       "ok": true,
@@ -104,23 +104,23 @@
     },
     "other_outing_unjoined_ui_for_participant": {
       "ok": true,
-      "detail": "{\"otherUi\":{\"join\":true,\"joined\":false},\"otherAtt\":{\"userId\":\"user_1791941830241_cidjrv8t\",\"status\":null,\"rows\":0,\"joinedRows\":0,\"groupId\":null,\"localJoined\":false,\"legacyGlobalLen\":0}}"
+      "detail": "{\"otherUi\":{\"join\":true,\"joined\":false},\"otherAtt\":{\"userId\":\"user_1791944274691_6qirnssm\",\"status\":null,\"rows\":0,\"joinedRows\":0,\"groupId\":null,\"localJoined\":false,\"legacyGlobalLen\":0}}"
     },
     "join_controlled_failure_recoverable": {
       "ok": true,
-      "detail": "{\"afterFail\":{\"join\":true,\"joined\":false,\"flag\":false},\"attFail\":{\"userId\":\"user_1791941830241_cidjrv8t\",\"status\":null,\"rows\":0,\"joinedRows\":0,\"groupId\":null,\"localJoined\":false,\"legacyGlobalLen\":0}}"
+      "detail": "{\"afterFail\":{\"join\":true,\"joined\":false,\"flag\":false},\"attFail\":{\"userId\":\"user_1791944274691_6qirnssm\",\"status\":null,\"rows\":0,\"joinedRows\":0,\"groupId\":null,\"localJoined\":false,\"legacyGlobalLen\":0}}"
     },
     "join_rapid_double_single_attendance": {
       "ok": true,
-      "detail": "{\"userId\":\"user_1791941830241_cidjrv8t\",\"status\":\"joined\",\"rows\":1,\"joinedRows\":1,\"groupId\":\"open\",\"localJoined\":true,\"legacyGlobalLen\":0}"
+      "detail": "{\"userId\":\"user_1791944274691_6qirnssm\",\"status\":\"joined\",\"rows\":1,\"joinedRows\":1,\"groupId\":\"open\",\"localJoined\":true,\"legacyGlobalLen\":0}"
     },
     "m05_joined_panel_and_attendance": {
       "ok": true,
-      "detail": "{\"userId\":\"user_1791941830241_cidjrv8t\",\"status\":\"joined\",\"rows\":1,\"joinedRows\":1,\"groupId\":\"open\",\"localJoined\":true,\"legacyGlobalLen\":0}"
+      "detail": "{\"userId\":\"user_1791944274691_6qirnssm\",\"status\":\"joined\",\"rows\":1,\"joinedRows\":1,\"groupId\":\"open\",\"localJoined\":true,\"legacyGlobalLen\":0}"
     },
     "join_persists_after_reload": {
       "ok": true,
-      "detail": "{\"joinedReload\":true,\"attReload\":{\"userId\":\"user_1791941830241_cidjrv8t\",\"status\":\"joined\",\"rows\":1,\"joinedRows\":1,\"groupId\":\"open\",\"localJoined\":true,\"legacyGlobalLen\":0}}"
+      "detail": "{\"joinedReload\":true,\"attReload\":{\"userId\":\"user_1791944274691_6qirnssm\",\"status\":\"joined\",\"rows\":1,\"joinedRows\":1,\"groupId\":\"open\",\"localJoined\":true,\"legacyGlobalLen\":0}}"
     },
     "m06_cancel_modal_french_no_bilingual": {
       "ok": true,
@@ -136,11 +136,11 @@
     },
     "m06_confirm_cancels_attendance": {
       "ok": true,
-      "detail": "{\"userId\":\"user_1791941830241_cidjrv8t\",\"status\":\"left\",\"rows\":1,\"joinedRows\":0,\"groupId\":null,\"localJoined\":false,\"legacyGlobalLen\":0}"
+      "detail": "{\"userId\":\"user_1791944274691_6qirnssm\",\"status\":\"left\",\"rows\":1,\"joinedRows\":0,\"groupId\":null,\"localJoined\":false,\"legacyGlobalLen\":0}"
     },
     "cancelled_not_in_joined_attendance": {
       "ok": true,
-      "detail": "{\"userId\":\"user_1791941830241_cidjrv8t\",\"status\":\"left\",\"rows\":1,\"joinedRows\":0,\"groupId\":null,\"localJoined\":false,\"legacyGlobalLen\":0}"
+      "detail": "{\"userId\":\"user_1791944274691_6qirnssm\",\"status\":\"left\",\"rows\":1,\"joinedRows\":0,\"groupId\":null,\"localJoined\":false,\"legacyGlobalLen\":0}"
     },
     "cancelled_not_listed_as_joined_in_my_sessions": {
       "ok": true,
@@ -156,15 +156,15 @@
     },
     "batch1_invite_for_member": {
       "ok": true,
-      "detail": "PRIVWWN3"
+      "detail": "PRIVWV2G"
     },
     "batch1_member_host_sees_logistics": {
       "ok": true,
-      "detail": "/session/session_1791941887141_wx1je65f"
+      "detail": "/session/session_1791944331187_jl46fjkx"
     },
     "batch1_approved_member_sees_logistics": {
       "ok": true,
-      "detail": "PRIVW2V7FVSSP"
+      "detail": "PRIVW2V7HC6VT"
     },
     "batch1_member_b_left_club": {
       "ok": true,
@@ -180,7 +180,7 @@
     },
     "batch1_outsider_list_no_logistics": {
       "ok": true,
-      "detail": "PRIVW2V7FVSSP"
+      "detail": "PRIVW2V7HC6VT"
     },
     "batch1_pending_setup_genuine": {
       "ok": true,
@@ -192,7 +192,7 @@
     },
     "batch1_pending_list_no_logistics": {
       "ok": true,
-      "detail": "PRIVW2V7FVSSP"
+      "detail": "PRIVW2V7HC6VT"
     },
     "m06_annotation_absent_from_product": {
       "ok": true,
@@ -223,11 +223,11 @@
     "docs/audit/batch2-walk-join/screenshots/17-batch1-pending.png",
     "docs/audit/batch2-walk-join/screenshots/m07-before-flush.png"
   ],
-  "outing_id": "session_1791941818222_dk8xugyt",
-  "other_outing_id": "session_1791941823467_vf9sxoy2",
+  "outing_id": "session_1791944262593_z0o5p33h",
+  "other_outing_id": "session_1791944267821_t0e61raw",
   "batch1_full_regression": {
     "path": "docs/audit/batch2-walk-join/batch1-full-regression-evidence.json",
-    "tested_sha": "6779c19064f01625a816d69d838726400f0d2a60",
+    "tested_sha": "75356094d741c63cbfbfca2fa7301042784a2fbf",
     "summary": {
       "passed": 31,
       "failed": 0,
@@ -244,5 +244,5 @@
     "blocked": 0,
     "total": 42
   },
-  "generated_at": "2026-10-14T01:40:53.719Z"
+  "generated_at": "2026-10-14T02:21:40.206Z"
 }

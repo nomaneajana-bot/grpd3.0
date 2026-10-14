@@ -6,8 +6,8 @@
 **Batch 1 DEMO gate:** **CLEARED** — hosted/native/UAT not accepted  
 **Batch 2 tip (DEMO gate CLEARED):** `6d36691234ec4d8fbdddd4ff92ba818e02b1d957`  
 **Batch 2 evidence:** `docs/audit/batch2-walk-join/evidence.json` (42/42 demo PASS; packaging current-only)  
-**Batch 3 tip under test:** `6779c19064f01625a816d69d838726400f0d2a60`  
-**Batch 3 evidence:** `docs/audit/batch3-club-idea/evidence.json` (41/41 demo PASS)  
+**Batch 3 tip under test:** `75356094d741c63cbfbfca2fa7301042784a2fbf`  
+**Batch 3 evidence:** `docs/audit/batch3-club-idea/evidence.json` (57 PASS / 0 FAIL / 1 BLOCKED after Codex corrections)  
 **Batch 3 nested regressions:** privacy 31/31 + walk/join 42/42 under `docs/audit/batch3-club-idea/regressions/`  
 **Method:** Statuses are NOT CHECKED / FAILED / FIXED AWAITING RETEST / VERIFIED / BLOCKED.  
 **Capability:** IMPLEMENTED / PARTIAL / NOT IMPLEMENTED / UNSUPPORTED — never treat NOT IMPLEMENTED as PASS.
@@ -32,9 +32,9 @@
 | Route / journey | Home Découvrir idea cards → illustrative explanation → club create (never training) |
 | Observed | Cards labeled illustrative / not bookable; navigate to `/idea/:id`; CTA to `/club/create?idea=`; no `/profile/training` |
 | Capability | IMPLEMENTED (demo) |
-| Candidate SHA / env | `6779c19` · **demo** |
+| Candidate SHA / env | `7535609` · **demo** |
 | Evidence | `docs/audit/batch3-club-idea/evidence.json` |
-| Next action | Codex DEMO review |
+| Next action | Codex DEMO re-review (corrected evidence) |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-003 — P1 — VERIFIED (demo only)

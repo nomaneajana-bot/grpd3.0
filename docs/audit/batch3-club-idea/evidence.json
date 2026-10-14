@@ -1,33 +1,33 @@
 {
-  "batch": "Batch 3 \u2014 HOME IDEA \u2192 CREATE CLUB \u2192 CLUB HOME \u2192 ORGANISE OUTING",
+  "batch": "Batch 3 — HOME IDEA → CREATE CLUB → CLUB HOME → ORGANISE OUTING",
   "issues": [
     "ISSUE-002",
     "M01",
     "M02",
     "M03"
   ],
-  "tested_sha": "6779c19064f01625a816d69d838726400f0d2a60",
-  "tip_sha": "16cd787fe0718a90713f4adafdf3dfc7abb7598e",
+  "tested_sha": "75356094d741c63cbfbfca2fa7301042784a2fbf",
+  "tip_sha": "75356094d741c63cbfbfca2fa7301042784a2fbf",
   "branch": "cursor/green-home-ux-join-3184",
   "environment": "demo",
   "hosted_claim": false,
-  "note": "DEMO_MODE only. Creator auto-attendance and public-club association remain unresolved \u2014 preserved, not decided. Design annotations (MAQUETTE) must never appear as product copy.",
+  "note": "DEMO_MODE only. Creator auto-attendance and public-club association remain unresolved — preserved, not decided. Design annotations (MAQUETTE) must never appear as product copy.",
   "unresolved_rules_reported": [
-    "creator_auto_attendance \u2014 preserved current auto-join of host on create; not decided",
-    "public_club_association \u2014 preserved current null clubId for public; not decided"
+    "creator_auto_attendance — preserved current auto-join of host on create; not decided",
+    "public_club_association — preserved current null clubId for public; not decided"
   ],
   "unique": {
-    "token": "B3V7FRS0Z",
+    "token": "B3V7H7JCX",
     "clubA": {
-      "name": "English Outside B3V7FRS0Z",
+      "name": "English Outside B3V7H7JCX",
       "city": "Casablanca",
-      "purpose": "Pratiquer l'anglais en marchant \u2014 niveaux mixtes B3V7FRS0Z.",
+      "purpose": "Pratiquer l'anglais en marchant — niveaux mixtes B3V7H7JCX.",
       "ideaId": "english"
     },
     "clubB": {
-      "name": "Petits Matins B3V7FRS0Z",
+      "name": "Petits Matins B3V7H7JCX",
       "city": "Rabat",
-      "purpose": "Marche apres Fajr, calme du quartier B3V7FRS0Z.",
+      "purpose": "Marche apres Fajr, calme du quartier B3V7H7JCX.",
       "ideaId": "fajr"
     }
   },
@@ -39,32 +39,32 @@
   },
   "clubs": {
     "a": {
-      "id": "club_1791941626397_8v6c1953",
-      "name": "English Outside B3V7FRS0Z",
+      "id": "club_1791944044492_9bgy6bk2",
+      "name": "English Outside B3V7H7JCX",
       "city": "Casablanca",
-      "purpose": "Pratiquer l'anglais en marchant \u2014 niveaux mixtes B3V7FRS0Z.",
+      "purpose": "Pratiquer l'anglais en marchant — niveaux mixtes B3V7H7JCX.",
       "ideaId": "english"
     },
     "b": {
-      "id": "club_1791941662788_xbyswhu0",
-      "name": "Petits Matins B3V7FRS0Z",
+      "id": "club_1791944103655_gzglph07",
+      "name": "Petits Matins B3V7H7JCX",
       "city": "Rabat",
-      "purpose": "Marche apres Fajr, calme du quartier B3V7FRS0Z.",
+      "purpose": "Marche apres Fajr, calme du quartier B3V7H7JCX.",
       "ideaId": "fajr"
     }
   },
   "outings": {
     "a": {
-      "id": "session_1791941634368_24k75lyo",
-      "url": "http://localhost:8081/session/session_1791941634368_24k75lyo"
+      "id": "session_1791944052392_anb2r548",
+      "url": "http://localhost:8081/session/session_1791944052392_anb2r548"
     },
     "standalone": {
-      "id": "session_1791941661528_2i3zm8pr",
-      "title": "Public autonome B3V7FRS0Z"
+      "id": "session_1791944101168_y6t5jzoz",
+      "title": "Public autonome B3V7H7JCX"
     },
     "b": {
-      "id": "session_1791941669536_qmmj6lnn",
-      "url": "http://localhost:8081/session/session_1791941669536_qmmj6lnn"
+      "id": "session_1791944110220_2w5tnkqc",
+      "url": "http://localhost:8081/session/session_1791944110220_2w5tnkqc"
     }
   },
   "checks": {
@@ -90,7 +90,7 @@
     },
     "idea_screen_not_bookable_copy": {
       "ok": true,
-      "detail": "\uf127\nID\u00c9E ILLUSTRATIVE \u00b7 LANGUES\nWalk a little.\nTalk a lot.\nEnglish Walk & Talk\nConcept illustratif pour imaginer ton club \u2014 ce n\u2019est pas une sortie r\u00e9elle, ni une inscription, ni une"
+      "detail": "\nIDÉE ILLUSTRATIVE · LANGUES\nWalk a little.\nTalk a lot.\nEnglish Walk & Talk\nConcept illustratif pour imaginer ton club — ce n’est pas une sortie réelle, ni une inscription, ni une"
     },
     "idea_no_design_annotation": {
       "ok": true,
@@ -99,6 +99,10 @@
     "idea_back_discover": {
       "ok": true,
       "detail": "http://localhost:8081/"
+    },
+    "idea_cta_carries_idea_context": {
+      "ok": true,
+      "detail": "url=http://localhost:8081/club/create ideaParam=null hint=À partir de l’idée « English Walk & Talk » — tu peux tout modifier."
     },
     "idea_to_club_create": {
       "ok": true,
@@ -112,6 +116,10 @@
       "ok": true,
       "detail": "http://localhost:8081/"
     },
+    "idea_cta_reentry_keeps_context": {
+      "ok": true,
+      "detail": "url=http://localhost:8081/club/create idea=null"
+    },
     "club_purpose_unrestricted_copy": {
       "ok": true,
       "detail": ""
@@ -120,13 +128,33 @@
       "ok": true,
       "detail": ""
     },
+    "club_create_controlled_failure": {
+      "ok": true,
+      "detail": "{\"afterFailUrl\":\"http://localhost:8081/club/create\",\"failToast\":true,\"clubsBefore\":0,\"clubsAfter\":0,\"values\":{\"name\":\"English Outside B3V7H7JCX\",\"city\":\"Casablanca\",\"purpose\":\"Pratiquer l'anglais en marchant — niveaux mixtes B3V7H7JCX.\"},\"failFlagCleared\":true}"
+    },
+    "club_create_failure_no_phantom_record": {
+      "ok": true,
+      "detail": "matches=0"
+    },
+    "club_create_failure_preserves_input": {
+      "ok": true,
+      "detail": "{\"name\":\"English Outside B3V7H7JCX\",\"city\":\"Casablanca\",\"purpose\":\"Pratiquer l'anglais en marchant — niveaux mixtes B3V7H7JCX.\"}"
+    },
+    "club_a_created_exactly_one": {
+      "ok": true,
+      "detail": "count=1 id=club_1791944044492_9bgy6bk2 ids=club_1791944044492_9bgy6bk2"
+    },
+    "club_a_membership_exactly_one": {
+      "ok": true,
+      "detail": "{\"clubId\":\"club_1791944044492_9bgy6bk2\",\"membershipCount\":1,\"statuses\":[\"approved\"]}"
+    },
     "club_a_created": {
       "ok": true,
-      "detail": "club_1791941626397_8v6c1953"
+      "detail": "club_1791944044492_9bgy6bk2"
     },
     "club_a_home_identity_purpose": {
       "ok": true,
-      "detail": "Clubs\nMembre confirm\u00e9 \u00b7 Fond\u00e9 2026\nEOB\nEnglish Outside B3V7FRS0Z\nCasablanca \u00b7 Club sur invitation \u00b7 1 membre\nTU ES MEMBRE\nPratiquer l'anglais en marchant \u2014 niveaux mixtes B3V7FRS0Z.\nLes sorties du club\nChaque sortie a sa propre inscription. L\u2019adh\u00e9sion au club ne t\u2019inscrit \u00e0 aucun"
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nEOB\nEnglish Outside B3V7H7JCX\nCasablanca · Club sur invitation · 1 membre\nTU ES MEMBRE\nPratiquer l'anglais en marchant — niveaux mixtes B3V7H7JCX.\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucun"
     },
     "club_a_empty_outings_state": {
       "ok": true,
@@ -142,7 +170,7 @@
     },
     "club_a_reload_persists": {
       "ok": true,
-      "detail": "Clubs\nMembre confirm\u00e9 \u00b7 Fond\u00e9 2026\nEOB\nEnglish Outside B3V7FRS0Z\nCasablanca \u00b7 Club sur invitation \u00b7 1 membre\nTU ES MEMBRE\nPratiquer l'anglais en marchant \u2014 niveaux mixtes B3V7FRS0Z.\nLes sorties du clu"
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nEOB\nEnglish Outside B3V7H7JCX\nCasablanca · Club sur invitation · 1 membre\nTU ES MEMBRE\nPratiquer l'anglais en marchant — niveaux mixtes B3V7H7JCX.\nLes sorties du clu"
     },
     "organise_bound_a": {
       "ok": true,
@@ -150,35 +178,63 @@
     },
     "outing_a_created": {
       "ok": true,
-      "detail": "http://localhost:8081/session/session_1791941634368_24k75lyo"
+      "detail": "http://localhost:8081/session/session_1791944052392_anb2r548"
     },
     "outing_a_club_association": {
       "ok": true,
-      "detail": "clubId=club_1791941626397_8v6c1953 vis=members"
+      "detail": "clubId=club_1791944044492_9bgy6bk2 vis=members"
     },
     "club_a_lists_own_outing": {
       "ok": true,
-      "detail": "Marche English B3V7FRS0Z"
+      "detail": "Marche English B3V7H7JCX"
+    },
+    "organise_from_club_ui_shows_bound": {
+      "ok": true,
+      "detail": "url=http://localhost:8081/session/create?clubId=club_1791944044492_9bgy6bk2&audience=club bound=true"
+    },
+    "nav_away_from_bound_create_via_ui": {
+      "ok": true,
+      "detail": "before=http://localhost:8081/session/create?clubId=club_1791944044492_9bgy6bk2&audience=club after=http://localhost:8081/"
+    },
+    "standalone_opened_via_app_ui": {
+      "ok": true,
+      "detail": "http://localhost:8081/session/create"
+    },
+    "standalone_create_no_stale_club_bind_after_ui_nav": {
+      "ok": true,
+      "detail": "publicNote=true noBound=true audiencePublicGuess=false"
     },
     "standalone_create_no_stale_club_bind": {
       "ok": true,
-      "detail": "publicNote=true noBound=true"
+      "detail": "publicNote=true noBound=true (via app UI after unfinished bound form)"
     },
     "standalone_public_clubId_null": {
       "ok": true,
       "detail": "clubId=null vis=public"
     },
+    "club_b_from_idea_cta_context": {
+      "ok": true,
+      "detail": "url=http://localhost:8081/club/create idea=null"
+    },
+    "club_b_created_exactly_one": {
+      "ok": true,
+      "detail": "count=1 id=club_1791944103655_gzglph07"
+    },
+    "club_b_membership_exactly_one": {
+      "ok": true,
+      "detail": "{\"clubId\":\"club_1791944103655_gzglph07\",\"membershipCount\":1}"
+    },
     "club_b_created": {
       "ok": true,
-      "detail": "club_1791941662788_xbyswhu0"
+      "detail": "club_1791944103655_gzglph07"
     },
     "club_a_not_overwritten": {
       "ok": true,
-      "detail": "a=club_1791941626397_8v6c1953 b=club_1791941662788_xbyswhu0"
+      "detail": "a=club_1791944044492_9bgy6bk2 aCount=1 b=club_1791944103655_gzglph07"
     },
     "club_b_home_identity_purpose": {
       "ok": true,
-      "detail": "Clubs\nMembre confirm\u00e9 \u00b7 Fond\u00e9 2026\nMES CLUBS\nEnglish Outside B3V7FRS0Z\nPetits Matins B3V7FRS0Z\nPMB\nPetits Matins B3V7FRS0Z\nRabat \u00b7 Club sur invitation \u00b7 1 membre\nTU ES MEMBRE\nMarche apres Fajr, calme du quartier B3V7FRS0Z.\nLes sorties du club\nChaque sortie a sa propre inscription"
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nEnglish Outside B3V7H7JCX\nPetits Matins B3V7H7JCX\nPMB\nPetits Matins B3V7H7JCX\nRabat · Club sur invitation · 1 membre\nTU ES MEMBRE\nMarche apres Fajr, calme du quartier B3V7H7JCX.\nLes sorties du club\nChaque sortie a sa propre inscription"
     },
     "club_b_empty_before_own_outing": {
       "ok": true,
@@ -194,11 +250,11 @@
     },
     "outing_b_created": {
       "ok": true,
-      "detail": "http://localhost:8081/session/session_1791941669536_qmmj6lnn"
+      "detail": "http://localhost:8081/session/session_1791944110220_2w5tnkqc"
     },
     "outing_b_club_association": {
       "ok": true,
-      "detail": "clubId=club_1791941662788_xbyswhu0 vis=members"
+      "detail": "clubId=club_1791944103655_gzglph07 vis=members"
     },
     "club_b_lists_own_outing": {
       "ok": true,
@@ -208,13 +264,26 @@
       "ok": true,
       "detail": "hasA=true hasB=false"
     },
+    "desktop_club_create_controls_reachable": {
+      "ok": true,
+      "detail": "{\"club-name-input\":{\"present\":true,\"reachable\":true,\"top\":304},\"club-city-input\":{\"present\":true,\"reachable\":true,\"top\":334},\"club-purpose-input\":{\"present\":true,\"reachable\":true,\"top\":301},\"club-create-submit\":{\"present\":true,\"reachable\":true,\"top\":552},\"club-create-cancel\":{\"present\":true,\"reachable\":true,\"top\":628}}"
+    },
+    "desktop_club_create_keyboard_focus_order": {
+      "ok": false,
+      "status": "BLOCKED",
+      "detail": "Tab did not move focus between club fields (name=null tab1=null tab2=club-purpose-input). Not counted as PASS."
+    },
+    "desktop_club_create_keyboard_activation": {
+      "ok": true,
+      "detail": "focusedSubmit=true url=http://localhost:8081/club"
+    },
     "desktop_club_create_keyboard": {
       "ok": true,
-      "detail": "typed name+purpose @1280"
+      "detail": "reachable controls asserted @1280 (see focus_order / activation checks)"
     },
     "short_phone_idea_reachable": {
       "ok": true,
-      "detail": ""
+      "detail": "{\"card\":true,\"createCta\":true}"
     },
     "unresolved_creator_auto_attendance_reported": {
       "ok": true,
@@ -237,10 +306,12 @@
     "docs/audit/batch3-club-idea/screenshots/01-home-ideas.png",
     "docs/audit/batch3-club-idea/screenshots/02-idea-english.png",
     "docs/audit/batch3-club-idea/screenshots/03-club-create-from-idea.png",
+    "docs/audit/batch3-club-idea/screenshots/03b-club-create-after-controlled-fail.png",
     "docs/audit/batch3-club-idea/screenshots/04-club-a-empty-home.png",
     "docs/audit/batch3-club-idea/screenshots/05-club-a-after-reload.png",
     "docs/audit/batch3-club-idea/screenshots/06-outing-a-detail.png",
     "docs/audit/batch3-club-idea/screenshots/07-club-a-with-outing.png",
+    "docs/audit/batch3-club-idea/screenshots/07b-club-bound-unfinished.png",
     "docs/audit/batch3-club-idea/screenshots/08-standalone-public.png",
     "docs/audit/batch3-club-idea/screenshots/09-club-b-empty-home.png",
     "docs/audit/batch3-club-idea/screenshots/10-club-b-with-outing.png",
@@ -271,10 +342,10 @@
   },
   "errors": [],
   "summary": {
-    "passed": 41,
+    "passed": 57,
     "failed": 0,
-    "blocked": 0,
-    "total": 41
+    "blocked": 1,
+    "total": 58
   },
-  "generated_at": "2026-10-14T01:40:53.821Z"
+  "generated_at": "2026-10-14T02:21:40.304Z"
 }

@@ -1,11 +1,9 @@
 # Batch 2 current evidence run
 
 - **tested_sha:** `6d36691234ec4d8fbdddd4ff92ba818e02b1d957`
-- **environment:** `demo` · **hosted_claim:** `False`
-- **summary:** {'passed': 42, 'failed': 0, 'blocked': 0, 'total': 42}
 - **DEMO gate:** CLEARED (Codex)
 - **Authoritative manifest:** `evidence.json` → `screenshots` list
-- **Archive (not current):** `archive/` — superseded captures and old side-by-side comps
+- **Archive (not current):** `archive/`
 - **Tip regression copy (Batch 3 nested):** `docs/audit/batch3-club-idea/regressions/batch2-walk-join-evidence.json`
 
 ## Current screenshots (27)
