@@ -786,72 +786,102 @@ async function main() {
       "public still nulls clubId; not decided",
     );
 
-    // Nested regressions (spawn existing scripts; record outcome)
-    const batch1 = spawnSync(
-      "node",
-      ["scripts/batch1-privacy-evidence.mjs"],
-      {
-        cwd: REPO_ROOT,
-        env: { ...process.env, EXPO_PUBLIC_DEMO_MODE: "true", E2E_BASE_URL: BASE },
-        encoding: "utf8",
-        timeout: 900000,
-      },
-    );
-    const b1Path = path.join(
-      REPO_ROOT,
-      "docs/audit/batch1-privacy/evidence.json",
-    );
-    let b1Summary = null;
-    if (fs.existsSync(b1Path)) {
-      try {
-        b1Summary = JSON.parse(fs.readFileSync(b1Path, "utf8")).summary;
-      } catch {
-        /* */
+    // Nested regressions (spawn existing scripts; store copies under batch3)
+    const skipNested = process.env.SKIP_NESTED_REGRESSION === "1";
+    const regDir = path.join(REPO_EVIDENCE, "regressions");
+    fs.mkdirSync(regDir, { recursive: true });
+    if (skipNested) {
+      record(
+        "regression_batch1_privacy",
+        false,
+        "SKIPPED via SKIP_NESTED_REGRESSION=1",
+      );
+      evidence.checks.regression_batch1_privacy.status = "BLOCKED";
+      record(
+        "regression_batch2_walk_join",
+        false,
+        "SKIPPED via SKIP_NESTED_REGRESSION=1",
+      );
+      evidence.checks.regression_batch2_walk_join.status = "BLOCKED";
+    } else {
+      const batch1 = spawnSync(
+        "node",
+        ["scripts/batch1-privacy-evidence.mjs"],
+        {
+          cwd: REPO_ROOT,
+          env: {
+            ...process.env,
+            EXPO_PUBLIC_DEMO_MODE: "true",
+            E2E_BASE_URL: BASE,
+          },
+          encoding: "utf8",
+          timeout: 900000,
+        },
+      );
+      const b1Path = path.join(
+        REPO_ROOT,
+        "docs/audit/batch1-privacy/evidence.json",
+      );
+      let b1Summary = null;
+      if (fs.existsSync(b1Path)) {
+        try {
+          const raw = fs.readFileSync(b1Path, "utf8");
+          fs.writeFileSync(path.join(regDir, "batch1-privacy-evidence.json"), raw);
+          b1Summary = JSON.parse(raw).summary;
+        } catch {
+          /* */
+        }
       }
-    }
-    evidence.regressions.batch1_privacy = {
-      exit_code: batch1.status,
-      summary: b1Summary,
-      stderr_tail: (batch1.stderr || "").slice(-400),
-    };
-    record(
-      "regression_batch1_privacy",
-      batch1.status === 0 && b1Summary && b1Summary.failed === 0,
-      JSON.stringify(b1Summary),
-    );
+      evidence.regressions.batch1_privacy = {
+        exit_code: batch1.status,
+        summary: b1Summary,
+        stderr_tail: (batch1.stderr || "").slice(-400),
+      };
+      record(
+        "regression_batch1_privacy",
+        batch1.status === 0 && b1Summary && b1Summary.failed === 0,
+        JSON.stringify(b1Summary),
+      );
 
-    const batch2 = spawnSync(
-      "node",
-      ["scripts/batch2-walk-join-evidence.mjs"],
-      {
-        cwd: REPO_ROOT,
-        env: { ...process.env, EXPO_PUBLIC_DEMO_MODE: "true", E2E_BASE_URL: BASE },
-        encoding: "utf8",
-        timeout: 900000,
-      },
-    );
-    const b2Path = path.join(
-      REPO_ROOT,
-      "docs/audit/batch2-walk-join/evidence.json",
-    );
-    let b2Summary = null;
-    if (fs.existsSync(b2Path)) {
-      try {
-        b2Summary = JSON.parse(fs.readFileSync(b2Path, "utf8")).summary;
-      } catch {
-        /* */
+      const batch2 = spawnSync(
+        "node",
+        ["scripts/batch2-walk-join-evidence.mjs"],
+        {
+          cwd: REPO_ROOT,
+          env: {
+            ...process.env,
+            EXPO_PUBLIC_DEMO_MODE: "true",
+            E2E_BASE_URL: BASE,
+          },
+          encoding: "utf8",
+          timeout: 900000,
+        },
+      );
+      const b2Path = path.join(
+        REPO_ROOT,
+        "docs/audit/batch2-walk-join/evidence.json",
+      );
+      let b2Summary = null;
+      if (fs.existsSync(b2Path)) {
+        try {
+          const raw = fs.readFileSync(b2Path, "utf8");
+          fs.writeFileSync(path.join(regDir, "batch2-walk-join-evidence.json"), raw);
+          b2Summary = JSON.parse(raw).summary;
+        } catch {
+          /* */
+        }
       }
+      evidence.regressions.batch2_walk_join = {
+        exit_code: batch2.status,
+        summary: b2Summary,
+        stderr_tail: (batch2.stderr || "").slice(-400),
+      };
+      record(
+        "regression_batch2_walk_join",
+        batch2.status === 0 && b2Summary && b2Summary.failed === 0,
+        JSON.stringify(b2Summary),
+      );
     }
-    evidence.regressions.batch2_walk_join = {
-      exit_code: batch2.status,
-      summary: b2Summary,
-      stderr_tail: (batch2.stderr || "").slice(-400),
-    };
-    record(
-      "regression_batch2_walk_join",
-      batch2.status === 0 && b2Summary && b2Summary.failed === 0,
-      JSON.stringify(b2Summary),
-    );
   } catch (err) {
     evidence.errors.push(String(err?.stack || err));
     console.error(err);
