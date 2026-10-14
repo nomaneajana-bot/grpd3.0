@@ -73,7 +73,7 @@ Legend — **Reachability:** Primary · Secondary · Orphan · Deprecated redire
 
 | ID | Route | File | Purpose | Entry | Exit | Role | Actions | Data | Reachability | Review |
 |----|-------|------|---------|-------|------|------|---------|------|--------------|--------|
-| UI-14 | `/` | `(tabs)/index.tsx` | Découvrir | Tabs | session, create, inbox, training (previews), club create | Authed | Filter, open, propose | Sessions + previews | Primary tab | NOT CHECKED |
+| UI-14 | `/` | `(tabs)/index.tsx` | Découvrir | Tabs | session, create, inbox, `/idea/:id` (illustrative), club create | Authed | Filter, open, propose | Sessions + idea previews | Primary tab | FIXED AWAITING RETEST (Batch 3 demo) |
 | UI-15 | `/my-sessions` | `my-sessions.tsx` | Mes sorties | Tabs | session, create, run/confirm | Authed | Open, create | My sessions + joined | Primary tab | NOT CHECKED |
 | UI-16 | `/workouts` | `workouts.tsx` | Advanced training | Hidden tab; training links | workout detail/edit | Authed | Create/open | Workout store | Secondary | NOT CHECKED |
 | UI-17 | `/club` | `club/index.tsx` | Clubs hub | Tabs | access, admin, settings, group-detail, inbox | Member/pending/outsider | Join code, leave, switch | Memberships + roster | Primary tab | NOT CHECKED |
@@ -203,7 +203,7 @@ Source-reviewed associations only — **not runtime VERIFIED**.
 
 | From | Target | Issue |
 |------|--------|-------|
-| Home preview cards | `/profile/training` | Misleading (ISSUE-002) |
+| Home idea cards | `/idea/:id` → `/club/create?idea=` | ISSUE-002 addressed in Batch 3 (demo); never training |
 | Home social ternary | both `/session/:id` | Dead identical branches (ISSUE-006) |
 | `/club/group-edit` | `group-create` | Deprecated redirect |
 | `/run/setup`, `/profile/test-history` | — | Orphans |
@@ -236,7 +236,8 @@ Source-reviewed associations only — **not runtime VERIFIED**.
 | UI-17 | `/club` | essential | Membership hub (M03/M07 states) |
 | UI-18 | `/profile` | essential | Community profile |
 | UI-19 | `/club/access` | essential | Join / invite / request |
-| UI-20 | `/club/create` | essential | Purpose-led create (M02 later batch) |
+| UI-20 | `/club/create` | essential | Purpose-led create (M02 — Batch 3 demo) |
+| UI-idea | `/idea/[id]` | essential | Illustrative club idea (M01 — Batch 3 demo) |
 | UI-21…UI-23 | admin / roster / settings | secondary | Coach tools |
 | UI-24…UI-25 | group-detail / group-create | secondary | Pace groups |
 | UI-26 | `/club/group-edit` | redundant | Deprecated redirect |
@@ -253,5 +254,6 @@ Source-reviewed associations only — **not runtime VERIFIED**.
 | UI-39 | `/inbox` | secondary | Activity feed |
 | UI-40 | `/reference/green-home` | reference-only | Design twin |
 
-**Batch 2 (demo evidence executed, awaiting Codex):** walk/language journey (ISSUE-003), M04/M05 join panels, M06 cancel confirmation overlay, M07 pending gutters, ISSUE-010 participation.  
-**Queued later batches:** M01 idea preview, M02 purpose-led create club, M03 member club polish, preview cards (ISSUE-002), hosted leave endpoints (ISSUE-004), TOI counts (ISSUE-011).
+**Batch 2 (DEMO CLEARED):** walk/language journey (ISSUE-003), M04/M05/M06/M07, ISSUE-010 participation.  
+**Batch 3 (demo evidence executed, awaiting Codex):** M01 `/idea/[id]`, M02 purpose-led `/club/create`, M03 club home purpose/outings + organise association, ISSUE-002.  
+**Queued later batches:** hosted leave endpoints (ISSUE-004), TOI counts (ISSUE-011).

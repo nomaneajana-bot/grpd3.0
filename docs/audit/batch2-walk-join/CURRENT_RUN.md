@@ -3,9 +3,10 @@
 - **tested_sha:** `6d36691234ec4d8fbdddd4ff92ba818e02b1d957`
 - **environment:** `demo` · **hosted_claim:** `False`
 - **summary:** {'passed': 42, 'failed': 0, 'blocked': 0, 'total': 42}
-- **generated_at:** 2026-10-14T00:22:13.686Z
+- **DEMO gate:** CLEARED (Codex)
 - **Authoritative manifest:** `evidence.json` → `screenshots` list
 - **Archive (not current):** `archive/` — superseded captures and old side-by-side comps
+- **Tip regression copy (Batch 3 nested):** `docs/audit/batch3-club-idea/regressions/batch2-walk-join-evidence.json`
 
 ## Current screenshots (27)
 - `docs/audit/batch2-walk-join/screenshots/01-host-home.png`

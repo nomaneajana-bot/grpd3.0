@@ -80,7 +80,9 @@
 | Club purposes are **not** runners-only | | **R** | | User already requires unrestricted club purposes — **do not re-ask** whether runners-only framing is acceptable |
 | Discover can filter/label Marche | I | R | | |
 | Walk / language journeys must be **usable** end-to-end | I (demo) | **R** | | Batch 2: title/purpose/spot agree; walking hides pace groups; language optional (no English default); join without pace group; M06 cancel ≠ leave club. ISSUE-003 — demo evidence awaiting Codex; hosted not claimed |
-| Home previews should not dump users into training PRs | Failed I | R | | ISSUE-002 — later batch |
+| Home idea cards are illustrative concepts (not bookable); open idea explanation / club-create — never training PRs | I (demo) | **R** | | ISSUE-002 — Batch 3 demo evidence awaiting Codex |
+| Club purposes unrestricted (no mandatory English/running fields) | I (demo) | **R** | | M02 Batch 3 |
+| Organise-from-club carries explicit clubId; standalone public does not inherit stale focused club | I (demo) | **R** | | M03 Batch 3; public still nulls clubId (unresolved association rule preserved) |
 
 ## 8. Testing / audit honesty
 
@@ -101,7 +103,7 @@
 2. **Creator auto-attendance:** Should the creator always appear as joined on create for public and members-only outings?
 3. **Invite expiry:** Should invite codes expire, and what UX states are required?
 4. **Outing cancellation:** Is status-cancelled (vs host delete) required before stakeholder UAT?
-5. **Home “aperçus” target:** Dedicated preview, club access, or non-navigating? (ISSUE-002 — later batch.)
+5. **Home “aperçus” target:** Resolved for demo Batch 3 — illustrative idea route + club-create entry (ISSUE-002 awaiting Codex).
 
 **Not unresolved (do not re-open):**
 
