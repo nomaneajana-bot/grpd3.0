@@ -885,24 +885,18 @@ async function main() {
     const regDir = path.join(REPO_EVIDENCE, "regressions");
     fs.mkdirSync(regDir, { recursive: true });
     if (skipNested) {
-      record(
+      recordBlocked(
         "regression_batch1_privacy",
-        false,
         "SKIPPED via SKIP_NESTED_REGRESSION=1",
       );
-      evidence.checks.regression_batch1_privacy.status = "BLOCKED";
-      record(
+      recordBlocked(
         "regression_batch2_walk_join",
-        false,
         "SKIPPED via SKIP_NESTED_REGRESSION=1",
       );
-      evidence.checks.regression_batch2_walk_join.status = "BLOCKED";
-      record(
+      recordBlocked(
         "regression_batch3_club_idea",
-        false,
         "SKIPPED via SKIP_NESTED_REGRESSION=1",
       );
-      evidence.checks.regression_batch3_club_idea.status = "BLOCKED";
     } else {
       const runNested = (script, label, copyName) => {
         const result = spawnSync("node", [script], {
