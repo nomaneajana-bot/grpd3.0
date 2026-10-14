@@ -100,7 +100,10 @@ export default function IdeaPreviewScreen() {
           <Action
             label="Créer mon club"
             onPress={() =>
-              router.push(`/club/create?idea=${encodeURIComponent(preview.id)}` as Href)
+              router.push({
+                pathname: "/club/create",
+                params: { idea: preview.id },
+              } as Href)
             }
             testID="idea-create-club-cta"
           />

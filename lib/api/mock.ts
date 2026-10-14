@@ -371,6 +371,15 @@ async function mockCreateClub(
   const user = await getAuthUser();
   if (!user) throw new ApiError(401, 'Unauthorized');
 
+  // Demo harness: one-shot controlled failure for retry evidence (never auto-PASS).
+  const g = globalThis as typeof globalThis & {
+    __GRPD_FAIL_NEXT_CLUB_CREATE__?: boolean;
+  };
+  if (g.__GRPD_FAIL_NEXT_CLUB_CREATE__) {
+    g.__GRPD_FAIL_NEXT_CLUB_CREATE__ = false;
+    throw new ApiError(503, 'Temporary club create failure');
+  }
+
   const clubs = await readClubs();
   const name = input.name?.trim();
   if (!name) throw new ApiError(400, 'Name required');

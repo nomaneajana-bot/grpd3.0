@@ -306,6 +306,7 @@ export default function DiscoverScreen() {
               <Action
                 label="Proposer une sortie"
                 onPress={() => router.push("/session/create" as Href)}
+                testID="discover-propose-outing"
               />
             </View>
           )}
@@ -401,6 +402,7 @@ export default function DiscoverScreen() {
             secondary
             label="Proposer une sortie"
             onPress={() => router.push("/session/create" as Href)}
+            testID="discover-propose-outing-footer"
           />
         </View>
       </ScrollView>
