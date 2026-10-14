@@ -1,0 +1,237 @@
+{
+  "batch": "Batch 4 \u2014 ISSUE-011 TOI / roster home-group counts",
+  "issues": [
+    "ISSUE-011"
+  ],
+  "tested_sha": "de5402a3757063a18b0895fcc41686e1f89d8ad0",
+  "tip_sha": "de5402a3757063a18b0895fcc41686e1f89d8ad0",
+  "branch": "cursor/green-home-ux-join-3184",
+  "environment": "demo",
+  "hosted_claim": false,
+  "note": "DEMO_MODE only. Membership, home-group (TOI), and outing attendance remain distinct. Pace optional for walk/language. Hosted/native/UAT not claimed. SSO preview proves protection only. No product defect fix required this batch beyond testIDs/harness/unit tests.",
+  "unique": {
+    "token": "B4V8K98Z1",
+    "clubA": {
+      "name": "English Outside B4V8K98Z1",
+      "city": "Casablanca",
+      "purpose": "Pratiquer l'anglais en marchant \u2014 niveaux mixtes B4V8K98Z1."
+    },
+    "clubB": {
+      "name": "Casa Walkers B4V8K98Z1",
+      "city": "Rabat",
+      "purpose": "Marche du dimanche sans chrono B4V8K98Z1."
+    }
+  },
+  "future_fixture": {
+    "dateISO": "2026-10-16",
+    "hour": 10,
+    "minute": 30,
+    "timeLabel": "10:30"
+  },
+  "clubs": {
+    "A": {
+      "id": "club_1792009623136_ty9h9hqs",
+      "name": "English Outside B4V8K98Z1"
+    },
+    "B": {
+      "id": "club_1792009701229_7gygdvdy",
+      "name": "Casa Walkers B4V8K98Z1"
+    }
+  },
+  "outings": {
+    "A": {
+      "id": "session_1792009652329_zvfyh4bk",
+      "url": "http://localhost:8081/session/session_1792009652329_zvfyh4bk",
+      "paceUiForced": {
+        "hasPacePicker": false,
+        "required": false
+      }
+    }
+  },
+  "checks": {
+    "host_login": {
+      "ok": true,
+      "detail": "user_1792009620683_cz27f9ub"
+    },
+    "club_a_created": {
+      "ok": true,
+      "detail": "club_1792009623136_ty9h9hqs"
+    },
+    "club_a_home_screen": {
+      "ok": true,
+      "detail": "Clubs\nMembre confirm\u00e9 \u00b7 Fond\u00e9 2026\nEOB\nEnglish Outside B4V8K98Z1\nCasablanca \u00b7 Club sur invitation \u00b7 1 membre\nTU ES MEMBRE\nPratiquer l'anglais en marchant \u2014 niveaux mixtes B4V8K98Z1.\nLes sorties du club\nChaque sortie a sa"
+    },
+    "same_user_exactly_one_toi": {
+      "ok": true,
+      "detail": "[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]"
+    },
+    "toi_group_count_gte_1": {
+      "ok": true,
+      "detail": "{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}"
+    },
+    "exact_roster_sum_equals_member_total_solo": {
+      "ok": true,
+      "detail": "{\"sumCounts\":1,\"pace\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+    },
+    "empty_groups_show_zero": {
+      "ok": true,
+      "detail": "[\"B\",\"C\",\"D\"]"
+    },
+    "admin_empty_group_state": {
+      "ok": true,
+      "detail": "group=B"
+    },
+    "walk_outing_created_pace_optional": {
+      "ok": true,
+      "detail": "{\"id\":\"session_1792009652329_zvfyh4bk\",\"paceUiForced\":{\"hasPacePicker\":false,\"required\":false}}"
+    },
+    "admin_assign_persisted_storage": {
+      "ok": true,
+      "detail": "{\"user_1792009620683_cz27f9ub\":\"B\"}"
+    },
+    "home_group_assign_does_not_autojoin_outing": {
+      "ok": true,
+      "detail": "{\"hostJoinedBefore\":false,\"hostJoinedAfter\":false,\"onlyNewJoins\":[],\"attendanceBeforeCount\":0,\"attendanceAfterCount\":0}"
+    },
+    "move_toi_follows_target": {
+      "ok": true,
+      "detail": "[{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]"
+    },
+    "move_decrement_source_increment_target": {
+      "ok": true,
+      "detail": "{\"fromAfter\":{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},\"toAfter\":{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}}"
+    },
+    "move_no_duplicate_count": {
+      "ok": true,
+      "detail": "{\"sumAfter\":1,\"pace\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+    },
+    "reload_toi_and_counts_persist": {
+      "ok": true,
+      "detail": "[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]"
+    },
+    "club_b_created": {
+      "ok": true,
+      "detail": "club_1792009701229_7gygdvdy"
+    },
+    "club_b_exactly_one_toi": {
+      "ok": true,
+      "detail": "[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]"
+    },
+    "switch_back_club_a_keeps_assignment": {
+      "ok": true,
+      "detail": "[{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]"
+    },
+    "switch_club_b_independent": {
+      "ok": true,
+      "detail": "{\"toiBSwitch\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}],\"groupsA\":\"B\"}"
+    },
+    "invite_code_for_member_b": {
+      "ok": true,
+      "detail": "ENGLILZO"
+    },
+    "member_b_login": {
+      "ok": true,
+      "detail": "user_1792009720197_z39d5khx"
+    },
+    "second_identity_exactly_one_toi": {
+      "ok": true,
+      "detail": "[{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"2 membres\",\"count\":2}]"
+    },
+    "second_identity_roster_sum_is_two": {
+      "ok": true,
+      "detail": "{\"sumMember\":2,\"paceMember\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"2 membres\",\"count\":2},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+    },
+    "second_identity_host_group_still_counted": {
+      "ok": true,
+      "detail": "{\"targetGid\":\"B\",\"hostGroupCount\":2,\"paceMember\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"2 membres\",\"count\":2},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+    },
+    "non_admin_cannot_assign_self": {
+      "ok": true,
+      "detail": "changeVisible=false"
+    },
+    "host_relogin_toi_and_sum": {
+      "ok": true,
+      "detail": "{\"toiHostFinal\":[{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"2 membres\",\"count\":2}],\"sumFinal\":2,\"pace\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"2 membres\",\"count\":2},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+    },
+    "admin_move_member_b_counts": {
+      "ok": true,
+      "detail": "member B already hashed into host target; sum still 2"
+    },
+    "club_b_unaffected_by_club_a_roster": {
+      "ok": true,
+      "detail": "{\"sumB\":1,\"paceB\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+    },
+    "parse_count_helper_smoke": {
+      "ok": true,
+      "detail": "ok"
+    },
+    "regression_batch1_privacy": {
+      "ok": true,
+      "detail": "{\"passed\":31,\"failed\":0,\"total\":31}"
+    },
+    "regression_batch2_walk_join": {
+      "ok": true,
+      "detail": "{\"passed\":42,\"failed\":0,\"blocked\":0,\"total\":42}"
+    },
+    "regression_batch3_club_idea": {
+      "ok": true,
+      "detail": "{\"passed\":56,\"failed\":0,\"blocked\":2,\"total\":58}"
+    }
+  },
+  "screenshots": [
+    "docs/audit/batch4-toi-roster/screenshots/01-club-a-home-initial.png",
+    "docs/audit/batch4-toi-roster/screenshots/02-admin-empty-group.png",
+    "docs/audit/batch4-toi-roster/screenshots/03-walk-outing-detail.png",
+    "docs/audit/batch4-toi-roster/screenshots/04-after-assign-modal.png",
+    "docs/audit/batch4-toi-roster/screenshots/05-club-a-after-move.png",
+    "docs/audit/batch4-toi-roster/screenshots/06-club-a-after-reload.png",
+    "docs/audit/batch4-toi-roster/screenshots/07-club-b-home.png",
+    "docs/audit/batch4-toi-roster/screenshots/08-switch-club-a.png",
+    "docs/audit/batch4-toi-roster/screenshots/09-switch-club-b.png",
+    "docs/audit/batch4-toi-roster/screenshots/10-invite-code.png",
+    "docs/audit/batch4-toi-roster/screenshots/11-member-b-club-a.png",
+    "docs/audit/batch4-toi-roster/screenshots/12-member-b-group-detail-no-assign.png",
+    "docs/audit/batch4-toi-roster/screenshots/13-host-relogin-two-members.png",
+    "docs/audit/batch4-toi-roster/screenshots/14-member-b-already-same-group.png",
+    "docs/audit/batch4-toi-roster/screenshots/15-club-b-still-solo.png"
+  ],
+  "regressions": {
+    "batch1_privacy": {
+      "exit_code": 0,
+      "summary": {
+        "passed": 31,
+        "failed": 0,
+        "total": 31
+      },
+      "stderr_tail": ""
+    },
+    "batch2_walk_join": {
+      "exit_code": 0,
+      "summary": {
+        "passed": 42,
+        "failed": 0,
+        "blocked": 0,
+        "total": 42
+      },
+      "stderr_tail": ""
+    },
+    "batch3_club_idea": {
+      "exit_code": 0,
+      "summary": {
+        "passed": 56,
+        "failed": 0,
+        "blocked": 2,
+        "total": 58
+      },
+      "stderr_tail": ""
+    }
+  },
+  "errors": [],
+  "summary": {
+    "passed": 32,
+    "failed": 0,
+    "blocked": 0,
+    "total": 32
+  },
+  "generated_at": "2026-10-14T20:37:01.696Z"
+}

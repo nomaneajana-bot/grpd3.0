@@ -6,17 +6,17 @@
 **Batch 1 tip (DEMO gate CLEARED):** `959b1ac18db002ef90fc430c1662f750e4796acf`  
 **Batch 2 tip (DEMO gate CLEARED):** `6d36691234ec4d8fbdddd4ff92ba818e02b1d957`  
 **Batch 3 tip (DEMO gate CLEARED functional):** `75356094d741c63cbfbfca2fa7301042784a2fbf`  
-**Batch 3 evidence:** `docs/audit/batch3-club-idea/evidence.json` — **57 PASS / 0 FAIL / 1 BLOCKED** · `hosted_claim: false`  
-**Batch 3 closeout:** Tab diagnosis = harness_limitation; keyboard OPEN (ISSUE-012) — not full a11y/UAT  
-**Batch 4:** ISSUE-011 in progress — `docs/audit/batch4-toi-roster/`  
+**Batch 4 `tested_sha`:** `de5402a3757063a18b0895fcc41686e1f89d8ad0`  
+**Batch 4 evidence:** `docs/audit/batch4-toi-roster/evidence.json` — **32 PASS / 0 FAIL / 0 BLOCKED** · `hosted_claim: false`  
+**Batch 4 nested regressions:** Batch1 31/31 · Batch2 42/42 · Batch3 56 PASS / 0 FAIL / 2 BLOCKED (SKIP nested inside B3)  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
 
-**BATCH 4 — ISSUE-011 TOI / roster home-group counts (demo).**  
-Batch 3 functional DEMO gate **CLEARED** (Tab supported, not full a11y/UAT).  
-Executing bounded Batch 4: same-user TOI vs exact counts; move +/− / no duplicates; reload; second identity; two clubs; empty/admin; home-group ≠ outing autojoin; pace optional walk/language.  
-**STOP for Codex after evidence.** No merge / production / credentials / spending / OCIF / broad redesign.
+**BATCH 4 COMPLETE — STOP for Codex review.**  
+Batch 3 functional DEMO gate CLEARED earlier this turn.  
+Batch 4 ISSUE-011 demo evidence executed at `de5402a` — no product defects demonstrated; no product code fix required beyond harness/testIDs.  
+No merge / production / credentials / spending / OCIF / broad redesign.
 
 ## Preview (Nouamane)
 
@@ -26,16 +26,15 @@ Executing bounded Batch 4: same-user TOI vs exact counts; move +/− / no duplic
 
 ## Exact next action
 
-1. Finish Batch 4 demo evidence + nested regressions.  
-2. Update register/checkpoint with `tested_sha` + screenshots.  
-3. **STOP for Codex** review of Batch 4.  
-4. No merge / prod / spending / credentials / OCIF.
+1. **Codex** reviews Batch 4 ISSUE-011 evidence at `de5402a` + nested regressions.  
+2. After clear: propose next bounded batch from remaining register gaps (004 hosted leave, 008, 012 keyboard note, etc.).  
+3. No merge / prod / spending / credentials / OCIF.
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
-| Demo | Batch1+2+3 CLEARED (functional); Batch4 in progress; ISSUE-012 keyboard OPEN |
+| Demo | Batch1–3 CLEARED (functional); Batch4 evidence ready for Codex; ISSUE-012 keyboard OPEN |
 | Hosted | Not claimed (SSO preview protection only; ISSUE-004/008 open) |
 | Native | Not verified |
 | UAT | Not run |

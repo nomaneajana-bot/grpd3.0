@@ -15,7 +15,7 @@
 | Outing attendance requires explicit S'inscrire / Quitter | I | R | | Membership must not auto-enroll outings |
 | Session creator auto-joins their new outing | I | | **U** | Implemented in create flow; **not** user-approved as requirement — confirm for members-only and public |
 | Pace groups A–D are session/roster buckets, not membership | I | R | | Club home-group (TOI) separate from session groupId |
-| TOI uses same assignment as roster counts | I | R | | `assignMemberToClubGroup` + `bucketMembersByGroup`; Batch 4 ISSUE-011 retest in progress |
+| TOI uses same assignment as roster counts | I | R | | `assignMemberToClubGroup` + `bucketMembersByGroup`; Batch 4 ISSUE-011 demo evidence PASS at `de5402a` (awaiting Codex) |
 | Assign/suggest ≠ joined | I | R | | Invariant (b) |
 
 ## 2. Visibility vs club association (do not conflate)
