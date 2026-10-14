@@ -1,7 +1,7 @@
 # Batch 3 closeout (Codex)
 
 **Product tested_sha (Batch 3 evidence):** `75356094d741c63cbfbfca2fa7301042784a2fbf`  
-**Closeout docs tip:** branch HEAD after this closeout commit  
+**Closeout docs tip:** `45de2e5f8455900eb54edfcba969c49c676ea8ae`  
 **Environment:** demo · **hosted_claim:** false  
 
 ## Tab focus-order diagnosis
