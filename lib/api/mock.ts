@@ -912,6 +912,13 @@ async function mockCreateSession(input: SessionCreateInput): Promise<ApiSession>
   if (visibility === 'members' && !clubId) {
     throw new ApiError(400, 'clubId required for members-only sessions');
   }
+  // Reject past/invalid date+time (aligned with sessionBuilder / create form).
+  if (input.dateISO && input.timeMinutes != null) {
+    const { isSelectableOutingDateTime } = await import('../dateHelpers');
+    if (!isSelectableOutingDateTime(input.dateISO, input.timeMinutes)) {
+      throw new ApiError(400, 'Date/heure doit être dans le futur');
+    }
+  }
 
   const session: ApiSession = {
     id: randomId('session'),
@@ -957,6 +964,15 @@ async function mockJoinSession(
   if (!user) throw new ApiError(401, 'Unauthorized');
   if (!DEMO_MODE) throw new ApiError(404, 'Not found');
 
+  // Demo harness: one-shot controlled failure for retry evidence (never auto-PASS).
+  const g = globalThis as typeof globalThis & {
+    __GRPD_FAIL_NEXT_JOIN__?: boolean;
+  };
+  if (g.__GRPD_FAIL_NEXT_JOIN__) {
+    g.__GRPD_FAIL_NEXT_JOIN__ = false;
+    throw new ApiError(503, 'Temporary join failure');
+  }
+
   const session = await resolveDemoSession(sessionId);
   if (!session) throw new ApiError(404, 'Session not found');
 
@@ -979,24 +995,29 @@ async function mockJoinSession(
     rawGroup && rawGroup !== 'open'
       ? (rawGroup as 'A' | 'B' | 'C' | 'D')
       : null;
+  // Stable id → upsert is idempotent under rapid double-tap (exactly one row).
   const id = `att_${sessionId}_${user.id}`;
+  const existingRows = await readAttendanceForSession(sessionId);
+  const priorJoined = existingRows.find(
+    (r) => r.userId === user.id && r.status === 'joined',
+  );
   // Invariant (b)/(no auto-confirm): join is an explicit runner action → status joined
   // Walk/language outings may join without a pace group (groupId null / "open").
   await upsertAttendance({
-    id,
+    id: priorJoined?.id ?? id,
     sessionId,
     userId: user.id,
     displayName,
-    groupId,
+    groupId: groupId ?? priorJoined?.groupId ?? null,
     status: 'joined',
   });
   await upsertJoinedSession(sessionId, groupId ?? 'open');
 
   return {
-    id,
+    id: priorJoined?.id ?? id,
     sessionId,
     userId: user.id,
-    groupId,
+    groupId: groupId ?? priorJoined?.groupId ?? null,
     status: 'joined',
   };
 }

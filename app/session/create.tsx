@@ -65,6 +65,8 @@ import {
     type WorkoutEntity,
 } from "../../lib/workoutStore";
 import {
+  defaultUpcomingOutingTime,
+  isSelectableOutingDateTime,
   todayISO,
   upcomingDateOptions,
 } from "../../lib/dateHelpers";
@@ -72,6 +74,7 @@ import type { ScrollEndEvent } from "../../types/events";
 
 // Real upcoming calendar days (no invented "LUNDI 10")
 const DATE_CHOICES = upcomingDateOptions(14);
+const DEFAULT_OUTING_WHEN = defaultUpcomingOutingTime();
 
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i); // 0-23
 const MINUTE_OPTIONS = [0, 15, 30, 45];
@@ -1459,12 +1462,14 @@ export default function CreateSessionScreen() {
     loadMemberships();
   }, []);
 
-  // Date and time state — real calendar ISO, never invented weekday stubs
-  const [dateISO, setDateISO] = useState<string>(todayISO());
+  // Date and time — default to an explicitly upcoming local slot (not past 06:00 today).
+  const [dateISO, setDateISO] = useState<string>(DEFAULT_OUTING_WHEN.dateISO);
   const dateLabel =
     DATE_CHOICES.find((d) => d.dateISO === dateISO)?.label ?? dateISO;
-  const [selectedHour, setSelectedHour] = useState<number>(6);
-  const [selectedMinute, setSelectedMinute] = useState<number>(0);
+  const [selectedHour, setSelectedHour] = useState<number>(DEFAULT_OUTING_WHEN.hour);
+  const [selectedMinute, setSelectedMinute] = useState<number>(
+    DEFAULT_OUTING_WHEN.minute,
+  );
 
   // Session mode: workout-based or casual type
   const [sessionMode, setSessionMode] = useState<SessionMode>("workout");
@@ -1597,6 +1602,28 @@ export default function CreateSessionScreen() {
       cancelled = true;
     };
   }, [primaryClubId]);
+
+  // Demo/E2E hook: evidence harness can set an explicit date/time fixture.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const w = window as typeof window & {
+      __GRPD_E2E_OUTING_WHEN__?: {
+        dateISO?: string;
+        hour?: number;
+        minute?: number;
+      };
+    };
+    const apply = () => {
+      const fixture = w.__GRPD_E2E_OUTING_WHEN__;
+      if (!fixture) return;
+      if (fixture.dateISO) setDateISO(fixture.dateISO);
+      if (typeof fixture.hour === "number") setSelectedHour(fixture.hour);
+      if (typeof fixture.minute === "number") setSelectedMinute(fixture.minute);
+    };
+    apply();
+    const id = window.setInterval(apply, 400);
+    return () => window.clearInterval(id);
+  }, []);
 
   // Format time as HH:MM
   const timeLabel = `${selectedHour.toString().padStart(2, "0")}:${selectedMinute.toString().padStart(2, "0")}`;
@@ -2066,6 +2093,15 @@ export default function CreateSessionScreen() {
           return;
         }
       }
+
+      const publishTimeMinutes = selectedHour * 60 + selectedMinute;
+      if (!isSelectableOutingDateTime(dateISO, publishTimeMinutes)) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError(
+          "Date/heure invalide — choisis un créneau encore à venir.",
+        );
+        return;
+      }
       setFormError(null);
 
       // Build effective groups from groupConfigs — walks never require pace groups.
@@ -2470,18 +2506,28 @@ export default function CreateSessionScreen() {
             style={styles.fieldRow}
             onPress={() => setShowDatePicker(true)}
             activeOpacity={0.7}
+            testID="session-date-field"
+            accessibilityRole="button"
+            accessibilityLabel="Choisir une date"
           >
             <Text style={styles.fieldLabel}>Date</Text>
-            <Text style={styles.fieldInput}>{dateLabel}</Text>
+            <Text style={styles.fieldInput} testID="session-date-value">
+              {dateLabel}
+            </Text>
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.fieldRow}
             onPress={() => setShowTimePicker(true)}
             activeOpacity={0.7}
+            testID="session-time-field"
+            accessibilityRole="button"
+            accessibilityLabel="Choisir une heure"
           >
             <Text style={styles.fieldLabel}>Heure</Text>
-            <Text style={styles.fieldInput}>{timeLabel}</Text>
+            <Text style={styles.fieldInput} testID="session-time-value">
+              {timeLabel}
+            </Text>
           </TouchableOpacity>
           {sessionMode === "workout" && (
             <>
@@ -2720,6 +2766,15 @@ export default function CreateSessionScreen() {
             })}
           </View>
         )}
+
+        {formError ? (
+          <Text
+            style={[styles.formErrorText, { marginHorizontal: 20 }]}
+            testID="session-form-error-banner"
+          >
+            {formError}
+          </Text>
+        ) : null}
 
         {/* Bottom spacing for CTA */}
         <View style={styles.bottomSpacing} />

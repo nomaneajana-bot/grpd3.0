@@ -716,6 +716,7 @@ const DEMO_RESET_KEYS = [
   "grpd_test_records_v2",
   "sessions:v1",
   "joinedSessions:v1",
+  // Per-user joined session keys are cleared via prefix scan in resetDemoWorld when present.
   "runs:v1",
   "grpd_coach_feedback_v1",
   "grpd_settings_prefs_v1",
@@ -726,6 +727,13 @@ export async function resetDemoData(): Promise<void> {
   if (!DEMO_MODE) {
     // Still allow reset when called from settings if flag flips mid-session
   }
-  await AsyncStorage.multiRemove(DEMO_RESET_KEYS);
+  const allKeys = await AsyncStorage.getAllKeys();
+  const joinedUserKeys = allKeys.filter((k) =>
+    k.startsWith("joinedSessions:v1"),
+  );
+  await AsyncStorage.multiRemove([
+    ...DEMO_RESET_KEYS,
+    ...joinedUserKeys,
+  ]);
   await ensureDemoWorld();
 }

@@ -337,6 +337,7 @@ export default function SessionScreen() {
   /** M06 — cancel participation confirm (≠ leave club). */
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [isLeavingOuting, setIsLeavingOuting] = useState(false);
+  const [isJoiningOuting, setIsJoiningOuting] = useState(false);
   const canJoin = session
     ? session.visibility !== "members" || Boolean(isApprovedMember)
     : false;
@@ -633,6 +634,7 @@ export default function SessionScreen() {
     sessionAnchorGroupId) as ClubPaceGroupId | null;
 
   const handleSave = async () => {
+    if (isJoiningOuting || hasStoredJoin) return;
     const hasPaceGroups = (session.paceGroups?.length ?? 0) > 0;
     const currentGroupId = hasPaceGroups
       ? selectedGroupId ||
@@ -658,6 +660,7 @@ export default function SessionScreen() {
         return;
       }
     }
+    setIsJoiningOuting(true);
     try {
       const client = createApiClient();
       let apiJoined = false;
@@ -687,6 +690,12 @@ export default function SessionScreen() {
           );
           return;
         }
+        // Transient failures (e.g. demo fail-next flag / 5xx): keep join CTA for retry.
+        if (status === 503 || status === 500 || status === 502) {
+          console.warn("API join temporary failure:", apiErr);
+          showToast("Inscription temporairement impossible. Réessaie.", "error");
+          return;
+        }
         console.warn("API join failed, saving locally:", apiErr);
       }
       const storedGroupId = currentGroupId || "open";
@@ -702,6 +711,8 @@ export default function SessionScreen() {
     } catch (error) {
       console.warn("Failed to save joined session:", error);
       showToast("Impossible d'enregistrer le groupe.", "error");
+    } finally {
+      setIsJoiningOuting(false);
     }
   };
 
@@ -937,7 +948,7 @@ export default function SessionScreen() {
             return isWalkLike ? raw : raw.toUpperCase();
           })()}
         </Text>
-        <Text style={styles.sessionSubtitle}>
+        <Text style={styles.sessionSubtitle} testID="session-detail-date-label">
           {formatSessionDetailSubtitle(session)}
         </Text>
 
@@ -1407,6 +1418,7 @@ export default function SessionScreen() {
               hasStoredJoin={hasStoredJoin}
               canJoin={canJoin}
               isPendingMember={isPendingMember}
+              isPublishing={isJoiningOuting}
               onJoin={handleSave}
               onRequestJoin={handleRequestJoin}
               onLeave={openLeaveConfirm}
@@ -1710,9 +1722,6 @@ export default function SessionScreen() {
                 pas le club et ne supprime pas la sortie pour les autres.
               </Text>
             </View>
-            <Text style={styles.leaveModalSmall}>
-              Club membership ≠ inscription à la sortie.
-            </Text>
             <TouchableOpacity
               style={[
                 styles.leaveModalConfirmBtn,

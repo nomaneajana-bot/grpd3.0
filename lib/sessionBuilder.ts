@@ -3,6 +3,7 @@
 import {
   formatDateLabel,
   isSelectableOutingDate,
+  isSelectableOutingDateTime,
   todayISO,
 } from "./dateHelpers";
 import type {
@@ -117,6 +118,11 @@ export function buildSessionFromForm(params: {
 
   if (!isSelectableOutingDate(dateISO)) {
     throw new Error("PAST_DATE: La date doit être aujourd'hui ou dans le futur.");
+  }
+  if (!isSelectableOutingDateTime(dateISO, timeMinutes)) {
+    throw new Error(
+      "PAST_DATE: Choisis une date et une heure encore à venir.",
+    );
   }
 
   const [y, m, d] = dateISO.split("-").map((n) => parseInt(n, 10));

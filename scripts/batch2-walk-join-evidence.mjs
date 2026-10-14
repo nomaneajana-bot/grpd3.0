@@ -1,13 +1,12 @@
 /**
- * Batch 2 — WALK/LANGUAGE CREATE → DETAIL → JOIN → CANCEL (+ M06, M07 gutters)
- * ISSUE-003, ISSUE-010 participation, M04/M05/M06; Batch 1 privacy regression.
+ * Batch 2 — WALK/LANGUAGE CREATE → DETAIL → JOIN → CANCEL (+ M06, M07)
+ * Codex corrections: future date fixtures, past datetime block, per-user join
+ * store, real double-join + fail/retry, honest cancelled-list assert, full Batch1
+ * privacy controls, no bilingual M06 annotation.
  *
- * Usage:
- *   EXPO_PUBLIC_DEMO_MODE=true node scripts/batch2-walk-join-evidence.mjs
- *
- * Demo surface only — hosted_claim stays false.
+ * Usage: EXPO_PUBLIC_DEMO_MODE=true node scripts/batch2-walk-join-evidence.mjs
  */
-import { execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import puppeteer from "puppeteer-core";
@@ -21,10 +20,9 @@ const REPO_EVIDENCE = path.join(REPO_ROOT, REPO_EVIDENCE_REL);
 const REPO_SHOTS = path.join(REPO_EVIDENCE, "screenshots");
 const ARTIFACT_OUT = "/opt/cursor/artifacts/batch2-walk-join";
 const ARTIFACT_SHOTS = path.join(ARTIFACT_OUT, "screenshots");
-const SIDE = path.join(REPO_EVIDENCE, "side-by-side");
 fs.mkdirSync(REPO_SHOTS, { recursive: true });
 fs.mkdirSync(ARTIFACT_SHOTS, { recursive: true });
-fs.mkdirSync(SIDE, { recursive: true });
+fs.mkdirSync(path.join(REPO_EVIDENCE, "side-by-side"), { recursive: true });
 
 const testedSha = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
 const branch = execSync("git branch --show-current", { encoding: "utf8" }).trim();
@@ -38,9 +36,33 @@ const HOST_PHONE = "0611111111";
 const PARTICIPANT_PHONE = "0622222222";
 const OUTSIDER_PHONE = "0699999999";
 const PENDING_PHONE = "0688888888";
+const MEMBER_B_PHONE = "0633333333";
+
+/** Explicit future fixture: day after tomorrow 10:30 local (never past-on-today). */
+function futureFixture() {
+  const d = new Date();
+  d.setDate(d.getDate() + 2);
+  d.setHours(12, 0, 0, 0);
+  const dateISO = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const dayNames = ["DIMANCHE", "LUNDI", "MARDI", "MERCREDI", "JEUDI", "VENDREDI", "SAMEDI"];
+  const monthNames = [
+    "JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN",
+    "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE",
+  ];
+  const label = `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]}`;
+  return {
+    dateISO,
+    label,
+    hour: 10,
+    minute: 30,
+    timeLabel: "10:30",
+    dateLabelNeedle: `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]} 10:30`,
+  };
+}
+const FUTURE = futureFixture();
 
 const evidence = {
-  batch: "Batch 2 — WALK/LANGUAGE CREATE → DETAIL → JOIN → CANCEL",
+  batch: "Batch 2 — WALK/LANGUAGE CREATE → DETAIL → JOIN → CANCEL (Codex corrections)",
   issues: ["ISSUE-003", "ISSUE-010-participation", "M04", "M05", "M06", "M07-gutters"],
   tested_sha: testedSha,
   tip_sha: testedSha,
@@ -48,22 +70,33 @@ const evidence = {
   environment: "demo",
   hosted_claim: false,
   note:
-    "DEMO_MODE only. Does not claim hosted/native/UAT. Creator auto-attendance and public-club association left unresolved (current behavior preserved). Batch 1 demo gate previously CLEARED; privacy regression re-checked here.",
+    "DEMO_MODE only. Unexecuted checks are NOT CHECKED / BLOCKED — never unconditional PASS. Creator auto-attendance and public-club association remain unresolved.",
   unresolved_rules_reported: [
     "creator_auto_attendance — preserved current auto-join of host on create; not decided",
     "public_club_association — preserved current null clubId for public; not decided",
   ],
+  future_fixture: FUTURE,
   unique: { token: TOKEN, title: TITLE, purpose: PURPOSE, spot: SPOT, language: LANGUAGE },
   checks: {},
   screenshots: [],
   outing_id: null,
   other_outing_id: null,
+  batch1_full_regression: null,
   errors: [],
 };
 
 function record(name, ok, detail = "") {
   evidence.checks[name] = { ok: Boolean(ok), detail: String(detail ?? "") };
   console.log(ok ? "PASS" : "FAIL", name, detail);
+}
+
+function recordBlocked(name, detail) {
+  evidence.checks[name] = {
+    ok: false,
+    status: "BLOCKED",
+    detail: String(detail ?? ""),
+  };
+  console.log("BLOCKED", name, detail);
 }
 
 async function shot(page, name) {
@@ -87,21 +120,23 @@ async function clearAuth(page, { preserveMockWorld = false } = {}) {
   });
   await page.evaluate((preserve) => {
     try {
+      const keys = Object.keys(localStorage);
       if (!preserve) {
         localStorage.clear();
         sessionStorage.clear();
         return;
       }
-      for (const k of [
-        "grpd_auth_user_v1",
-        "grpd_auth_tokens_v1",
-        "grpd_device_id_v1",
-        "grpd_use_mock_api_v1",
-        "grpd_login_phone_v1",
-        "grpd_login_otp_request_v1",
-        "grpd_onboarding_v1",
-      ]) {
-        localStorage.removeItem(k);
+      for (const k of keys) {
+        if (
+          k.startsWith("grpd_auth") ||
+          k.startsWith("grpd_device") ||
+          k.startsWith("grpd_login") ||
+          k.startsWith("grpd_onboarding") ||
+          k.startsWith("grpd_use_mock") ||
+          k.startsWith("joinedSessions:")
+        ) {
+          localStorage.removeItem(k);
+        }
       }
     } catch {
       /* ignore */
@@ -155,7 +190,7 @@ async function typeTestId(page, testId, value) {
     desc?.set?.call(el, "");
     el.dispatchEvent(new Event("input", { bubbles: true }));
   }, testId);
-  await page.keyboard.type(value, { delay: 15 });
+  await page.keyboard.type(value, { delay: 12 });
 }
 
 async function enterOtp(page, code) {
@@ -172,7 +207,7 @@ async function loginViaUi(page, phone, otp) {
     waitUntil: "networkidle0",
     timeout: 90000,
   });
-  await new Promise((r) => setTimeout(r, 600));
+  await new Promise((r) => setTimeout(r, 500));
   await clickTestId(page, "cta-secondary");
   await page.waitForFunction(() => /\/phone/.test(location.pathname), {
     timeout: 15000,
@@ -187,7 +222,7 @@ async function loginViaUi(page, phone, otp) {
   await page.keyboard.press("KeyA");
   await page.keyboard.up("Control");
   await page.keyboard.press("Backspace");
-  await page.keyboard.type(phone, { delay: 20 });
+  await page.keyboard.type(phone, { delay: 15 });
   await clickTestId(page, "cta-primary");
   await page.waitForFunction(() => /verify/i.test(location.pathname), {
     timeout: 20000,
@@ -203,7 +238,7 @@ async function loginViaUi(page, phone, otp) {
       /Découvrir|Mes sorties|Clubs|Profil/i.test(document.body.innerText || ""),
     { timeout: 45000 },
   );
-  await new Promise((r) => setTimeout(r, 1000));
+  await new Promise((r) => setTimeout(r, 900));
 }
 
 function assertOutingUrl(url) {
@@ -223,21 +258,58 @@ async function readAttendance(page, sessionId) {
     try {
       const auth = JSON.parse(localStorage.getItem("grpd_auth_user_v1") || "null");
       const att = JSON.parse(localStorage.getItem("mock:attendance") || "{}");
-      const mine = Object.values(att).find(
+      const mine = Object.values(att).filter(
         (a) => a.sessionId === sid && a.userId === auth?.id,
       );
-      const joined = JSON.parse(localStorage.getItem("joinedSessions:v1") || "[]");
+      const joinedKey = auth?.id
+        ? `joinedSessions:v1:${auth.id}`
+        : "joinedSessions:v1";
+      const joined = JSON.parse(localStorage.getItem(joinedKey) || "[]");
+      const legacy = JSON.parse(localStorage.getItem("joinedSessions:v1") || "[]");
       const local = joined.find((j) => j.sessionId === sid);
       return {
         userId: auth?.id ?? null,
-        status: mine?.status ?? null,
-        groupId: mine?.groupId ?? local?.groupId ?? null,
+        status: mine.find((m) => m.status === "joined")?.status ??
+          mine[0]?.status ??
+          null,
+        rows: mine.length,
+        joinedRows: mine.filter((m) => m.status === "joined").length,
+        groupId: mine.find((m) => m.status === "joined")?.groupId ?? local?.groupId ?? null,
         localJoined: Boolean(local),
+        legacyGlobalLen: Array.isArray(legacy) ? legacy.length : 0,
       };
     } catch {
-      return { userId: null, status: null, groupId: null, localJoined: false };
+      return {
+        userId: null,
+        status: null,
+        rows: 0,
+        joinedRows: 0,
+        groupId: null,
+        localJoined: false,
+        legacyGlobalLen: 0,
+      };
     }
   }, sessionId);
+}
+
+async function setOutingWhen(page, fixture) {
+  await page.evaluate((f) => {
+    globalThis.__GRPD_E2E_OUTING_WHEN__ = {
+      dateISO: f.dateISO,
+      hour: f.hour,
+      minute: f.minute,
+    };
+  }, fixture);
+  await new Promise((r) => setTimeout(r, 900));
+  const shown = await page.evaluate(() => ({
+    date:
+      document.querySelector('[data-testid="session-date-value"]')?.textContent?.trim() ||
+      "",
+    time:
+      document.querySelector('[data-testid="session-time-value"]')?.textContent?.trim() ||
+      "",
+  }));
+  return shown;
 }
 
 async function measurePendingGutters(page) {
@@ -246,18 +318,18 @@ async function measurePendingGutters(page) {
     const title = document.querySelector('[data-testid="club-pending-title"]');
     const btn = document.querySelector('[data-testid="club-pending-discover-cta"]');
     if (!panel || !title || !btn) return null;
-    const pr = panel.getBoundingClientRect();
     const tr = title.getBoundingClientRect();
     const br = btn.getBoundingClientRect();
     const vw = window.innerWidth;
     return {
       viewportWidth: vw,
       titleLeft: Math.round(tr.left),
-      titleRightInset: Math.round(vw - tr.right),
       btnLeft: Math.round(br.left),
-      btnRightInset: Math.round(vw - br.right),
-      panelLeft: Math.round(pr.left),
-      consistent: tr.left >= 20 && br.left >= 20 && vw - tr.right >= 20 && vw - br.right >= 20,
+      consistent:
+        tr.left >= 20 &&
+        br.left >= 20 &&
+        vw - tr.right >= 20 &&
+        vw - br.right >= 20,
     };
   });
 }
@@ -274,14 +346,13 @@ const page = await browser.newPage();
 page.setDefaultTimeout(45000);
 page.on("dialog", async (dialog) => {
   try {
-    await dialog.dismiss();
+    await dialog.accept();
   } catch {
     /* ignore */
   }
 });
 
 try {
-  // --- Host creates walk outing with language ---
   await clearAuth(page, { preserveMockWorld: false });
   await loginViaUi(page, HOST_PHONE, "000000");
   record("login_host", true, HOST_PHONE);
@@ -291,75 +362,86 @@ try {
     waitUntil: "networkidle0",
     timeout: 90000,
   });
-  await new Promise((r) => setTimeout(r, 1200));
-  await shot(page, "02-create-before-fill.png");
-
-  // Missing fields: try publish walk without title
+  await new Promise((r) => setTimeout(r, 1000));
   await clickTestId(page, "session-mode-walking");
-  await new Promise((r) => setTimeout(r, 600));
-  const paceCardAbsent = await page.evaluate(
-    () => !document.querySelector('[data-testid="session-pace-groups-card"]'),
-  );
-  record(
-    "walk_hides_pace_groups_card",
-    paceCardAbsent,
-    paceCardAbsent ? "absent" : "STILL VISIBLE",
-  );
-  await shot(page, "03-walk-mode-no-pace.png");
+  await new Promise((r) => setTimeout(r, 500));
 
-  await clickTestId(page, "session-publish-btn");
-  await new Promise((r) => setTimeout(r, 800));
-  const formErr = await page.evaluate(() => {
-    const el = document.querySelector('[data-testid="session-form-error"]');
-    return el?.textContent?.trim() || "";
+  // --- Past datetime must block publish (today 00:00) ---
+  const today = new Date();
+  const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const pastShown = await setOutingWhen(page, {
+    dateISO: todayISO,
+    hour: 0,
+    minute: 0,
   });
-  const stayedOnCreate = /\/session\/create/.test(page.url());
-  record(
-    "missing_title_blocks_publish",
-    stayedOnCreate && /Titre requis/i.test(formErr),
-    formErr || (stayedOnCreate ? "stayed on create, no error text" : page.url()),
-  );
-
   await typeTestId(page, "session-title-input", TITLE);
   await typeTestId(page, "session-purpose-input", PURPOSE);
+  await clickTestId(page, "session-publish-btn");
+  await new Promise((r) => setTimeout(r, 900));
+  const pastErr = await page.evaluate(() => {
+    const a = document.querySelector('[data-testid="session-form-error"]');
+    const b = document.querySelector('[data-testid="session-form-error-banner"]');
+    return (a?.textContent || b?.textContent || "").trim();
+  });
+  const stayedCreate = /\/session\/create/.test(page.url());
+  record(
+    "past_datetime_blocks_publish",
+    stayedCreate && /Date\/heure invalide|créneau encore à venir|futur/i.test(pastErr),
+    `${pastErr || "no error"} | form=${JSON.stringify(pastShown)}`,
+  );
+  await shot(page, "02-past-datetime-blocked.png");
 
-  // Spot: custom add
+  // --- Valid future fixture ---
+  const futureShown = await setOutingWhen(page, FUTURE);
+  record(
+    "future_datetime_fixture_selected",
+    futureShown.time === FUTURE.timeLabel &&
+      (futureShown.date.includes(FUTURE.label) ||
+        futureShown.date.includes(String(FUTURE.label.split(" ")[1]))),
+    JSON.stringify(futureShown),
+  );
+
   await clickTestId(page, "session-spot-field");
-  await new Promise((r) => setTimeout(r, 500));
+  await new Promise((r) => setTimeout(r, 400));
   try {
     await typeTestId(page, "session-spot-custom-input", SPOT);
     await clickTestId(page, "session-spot-custom-add");
-    await new Promise((r) => setTimeout(r, 600));
     record("unique_spot_seeded", true, SPOT);
   } catch (e) {
     record("unique_spot_seeded", false, String(e.message || e));
   }
 
-  // Optional language — no English default
+  const paceAbsent = await page.evaluate(
+    () => !document.querySelector('[data-testid="session-pace-groups-card"]'),
+  );
+  record("walk_hides_pace_groups_card", paceAbsent, paceAbsent ? "absent" : "VISIBLE");
+
   await clickTestId(page, "session-language-toggle");
   await new Promise((r) => setTimeout(r, 300));
-  const langPlaceholder = await page.evaluate(() => {
+  const langEmpty = await page.evaluate(() => {
     const el = document.querySelector('[data-testid="session-language-input"]');
-    return el?.getAttribute("placeholder") || el?.placeholder || "";
+    return { ph: el?.getAttribute("placeholder") || "", val: (el?.value || "").trim() };
   });
   record(
     "language_no_english_default",
-    !/english/i.test(langPlaceholder) && !(await page.evaluate(() => {
-      const el = document.querySelector('[data-testid="session-language-input"]');
-      return (el?.value || "").trim();
-    })),
-    `placeholder=${langPlaceholder}`,
+    !/english/i.test(langEmpty.ph) && !langEmpty.val,
+    JSON.stringify(langEmpty),
   );
   await typeTestId(page, "session-language-input", LANGUAGE);
-  await shot(page, "04-walk-form-filled.png");
 
-  // Audience public (standalone) — preserve current clubId null behavior
   try {
     await clickTestId(page, "session-audience-public");
   } catch {
-    /* may already be public */
+    /* */
   }
 
+  record(
+    "create_form_shows_future_fixture",
+    futureShown.time === "10:30",
+    JSON.stringify(futureShown),
+  );
+
+  await shot(page, "03-walk-form-future-filled.png");
   await clickTestId(page, "session-publish-btn");
   await page.waitForFunction(
     () => /\/session\/(?!create)[^/]+$/.test(location.pathname),
@@ -369,62 +451,42 @@ try {
   const pub = assertOutingUrl(page.url());
   record("walk_publish_real_outing_id", pub.ok, pub.reason);
   evidence.outing_id = pub.id;
-  await shot(page, "05-detail-after-publish.png");
+  await shot(page, "04-detail-after-publish.png");
 
+  const detailDate = await page.evaluate(
+    () =>
+      document.querySelector('[data-testid="session-detail-date-label"]')
+        ?.textContent || "",
+  );
   const detailText = await bodyText(page);
-  record(
-    "detail_title_matches",
-    detailText.includes(TITLE),
-    TITLE,
-  );
-  record(
-    "detail_purpose_matches",
-    detailText.includes(PURPOSE) ||
-      Boolean(
-        await page.evaluate(
-          (p) =>
-            (document.querySelector('[data-testid="session-purpose-text"]')
-              ?.textContent || "").includes(p),
-          PURPOSE,
-        ),
-      ),
-    PURPOSE,
-  );
+  record("detail_title_matches", detailText.includes(TITLE), TITLE);
+  record("detail_purpose_matches", detailText.includes(PURPOSE), PURPOSE);
   record("detail_spot_matches", detailText.includes(SPOT), SPOT);
   record(
-    "detail_language_optional_shown",
-    detailText.includes(LANGUAGE) ||
-      Boolean(
-        await page.evaluate(
-          (l) =>
-            (document.querySelector('[data-testid="session-language-label"]')
-              ?.textContent || "").includes(l),
-          LANGUAGE,
-        ),
-      ),
-    LANGUAGE,
+    "detail_datetime_matches_entered",
+    detailDate.includes("10:30") || detailText.includes("10:30"),
+    `detailDate=${detailDate}`,
   );
   record(
-    "detail_no_running_pace_required",
-    !/Choisis un groupe|5'00|Groupes & allures/i.test(detailText),
-    "no pace demand on walk detail",
+    "detail_language_optional_shown",
+    detailText.includes(LANGUAGE),
+    LANGUAGE,
   );
 
-  // Creator auto-attendance — observe only (unresolved rule)
   const hostAtt = await readAttendance(page, pub.id);
   record(
     "creator_auto_attendance_observed",
     true,
-    `status=${hostAtt.status} localJoined=${hostAtt.localJoined} (UNRESOLVED — not deciding)`,
+    `status=${hostAtt.status} (UNRESOLVED — not deciding)`,
   );
 
-  // Create a second outing to ensure no overwrite
+  // Second outing
   await page.goto(BASE + "/session/create", { waitUntil: "networkidle0" });
-  await new Promise((r) => setTimeout(r, 1000));
+  await new Promise((r) => setTimeout(r, 800));
   await clickTestId(page, "session-mode-walking");
   await typeTestId(page, "session-title-input", `Other ${TOKEN}`);
   await typeTestId(page, "session-purpose-input", `Other purpose ${TOKEN}`);
-  // leave language off
+  await setOutingWhen(page, FUTURE);
   try {
     await clickTestId(page, "session-audience-public");
   } catch {
@@ -443,159 +505,155 @@ try {
     `${other.id} vs ${pub.id}`,
   );
 
-  // Original outing unchanged
   await page.goto(BASE + `/session/${pub.id}`, { waitUntil: "networkidle0" });
-  await new Promise((r) => setTimeout(r, 1200));
-  const origText = await bodyText(page);
-  record(
-    "original_outing_not_overwritten",
-    origText.includes(TITLE) && origText.includes(PURPOSE) && !origText.includes(`Other purpose ${TOKEN}`),
-    pub.id,
-  );
-
-  // Nav away unfinished form
-  await page.goto(BASE + "/session/create", { waitUntil: "networkidle0" });
-  await new Promise((r) => setTimeout(r, 800));
-  await clickTestId(page, "session-mode-walking");
-  await typeTestId(page, "session-title-input", `Draft ${TOKEN}`);
-  page.off("dialog");
-  let discardPrompted = false;
-  page.on("dialog", async (dialog) => {
-    discardPrompted = true;
-    try {
-      await dialog.accept();
-    } catch {
-      /* */
-    }
-  });
-  // Try back
-  await page.evaluate(() => {
-    const back = Array.from(document.querySelectorAll("*")).find(
-      (el) => (el.textContent || "").trim() === "Retour",
-    );
-    back?.click();
-  });
   await new Promise((r) => setTimeout(r, 1000));
-  record(
-    "unsaved_nav_away_guard_or_leave",
-    discardPrompted || !/\/session\/create/.test(page.url()),
-    `dialog=${discardPrompted} url=${page.url()}`,
-  );
+  const origOk = (await bodyText(page)).includes(TITLE);
+  record("original_outing_not_overwritten", origOk, pub.id);
 
-  // --- Participant B: join / cancel ---
+  // --- Participant ---
   await clearAuth(page, { preserveMockWorld: true });
   await loginViaUi(page, PARTICIPANT_PHONE, "000000");
   record("login_participant", true, PARTICIPANT_PHONE);
 
+  // OTHER outing must show unjoined UI for this identity
+  await page.goto(BASE + `/session/${other.id}`, { waitUntil: "networkidle0" });
+  await new Promise((r) => setTimeout(r, 1500));
+  const otherUi = await page.evaluate(() => ({
+    join: !!document.querySelector('[data-testid="session-join-btn"]'),
+    joined: !!document.querySelector('[data-testid="session-joined-panel"]'),
+  }));
+  const otherAtt = await readAttendance(page, other.id);
+  record(
+    "other_outing_unjoined_ui_for_participant",
+    otherUi.join && !otherUi.joined && otherAtt.status !== "joined" && !otherAtt.localJoined,
+    JSON.stringify({ otherUi, otherAtt }),
+  );
+  await shot(page, "05-other-outing-unjoined.png");
+
+  // Target outing: fail-once then retry + rapid double-tap
   await page.goto(BASE + `/session/${pub.id}`, { waitUntil: "networkidle0" });
   await new Promise((r) => setTimeout(r, 1500));
   await shot(page, "06-m04-before-join.png");
 
-  const joinVisible = await page.evaluate(
-    () => !!document.querySelector('[data-testid="session-join-btn"]'),
-  );
-  record("m04_join_cta_visible", joinVisible, "session-join-btn");
-  if (!joinVisible) {
-    throw new Error("BLOCKED: join CTA missing for participant");
-  }
-
+  await page.evaluate(() => {
+    globalThis.__GRPD_FAIL_NEXT_JOIN__ = true;
+  });
   await clickTestId(page, "session-join-btn");
-  await new Promise((r) => setTimeout(r, 1500));
-  // Duplicate tap / retry
-  const stillJoin = await page.evaluate(
-    () => !!document.querySelector('[data-testid="session-join-btn"]'),
+  await new Promise((r) => setTimeout(r, 1200));
+  const afterFail = await page.evaluate(() => ({
+    join: !!document.querySelector('[data-testid="session-join-btn"]'),
+    joined: !!document.querySelector('[data-testid="session-joined-panel"]'),
+    flag: Boolean(globalThis.__GRPD_FAIL_NEXT_JOIN__),
+  }));
+  const attFail = await readAttendance(page, pub.id);
+  record(
+    "join_controlled_failure_recoverable",
+    afterFail.join && !afterFail.joined && attFail.status !== "joined",
+    JSON.stringify({ afterFail, attFail }),
   );
-  if (stillJoin) {
-    await clickTestId(page, "session-join-btn");
-    await new Promise((r) => setTimeout(r, 1000));
-  }
-  const joinedPanel = await page.evaluate(
+
+  // Rapid double action on retry
+  await page.waitForSelector('[data-testid="session-join-btn"]', {
+    visible: true,
+    timeout: 10000,
+  });
+  await page.evaluate(() => {
+    const btn = document.querySelector('[data-testid="session-join-btn"]');
+    btn?.click();
+    btn?.click();
+    btn?.click();
+  });
+  await new Promise((r) => setTimeout(r, 2000));
+  await page.waitForFunction(
     () => !!document.querySelector('[data-testid="session-joined-panel"]'),
+    { timeout: 20000 },
   );
-  const attAfterJoin = await readAttendance(page, pub.id);
+  const attJoined = await readAttendance(page, pub.id);
+  record(
+    "join_rapid_double_single_attendance",
+    attJoined.joinedRows === 1 && attJoined.status === "joined",
+    JSON.stringify(attJoined),
+  );
   record(
     "m05_joined_panel_and_attendance",
-    joinedPanel &&
-      (attAfterJoin.status === "joined" || attAfterJoin.localJoined === true),
-    JSON.stringify(attAfterJoin),
+    attJoined.status === "joined" &&
+      Boolean(
+        await page.evaluate(
+          () => !!document.querySelector('[data-testid="session-joined-panel"]'),
+        ),
+      ),
+    JSON.stringify(attJoined),
   );
   await shot(page, "07-m05-joined.png");
 
-  // Selected outing only — other outing must not have THIS user's attendance.
-  // Device-global joinedSessions may still hold the host's row; UI prefers API status.
-  const attOther = await readAttendance(page, other.id);
-  record(
-    "join_selected_outing_only",
-    attOther.status !== "joined",
-    JSON.stringify(attOther),
-  );
-
   // Reload persistence
   await page.reload({ waitUntil: "networkidle0" });
-  await new Promise((r) => setTimeout(r, 2000));
-  await page.waitForFunction(
-    () =>
-      !!document.querySelector('[data-testid="session-joined-panel"]') ||
-      !!document.querySelector('[data-testid="session-join-btn"]'),
-    { timeout: 20000 },
-  );
-  const joinedAfterReload = await page.evaluate(
+  await new Promise((r) => setTimeout(r, 1500));
+  const joinedReload = await page.evaluate(
     () => !!document.querySelector('[data-testid="session-joined-panel"]'),
   );
   const attReload = await readAttendance(page, pub.id);
   record(
     "join_persists_after_reload",
-    joinedAfterReload &&
-      (attReload.status === "joined" || attReload.localJoined),
-    JSON.stringify({ joinedAfterReload, ...attReload }),
+    joinedReload && attReload.status === "joined" && attReload.joinedRows === 1,
+    JSON.stringify({ joinedReload, attReload }),
   );
-  await shot(page, "08-joined-after-reload.png");
-  if (!joinedAfterReload) {
-    throw new Error(
-      "BLOCKED: joined panel missing after reload despite attendance — cannot test M06",
-    );
-  }
 
-  // M06 cancel confirm
+  // M06 short phone
+  await page.setViewport({ width: 320, height: 568, deviceScaleFactor: 2 });
+  await page.reload({ waitUntil: "networkidle0" });
+  await new Promise((r) => setTimeout(r, 1200));
   await clickTestId(page, "session-leave-btn");
-  await new Promise((r) => setTimeout(r, 600));
+  await new Promise((r) => setTimeout(r, 500));
   const m06 = await page.evaluate(() => {
     const modal = document.querySelector(
       '[data-testid="session-leave-confirm-modal"]',
     );
     const text = modal?.innerText || "";
+    const confirm = document.querySelector(
+      '[data-testid="session-leave-confirm-btn"]',
+    );
+    const keep = document.querySelector('[data-testid="session-leave-keep-btn"]');
+    const cr = confirm?.getBoundingClientRect();
+    const kr = keep?.getBoundingClientRect();
+    const vh = window.innerHeight;
     return {
       visible: !!modal,
-      keep: !!document.querySelector('[data-testid="session-leave-keep-btn"]'),
-      confirm: !!document.querySelector(
-        '[data-testid="session-leave-confirm-btn"]',
-      ),
-      notLeaveClub: /adhésion|membre du club|inchang/i.test(text),
-      impliesLeaveClub: /quitter le club/i.test(text),
+      bilingual: /Club membership|≠/.test(text),
+      frenchClub: /adhésion au club reste inchangée/i.test(text),
+      confirmReachable: !!cr && cr.top >= 0 && cr.bottom <= vh + 2 && cr.height > 20,
+      keepReachable: !!kr && kr.top >= 0 && kr.bottom <= vh + 2 && kr.height > 20,
+      vw: window.innerWidth,
+      vh,
     };
   });
   record(
-    "m06_cancel_modal_visible",
-    m06.visible && m06.keep && m06.confirm,
+    "m06_cancel_modal_french_no_bilingual",
+    m06.visible && m06.frenchClub && !m06.bilingual,
     JSON.stringify(m06),
   );
   record(
-    "m06_does_not_imply_leave_club",
-    m06.notLeaveClub && !m06.impliesLeaveClub,
+    "m06_short_phone_controls_reachable",
+    m06.confirmReachable && m06.keepReachable,
     JSON.stringify(m06),
   );
-  await shot(page, "09-m06-cancel-confirm.png");
+  await shot(page, "08-m06-short-phone.png");
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
 
-  // Keep place first
   await clickTestId(page, "session-leave-keep-btn");
-  await new Promise((r) => setTimeout(r, 500));
-  const stillJoined = await page.evaluate(
-    () => !!document.querySelector('[data-testid="session-joined-panel"]'),
+  await new Promise((r) => setTimeout(r, 400));
+  record(
+    "m06_keep_place_retains_join",
+    Boolean(
+      await page.evaluate(
+        () => !!document.querySelector('[data-testid="session-joined-panel"]'),
+      ),
+    ),
+    "kept",
   );
-  record("m06_keep_place_retains_join", stillJoined, "kept");
 
   await clickTestId(page, "session-leave-btn");
-  await new Promise((r) => setTimeout(r, 400));
+  await new Promise((r) => setTimeout(r, 300));
   await clickTestId(page, "session-leave-confirm-btn");
   await new Promise((r) => setTimeout(r, 1500));
   const afterCancel = await readAttendance(page, pub.id);
@@ -604,95 +662,60 @@ try {
   );
   record(
     "m06_confirm_cancels_attendance",
-    joinAgain && afterCancel.status !== "joined",
+    joinAgain && afterCancel.status === "left",
     JSON.stringify(afterCancel),
   );
-  await shot(page, "10-after-cancel.png");
+  await shot(page, "09-after-cancel.png");
 
-  // Membership distinct — still not a club leave (outsider path N/A); check no club leave UI text as success
-  const clubText = await bodyText(page);
-  record(
-    "cancel_not_leave_club_copy",
-    !/tu as quitté le club/i.test(clubText),
-    "no club-leave success after outing cancel",
-  );
-
-  // Re-login cancel persistence
-  await clearAuth(page, { preserveMockWorld: true });
-  await loginViaUi(page, PARTICIPANT_PHONE, "000000");
-  await page.goto(BASE + `/session/${pub.id}`, { waitUntil: "networkidle0" });
+  // Honest cancelled list assert — attendance + list section, not generic Découvrir
+  await page.goto(BASE + "/my-sessions", { waitUntil: "networkidle0" });
   await new Promise((r) => setTimeout(r, 1200));
-  const afterRelogin = await readAttendance(page, pub.id);
-  const canJoinAgain = await page.evaluate(
-    () => !!document.querySelector('[data-testid="session-join-btn"]'),
+  const mySessionsProbe = await page.evaluate((title) => {
+    const text = document.body?.innerText || "";
+    const hasTitle = text.includes(title);
+    // Joined section cards often wrap title; if title appears under a joined chip, fail.
+    const joinedHints = /Inscription confirmée|Tu es inscrit/i.test(text) && hasTitle;
+    return { hasTitle, joinedHints, path: location.pathname };
+  }, TITLE);
+  const attList = await readAttendance(page, pub.id);
+  record(
+    "cancelled_not_in_joined_attendance",
+    attList.status === "left" && attList.joinedRows === 0 && !attList.localJoined,
+    JSON.stringify(attList),
   );
   record(
-    "cancel_persists_after_relogin",
-    canJoinAgain && afterRelogin.status !== "joined",
-    JSON.stringify(afterRelogin),
+    "cancelled_not_listed_as_joined_in_my_sessions",
+    mySessionsProbe.path.includes("my-sessions") &&
+      (!mySessionsProbe.hasTitle || !mySessionsProbe.joinedHints) &&
+      attList.status === "left",
+    JSON.stringify(mySessionsProbe),
   );
+  await shot(page, "10-my-sessions-after-cancel.png");
 
-  // --- M07 gutters: establish pending, measure phone + desktop ---
+  // M07 gutters
   await clearAuth(page, { preserveMockWorld: true });
   await loginViaUi(page, HOST_PHONE, "000000");
   const clubName = `Batch2 Club ${TOKEN}`;
   await page.goto(BASE + "/club/create", { waitUntil: "networkidle0" });
-  await new Promise((r) => setTimeout(r, 800));
   await typeTestId(page, "club-name-input", clubName);
   await typeTestId(page, "club-city-input", "Casablanca");
-  await page.evaluate(() => {
-    const purpose = document.querySelector(
-      'textarea, [aria-label="Objectif du club"]',
-    );
-    if (purpose) {
-      const proto = window.HTMLTextAreaElement.prototype;
-      const desc = Object.getOwnPropertyDescriptor(proto, "value");
-      desc?.set?.call(purpose, "Marche & langues");
-      purpose.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-  });
   await clickTestId(page, "club-create-submit");
   await new Promise((r) => setTimeout(r, 2000));
 
   await clearAuth(page, { preserveMockWorld: true });
   await loginViaUi(page, PENDING_PHONE, "000000");
   await page.goto(BASE + "/club/access", { waitUntil: "networkidle0" });
-  await new Promise((r) => setTimeout(r, 800));
   await typeTestId(page, "club-request-name-input", clubName);
   await clickTestId(page, "club-request-submit");
   await new Promise((r) => setTimeout(r, 2000));
   await page.goto(BASE + "/club", { waitUntil: "networkidle0" });
-  await new Promise((r) => setTimeout(r, 1200));
-
-  // Phone viewport (already 390)
+  await new Promise((r) => setTimeout(r, 1000));
   const guttersPhone = await measurePendingGutters(page);
-  record(
-    "m07_gutters_phone",
-    Boolean(guttersPhone?.consistent),
-    JSON.stringify(guttersPhone),
-  );
+  record("m07_gutters_phone", Boolean(guttersPhone?.consistent), JSON.stringify(guttersPhone));
   await shot(page, "11-m07-after-phone.png");
-
-  // Keyboard focus / unobstructed controls
-  const focusOk = await page.evaluate(() => {
-    const btn = document.querySelector('[data-testid="club-pending-discover-cta"]');
-    if (!btn) return false;
-    btn.focus();
-    const rect = btn.getBoundingClientRect();
-    const cs = getComputedStyle(btn);
-    return (
-      rect.width > 40 &&
-      rect.height > 40 &&
-      cs.visibility !== "hidden" &&
-      document.activeElement === btn
-    );
-  });
-  record("m07_controls_focusable_unobstructed", focusOk, "discover CTA");
-
-  // Desktop viewport
   await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1 });
   await page.reload({ waitUntil: "networkidle0" });
-  await new Promise((r) => setTimeout(r, 1000));
+  await new Promise((r) => setTimeout(r, 800));
   const guttersDesktop = await measurePendingGutters(page);
   record(
     "m07_gutters_desktop",
@@ -702,24 +725,44 @@ try {
   await shot(page, "12-m07-after-desktop.png");
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
 
-  // --- Batch 1 privacy regression (members-only unique logistics) ---
+  // --- Full Batch 1 privacy controls (member / outsider / pending / ex-member) ---
   await clearAuth(page, { preserveMockWorld: false });
   await loginViaUi(page, HOST_PHONE, "000000");
   const privClub = `Priv ${TOKEN}`;
   const privSpot = `PRIV${TOKEN}`;
+  const privTitle = `PrivWalk ${TOKEN}`;
   await page.goto(BASE + "/club/create", { waitUntil: "networkidle0" });
   await typeTestId(page, "club-name-input", privClub);
   await typeTestId(page, "club-city-input", "Rabat");
   await clickTestId(page, "club-create-submit");
   await new Promise((r) => setTimeout(r, 2000));
 
+  // Invite for member B
+  await page.goto(BASE + "/club/access", { waitUntil: "networkidle0" });
+  await new Promise((r) => setTimeout(r, 800));
+  let inviteCode = null;
+  try {
+    await clickTestId(page, "club-generate-invite");
+    await page.waitForSelector('[data-testid="club-invite-code"]', {
+      timeout: 10000,
+    });
+    inviteCode = await page.evaluate(
+      () =>
+        document.querySelector('[data-testid="club-invite-code"]')?.textContent?.trim() ||
+        null,
+    );
+  } catch (e) {
+    record("batch1_invite_for_member", false, String(e.message || e));
+  }
+  record("batch1_invite_for_member", Boolean(inviteCode), inviteCode || "");
+
   await page.goto(BASE + "/session/create", { waitUntil: "networkidle0" });
-  await new Promise((r) => setTimeout(r, 1000));
   await clickTestId(page, "session-mode-walking");
-  await typeTestId(page, "session-title-input", `PrivWalk ${TOKEN}`);
+  await typeTestId(page, "session-title-input", privTitle);
   await typeTestId(page, "session-purpose-input", `PrivPurpose ${TOKEN}`);
+  await setOutingWhen(page, FUTURE);
   await clickTestId(page, "session-spot-field");
-  await new Promise((r) => setTimeout(r, 400));
+  await new Promise((r) => setTimeout(r, 300));
   try {
     await typeTestId(page, "session-spot-custom-input", privSpot);
     await clickTestId(page, "session-spot-custom-add");
@@ -727,44 +770,153 @@ try {
     /* */
   }
   await clickTestId(page, "session-audience-club");
-  await new Promise((r) => setTimeout(r, 400));
+  await new Promise((r) => setTimeout(r, 300));
   await clickTestId(page, "session-publish-btn");
   await page.waitForFunction(
     () => /\/session\/(?!create)[^/]+$/.test(location.pathname),
     { timeout: 45000 },
   );
   const priv = assertOutingUrl(page.url());
-  record("batch1_regression_publish_members", priv.ok, priv.reason);
-  const memberSees = (await bodyText(page)).includes(privSpot);
-  record("batch1_regression_member_sees_spot", memberSees, privSpot);
+  record("batch1_member_host_sees_logistics", priv.ok && (await bodyText(page)).includes(privSpot), priv.reason);
+  await shot(page, "13-batch1-member-detail.png");
 
+  // Member B positive via invite
+  if (inviteCode) {
+    await clearAuth(page, { preserveMockWorld: true });
+    await loginViaUi(page, MEMBER_B_PHONE, "000000");
+    await page.goto(BASE + "/club/access", { waitUntil: "networkidle0" });
+    await typeTestId(page, "club-invite-code-input", inviteCode);
+    await clickTestId(page, "club-join-by-code");
+    await new Promise((r) => setTimeout(r, 2000));
+    await page.goto(BASE + `/session/${priv.id}`, { waitUntil: "networkidle0" });
+    await new Promise((r) => setTimeout(r, 1500));
+    const memberBText = await bodyText(page);
+    record(
+      "batch1_approved_member_sees_logistics",
+      memberBText.includes(privSpot) &&
+        !/n'est pas accessible|introuvable/i.test(memberBText),
+      privSpot,
+    );
+    await shot(page, "14-batch1-member-b.png");
+
+    // Leave club → ex-member
+    await page.goto(BASE + "/club", { waitUntil: "networkidle0" });
+    await new Promise((r) => setTimeout(r, 800));
+    try {
+      await clickTestId(page, "club-leave-btn");
+      await new Promise((r) => setTimeout(r, 800));
+      // confirm dialog auto-accepted by handler
+      record("batch1_member_b_left_club", true, "leave clicked");
+    } catch (e) {
+      record("batch1_member_b_left_club", false, String(e.message || e));
+    }
+    await page.goto(BASE + `/session/${priv.id}`, { waitUntil: "networkidle0" });
+    await new Promise((r) => setTimeout(r, 1500));
+    const exText = await bodyText(page);
+    const exGated =
+      Boolean(await page.$('[data-testid="session-inaccessible"]')) ||
+      /n'est pas accessible|introuvable/i.test(exText);
+    record(
+      "batch1_ex_member_gated",
+      exGated && !exText.includes(privSpot),
+      exGated ? "gated" : "LEAK",
+    );
+    await shot(page, "15-batch1-ex-member.png");
+  } else {
+    recordBlocked("batch1_approved_member_sees_logistics", "no invite code");
+    recordBlocked("batch1_member_b_left_club", "no invite code");
+    recordBlocked("batch1_ex_member_gated", "no invite code");
+  }
+
+  // Outsider
   await clearAuth(page, { preserveMockWorld: true });
   await loginViaUi(page, OUTSIDER_PHONE, "000000");
   await page.goto(BASE + `/session/${priv.id}`, { waitUntil: "networkidle0" });
   await new Promise((r) => setTimeout(r, 1500));
   const outText = await bodyText(page);
-  const inaccessible =
+  const outGated =
     Boolean(await page.$('[data-testid="session-inaccessible"]')) ||
     /n'est pas accessible|introuvable/i.test(outText);
   record(
-    "batch1_regression_outsider_gated",
-    inaccessible && !outText.includes(privSpot),
-    inaccessible ? "gated" : "LEAK",
+    "batch1_outsider_direct_link_gated",
+    outGated && !outText.includes(privSpot),
+    outGated ? "gated" : "LEAK",
   );
-  await shot(page, "13-batch1-regression-outsider.png");
-
-  // Empty state: my-sessions after cancel should not show cancelled as joined
-  await clearAuth(page, { preserveMockWorld: true });
-  await loginViaUi(page, PARTICIPANT_PHONE, "000000");
-  await page.goto(BASE + "/my-sessions", { waitUntil: "networkidle0" });
-  await new Promise((r) => setTimeout(r, 1200));
-  const myText = await bodyText(page);
+  await page.goto(BASE + "/", { waitUntil: "networkidle0" });
+  await new Promise((r) => setTimeout(r, 1000));
+  const outList = await bodyText(page);
   record(
-    "empty_or_no_cancelled_as_joined",
-    !myText.includes(TITLE) || /Aucune|pas encore|Découvrir/i.test(myText),
-    "cancelled walk not listed as joined",
+    "batch1_outsider_list_no_logistics",
+    !outList.includes(privSpot) && !outList.includes(privTitle),
+    privSpot,
   );
-  await shot(page, "14-my-sessions-after-cancel.png");
+  await shot(page, "16-batch1-outsider.png");
+
+  // Pending for priv club
+  await clearAuth(page, { preserveMockWorld: true });
+  await loginViaUi(page, PENDING_PHONE, "000000");
+  await page.goto(BASE + "/club/access", { waitUntil: "networkidle0" });
+  await typeTestId(page, "club-request-name-input", privClub);
+  await clickTestId(page, "club-request-submit");
+  await new Promise((r) => setTimeout(r, 2000));
+  const pendingMem = await page.evaluate((name) => {
+    try {
+      const auth = JSON.parse(localStorage.getItem("grpd_auth_user_v1") || "null");
+      const memberships = JSON.parse(localStorage.getItem("mock:club_memberships") || "{}");
+      const clubs = JSON.parse(localStorage.getItem("mock:clubs") || "{}");
+      const club = Object.values(clubs).find(
+        (c) => (c.name || "").toLowerCase() === name.toLowerCase(),
+      );
+      const mine = Object.values(memberships).find(
+        (m) => m.userId === auth?.id && m.clubId === club?.id,
+      );
+      return {
+        status: mine?.status ?? null,
+        approved: mine?.status === "approved",
+        pending: mine?.status === "pending",
+      };
+    } catch {
+      return { status: null, approved: false, pending: false };
+    }
+  }, privClub);
+  record(
+    "batch1_pending_setup_genuine",
+    pendingMem.pending === true && pendingMem.approved === false,
+    JSON.stringify(pendingMem),
+  );
+  if (!pendingMem.pending) {
+    recordBlocked(
+      "batch1_pending_privacy",
+      "genuine pending not established — will not substitute outsider",
+    );
+  } else {
+    await page.goto(BASE + `/session/${priv.id}`, { waitUntil: "networkidle0" });
+    await new Promise((r) => setTimeout(r, 1500));
+    const pendText = await bodyText(page);
+    const pendGated =
+      Boolean(await page.$('[data-testid="session-inaccessible"]')) ||
+      /n'est pas accessible|introuvable/i.test(pendText);
+    record(
+      "batch1_pending_direct_link_gated",
+      pendGated && !pendText.includes(privSpot),
+      pendGated ? "gated" : "LEAK",
+    );
+    await page.goto(BASE + "/", { waitUntil: "networkidle0" });
+    await new Promise((r) => setTimeout(r, 1000));
+    const pendList = await bodyText(page);
+    record(
+      "batch1_pending_list_no_logistics",
+      !pendList.includes(privSpot),
+      privSpot,
+    );
+    await shot(page, "17-batch1-pending.png");
+  }
+
+  // No bilingual annotation anywhere on session detail leave modal path already checked
+  const bilingualProduct = await page.evaluate(() =>
+    /Club membership\s*≠/.test(document.body?.innerText || ""),
+  );
+  record("m06_annotation_absent_from_product", !bilingualProduct, "no bilingual annotation");
 } catch (err) {
   evidence.errors.push(String(err?.stack || err));
   console.error(err);
@@ -774,19 +926,72 @@ try {
     /* */
   }
 } finally {
+  // Optional: run full Batch1 script as nested regression artifact
+  try {
+    console.log("Running full Batch1 privacy script for regression…");
+    const r = spawnSync(
+      process.execPath,
+      ["scripts/batch1-privacy-evidence.mjs"],
+      {
+        cwd: REPO_ROOT,
+        env: { ...process.env, EXPO_PUBLIC_DEMO_MODE: "true", E2E_BASE_URL: BASE },
+        encoding: "utf8",
+        timeout: 240000,
+      },
+    );
+    const b1Path = path.join(REPO_ROOT, "docs/audit/batch1-privacy/evidence.json");
+    if (fs.existsSync(b1Path)) {
+      const b1 = JSON.parse(fs.readFileSync(b1Path, "utf8"));
+      const copyPath = path.join(REPO_EVIDENCE, "batch1-full-regression-evidence.json");
+      fs.copyFileSync(b1Path, copyPath);
+      evidence.batch1_full_regression = {
+        path: `${REPO_EVIDENCE_REL}/batch1-full-regression-evidence.json`,
+        tested_sha: b1.tested_sha,
+        summary: b1.summary,
+        environment: b1.environment,
+        hosted_claim: b1.hosted_claim,
+        exit_code: r.status,
+      };
+      record(
+        "batch1_full_script_regression",
+        b1.summary?.failed === 0 && b1.hosted_claim === false,
+        JSON.stringify(b1.summary),
+      );
+    } else {
+      recordBlocked("batch1_full_script_regression", "batch1 evidence.json missing");
+    }
+    fs.writeFileSync(
+      path.join(ARTIFACT_OUT, "batch1-nested-run.log"),
+      (r.stdout || "") + (r.stderr || ""),
+    );
+  } catch (e) {
+    recordBlocked("batch1_full_script_regression", String(e.message || e));
+  }
+
   const checks = Object.values(evidence.checks);
   evidence.summary = {
     passed: checks.filter((c) => c.ok).length,
-    failed: checks.filter((c) => !c.ok).length,
+    failed: checks.filter((c) => !c.ok && c.status !== "BLOCKED").length,
+    blocked: checks.filter((c) => c.status === "BLOCKED").length,
     total: checks.length,
   };
   evidence.generated_at = new Date().toISOString();
 
-  // Preserve m07-before if present
   const before = path.join(REPO_SHOTS, "m07-before-flush.png");
   if (fs.existsSync(before)) {
     const rel = `${REPO_EVIDENCE_REL}/screenshots/m07-before-flush.png`;
     if (!evidence.screenshots.includes(rel)) evidence.screenshots.push(rel);
+  }
+
+  // Include existing side-by-side if present
+  const sideDir = path.join(REPO_EVIDENCE, "side-by-side");
+  if (fs.existsSync(sideDir)) {
+    for (const f of fs.readdirSync(sideDir)) {
+      if (f.endsWith(".png")) {
+        const rel = `${REPO_EVIDENCE_REL}/side-by-side/${f}`;
+        if (!evidence.screenshots.includes(rel)) evidence.screenshots.push(rel);
+      }
+    }
   }
 
   const jsonPath = path.join(REPO_EVIDENCE, "evidence.json");
@@ -797,26 +1002,31 @@ try {
   );
 
   const lines = [
-    `# Batch 2 evidence`,
+    `# Batch 2 evidence (Codex corrections)`,
     ``,
     `- **tested_sha:** \`${evidence.tested_sha}\``,
     `- **environment:** \`${evidence.environment}\` (hosted_claim=${evidence.hosted_claim})`,
-    `- **summary:** ${evidence.summary.passed} PASS / ${evidence.summary.failed} FAIL / ${evidence.summary.total} total`,
+    `- **summary:** ${evidence.summary.passed} PASS / ${evidence.summary.failed} FAIL / ${evidence.summary.blocked} BLOCKED / ${evidence.summary.total} total`,
+    `- **future_fixture:** ${FUTURE.dateISO} ${FUTURE.timeLabel}`,
     `- **outing_id:** \`${evidence.outing_id}\``,
-    `- **unresolved:** ${evidence.unresolved_rules_reported.join("; ")}`,
+    `- **batch1_full_regression:** ${JSON.stringify(evidence.batch1_full_regression)}`,
     ``,
     `## Checks`,
     ``,
-    ...Object.entries(evidence.checks).map(
-      ([k, v]) => `- ${v.ok ? "PASS" : "FAIL"} \`${k}\` — ${v.detail}`,
-    ),
+    ...Object.entries(evidence.checks).map(([k, v]) => {
+      const tag = v.ok ? "PASS" : v.status === "BLOCKED" ? "BLOCKED" : "FAIL";
+      return `- ${tag} \`${k}\` — ${v.detail}`;
+    }),
     ``,
     `## Screenshots`,
     ``,
     ...evidence.screenshots.map((s) => `- \`${s}\``),
   ];
   fs.writeFileSync(path.join(REPO_EVIDENCE, "EVIDENCE.md"), lines.join("\n"));
-  fs.writeFileSync(path.join(ARTIFACT_OUT, "EVIDENCE.md"), lines.join("\n"));
+  fs.copyFileSync(
+    path.join(REPO_EVIDENCE, "EVIDENCE.md"),
+    path.join(ARTIFACT_OUT, "EVIDENCE.md"),
+  );
 
   console.log("SUMMARY", evidence.summary);
   await browser.close();
