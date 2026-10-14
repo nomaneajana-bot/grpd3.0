@@ -76,6 +76,15 @@ function record(name, ok, detail = "") {
   console.log(ok ? "PASS" : "FAIL", name, detail);
 }
 
+function recordBlocked(name, detail) {
+  evidence.checks[name] = {
+    ok: false,
+    status: "BLOCKED",
+    detail: String(detail ?? ""),
+  };
+  console.log("BLOCKED", name, detail);
+}
+
 async function shot(page, name) {
   const repoAbs = path.join(REPO_SHOTS, name);
   const artAbs = path.join(ARTIFACT_SHOTS, name);
