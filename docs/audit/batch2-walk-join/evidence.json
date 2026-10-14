@@ -1,0 +1,197 @@
+{
+  "batch": "Batch 2 \u2014 WALK/LANGUAGE CREATE \u2192 DETAIL \u2192 JOIN \u2192 CANCEL",
+  "issues": [
+    "ISSUE-003",
+    "ISSUE-010-participation",
+    "M04",
+    "M05",
+    "M06",
+    "M07-gutters"
+  ],
+  "tested_sha": "5991af54a0fae693c9dfc3d9def016f3c38c1c98",
+  "tip_sha": "5991af54a0fae693c9dfc3d9def016f3c38c1c98",
+  "branch": "cursor/green-home-ux-join-3184",
+  "environment": "demo",
+  "hosted_claim": false,
+  "note": "DEMO_MODE only. Does not claim hosted/native/UAT. Creator auto-attendance and public-club association left unresolved (current behavior preserved). Batch 1 demo gate previously CLEARED; privacy regression re-checked here.",
+  "unresolved_rules_reported": [
+    "creator_auto_attendance \u2014 preserved current auto-join of host on create; not decided",
+    "public_club_association \u2014 preserved current null clubId for public; not decided"
+  ],
+  "unique": {
+    "token": "W2V7C82KK",
+    "title": "Marche W2V7C82KK",
+    "purpose": "Objectif unique W2V7C82KK \u2014 pratiquer \u00e0 ton rythme.",
+    "spot": "Phare W2V7C82KK",
+    "language": "Darija W2V7C82KK"
+  },
+  "checks": {
+    "login_host": {
+      "ok": true,
+      "detail": "0611111111"
+    },
+    "walk_hides_pace_groups_card": {
+      "ok": true,
+      "detail": "absent"
+    },
+    "missing_title_blocks_publish": {
+      "ok": true,
+      "detail": "Titre requis \u2014 donne un titre \u00e0 ta sortie marche."
+    },
+    "unique_spot_seeded": {
+      "ok": true,
+      "detail": "Phare W2V7C82KK"
+    },
+    "language_no_english_default": {
+      "ok": true,
+      "detail": "placeholder=Ex. Fran\u00e7ais, darija\u2026"
+    },
+    "walk_publish_real_outing_id": {
+      "ok": true,
+      "detail": "/session/session_1791935672171_yuct8rgf"
+    },
+    "detail_title_matches": {
+      "ok": true,
+      "detail": "Marche W2V7C82KK"
+    },
+    "detail_purpose_matches": {
+      "ok": true,
+      "detail": "Objectif unique W2V7C82KK \u2014 pratiquer \u00e0 ton rythme."
+    },
+    "detail_spot_matches": {
+      "ok": true,
+      "detail": "Phare W2V7C82KK"
+    },
+    "detail_language_optional_shown": {
+      "ok": true,
+      "detail": "Darija W2V7C82KK"
+    },
+    "detail_no_running_pace_required": {
+      "ok": true,
+      "detail": "no pace demand on walk detail"
+    },
+    "creator_auto_attendance_observed": {
+      "ok": true,
+      "detail": "status=joined localJoined=true (UNRESOLVED \u2014 not deciding)"
+    },
+    "second_outing_distinct_id": {
+      "ok": true,
+      "detail": "session_1791935676762_vl2pfacw vs session_1791935672171_yuct8rgf"
+    },
+    "original_outing_not_overwritten": {
+      "ok": true,
+      "detail": "session_1791935672171_yuct8rgf"
+    },
+    "unsaved_nav_away_guard_or_leave": {
+      "ok": true,
+      "detail": "dialog=true url=http://localhost:8081/"
+    },
+    "login_participant": {
+      "ok": true,
+      "detail": "0622222222"
+    },
+    "m04_join_cta_visible": {
+      "ok": true,
+      "detail": "session-join-btn"
+    },
+    "m05_joined_panel_and_attendance": {
+      "ok": true,
+      "detail": "{\"userId\":\"user_1791935687187_1adyuudt\",\"status\":\"joined\",\"groupId\":\"open\",\"localJoined\":true}"
+    },
+    "join_selected_outing_only": {
+      "ok": true,
+      "detail": "{\"userId\":\"user_1791935687187_1adyuudt\",\"status\":null,\"groupId\":\"open\",\"localJoined\":true}"
+    },
+    "join_persists_after_reload": {
+      "ok": true,
+      "detail": "{\"joinedAfterReload\":true,\"userId\":\"user_1791935687187_1adyuudt\",\"status\":\"joined\",\"groupId\":\"open\",\"localJoined\":true}"
+    },
+    "m06_cancel_modal_visible": {
+      "ok": true,
+      "detail": "{\"visible\":true,\"keep\":true,\"confirm\":true,\"notLeaveClub\":true,\"impliesLeaveClub\":false}"
+    },
+    "m06_does_not_imply_leave_club": {
+      "ok": true,
+      "detail": "{\"visible\":true,\"keep\":true,\"confirm\":true,\"notLeaveClub\":true,\"impliesLeaveClub\":false}"
+    },
+    "m06_keep_place_retains_join": {
+      "ok": true,
+      "detail": "kept"
+    },
+    "m06_confirm_cancels_attendance": {
+      "ok": true,
+      "detail": "{\"userId\":\"user_1791935687187_1adyuudt\",\"status\":\"left\",\"groupId\":null,\"localJoined\":false}"
+    },
+    "cancel_not_leave_club_copy": {
+      "ok": true,
+      "detail": "no club-leave success after outing cancel"
+    },
+    "cancel_persists_after_relogin": {
+      "ok": true,
+      "detail": "{\"userId\":\"user_1791935687187_1adyuudt\",\"status\":\"left\",\"groupId\":null,\"localJoined\":false}"
+    },
+    "m07_gutters_phone": {
+      "ok": true,
+      "detail": "{\"viewportWidth\":390,\"titleLeft\":24,\"titleRightInset\":24,\"btnLeft\":24,\"btnRightInset\":24,\"panelLeft\":0,\"consistent\":true}"
+    },
+    "m07_controls_focusable_unobstructed": {
+      "ok": true,
+      "detail": "discover CTA"
+    },
+    "m07_gutters_desktop": {
+      "ok": true,
+      "detail": "{\"viewportWidth\":1280,\"titleLeft\":184,\"titleRightInset\":184,\"btnLeft\":184,\"btnRightInset\":184,\"panelLeft\":160,\"consistent\":true}"
+    },
+    "batch1_regression_publish_members": {
+      "ok": true,
+      "detail": "/session/session_1791935745349_ytcghkne"
+    },
+    "batch1_regression_member_sees_spot": {
+      "ok": true,
+      "detail": "PRIVW2V7C82KK"
+    },
+    "batch1_regression_outsider_gated": {
+      "ok": true,
+      "detail": "gated"
+    },
+    "empty_or_no_cancelled_as_joined": {
+      "ok": true,
+      "detail": "cancelled walk not listed as joined"
+    }
+  },
+  "screenshots": [
+    "docs/audit/batch2-walk-join/screenshots/01-host-home.png",
+    "docs/audit/batch2-walk-join/screenshots/02-create-before-fill.png",
+    "docs/audit/batch2-walk-join/screenshots/03-walk-mode-no-pace.png",
+    "docs/audit/batch2-walk-join/screenshots/04-walk-form-filled.png",
+    "docs/audit/batch2-walk-join/screenshots/05-detail-after-publish.png",
+    "docs/audit/batch2-walk-join/screenshots/06-m04-before-join.png",
+    "docs/audit/batch2-walk-join/screenshots/07-m05-joined.png",
+    "docs/audit/batch2-walk-join/screenshots/08-joined-after-reload.png",
+    "docs/audit/batch2-walk-join/screenshots/09-m06-cancel-confirm.png",
+    "docs/audit/batch2-walk-join/screenshots/10-after-cancel.png",
+    "docs/audit/batch2-walk-join/screenshots/11-m07-after-phone.png",
+    "docs/audit/batch2-walk-join/screenshots/12-m07-after-desktop.png",
+    "docs/audit/batch2-walk-join/screenshots/13-batch1-regression-outsider.png",
+    "docs/audit/batch2-walk-join/screenshots/14-my-sessions-after-cancel.png",
+    "docs/audit/batch2-walk-join/screenshots/m07-before-flush.png",
+    "docs/audit/batch2-walk-join/side-by-side/maquette-m04.png",
+    "docs/audit/batch2-walk-join/side-by-side/maquette-m05.png",
+    "docs/audit/batch2-walk-join/side-by-side/maquette-m06.png",
+    "docs/audit/batch2-walk-join/side-by-side/maquette-m07.png",
+    "docs/audit/batch2-walk-join/side-by-side/product-m04.png",
+    "docs/audit/batch2-walk-join/side-by-side/product-m05.png",
+    "docs/audit/batch2-walk-join/side-by-side/product-m06.png",
+    "docs/audit/batch2-walk-join/side-by-side/product-m07-after.png",
+    "docs/audit/batch2-walk-join/side-by-side/product-m07-before.png"
+  ],
+  "outing_id": "session_1791935672171_yuct8rgf",
+  "other_outing_id": "session_1791935676762_vl2pfacw",
+  "errors": [],
+  "summary": {
+    "passed": 33,
+    "failed": 0,
+    "total": 33
+  },
+  "generated_at": "2026-10-13T23:56:02.145Z"
+}
