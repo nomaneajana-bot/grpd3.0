@@ -79,7 +79,7 @@
 |------|---|---|---|-------|
 | Club purposes are **not** runners-only | | **R** | | User already requires unrestricted club purposes — **do not re-ask** whether runners-only framing is acceptable |
 | Discover can filter/label Marche | I | R | | |
-| Walk / language journeys must be **usable** end-to-end | Partial | **R** | | Propose → publish → open → join (or equivalent) without mandatory running PR/pace/coach framing. Distinct chrome polish may still be U; usability is **not** optional. ISSUE-003 — later batch |
+| Walk / language journeys must be **usable** end-to-end | I (demo) | **R** | | Batch 2: title/purpose/spot agree; walking hides pace groups; language optional (no English default); join without pace group; M06 cancel ≠ leave club. ISSUE-003 — demo evidence awaiting Codex; hosted not claimed |
 | Home previews should not dump users into training PRs | Failed I | R | | ISSUE-002 — later batch |
 
 ## 8. Testing / audit honesty
