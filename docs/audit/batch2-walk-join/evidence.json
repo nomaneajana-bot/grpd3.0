@@ -230,16 +230,7 @@
     "docs/audit/batch2-walk-join/screenshots/15-batch1-ex-member.png",
     "docs/audit/batch2-walk-join/screenshots/16-batch1-outsider.png",
     "docs/audit/batch2-walk-join/screenshots/17-batch1-pending.png",
-    "docs/audit/batch2-walk-join/screenshots/m07-before-flush.png",
-    "docs/audit/batch2-walk-join/side-by-side/maquette-m04.png",
-    "docs/audit/batch2-walk-join/side-by-side/maquette-m05.png",
-    "docs/audit/batch2-walk-join/side-by-side/maquette-m06.png",
-    "docs/audit/batch2-walk-join/side-by-side/maquette-m07.png",
-    "docs/audit/batch2-walk-join/side-by-side/product-m04.png",
-    "docs/audit/batch2-walk-join/side-by-side/product-m05.png",
-    "docs/audit/batch2-walk-join/side-by-side/product-m06.png",
-    "docs/audit/batch2-walk-join/side-by-side/product-m07-after.png",
-    "docs/audit/batch2-walk-join/side-by-side/product-m07-before.png"
+    "docs/audit/batch2-walk-join/screenshots/m07-before-flush.png"
   ],
   "outing_id": "session_1791937096143_1rcp87rv",
   "other_outing_id": "session_1791937101499_xz5z4cqx",
@@ -262,5 +253,6 @@
     "blocked": 0,
     "total": 42
   },
-  "generated_at": "2026-10-14T00:22:13.686Z"
+  "generated_at": "2026-10-14T00:22:13.686Z",
+  "packaging_note": "Current-run screenshots only under screenshots/. Superseded files and side-by-side comps live in archive/ \u2014 not current evidence."
 }
