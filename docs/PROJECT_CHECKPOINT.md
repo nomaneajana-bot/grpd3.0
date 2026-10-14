@@ -7,6 +7,7 @@
 **Batch 2 tip (DEMO gate CLEARED):** `6d36691234ec4d8fbdddd4ff92ba818e02b1d957`  
 **Batch 3 tip (DEMO gate CLEARED functional):** `75356094d741c63cbfbfca2fa7301042784a2fbf`  
 **Batch 4 `tested_sha`:** `de5402a3757063a18b0895fcc41686e1f89d8ad0`  
+**Batch 4 docs tip:** `16a2020704c8fc9f33ecdbae459ffbb9eefedf77`  
 **Batch 4 evidence:** `docs/audit/batch4-toi-roster/evidence.json` — **32 PASS / 0 FAIL / 0 BLOCKED** · `hosted_claim: false`  
 **Batch 4 nested regressions:** Batch1 31/31 · Batch2 42/42 · Batch3 56 PASS / 0 FAIL / 2 BLOCKED (SKIP nested inside B3)  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
