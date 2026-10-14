@@ -1,7 +1,7 @@
 # Batch 3 closeout (Codex)
 
 **Product tested_sha (Batch 3 evidence):** `75356094d741c63cbfbfca2fa7301042784a2fbf`  
-**Closeout docs tip:** `45de2e5f8455900eb54edfcba969c49c676ea8ae`  
+**Closeout docs tip:** `e0cc184` (branch HEAD; Tab diagnosis + register/inventory repair)  
 **Environment:** demo · **hosted_claim:** false  
 
 ## Tab focus-order diagnosis
