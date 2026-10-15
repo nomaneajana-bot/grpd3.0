@@ -208,7 +208,7 @@ Source-reviewed associations only — **not runtime VERIFIED**.
 | Home social ternary | both `/session/:id` | Dead identical branches (ISSUE-006) |
 | `/club/group-edit` | `group-create` | Deprecated redirect |
 | `/run/setup`, `/profile/test-history` | — | Orphans |
-| Client leave/cancel-request | hosted API | Routes missing (ISSUE-004) |
+| Client leave/cancel-request | hosted API | Routes landed (ISSUE-004); hosted journey SSO-BLOCKED |
 | Audit S6 | `/session/create` as outing id | False PASS (ISSUE-001) |
 
 ## Counts checklist
@@ -259,4 +259,4 @@ Source-reviewed associations only — **not runtime VERIFIED**.
 **Batch 3 (demo evidence executed, awaiting Codex):** M01 `/idea/[id]`, M02 purpose-led `/club/create`, M03 club home purpose/outings + organise association, ISSUE-002.  
 **Batch 3 (DEMO CLEARED functional):** idea → club create → club home → organise (ISSUE-002); Tab supported, not full a11y.  
 **Batch 4 (DEMO CLEARED):** TOI / roster (ISSUE-011) at `3dff8ed`.  
-**Batch 5 (local PG PASS; hosted BLOCKED):** leave + cancel-request (ISSUE-004) at `a7f1f9a`.
+**Batch 5 (local PG PASS; hosted BLOCKED):** leave + cancel-request (ISSUE-004) at `3befb19` (Codex `88da14e` fixes).

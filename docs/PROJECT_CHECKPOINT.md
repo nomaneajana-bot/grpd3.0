@@ -7,16 +7,16 @@
 **Batch 2 tip (DEMO gate CLEARED):** `6d36691234ec4d8fbdddd4ff92ba818e02b1d957`  
 **Batch 3 tip (DEMO gate CLEARED functional):** `75356094d741c63cbfbfca2fa7301042784a2fbf`  
 **Batch 4 tip (DEMO gate CLEARED):** `3dff8ed2f2af5075fd3fd71660a2dd307d9c2851` (Codex accepted correction)  
-**Batch 5 docs tip:** `81146ed357cacdd6a98d7b9778899ad1667b67e0`  
-**Batch 5 `tested_sha`:** `a7f1f9a6f71106262edba44a315b878f2f33f6cd`  
-**Batch 5 evidence:** `docs/audit/batch5-leave-cancel/evidence.json` — **12 PASS / 0 FAIL / 2 BLOCKED** · `hosted_claim: false` · env `local_postgres_integration`  
+**Batch 5 docs tip:** *(stamped after this commit)*  
+**Batch 5 `tested_sha`:** `3befb19c9627973ebefa72a438e38b429f0c44b7`  
+**Batch 5 evidence:** `docs/audit/batch5-leave-cancel/evidence.json` — **17 PASS / 0 FAIL / 2 BLOCKED** · `hosted_claim: false` · env `local_postgres_integration` · Codex base `88da14e`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
 
-**BATCH 5 COMPLETE — STOP for Codex review.**  
-ISSUE-004: hosted `leave` + `cancel-request` implemented; sole-admin leave rejected (decision recorded, no transfer/deletion).  
-Local PostgreSQL integration **PASS** (17 tests incl. unit).  
+**BATCH 5 Codex `88da14e` fixes COMPLETE — STOP for Codex re-review.**  
+ISSUE-004: leave/cancel races serialized; conditional cancel; route 401/actor isolation; lifecycle rollback; French UX; cancel UI ungated from DEMO_MODE.  
+Local PostgreSQL integration **PASS** (15/15 PG + 5/5 unit).  
 Hosted Preview dual-browser journey **BLOCKED** (SSO 302; protection unchanged; no credential changes). ISSUE-008 remains blocked on hosted access.  
 No merge / production / spending / OCIF / next batch.
 
@@ -28,7 +28,7 @@ No merge / production / spending / OCIF / next batch.
 
 ## Exact next action
 
-1. **Codex** reviews Batch 5 at `a7f1f9a` (routes + PG integration evidence + LAST_ADMIN decision + hosted blocker).  
+1. **Codex** re-reviews Batch 5 at `3befb19` (race/auth/rollback/French/DEMO_MODE-cancel + PG evidence + hosted blocker).  
 2. After clear: hosted retest when authorized Preview/Test env exists (ISSUE-004 hosted VERIFIED / ISSUE-008).  
 3. No merge / prod / spending / credentials / OCIF.
 
@@ -38,7 +38,7 @@ No merge / production / spending / OCIF / next batch.
 |---------|--------|
 | Demo | Batch1–4 CLEARED; mock leave/cancel preserved |
 | Hosted | Code landed; **not** VERIFIED (SSO blocker). ISSUE-004 FIXED AWAITING RETEST (hosted) |
-| Local PG integration | PASS at `a7f1f9a` |
+| Local PG integration | PASS at `3befb19` (15/15 + races) |
 | Native | Not verified |
 | UAT | Not run |
 
