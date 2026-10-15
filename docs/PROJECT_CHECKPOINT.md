@@ -6,37 +6,38 @@
 **Batch 1 tip (DEMO gate CLEARED):** `959b1ac18db002ef90fc430c1662f750e4796acf`  
 **Batch 2 tip (DEMO gate CLEARED):** `6d36691234ec4d8fbdddd4ff92ba818e02b1d957`  
 **Batch 3 tip (DEMO gate CLEARED functional):** `75356094d741c63cbfbfca2fa7301042784a2fbf`  
-**Batch 4 `tested_sha` (Codex correction):** `3dff8ed2f2af5075fd3fd71660a2dd307d9c2851`  
-**Batch 4 docs tip:** `691b4f5890ecee9ebb846e37c815a32e49742e5a`  
-**Batch 4 evidence:** `docs/audit/batch4-toi-roster/evidence.json` — **37 PASS / 0 FAIL / 3 BLOCKED** (nested SKIP this correction) · `hosted_claim: false`  
-**Prior nested regressions (de5402a):** B1 31/31 · B2 42/42 · B3 56/0 FAIL — copies under `docs/audit/batch4-toi-roster/regressions/`  
+**Batch 4 tip (DEMO gate CLEARED):** `3dff8ed2f2af5075fd3fd71660a2dd307d9c2851` (Codex accepted correction)  
+**Batch 5 `tested_sha`:** `a7f1f9a6f71106262edba44a315b878f2f33f6cd`  
+**Batch 5 evidence:** `docs/audit/batch5-leave-cancel/evidence.json` — **12 PASS / 0 FAIL / 2 BLOCKED** · `hosted_claim: false` · env `local_postgres_integration`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
 
-**BATCH 4 CORRECTION COMPLETE — STOP for Codex re-review.**  
-Codex finding on `e383d2a`: `admin_move_member_b_counts` must not PASS when B is already same-group.  
-Corrected harness **actually moves B** to a different group via admin UI; asserts source −1 / target +1; separate same-group idempotency; B TOI after login; host TOI + club B unchanged; no outing autojoin.  
-Evidence at `3dff8ed`. No merge / production / credentials / spending / OCIF / next batch.
+**BATCH 5 COMPLETE — STOP for Codex review.**  
+ISSUE-004: hosted `leave` + `cancel-request` implemented; sole-admin leave rejected (decision recorded, no transfer/deletion).  
+Local PostgreSQL integration **PASS** (17 tests incl. unit).  
+Hosted Preview dual-browser journey **BLOCKED** (SSO 302; protection unchanged; no credential changes). ISSUE-008 remains blocked on hosted access.  
+No merge / production / spending / OCIF / next batch.
 
 ## Preview (Nouamane)
 
 - PR: https://github.com/nomaneajana-bot/grpd3.0/pull/6  
 - Branch preview: https://grpd30-git-cursor-green-home-ux-j-75ed8a-noas-projects-0b3f311d.vercel.app  
-- Verified: Vercel **SSO-gated** (302 → SSO). SSO proves protection only — **not** functioning user preview. Hosted access remains blocked without credential/security changes.
+- Access check (2026-10-15): **302 → Vercel SSO**. SSO proves protection only — not functioning user preview. Exact deployed SHA unread without SSO.
 
 ## Exact next action
 
-1. **Codex** re-reviews Batch 4 corrected evidence at `3dff8ed` (esp. `admin_move_member_b_counts` + B TOI + idempotency).  
-2. After clear: propose next bounded batch from remaining gaps.  
+1. **Codex** reviews Batch 5 at `a7f1f9a` (routes + PG integration evidence + LAST_ADMIN decision + hosted blocker).  
+2. After clear: hosted retest when authorized Preview/Test env exists (ISSUE-004 hosted VERIFIED / ISSUE-008).  
 3. No merge / prod / spending / credentials / OCIF.
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
-| Demo | Batch1–3 CLEARED (functional); Batch4 corrected evidence ready for Codex; ISSUE-012 keyboard OPEN |
-| Hosted | Not claimed (SSO preview protection only; ISSUE-004/008 open) |
+| Demo | Batch1–4 CLEARED; mock leave/cancel preserved |
+| Hosted | Code landed; **not** VERIFIED (SSO blocker). ISSUE-004 FIXED AWAITING RETEST (hosted) |
+| Local PG integration | PASS at `a7f1f9a` |
 | Native | Not verified |
 | UAT | Not run |
 
@@ -44,3 +45,4 @@ Evidence at `3dff8ed`. No merge / production / credentials / spending / OCIF / n
 
 1. Creator auto-attendance  
 2. Public + club association  
+3. Admin leave transfer/deletion UX (currently reject sole admin — recorded)  

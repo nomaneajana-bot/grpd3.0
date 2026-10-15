@@ -258,5 +258,5 @@ Source-reviewed associations only — **not runtime VERIFIED**.
 **Batch 2 (DEMO CLEARED):** walk/language journey (ISSUE-003), M04/M05/M06/M07, ISSUE-010 participation.  
 **Batch 3 (demo evidence executed, awaiting Codex):** M01 `/idea/[id]`, M02 purpose-led `/club/create`, M03 club home purpose/outings + organise association, ISSUE-002.  
 **Batch 3 (DEMO CLEARED functional):** idea → club create → club home → organise (ISSUE-002); Tab supported, not full a11y.  
-**Batch 4 (demo evidence PASS; awaiting Codex):** TOI / roster home-group counts (ISSUE-011) at `de5402a`.  
-**Queued later:** hosted leave endpoints (ISSUE-004).
+**Batch 4 (DEMO CLEARED):** TOI / roster (ISSUE-011) at `3dff8ed`.  
+**Batch 5 (local PG PASS; hosted BLOCKED):** leave + cancel-request (ISSUE-004) at `a7f1f9a`.

@@ -41,7 +41,10 @@
 | Pending applicant is not approved member | I | R | | Session join blocked while pending; privacy negative control |
 | Approve/reject pending in admin UI | Partial I | R | U | Confirm connected API coverage |
 | Invite expiry | NOT IMPLEMENTED (UI never sets expiresAt; mock never expires) | | U | Do not PASS as supported |
-| Leave club / cancel pending client calls | I mock | R | | **Hosted routes missing** (ISSUE-004) — later batch |
+| Leave club / cancel pending client calls | I mock + I hosted routes | R | | Hosted `POST …/leave` + `…/cancel-request` at Batch 5 `a7f1f9a`; local PG PASS; hosted Preview VERIFIED blocked on SSO |
+| Leave = approved member only; cancel = pending only | I hosted | R | | Wrong status → 409 WRONG_STATUS |
+| Sole approved admin cannot leave (no transfer/deletion invented) | I hosted | R | **U** transfer UX | Decision Batch 5: reject `LAST_ADMIN` 409; do not delete club |
+| Leave revokes members-only attendance for actor; public attendance unchanged | I hosted | R | | Matches demo intent; PG-tested |
 
 ## 4. Owner / organizer permissions
 

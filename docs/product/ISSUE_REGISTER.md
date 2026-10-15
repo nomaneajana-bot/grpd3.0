@@ -11,8 +11,11 @@
 **Batch 3 evidence:** `docs/audit/batch3-club-idea/evidence.json` (57 PASS / 0 FAIL / 1 BLOCKED keyboard harness note)  
 **Batch 3 nested regressions:** privacy 31/31 + walk/join 42/42 under `docs/audit/batch3-club-idea/regressions/`  
 **Tab focus closeout:** `docs/audit/batch3-club-idea/tab-focus/` — real Tab traversal; classified **harness_limitation** (not product defect); keyboard **OPEN** (ISSUE-012), not full a11y acceptance  
-**Batch 4 tip under test / `tested_sha`:** `3dff8ed2f2af5075fd3fd71660a2dd307d9c2851`  
-**Batch 4 evidence:** `docs/audit/batch4-toi-roster/evidence.json` — **37 PASS / 0 FAIL / 3 BLOCKED** (nested SKIP this Codex correction) · prior nested at `de5402a` retained under `regressions/`  
+**Batch 4 tip (DEMO gate CLEARED):** `3dff8ed2f2af5075fd3fd71660a2dd307d9c2851`  
+**Batch 4 DEMO gate:** **CLEARED** (Codex accepted correction — real admin move of B)  
+**Batch 4 evidence:** `docs/audit/batch4-toi-roster/evidence.json` — **37 PASS / 0 FAIL / 3 BLOCKED**  
+**Batch 5 tip under test / `tested_sha`:** `a7f1f9a6f71106262edba44a315b878f2f33f6cd`  
+**Batch 5 evidence:** `docs/audit/batch5-leave-cancel/evidence.json` — **12 PASS / 0 FAIL / 2 BLOCKED** · `local_postgres_integration` · `hosted_claim: false`  
 **Method:** Statuses are NOT CHECKED / FAILED / FIXED AWAITING RETEST / VERIFIED / BLOCKED.  
 **Capability:** IMPLEMENTED / PARTIAL / NOT IMPLEMENTED / UNSUPPORTED — never treat NOT IMPLEMENTED as PASS.
 

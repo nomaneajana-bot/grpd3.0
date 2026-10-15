@@ -1,8 +1,9 @@
 # Batch 5 evidence — ISSUE-004 leave / cancel-request (+ ISSUE-008 access)
 
-- **tested_sha:** *(filled at commit)*
+- **tested_sha:** `a7f1f9a6f71106262edba44a315b878f2f33f6cd`
 - **branch:** `cursor/green-home-ux-join-3184`
 - **environment:** `local_postgres_integration` · **hosted_claim:** false
+- **summary:** 12 PASS / 0 FAIL / 2 BLOCKED (hosted journey + ISSUE-008)
 - **Batch 4:** Codex accepted DEMO correction at `3dff8ed` / tip `30ae6ba`
 
 ## Scope
