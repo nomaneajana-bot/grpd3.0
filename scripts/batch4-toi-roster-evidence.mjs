@@ -460,7 +460,7 @@ async function createWalkOuting(page, { title, spot, clubId }) {
   return { id, url, paceUiForced };
 }
 
-async function assignSelfToGroup(page, clubId, fromGid, toGid, userId) {
+async function assignMemberToGroup(page, clubId, fromGid, toGid, userId) {
   await page.goto(
     `${BASE}/club/group-detail?clubId=${encodeURIComponent(clubId)}&groupId=${fromGid}`,
     { waitUntil: "networkidle0", timeout: 90000 },
@@ -474,6 +474,28 @@ async function assignSelfToGroup(page, clubId, fromGid, toGid, userId) {
   });
   await clickTestId(page, `club-group-assign-${toGid}`);
   await new Promise((r) => setTimeout(r, 1200));
+}
+
+/** @deprecated alias — prefer assignMemberToGroup */
+async function assignSelfToGroup(page, clubId, fromGid, toGid, userId) {
+  return assignMemberToGroup(page, clubId, fromGid, toGid, userId);
+}
+
+function pickDifferentGroup(fromGid, paceUi) {
+  const ids = ["A", "B", "C", "D"];
+  const empty = ids.find(
+    (g) =>
+      g !== fromGid &&
+      (paceUi.find((p) => p.gid === g)?.count ?? 0) === 0,
+  );
+  if (empty) return empty;
+  return ids.find((g) => g !== fromGid) || "D";
+}
+
+function sumPaceCounts(paceUi) {
+  return paceUi
+    .filter((g) => g.count != null)
+    .reduce((s, g) => s + g.count, 0);
 }
 
 async function main() {
@@ -828,48 +850,191 @@ async function main() {
     );
     await shot(page, "13-host-relogin-two-members.png");
 
-    // Admin moves member B into host's group → counts consolidate; still sum=2
-    if (memberBId && memberToi && memberToi !== targetGid) {
-      await assignSelfToGroup(
+    // Admin MUST actually move B to a DIFFERENT group (never PASS on same-group skip).
+    // Same-group idempotency is a separate check below.
+    if (!memberBId || !memberToi) {
+      record("admin_move_member_b_counts", false, "missing member B id/toi");
+      record("admin_move_member_b_no_outing_autojoin", false, "skipped");
+      record("admin_move_host_toi_unchanged", false, "skipped");
+      record("member_b_toi_after_admin_move", false, "skipped");
+      record("admin_assign_same_group_idempotent", false, "skipped");
+    } else {
+      const groupsBeforeBMove = await readMemberGroups(page, clubAId);
+      const bSourceGid =
+        groupsBeforeBMove[memberBId] === "A" ||
+        groupsBeforeBMove[memberBId] === "B" ||
+        groupsBeforeBMove[memberBId] === "C" ||
+        groupsBeforeBMove[memberBId] === "D"
+          ? groupsBeforeBMove[memberBId]
+          : memberToi;
+      const bDestGid = pickDifferentGroup(bSourceGid, pace);
+      const sourceBefore = pace.find((g) => g.gid === bSourceGid)?.count ?? null;
+      const destBefore = pace.find((g) => g.gid === bDestGid)?.count ?? null;
+      const sumBeforeMove = sumPaceCounts(pace);
+      const hostJoinedBeforeBMove = (await readJoinedForUser(page)).some(
+        (j) => j.sessionId === outing.id || j.id === outing.id,
+      );
+      const attendanceBeforeBMove = outing.id
+        ? await readAttendanceForSession(page, outing.id)
+        : [];
+
+      record(
+        "admin_move_member_b_setup_different_group",
+        Boolean(bSourceGid && bDestGid && bSourceGid !== bDestGid),
+        JSON.stringify({
+          bSourceGid,
+          bDestGid,
+          sourceBefore,
+          destBefore,
+          sumBeforeMove,
+          sameAsHostTarget: bSourceGid === targetGid,
+        }),
+      );
+
+      await assignMemberToGroup(
         page,
         clubAId,
-        memberToi,
-        targetGid,
+        bSourceGid,
+        bDestGid,
+        memberBId,
+      );
+      const groupsAfterBMove = await readMemberGroups(page, clubAId);
+      record(
+        "admin_move_member_b_persisted",
+        groupsAfterBMove[memberBId] === bDestGid,
+        JSON.stringify(groupsAfterBMove),
+      );
+
+      await gotoClubHome(page, clubAId);
+      pace = await readPaceUi(page);
+      const sourceAfter = pace.find((g) => g.gid === bSourceGid)?.count ?? null;
+      const destAfter = pace.find((g) => g.gid === bDestGid)?.count ?? null;
+      const sumAfterMove = sumPaceCounts(pace);
+      const toiHostAfterBMove = pace.filter((g) => g.hasToi);
+      record(
+        "admin_move_member_b_counts",
+        sourceBefore != null &&
+          destBefore != null &&
+          sourceAfter === sourceBefore - 1 &&
+          destAfter === destBefore + 1 &&
+          sumAfterMove === 2 &&
+          sumAfterMove === sumBeforeMove,
+        JSON.stringify({
+          bSourceGid,
+          bDestGid,
+          sourceBefore,
+          sourceAfter,
+          destBefore,
+          destAfter,
+          sumBeforeMove,
+          sumAfterMove,
+          pace,
+        }),
+      );
+      await shot(page, "14-after-admin-move-member-b.png");
+
+      record(
+        "admin_move_host_toi_unchanged",
+        toiHostAfterBMove.length === 1 &&
+          toiHostAfterBMove[0].gid === targetGid,
+        JSON.stringify({ toiHostAfterBMove, hostTarget: targetGid }),
+      );
+
+      const joinedAfterBMove = await readJoinedForUser(page);
+      const hostJoinedAfterBMove = joinedAfterBMove.some(
+        (j) => j.sessionId === outing.id || j.id === outing.id,
+      );
+      const attendanceAfterBMove = outing.id
+        ? await readAttendanceForSession(page, outing.id)
+        : [];
+      record(
+        "admin_move_member_b_no_outing_autojoin",
+        hostJoinedAfterBMove === hostJoinedBeforeBMove &&
+          attendanceAfterBMove.length === attendanceBeforeBMove.length,
+        JSON.stringify({
+          hostJoinedBeforeBMove,
+          hostJoinedAfterBMove,
+          attendanceBeforeCount: attendanceBeforeBMove.length,
+          attendanceAfterCount: attendanceAfterBMove.length,
+        }),
+      );
+
+      // Same-group idempotency (separate): re-assign B to current group → no count change
+      const paceBeforeIdem = pace;
+      const srcIdem = bDestGid;
+      await assignMemberToGroup(
+        page,
+        clubAId,
+        srcIdem,
+        srcIdem,
         memberBId,
       );
       await gotoClubHome(page, clubAId);
       pace = await readPaceUi(page);
-      const sumMoved = pace
-        .filter((g) => g.count != null)
-        .reduce((s, g) => s + g.count, 0);
-      const targetCount = pace.find((g) => g.gid === targetGid)?.count;
-      const sourceCount = pace.find((g) => g.gid === memberToi)?.count;
+      const idemOk =
+        sumPaceCounts(pace) === sumPaceCounts(paceBeforeIdem) &&
+        pace.find((g) => g.gid === bSourceGid)?.count ===
+          paceBeforeIdem.find((g) => g.gid === bSourceGid)?.count &&
+        pace.find((g) => g.gid === bDestGid)?.count ===
+          paceBeforeIdem.find((g) => g.gid === bDestGid)?.count &&
+        (await readMemberGroups(page, clubAId))[memberBId] === bDestGid;
       record(
-        "admin_move_member_b_counts",
-        sumMoved === 2 && targetCount === 2 && sourceCount === 0,
-        JSON.stringify({ sumMoved, targetCount, sourceCount, pace }),
+        "admin_assign_same_group_idempotent",
+        idemOk,
+        JSON.stringify({
+          before: paceBeforeIdem,
+          after: pace,
+          memberGroup: (await readMemberGroups(page, clubAId))[memberBId],
+        }),
       );
-      await shot(page, "14-after-admin-move-member-b.png");
-    } else if (memberBId && memberToi === targetGid) {
+      await shot(page, "14b-same-group-idempotent.png");
+
+      // Login as B — TOI must be exactly the admin destination
+      await clearAuth(page, { preserveMockWorld: true });
+      await loginViaUi(page, MEMBER_B_PHONE, "000000");
+      await gotoClubHome(page, clubAId);
+      paceMember = await readPaceUi(page);
+      const toiBAfterMove = paceMember.filter((g) => g.hasToi);
+      const bJoinedAfter = await readJoinedForUser(page);
+      const bAutoJoined = bJoinedAfter.some(
+        (j) => j.sessionId === outing.id || j.id === outing.id,
+      );
       record(
-        "admin_move_member_b_counts",
-        true,
-        "member B already hashed into host target; sum still 2",
+        "member_b_toi_after_admin_move",
+        toiBAfterMove.length === 1 &&
+          toiBAfterMove[0].gid === bDestGid &&
+          toiBAfterMove[0].count >= 1,
+        JSON.stringify({ toiBAfterMove, bDestGid, paceMember }),
       );
-      await shot(page, "14-member-b-already-same-group.png");
-    } else {
-      record("admin_move_member_b_counts", false, "missing member B id/toi");
+      record(
+        "member_b_no_outing_autojoin_from_home_group",
+        bAutoJoined === false,
+        JSON.stringify({ bAutoJoined, joined: bJoinedAfter }),
+      );
+      await shot(page, "14c-member-b-toi-after-move.png");
+
+      // Host again — club A still sum=2; club B unchanged
+      await clearAuth(page, { preserveMockWorld: true });
+      await loginViaUi(page, HOST_PHONE, "000000");
+      await gotoClubHome(page, clubAId);
+      pace = await readPaceUi(page);
+      record(
+        "host_after_b_move_club_a_sum",
+        sumPaceCounts(pace) === 2 &&
+          pace.filter((g) => g.hasToi).length === 1 &&
+          pace.filter((g) => g.hasToi)[0].gid === targetGid,
+        JSON.stringify(pace),
+      );
     }
 
-    // Club B still solo for host after Club A had 2 members
+    // Club B still solo for host after Club A had 2 members + B move
     await gotoClubHome(page, clubBId);
     paceB = await readPaceUi(page);
-    const sumB = paceB
-      .filter((g) => g.count != null)
-      .reduce((s, g) => s + g.count, 0);
+    const sumB = sumPaceCounts(paceB);
+    const toiBClub = paceB.filter((g) => g.hasToi);
     record(
       "club_b_unaffected_by_club_a_roster",
-      sumB === 1 && paceB.filter((g) => g.hasToi).length === 1,
+      sumB === 1 && toiBClub.length === 1,
       JSON.stringify({ sumB, paceB }),
     );
     await shot(page, "15-club-b-still-solo.png");
