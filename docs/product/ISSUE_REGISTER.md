@@ -62,18 +62,18 @@
 | Next action | Hosted later — **not** cleared by demo |
 | Status | **VERIFIED** (**demo** only) |
 
-### ISSUE-004 — P1 — FAILED (hosted)
+### ISSUE-004 — P1 — FIXED AWAITING RETEST (hosted; local PG PASS)
 | Field | Value |
 |-------|-------|
 | Route / journey | Leave club / cancel pending · Clubs UI → API |
-| Expected meaning | Connected (hosted) backend supports leave + cancel-request; UI effects persist |
-| Observed behavior | Client calls `/api/v1/clubs/:id/leave` and `…/cancel-request`; **no** matching hosted routes. Mock implements them. |
-| Capability | Demo: IMPLEMENTED · Hosted: **NOT IMPLEMENTED** |
+| Expected meaning | Connected backend supports leave + cancel-request; UI effects persist; private access revoked |
+| Observed behavior | Routes added: `POST …/leave`, `POST …/cancel-request`. Actor-only. Leave=approved; cancel=pending. Sole admin leave → `LAST_ADMIN` 409 (no transfer/deletion). Members-only attendance → `left` on leave. Local PG integration 12/12 PASS. Hosted Preview journey **BLOCKED** (SSO). Demo mock unchanged. |
+| Capability | Demo: IMPLEMENTED · Hosted code: IMPLEMENTED · Hosted VERIFIED: **no** |
 | Owner | Cursor |
-| Candidate SHA / env | Hosted depends on env/creds · demo mock on tip |
-| Evidence | `lib/api/clubs.ts` vs missing `app/api/v1/clubs/[id]/leave` / `cancel-request` |
-| Next action | Later batch: add hosted routes or feature-flag UI; never PASS hosted leave until routes + retest |
-| Status | **FAILED** (hosted) |
+| Candidate SHA / env | `a7f1f9a` · local_postgres_integration · Preview SSO-gated |
+| Evidence | `docs/audit/batch5-leave-cancel/` + PG logs under `/opt/cursor/artifacts/batch5-*.log` |
+| Next action | Codex review; hosted retest when authorized Preview/Test env exists — never PASS hosted until then |
+| Status | **FIXED AWAITING RETEST** (hosted) |
 
 ### ISSUE-005 — P2 — VERIFIED (process)
 | Field | Value |
@@ -148,18 +148,18 @@
 | Next action | Hosted surfaces later |
 | Status | **Privacy VERIFIED (demo)** · **Participation VERIFIED (demo)** |
 
-### ISSUE-011 — P1 — FIXED AWAITING RETEST (demo evidence PASS; awaiting Codex re-review)
+### ISSUE-011 — P1 — VERIFIED (demo only)
 | Field | Value |
 |-------|-------|
 | Route / journey | Club home-group (TOI) assignment → roster/counts → identity switching |
 | Expected meaning | Same assignment path as roster buckets; exact counts; move +/− / no duplicates; reload; second identity; two clubs; empty/admin; home-group ≠ outing autojoin; pace optional walk/language |
-| Observed behavior | Codex correction at `3dff8ed`: admin **actually** moves B to a different group (D→B: source 1→0 / dest 0→1); same-group idempotency separate; B TOI after login on dest; host TOI + club B unchanged; no outing autojoin |
+| Observed behavior | Codex accepted correction at `3dff8ed`: admin moves B to different group with exact −1/+1; separate idempotency; B TOI; host/club B unchanged; no outing autojoin |
 | Capability | IMPLEMENTED (demo) |
 | Owner | Cursor |
 | Candidate SHA / env | `3dff8ed` · **demo** |
-| Evidence | `docs/audit/batch4-toi-roster/evidence.json` + screenshots `14*` / `14c*` |
-| Next action | Codex DEMO re-review of corrected move (STOP) |
-| Status | **FIXED AWAITING RETEST** |
+| Evidence | `docs/audit/batch4-toi-roster/evidence.json` |
+| Next action | Hosted later — not cleared by demo |
+| Status | **VERIFIED** (**demo** only) |
 
 ### ISSUE-012 — P2 — OPEN (keyboard / a11y closeout note)
 | Field | Value |
@@ -217,32 +217,36 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 ---
 
-## Batch 4 — OPEN (corrected demo evidence PASS; awaiting Codex re-review)
+## Batch 4 — DEMO gate CLEARED
 
 **Theme:** Club home-group (TOI) assignment → roster/counts → identity switching  
-**Excluded:** merge/production, hosted claims, credentials/security changes, OCIF, broad redesign, full a11y/UAT  
 **`tested_sha`:** `3dff8ed2f2af5075fd3fd71660a2dd307d9c2851`  
-**Evidence:** `docs/audit/batch4-toi-roster/` — **37 PASS / 0 FAIL / 3 BLOCKED** (nested SKIP this correction)  
+**Codex:** accepted correction (real admin move of B). Hosted/native/UAT **not** accepted.
 
-### Codex correction (from `e383d2a` review)
+---
 
-- [x] `admin_move_member_b_counts` requires real move to a **different** group (no PASS on same-group skip)  
-- [x] Exact source −1 / target +1; sum stable; no duplicates  
-- [x] Same-group idempotency is a **separate** check  
-- [x] Login as B → TOI on destination  
-- [x] Host TOI + other club unchanged; no outing autojoin  
+## Batch 5 — OPEN (local PG PASS; hosted journey BLOCKED; awaiting Codex)
 
-### Exit criteria (demo)
+**Theme:** Connected leave-club + cancel-pending-request (ISSUE-004) · related ISSUE-008 access  
+**Excluded:** merge/prod, credential/security changes, OCIF, inventing admin transfer/deletion, claiming hosted PASS  
+**`tested_sha`:** `a7f1f9a6f71106262edba44a315b878f2f33f6cd`  
+**Evidence:** `docs/audit/batch5-leave-cancel/` — **12 PASS / 0 FAIL / 2 BLOCKED**
 
-- [x] Same-user TOI + exact roster counts  
-- [x] Move groups: decrement / increment / no duplicates  
-- [x] Reload persistence  
-- [x] Second identity + switch two clubs  
-- [x] Empty / admin cases  
-- [x] Home-group assign ≠ outing autojoin  
-- [x] Pace optional for walk/language  
-- [x] Nested Batch1/2/3 regressions (prior tip `de5402a`; not re-run this correction)  
-- [ ] Codex acceptance of corrected move  
+### Exit criteria
+
+- [x] Routes `leave` + `cancel-request` (authenticated actor only)  
+- [x] Pending → cancel; approved → leave; wrong status rejected  
+- [x] Sole admin leave rejected; decision recorded (no transfer/deletion)  
+- [x] Never delete club / other users as side effect  
+- [x] Members-only attendance revoked on leave; public attendance unchanged  
+- [x] Duplicate/retry, wrong club, rollback, persistence — PostgreSQL integration  
+- [x] Hosted access checked — SSO 302 blocker reported (no credential changes)  
+- [ ] Hosted dual-browser VERIFIED (BLOCKED)  
+- [ ] Codex acceptance  
+
+### Hosted access blocker
+
+Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated browser contexts **not** run. ISSUE-008 remains BLOCKED.
 
 ---
 
@@ -250,14 +254,13 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 | Rank | Issue | Why next / not next |
 |------|-------|---------------------|
-| 1 | ISSUE-011/Batch4 Codex acceptance | Corrected evidence ready; gate not product work |
-| 2 | ISSUE-004 hosted leave/cancel-request | P1 capability hole on hosted; blocked on routes + env |
-| 3 | ISSUE-008 hosted multi-context persistence | Needs hosted creds (SSO preview today) |
-| 4 | ISSUE-012 keyboard open note | Keep open; harness_limitation — not full a11y |
-| 5 | ISSUE-006 dead social ternary | P2 cleanup after Nouamane decision |
-| 6 | ISSUE-007 orphans | P2 product decision |
-| 7 | ISSUE-009 lifecycle (invite expiry/cancel/full) | NOT IMPLEMENTED — needs scope decision |
-| — | Unresolved rules | Creator auto-attendance; public+club association — Nouamane |
+| 1 | ISSUE-004 hosted VERIFIED | Code+PG done; needs authorized Preview/Test |
+| 2 | ISSUE-008 hosted multi-context | Needs hosted creds (SSO today) |
+| 3 | ISSUE-012 keyboard open note | Keep open; harness_limitation |
+| 4 | ISSUE-006 dead social ternary | P2 after Nouamane |
+| 5 | ISSUE-007 orphans | P2 product decision |
+| 6 | ISSUE-009 lifecycle | NOT IMPLEMENTED |
+| — | Unresolved rules | Creator auto-attendance; public+club; admin-transfer UX |
 
 ---
 
@@ -265,9 +268,9 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 | Status | Count |
 |--------|------:|
-| VERIFIED (demo) | 6 (001, 002, 003, 005, 010 privacy, 010 participation) |
-| FIXED AWAITING RETEST | 1 (011) |
-| FAILED | 1 (004 hosted) |
+| VERIFIED (demo) | 7 (001, 002, 003, 005, 010 privacy, 010 participation, 011) |
+| FIXED AWAITING RETEST | 1 (004 hosted) |
+| FAILED | 0 |
 | NOT CHECKED | 3 (006, 007, 009) |
 | BLOCKED | 1 (008) |
 | OPEN (note) | 1 (012 keyboard) |
