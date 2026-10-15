@@ -36,7 +36,6 @@ import {
   leaveClub,
   listSessions,
 } from "@/lib/api";
-import { DEMO_MODE } from "@/lib/featureFlags";
 import {
   buildClubActivityFeed,
   EMPTY_FEED_PLACEHOLDER,
@@ -582,36 +581,21 @@ export default function ClubScreen() {
                 Une demande n&apos;est ni une adhésion confirmée ni une
                 inscription à une sortie.
               </Text>
-              {DEMO_MODE ? (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.pendingCancelField,
-                    pressed && { opacity: 0.7 },
-                  ]}
-                  onPress={() => void handleCancelPending()}
-                  disabled={isSubmitting}
-                  accessibilityRole="button"
-                  accessibilityLabel="Annuler ma demande"
-                  testID="club-cancel-pending-btn"
-                >
-                  <Text style={styles.pendingCancelText}>
-                    Annuler ma demande →
-                  </Text>
-                </Pressable>
-              ) : (
-                <View
-                  style={styles.pendingCancelDisabled}
-                  testID="club-cancel-pending-unsupported"
-                >
-                  <Text style={styles.pendingCancelDisabledText}>
-                    Annuler ma demande
-                  </Text>
-                  <Text style={styles.pendingSmall}>
-                    Non disponible sur ce serveur pour le moment (pas de succès
-                    simulé).
-                  </Text>
-                </View>
-              )}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.pendingCancelField,
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={() => void handleCancelPending()}
+                disabled={isSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Annuler ma demande"
+                testID="club-cancel-pending-btn"
+              >
+                <Text style={styles.pendingCancelText}>
+                  Annuler ma demande →
+                </Text>
+              </Pressable>
               <Pressable
                 style={({ pressed }) => [
                   styles.pendingPrimaryBtn,
@@ -889,20 +873,6 @@ const styles = StyleSheet.create({
   },
   pendingCancelText: {
     color: colors.text.primary,
-    fontSize: typography.sizes.md,
-    fontWeight: "600",
-  },
-  pendingCancelDisabled: {
-    marginTop: 16,
-    backgroundColor: colors.background.card,
-    borderWidth: hairline,
-    borderColor: colors.border.default,
-    borderRadius: borderRadius.md,
-    padding: 16,
-    opacity: 0.85,
-  },
-  pendingCancelDisabledText: {
-    color: colors.text.tertiary,
     fontSize: typography.sizes.md,
     fontWeight: "600",
   },

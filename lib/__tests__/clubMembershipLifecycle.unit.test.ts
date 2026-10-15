@@ -1,6 +1,8 @@
 import { MembershipRole, MembershipStatus } from "@prisma/client";
 import { evaluateLeaveEligibility } from "../server/clubMembershipLifecycle";
 
+const API_JARGON = /cancel-request|\bleave\b|\/api\/|transfert\/suppression|suppression invent/i;
+
 describe("evaluateLeaveEligibility", () => {
   it("allows idempotent leave when membership already absent", () => {
     const r = evaluateLeaveEligibility({
@@ -14,7 +16,7 @@ describe("evaluateLeaveEligibility", () => {
     });
   });
 
-  it("rejects pending membership (must use cancel-request)", () => {
+  it("rejects pending membership with user-facing French (no API jargon)", () => {
     const r = evaluateLeaveEligibility({
       membership: {
         status: MembershipStatus.pending,
@@ -23,10 +25,14 @@ describe("evaluateLeaveEligibility", () => {
       otherApprovedAdminCount: 0,
     });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.code).toBe("WRONG_STATUS");
+    if (!r.ok) {
+      expect(r.code).toBe("WRONG_STATUS");
+      expect(r.message).toMatch(/attente|annule/i);
+      expect(r.message).not.toMatch(API_JARGON);
+    }
   });
 
-  it("rejects sole approved admin leave (no transfer invented)", () => {
+  it("rejects sole approved admin leave with user-facing French (no invent jargon)", () => {
     const r = evaluateLeaveEligibility({
       membership: {
         status: MembershipStatus.approved,
@@ -35,7 +41,11 @@ describe("evaluateLeaveEligibility", () => {
       otherApprovedAdminCount: 0,
     });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.code).toBe("LAST_ADMIN");
+    if (!r.ok) {
+      expect(r.code).toBe("LAST_ADMIN");
+      expect(r.message).toMatch(/dernier administrateur/i);
+      expect(r.message).not.toMatch(API_JARGON);
+    }
   });
 
   it("allows approved member leave", () => {
