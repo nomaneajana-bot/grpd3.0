@@ -1,8 +1,11 @@
 {
-  "batch": "Batch 5 — ISSUE-004 leave / cancel-request (+ ISSUE-008 access)",
-  "issues": ["ISSUE-004", "ISSUE-008"],
+  "batch": "Batch 5 \u2014 ISSUE-004 leave / cancel-request (+ ISSUE-008 access)",
+  "issues": [
+    "ISSUE-004",
+    "ISSUE-008"
+  ],
   "tested_sha": "a7f1f9a6f71106262edba44a315b878f2f33f6cd",
-  "tip_sha": "a7f1f9a6f71106262edba44a315b878f2f33f6cd",
+  "tip_sha": "c21f5a5610c6685d4eecfd4ed66cb727785727b8",
   "branch": "cursor/green-home-ux-join-3184",
   "environment": "local_postgres_integration",
   "hosted_claim": false,
@@ -21,18 +24,54 @@
   },
   "demo_behavior": "preserved (mock leave/cancel unchanged)",
   "checks": {
-    "unit_evaluateLeaveEligibility": { "ok": true, "detail": "5/5" },
-    "pg_approved_leave_revokes_members_only_attendance": { "ok": true, "detail": "membership deleted; members-only → left; public joined unchanged; club persists" },
-    "pg_leave_idempotent_retry": { "ok": true, "detail": "alreadyAbsent" },
-    "pg_pending_cannot_leave": { "ok": true, "detail": "WRONG_STATUS" },
-    "pg_sole_admin_rejected": { "ok": true, "detail": "LAST_ADMIN; club+others intact" },
-    "pg_admin_leave_with_peer_admin": { "ok": true, "detail": "allowed" },
-    "pg_cancel_pending_own_only": { "ok": true, "detail": "pending removed; approved untouched" },
-    "pg_cancel_rejects_approved_and_missing": { "ok": true, "detail": "WRONG_STATUS / NOT_FOUND" },
-    "pg_cancel_retry_not_found": { "ok": true, "detail": "NOT_FOUND" },
-    "pg_wrong_club_isolation": { "ok": true, "detail": "other club leave isolated; CLUB_NOT_FOUND" },
-    "pg_transaction_rollback": { "ok": true, "detail": "forced throw restores membership" },
-    "pg_persistence_new_client": { "ok": true, "detail": "leave visible on fresh PrismaClient" },
+    "unit_evaluateLeaveEligibility": {
+      "ok": true,
+      "detail": "5/5"
+    },
+    "pg_approved_leave_revokes_members_only_attendance": {
+      "ok": true,
+      "detail": "membership deleted; members-only \u2192 left; public joined unchanged; club persists"
+    },
+    "pg_leave_idempotent_retry": {
+      "ok": true,
+      "detail": "alreadyAbsent"
+    },
+    "pg_pending_cannot_leave": {
+      "ok": true,
+      "detail": "WRONG_STATUS"
+    },
+    "pg_sole_admin_rejected": {
+      "ok": true,
+      "detail": "LAST_ADMIN; club+others intact"
+    },
+    "pg_admin_leave_with_peer_admin": {
+      "ok": true,
+      "detail": "allowed"
+    },
+    "pg_cancel_pending_own_only": {
+      "ok": true,
+      "detail": "pending removed; approved untouched"
+    },
+    "pg_cancel_rejects_approved_and_missing": {
+      "ok": true,
+      "detail": "WRONG_STATUS / NOT_FOUND"
+    },
+    "pg_cancel_retry_not_found": {
+      "ok": true,
+      "detail": "NOT_FOUND"
+    },
+    "pg_wrong_club_isolation": {
+      "ok": true,
+      "detail": "other club leave isolated; CLUB_NOT_FOUND"
+    },
+    "pg_transaction_rollback": {
+      "ok": true,
+      "detail": "forced throw restores membership"
+    },
+    "pg_persistence_new_client": {
+      "ok": true,
+      "detail": "leave visible on fresh PrismaClient"
+    },
     "hosted_dual_browser_journey": {
       "ok": false,
       "status": "BLOCKED",
@@ -44,8 +83,13 @@
       "detail": "depends on hosted creds; SSO protection only"
     }
   },
-  "summary": { "passed": 12, "failed": 0, "blocked": 2, "total": 14 },
+  "summary": {
+    "passed": 12,
+    "failed": 0,
+    "blocked": 2,
+    "total": 14
+  },
   "screenshots": [],
-  "note": "No connected UI screenshots — hosted journey not executed. Evidence is PostgreSQL integration + unit logs under /opt/cursor/artifacts/batch5-*.log",
+  "note": "No connected UI screenshots \u2014 hosted journey not executed. Evidence is PostgreSQL integration + unit logs under /opt/cursor/artifacts/batch5-*.log",
   "generated_at": "2026-10-15T17:05:00.000Z"
 }
