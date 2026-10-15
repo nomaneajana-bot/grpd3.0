@@ -3,45 +3,45 @@
   "issues": [
     "ISSUE-011"
   ],
-  "tested_sha": "de5402a3757063a18b0895fcc41686e1f89d8ad0",
-  "tip_sha": "de5402a3757063a18b0895fcc41686e1f89d8ad0",
+  "tested_sha": "3dff8ed2f2af5075fd3fd71660a2dd307d9c2851",
+  "tip_sha": "3dff8ed2f2af5075fd3fd71660a2dd307d9c2851",
   "branch": "cursor/green-home-ux-join-3184",
   "environment": "demo",
   "hosted_claim": false,
-  "note": "DEMO_MODE only. Membership, home-group (TOI), and outing attendance remain distinct. Pace optional for walk/language. Hosted/native/UAT not claimed. SSO preview proves protection only. No product defect fix required this batch beyond testIDs/harness/unit tests.",
+  "note": "DEMO_MODE only. Membership, home-group (TOI), and outing attendance remain distinct. Pace optional for walk/language. Hosted/native/UAT not claimed. SSO preview proves protection only.",
   "unique": {
-    "token": "B4V8K98Z1",
+    "token": "B4V9RL5QE",
     "clubA": {
-      "name": "English Outside B4V8K98Z1",
+      "name": "English Outside B4V9RL5QE",
       "city": "Casablanca",
-      "purpose": "Pratiquer l'anglais en marchant \u2014 niveaux mixtes B4V8K98Z1."
+      "purpose": "Pratiquer l'anglais en marchant \u2014 niveaux mixtes B4V9RL5QE."
     },
     "clubB": {
-      "name": "Casa Walkers B4V8K98Z1",
+      "name": "Casa Walkers B4V9RL5QE",
       "city": "Rabat",
-      "purpose": "Marche du dimanche sans chrono B4V8K98Z1."
+      "purpose": "Marche du dimanche sans chrono B4V9RL5QE."
     }
   },
   "future_fixture": {
-    "dateISO": "2026-10-16",
+    "dateISO": "2026-10-17",
     "hour": 10,
     "minute": 30,
     "timeLabel": "10:30"
   },
   "clubs": {
     "A": {
-      "id": "club_1792009623136_ty9h9hqs",
-      "name": "English Outside B4V8K98Z1"
+      "id": "club_1792082402612_7kf2asec",
+      "name": "English Outside B4V9RL5QE"
     },
     "B": {
-      "id": "club_1792009701229_7gygdvdy",
-      "name": "Casa Walkers B4V8K98Z1"
+      "id": "club_1792082480673_d9el6oev",
+      "name": "Casa Walkers B4V9RL5QE"
     }
   },
   "outings": {
     "A": {
-      "id": "session_1792009652329_zvfyh4bk",
-      "url": "http://localhost:8081/session/session_1792009652329_zvfyh4bk",
+      "id": "session_1792082431790_f9349fht",
+      "url": "http://localhost:8081/session/session_1792082431790_f9349fht",
       "paceUiForced": {
         "hasPacePicker": false,
         "required": false
@@ -51,43 +51,43 @@
   "checks": {
     "host_login": {
       "ok": true,
-      "detail": "user_1792009620683_cz27f9ub"
+      "detail": "user_1792082400155_kohostak"
     },
     "club_a_created": {
       "ok": true,
-      "detail": "club_1792009623136_ty9h9hqs"
+      "detail": "club_1792082402612_7kf2asec"
     },
     "club_a_home_screen": {
       "ok": true,
-      "detail": "Clubs\nMembre confirm\u00e9 \u00b7 Fond\u00e9 2026\nEOB\nEnglish Outside B4V8K98Z1\nCasablanca \u00b7 Club sur invitation \u00b7 1 membre\nTU ES MEMBRE\nPratiquer l'anglais en marchant \u2014 niveaux mixtes B4V8K98Z1.\nLes sorties du club\nChaque sortie a sa"
+      "detail": "Clubs\nMembre confirm\u00e9 \u00b7 Fond\u00e9 2026\nEOB\nEnglish Outside B4V9RL5QE\nCasablanca \u00b7 Club sur invitation \u00b7 1 membre\nTU ES MEMBRE\nPratiquer l'anglais en marchant \u2014 niveaux mixtes B4V9RL5QE.\nLes sorties du club\nChaque sortie a sa"
     },
     "same_user_exactly_one_toi": {
       "ok": true,
-      "detail": "[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]"
+      "detail": "[{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]"
     },
     "toi_group_count_gte_1": {
       "ok": true,
-      "detail": "{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}"
+      "detail": "{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}"
     },
     "exact_roster_sum_equals_member_total_solo": {
       "ok": true,
-      "detail": "{\"sumCounts\":1,\"pace\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+      "detail": "{\"sumCounts\":1,\"pace\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
     },
     "empty_groups_show_zero": {
       "ok": true,
-      "detail": "[\"B\",\"C\",\"D\"]"
+      "detail": "[\"A\",\"C\",\"D\"]"
     },
     "admin_empty_group_state": {
       "ok": true,
-      "detail": "group=B"
+      "detail": "group=A"
     },
     "walk_outing_created_pace_optional": {
       "ok": true,
-      "detail": "{\"id\":\"session_1792009652329_zvfyh4bk\",\"paceUiForced\":{\"hasPacePicker\":false,\"required\":false}}"
+      "detail": "{\"id\":\"session_1792082431790_f9349fht\",\"paceUiForced\":{\"hasPacePicker\":false,\"required\":false}}"
     },
     "admin_assign_persisted_storage": {
       "ok": true,
-      "detail": "{\"user_1792009620683_cz27f9ub\":\"B\"}"
+      "detail": "{\"user_1792082400155_kohostak\":\"A\"}"
     },
     "home_group_assign_does_not_autojoin_outing": {
       "ok": true,
@@ -95,55 +95,55 @@
     },
     "move_toi_follows_target": {
       "ok": true,
-      "detail": "[{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]"
+      "detail": "[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]"
     },
     "move_decrement_source_increment_target": {
       "ok": true,
-      "detail": "{\"fromAfter\":{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},\"toAfter\":{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}}"
+      "detail": "{\"fromAfter\":{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},\"toAfter\":{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}}"
     },
     "move_no_duplicate_count": {
       "ok": true,
-      "detail": "{\"sumAfter\":1,\"pace\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+      "detail": "{\"sumAfter\":1,\"pace\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
     },
     "reload_toi_and_counts_persist": {
       "ok": true,
-      "detail": "[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]"
+      "detail": "[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]"
     },
     "club_b_created": {
       "ok": true,
-      "detail": "club_1792009701229_7gygdvdy"
+      "detail": "club_1792082480673_d9el6oev"
     },
     "club_b_exactly_one_toi": {
       "ok": true,
-      "detail": "[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]"
+      "detail": "[{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]"
     },
     "switch_back_club_a_keeps_assignment": {
       "ok": true,
-      "detail": "[{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]"
+      "detail": "[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]"
     },
     "switch_club_b_independent": {
       "ok": true,
-      "detail": "{\"toiBSwitch\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}],\"groupsA\":\"B\"}"
+      "detail": "{\"toiBSwitch\":[{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}],\"groupsA\":\"A\"}"
     },
     "invite_code_for_member_b": {
       "ok": true,
-      "detail": "ENGLILZO"
+      "detail": "ENGLI99E"
     },
     "member_b_login": {
       "ok": true,
-      "detail": "user_1792009720197_z39d5khx"
+      "detail": "user_1792082499533_1ojsdjl7"
     },
     "second_identity_exactly_one_toi": {
       "ok": true,
-      "detail": "[{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"2 membres\",\"count\":2}]"
+      "detail": "[{\"gid\":\"D\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]"
     },
     "second_identity_roster_sum_is_two": {
       "ok": true,
-      "detail": "{\"sumMember\":2,\"paceMember\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"2 membres\",\"count\":2},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+      "detail": "{\"sumMember\":2,\"paceMember\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]}"
     },
     "second_identity_host_group_still_counted": {
       "ok": true,
-      "detail": "{\"targetGid\":\"B\",\"hostGroupCount\":2,\"paceMember\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"2 membres\",\"count\":2},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+      "detail": "{\"targetGid\":\"A\",\"hostGroupCount\":1,\"paceMember\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}]}"
     },
     "non_admin_cannot_assign_self": {
       "ok": true,
@@ -151,31 +151,66 @@
     },
     "host_relogin_toi_and_sum": {
       "ok": true,
-      "detail": "{\"toiHostFinal\":[{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"2 membres\",\"count\":2}],\"sumFinal\":2,\"pace\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"2 membres\",\"count\":2},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+      "detail": "{\"toiHostFinal\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}],\"sumFinal\":2,\"pace\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"1 membre\",\"count\":1}]}"
+    },
+    "admin_move_member_b_setup_different_group": {
+      "ok": true,
+      "detail": "{\"bSourceGid\":\"D\",\"bDestGid\":\"B\",\"sourceBefore\":1,\"destBefore\":0,\"sumBeforeMove\":2,\"sameAsHostTarget\":false}"
+    },
+    "admin_move_member_b_persisted": {
+      "ok": true,
+      "detail": "{\"user_1792082400155_kohostak\":\"A\",\"user_1792082499533_1ojsdjl7\":\"B\"}"
     },
     "admin_move_member_b_counts": {
       "ok": true,
-      "detail": "member B already hashed into host target; sum still 2"
+      "detail": "{\"bSourceGid\":\"D\",\"bDestGid\":\"B\",\"sourceBefore\":1,\"sourceAfter\":0,\"destBefore\":0,\"destAfter\":1,\"sumBeforeMove\":2,\"sumAfterMove\":2,\"pace\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+    },
+    "admin_move_host_toi_unchanged": {
+      "ok": true,
+      "detail": "{\"toiHostAfterBMove\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}],\"hostTarget\":\"A\"}"
+    },
+    "admin_move_member_b_no_outing_autojoin": {
+      "ok": true,
+      "detail": "{\"hostJoinedBeforeBMove\":false,\"hostJoinedAfterBMove\":false,\"attendanceBeforeCount\":0,\"attendanceAfterCount\":0}"
+    },
+    "admin_assign_same_group_idempotent": {
+      "ok": true,
+      "detail": "{\"before\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}],\"after\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}],\"memberGroup\":\"B\"}"
+    },
+    "member_b_toi_after_admin_move": {
+      "ok": true,
+      "detail": "{\"toiBAfterMove\":[{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1}],\"bDestGid\":\"B\",\"paceMember\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+    },
+    "member_b_no_outing_autojoin_from_home_group": {
+      "ok": true,
+      "detail": "{\"bAutoJoined\":false,\"joined\":[]}"
+    },
+    "host_after_b_move_club_a_sum": {
+      "ok": true,
+      "detail": "[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]"
     },
     "club_b_unaffected_by_club_a_roster": {
       "ok": true,
-      "detail": "{\"sumB\":1,\"paceB\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"B\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
+      "detail": "{\"sumB\":1,\"paceB\":[{\"gid\":\"A\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"B\",\"visible\":true,\"hasToi\":true,\"countText\":\"1 membre\",\"count\":1},{\"gid\":\"C\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0},{\"gid\":\"D\",\"visible\":true,\"hasToi\":false,\"countText\":\"0 membres\",\"count\":0}]}"
     },
     "parse_count_helper_smoke": {
       "ok": true,
       "detail": "ok"
     },
     "regression_batch1_privacy": {
-      "ok": true,
-      "detail": "{\"passed\":31,\"failed\":0,\"total\":31}"
+      "ok": false,
+      "status": "BLOCKED",
+      "detail": "SKIPPED via SKIP_NESTED_REGRESSION=1"
     },
     "regression_batch2_walk_join": {
-      "ok": true,
-      "detail": "{\"passed\":42,\"failed\":0,\"blocked\":0,\"total\":42}"
+      "ok": false,
+      "status": "BLOCKED",
+      "detail": "SKIPPED via SKIP_NESTED_REGRESSION=1"
     },
     "regression_batch3_club_idea": {
-      "ok": true,
-      "detail": "{\"passed\":56,\"failed\":0,\"blocked\":2,\"total\":58}"
+      "ok": false,
+      "status": "BLOCKED",
+      "detail": "SKIPPED via SKIP_NESTED_REGRESSION=1"
     }
   },
   "screenshots": [
@@ -192,46 +227,22 @@
     "docs/audit/batch4-toi-roster/screenshots/11-member-b-club-a.png",
     "docs/audit/batch4-toi-roster/screenshots/12-member-b-group-detail-no-assign.png",
     "docs/audit/batch4-toi-roster/screenshots/13-host-relogin-two-members.png",
-    "docs/audit/batch4-toi-roster/screenshots/14-member-b-already-same-group.png",
+    "docs/audit/batch4-toi-roster/screenshots/14-after-admin-move-member-b.png",
+    "docs/audit/batch4-toi-roster/screenshots/14b-same-group-idempotent.png",
+    "docs/audit/batch4-toi-roster/screenshots/14c-member-b-toi-after-move.png",
     "docs/audit/batch4-toi-roster/screenshots/15-club-b-still-solo.png"
   ],
-  "regressions": {
-    "batch1_privacy": {
-      "exit_code": 0,
-      "summary": {
-        "passed": 31,
-        "failed": 0,
-        "total": 31
-      },
-      "stderr_tail": ""
-    },
-    "batch2_walk_join": {
-      "exit_code": 0,
-      "summary": {
-        "passed": 42,
-        "failed": 0,
-        "blocked": 0,
-        "total": 42
-      },
-      "stderr_tail": ""
-    },
-    "batch3_club_idea": {
-      "exit_code": 0,
-      "summary": {
-        "passed": 56,
-        "failed": 0,
-        "blocked": 2,
-        "total": 58
-      },
-      "stderr_tail": ""
-    }
-  },
+  "regressions": {},
   "errors": [],
   "summary": {
-    "passed": 32,
+    "passed": 37,
     "failed": 0,
-    "blocked": 0,
-    "total": 32
+    "blocked": 3,
+    "total": 40
   },
-  "generated_at": "2026-10-14T20:37:01.696Z"
+  "generated_at": "2026-10-15T16:43:05.254Z",
+  "correction": {
+    "codex": "e383d2a review \u2014 require real admin move of B to different group",
+    "nested_regressions": "SKIPPED this correction (relevant Batch4 checks only); prior nested PASS retained under regressions/ from de5402a run"
+  }
 }

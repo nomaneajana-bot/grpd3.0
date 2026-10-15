@@ -11,8 +11,8 @@
 **Batch 3 evidence:** `docs/audit/batch3-club-idea/evidence.json` (57 PASS / 0 FAIL / 1 BLOCKED keyboard harness note)  
 **Batch 3 nested regressions:** privacy 31/31 + walk/join 42/42 under `docs/audit/batch3-club-idea/regressions/`  
 **Tab focus closeout:** `docs/audit/batch3-club-idea/tab-focus/` — real Tab traversal; classified **harness_limitation** (not product defect); keyboard **OPEN** (ISSUE-012), not full a11y acceptance  
-**Batch 4 tip under test / `tested_sha`:** `de5402a3757063a18b0895fcc41686e1f89d8ad0`  
-**Batch 4 evidence:** `docs/audit/batch4-toi-roster/evidence.json` — **32 PASS / 0 FAIL** · nested B1 31/31 · B2 42/42 · B3 56/0 FAIL  
+**Batch 4 tip under test / `tested_sha`:** `3dff8ed2f2af5075fd3fd71660a2dd307d9c2851`  
+**Batch 4 evidence:** `docs/audit/batch4-toi-roster/evidence.json` — **37 PASS / 0 FAIL / 3 BLOCKED** (nested SKIP this Codex correction) · prior nested at `de5402a` retained under `regressions/`  
 **Method:** Statuses are NOT CHECKED / FAILED / FIXED AWAITING RETEST / VERIFIED / BLOCKED.  
 **Capability:** IMPLEMENTED / PARTIAL / NOT IMPLEMENTED / UNSUPPORTED — never treat NOT IMPLEMENTED as PASS.
 
