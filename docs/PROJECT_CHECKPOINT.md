@@ -7,7 +7,7 @@
 **Batch 2 tip (DEMO gate CLEARED):** `6d36691234ec4d8fbdddd4ff92ba818e02b1d957`  
 **Batch 3 tip (DEMO gate CLEARED functional):** `75356094d741c63cbfbfca2fa7301042784a2fbf`  
 **Batch 4 tip (DEMO gate CLEARED):** `3dff8ed2f2af5075fd3fd71660a2dd307d9c2851` (Codex accepted correction)  
-**Batch 5 docs tip:** `c21f5a5610c6685d4eecfd4ed66cb727785727b8`  
+**Batch 5 docs tip:** `81146ed357cacdd6a98d7b9778899ad1667b67e0`  
 **Batch 5 `tested_sha`:** `a7f1f9a6f71106262edba44a315b878f2f33f6cd`  
 **Batch 5 evidence:** `docs/audit/batch5-leave-cancel/evidence.json` — **12 PASS / 0 FAIL / 2 BLOCKED** · `hosted_claim: false` · env `local_postgres_integration`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
