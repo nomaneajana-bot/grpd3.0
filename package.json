@@ -15,7 +15,9 @@
     "test:watch": "jest --watch",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "test:unit": "jest --testPathIgnorePatterns=integration",
+    "test:integration:pg": "jest --runInBand lib/server/__tests__/clubLeaveCancel.integration.test.ts"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
