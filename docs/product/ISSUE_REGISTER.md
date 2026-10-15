@@ -145,17 +145,17 @@
 | Next action | Hosted surfaces later |
 | Status | **Privacy VERIFIED (demo)** · **Participation VERIFIED (demo)** |
 
-### ISSUE-011 — P1 — FIXED AWAITING RETEST (demo evidence PASS; awaiting Codex)
+### ISSUE-011 — P1 — FIXED AWAITING RETEST (demo evidence PASS; awaiting Codex re-review)
 | Field | Value |
 |-------|-------|
 | Route / journey | Club home-group (TOI) assignment → roster/counts → identity switching |
 | Expected meaning | Same assignment path as roster buckets; exact counts; move +/− / no duplicates; reload; second identity; two clubs; empty/admin; home-group ≠ outing autojoin; pace optional walk/language |
-| Observed behavior | Demo evidence 32/32 PASS at `de5402a`; TOI follows admin assign; counts decrement/increment without duplicates; reload + second identity + two-club isolation; assign does not autojoin outing; walk create without required pace |
+| Observed behavior | Codex correction at `3dff8ed`: admin **actually** moves B to a different group (D→B: source 1→0 / dest 0→1); same-group idempotency separate; B TOI after login on dest; host TOI + club B unchanged; no outing autojoin |
 | Capability | IMPLEMENTED (demo) |
 | Owner | Cursor |
-| Candidate SHA / env | `de5402a` · **demo** |
-| Evidence | `docs/audit/batch4-toi-roster/evidence.json` + screenshots |
-| Next action | Codex DEMO re-review (STOP) |
+| Candidate SHA / env | `3dff8ed` · **demo** |
+| Evidence | `docs/audit/batch4-toi-roster/evidence.json` + screenshots `14*` / `14c*` |
+| Next action | Codex DEMO re-review of corrected move (STOP) |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-012 — P2 — OPEN (keyboard / a11y closeout note)
@@ -214,12 +214,20 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 ---
 
-## Batch 4 — OPEN (demo evidence PASS; awaiting Codex)
+## Batch 4 — OPEN (corrected demo evidence PASS; awaiting Codex re-review)
 
 **Theme:** Club home-group (TOI) assignment → roster/counts → identity switching  
 **Excluded:** merge/production, hosted claims, credentials/security changes, OCIF, broad redesign, full a11y/UAT  
-**`tested_sha`:** `de5402a3757063a18b0895fcc41686e1f89d8ad0`  
-**Evidence:** `docs/audit/batch4-toi-roster/` — **32/32** · regressions B1 31/31 · B2 42/42 · B3 56 PASS / 0 FAIL / 2 BLOCKED  
+**`tested_sha`:** `3dff8ed2f2af5075fd3fd71660a2dd307d9c2851`  
+**Evidence:** `docs/audit/batch4-toi-roster/` — **37 PASS / 0 FAIL / 3 BLOCKED** (nested SKIP this correction)  
+
+### Codex correction (from `e383d2a` review)
+
+- [x] `admin_move_member_b_counts` requires real move to a **different** group (no PASS on same-group skip)  
+- [x] Exact source −1 / target +1; sum stable; no duplicates  
+- [x] Same-group idempotency is a **separate** check  
+- [x] Login as B → TOI on destination  
+- [x] Host TOI + other club unchanged; no outing autojoin  
 
 ### Exit criteria (demo)
 
@@ -230,8 +238,8 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 - [x] Empty / admin cases  
 - [x] Home-group assign ≠ outing autojoin  
 - [x] Pace optional for walk/language  
-- [x] Nested Batch1/2/3 regressions  
-- [ ] Codex acceptance  
+- [x] Nested Batch1/2/3 regressions (prior tip `de5402a`; not re-run this correction)  
+- [ ] Codex acceptance of corrected move  
 
 ---
 
@@ -239,7 +247,7 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 | Rank | Issue | Why next / not next |
 |------|-------|---------------------|
-| 1 | ISSUE-011/Batch4 Codex acceptance | Demo evidence ready; gate not product work |
+| 1 | ISSUE-011/Batch4 Codex acceptance | Corrected evidence ready; gate not product work |
 | 2 | ISSUE-004 hosted leave/cancel-request | P1 capability hole on hosted; blocked on routes + env |
 | 3 | ISSUE-008 hosted multi-context persistence | Needs hosted creds (SSO preview today) |
 | 4 | ISSUE-012 keyboard open note | Keep open; harness_limitation — not full a11y |
