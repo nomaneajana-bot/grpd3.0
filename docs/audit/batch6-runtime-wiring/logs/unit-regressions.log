@@ -1,0 +1,12 @@
+
+> grpd3.0@1.0.0 test:unit
+> jest --testPathIgnorePatterns=integration --testPathPattern=clubMembershipLifecycle|apiMode
+
+PASS lib/__tests__/clubMembershipLifecycle.unit.test.ts
+PASS lib/__tests__/apiMode.test.ts
+
+Test Suites: 2 passed, 2 total
+Tests:       11 passed, 11 total
+Snapshots:   0 total
+Time:        2.02 s, estimated 3 s
+Ran all test suites matching /clubMembershipLifecycle|apiMode/i.

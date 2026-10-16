@@ -14,9 +14,11 @@
 **Batch 4 tip (DEMO gate CLEARED):** `3dff8ed2f2af5075fd3fd71660a2dd307d9c2851`  
 **Batch 4 DEMO gate:** **CLEARED** (Codex accepted correction — real admin move of B)  
 **Batch 4 evidence:** `docs/audit/batch4-toi-roster/evidence.json` — **37 PASS / 0 FAIL / 3 BLOCKED**  
-**Batch 5 local gate:** **ACCEPTED** — tested `f8f378707a2b973e3fc2ae9e688f0580af09adff` (15 PG + 5 unit; actual POST + `req.auth` shim ≠ full token/middleware/hosted)  
+**Batch 5 local gate:** **ACCEPTED** — tested `f8f378707a2b973e3fc2ae9e688f0580af09adff`  
 **Batch 5 evidence:** `docs/audit/batch5-leave-cancel/` · `hosted_claim: false`  
-**Runtime wiring diagnosis:** `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md` (green-home SPA-only vs D02 dispatcher; STOP before port)  
+**Runtime diagnosis:** accepted — `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md`  
+**Batch 6 local wiring:** tested `83b5e096d4f17ade3cd1660c7a1293f7d2906cbf` — dispatcher+Bearer local PASS; **no hosted deploy this batch**  
+**Batch 6 evidence:** `docs/audit/batch6-runtime-wiring/`  
 **Method:** Statuses are NOT CHECKED / FAILED / FIXED AWAITING RETEST / VERIFIED / BLOCKED.  
 **Capability:** IMPLEMENTED / PARTIAL / NOT IMPLEMENTED / UNSUPPORTED — never treat NOT IMPLEMENTED as PASS.
 
@@ -68,13 +70,13 @@
 |-------|-------|
 | Route / journey | Leave club / cancel pending · Clubs UI → API |
 | Expected meaning | Connected backend supports leave + cancel-request; UI effects persist; private access revoked |
-| Observed behavior | **Local:** leave/cancel lifecycle + actual `route.ts` POST tests PASS at `f8f3787` (Batch5 gate accepted). **Runtime:** green-home `vercel.json` is Expo `dist` + catch-all `/index.html`; no `next`, no `api/v1/[...path].ts`, no `vercel-dispatch.ts` → handlers **not** a Vercel function entry. Client sends Bearer; this branch `requireAuth` reads only `req.auth`. D02 branch has dispatcher + Bearer JWT + leave; **no** cancel-request. SSO 302 ≠ API presence. Demo mock leave/cancel still works. |
-| Capability | Demo: IMPLEMENTED · Hosted route **source**: IMPLEMENTED · Hosted **reachable**: NO on current deploy shape · Hosted VERIFIED: **no** |
-| Owner | Cursor (code) + owner (Preview env/bypass/DB names) |
-| Candidate SHA / env | local `f8f3787`; wiring map vs D02 `bcfe1bf` |
-| Evidence | `docs/audit/batch5-leave-cancel/` + `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md` |
-| Next action | After Codex accepts map: Cursor ports dispatcher + registers cancel-request + Bearer auth (selective, no full D02 merge); owner supplies Preview secrets/bypass/isolated DB — never PASS hosted until reachable JSON API proven |
-| Status | **FIXED AWAITING RETEST** (hosted; blocked on **runtime wiring** + access, not “SSO alone”) |
+| Observed behavior | **Local Batch5+6:** leave/cancel lifecycle preserved; Vercel entry+dispatch+cancel-request+health+Bearer auth PASS at `83b5e09` (21 PG). Connected client + missing-URL fail tested locally. **Hosted:** not deployed/verified this batch — needs Preview `DATABASE_URL`+`AUTH_JWT_SECRET` for this branch (D02 DB/bypass not assumed). Demo mock still works. |
+| Capability | Demo: IMPLEMENTED · Local API mount: IMPLEMENTED · Hosted VERIFIED: **no** |
+| Owner | Cursor (code done locally) + owner (Preview env/access) |
+| Candidate SHA / env | `83b5e09` · local_postgres_integration |
+| Evidence | `docs/audit/batch6-runtime-wiring/` + Batch5 logs |
+| Next action | Codex review Batch6; then owner Preview env + deploy verify per `DEPLOYMENT_PLAN.md` — never PASS hosted until health JSON + leave/cancel on Preview |
+| Status | **FIXED AWAITING RETEST** (hosted; local wiring done; Preview env/access remaining) |
 
 ### ISSUE-005 — P2 — VERIFIED (process)
 | Field | Value |
@@ -117,12 +119,12 @@
 |-------|-------|
 | Route / journey | Hosted account persistence (multi-context) |
 | Expected meaning | Attendance/membership follow account across sessions/backends |
-| Observed behavior | Needs reachable hosted API + auth. Green-home Preview is SPA-only (no dispatcher). D02 had Test API historically with bypass. SSO 302 alone is insufficient; dual browser contexts suffice once API exists |
+| Observed behavior | Local dispatcher now exists on green-home branch; hosted Preview for **this** branch still needs isolated DB + JWT + access. Dual browser contexts suffice once Preview API is live |
 | Capability | NOT VERIFIED |
-| Owner | Owner (access/env) + Cursor (wiring after map clear) |
-| Evidence | `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md`; prior S12/S13 |
-| Next action | Same wiring + Preview access blockers as ISSUE-004; then dual-context persistence lane |
-| Status | **BLOCKED** (runtime wiring + hosted access — not device) |
+| Owner | Owner (Preview env/access) + Cursor (after hosted smoke) |
+| Evidence | `docs/audit/batch6-runtime-wiring/DEPLOYMENT_PLAN.md` |
+| Next action | After ISSUE-004 Preview health/leave/cancel smoke: dual-context persistence lane |
+| Status | **BLOCKED** (Preview env/access for this branch — not device) |
 
 ### ISSUE-009 — P2 — NOT CHECKED
 | Field | Value |
@@ -234,12 +236,17 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 **Evidence:** `docs/audit/batch5-leave-cancel/` — local **ACCEPTED**; hosted not VERIFIED  
 **Codex:** accepted local correction gate; full token/middleware/hosted **not** accepted by that gate
 
-## Runtime wiring diagnosis — STOP (before implementation)
+## Runtime wiring diagnosis — ACCEPTED
 
-**Theme:** Which deployment actually serves mobile `/api/v1` for leave/cancel (ISSUE-004/008)  
-**Map:** `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md`  
-**Finding:** green-home Preview = SPA only; D02 = dispatcher + Bearer; cancel-request only on green-home source  
-**Next (after Codex clear):** Cursor selective port — not this turn
+**Map:** `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md` (`6b05559`)
+
+## Batch 6 — LOCAL PASS (hosted deploy not run)
+
+**Theme:** Selective D02-style dispatch + Bearer on green-home; preserve Batch5 semantics; cancel-request + health  
+**`tested_sha`:** `83b5e096d4f17ade3cd1660c7a1293f7d2906cbf`  
+**Evidence:** `docs/audit/batch6-runtime-wiring/` — PG 21/21 · unit 11/11 · `deploy_claim: false`  
+**Plan:** `DEPLOYMENT_PLAN.md` (Preview env for this branch; no D02 DB assumption)  
+**STOP:** Codex review before Preview deploy
 
 ### Exit criteria
 

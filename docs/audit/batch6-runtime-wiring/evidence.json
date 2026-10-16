@@ -1,0 +1,60 @@
+{
+  "batch": "Batch 6 — LOCAL runtime wiring (dispatcher + Bearer auth)",
+  "issues": ["ISSUE-004", "ISSUE-008"],
+  "tested_sha": "83b5e096d4f17ade3cd1660c7a1293f7d2906cbf",
+  "tip_sha": "83b5e096d4f17ade3cd1660c7a1293f7d2906cbf",
+  "prior_diagnosis": "6b05559 / tip 4403447 RUNTIME_MAP accepted",
+  "branch": "cursor/green-home-ux-join-3184",
+  "environment": "local_postgres_integration",
+  "hosted_claim": false,
+  "deploy_claim": false,
+  "auth": {
+    "adapter": "Bearer app HS256 (AUTH_JWT_SECRET) + optional Supabase verify",
+    "req_auth_fallback": false,
+    "synthetic_secret_in_tests": true,
+    "secrets_in_repo": false
+  },
+  "entry": {
+    "vercel_function": "api/v1/[...path].ts",
+    "dispatch": "lib/server/vercel-dispatch.ts",
+    "cancel_request_registered": true,
+    "health": "GET /api/v1/health"
+  },
+  "batch5_semantics": "preserved (leaveClubForUserTx / cancelPendingClubRequestForUserTx)",
+  "checks": {
+    "pg_batch5_lifecycle_and_route_bearer": { "ok": true, "detail": "15/15" },
+    "pg_batch6_health_json": { "ok": true },
+    "pg_batch6_unknown_path_json_404_not_html": { "ok": true },
+    "pg_batch6_missing_invalid_expired_bearer_401": { "ok": true },
+    "pg_batch6_organizer_participant_leave_cancel_isolation": { "ok": true },
+    "pg_batch6_last_admin_and_private_attendance": { "ok": true },
+    "pg_batch6_connected_client_explicit_url": { "ok": true },
+    "pg_batch6_missing_url_fails_not_silent_mock": { "ok": true },
+    "pg_batch6_vercel_json_api_rewrite": { "ok": true },
+    "unit_lifecycle_and_apiMode_demo": { "ok": true, "detail": "11/11" },
+    "hosted_preview_deploy": { "ok": false, "status": "NOT_RUN", "detail": "Batch6 local only; no deploy" }
+  },
+  "summary": {
+    "passed": 21,
+    "failed": 0,
+    "blocked_or_not_run": 1,
+    "pg_tests": 21,
+    "unit_tests": 11
+  },
+  "logs": [
+    "docs/audit/batch6-runtime-wiring/logs/pg-integration.log",
+    "docs/audit/batch6-runtime-wiring/logs/unit-regressions.log",
+    "docs/audit/batch6-runtime-wiring/logs/config-names.log"
+  ],
+  "config_names_only": [
+    "DATABASE_URL",
+    "AUTH_JWT_SECRET",
+    "EXPO_PUBLIC_API_URL",
+    "EXPO_PUBLIC_DEMO_MODE",
+    "EXPO_PUBLIC_USE_MOCK_API",
+    "SUPABASE_URL",
+    "SUPABASE_JWT_SECRET"
+  ],
+  "note": "Local Batch6 only. D02 Preview/DB not assumed for this branch. No deploy/prod/merge/spend/OCIF.",
+  "generated_at": "2026-10-16T01:15:15.000Z"
+}
