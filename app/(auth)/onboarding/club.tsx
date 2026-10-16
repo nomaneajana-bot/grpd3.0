@@ -1,6 +1,6 @@
 import { type Href, router } from "expo-router";
 import * as Clipboard from "expo-clipboard";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { ClubCodeInput } from "@/components/onboarding/ClubCodeInput";
@@ -32,6 +32,16 @@ export default function OnboardingClubScreen() {
   const [clubName, setClubName] = useState<string | null>(state.clubName ?? null);
   const [clubCity, setClubCity] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Draft loads async — keep local reveal in sync with persisted club.
+  useEffect(() => {
+    if (state.clubName?.trim()) {
+      setClubName(state.clubName.trim());
+    }
+    if (state.clubCode?.trim()) {
+      setCode(state.clubCode.trim().toUpperCase());
+    }
+  }, [state.clubName, state.clubCode]);
 
   const lookup = async (raw: string) => {
     const trimmed = raw.trim().toUpperCase();
