@@ -41,7 +41,7 @@
 | Pending applicant is not approved member | I | R | | Session join blocked while pending; privacy negative control |
 | Approve/reject pending in admin UI | Partial I | R | U | Confirm connected API coverage |
 | Invite expiry | NOT IMPLEMENTED (UI never sets expiresAt; mock never expires) | | U | Do not PASS as supported |
-| Leave club / cancel pending client calls | I mock + I hosted routes | R | | Hosted `POST …/leave` + `…/cancel-request` at Batch 5 `f8f3787`; local PG PASS (actual route auth + races); cancel UI ungated; hosted Preview BLOCKED on SSO (not PASS) |
+| Leave club / cancel pending client calls | I mock + I hosted **source** routes | R | | Local Batch5 ACCEPTED `f8f3787`. Green-home Preview SPA-only (no dispatcher) → routes not reachable as API. D02 has dispatcher+leave, no cancel-request. See `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md` |
 | Leave = approved member only; cancel = pending only | I hosted | R | | Wrong status → 409 WRONG_STATUS; cancel uses conditional pending delete |
 | Sole approved admin cannot leave (no transfer/deletion invented) | I hosted | R | **U** transfer UX | Decision Batch 5: reject `LAST_ADMIN` 409; concurrent dual-admin leave serialized; do not delete club |
 | Leave revokes members-only attendance for actor; public attendance unchanged | I hosted | R | | Matches demo intent; PG-tested |

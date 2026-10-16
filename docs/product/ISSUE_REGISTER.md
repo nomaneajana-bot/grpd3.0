@@ -14,8 +14,9 @@
 **Batch 4 tip (DEMO gate CLEARED):** `3dff8ed2f2af5075fd3fd71660a2dd307d9c2851`  
 **Batch 4 DEMO gate:** **CLEARED** (Codex accepted correction — real admin move of B)  
 **Batch 4 evidence:** `docs/audit/batch4-toi-roster/evidence.json` — **37 PASS / 0 FAIL / 3 BLOCKED**  
-**Batch 5 tip under test / `tested_sha`:** `f8f378707a2b973e3fc2ae9e688f0580af09adff` (Codex base `0309752`)  
-**Batch 5 evidence:** `docs/audit/batch5-leave-cancel/evidence.json` — **17 PASS / 0 FAIL / 2 BLOCKED** · `local_postgres_integration` · `hosted_claim: false`  
+**Batch 5 local gate:** **ACCEPTED** — tested `f8f378707a2b973e3fc2ae9e688f0580af09adff` (15 PG + 5 unit; actual POST + `req.auth` shim ≠ full token/middleware/hosted)  
+**Batch 5 evidence:** `docs/audit/batch5-leave-cancel/` · `hosted_claim: false`  
+**Runtime wiring diagnosis:** `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md` (green-home SPA-only vs D02 dispatcher; STOP before port)  
 **Method:** Statuses are NOT CHECKED / FAILED / FIXED AWAITING RETEST / VERIFIED / BLOCKED.  
 **Capability:** IMPLEMENTED / PARTIAL / NOT IMPLEMENTED / UNSUPPORTED — never treat NOT IMPLEMENTED as PASS.
 
@@ -67,13 +68,13 @@
 |-------|-------|
 | Route / journey | Leave club / cancel pending · Clubs UI → API |
 | Expected meaning | Connected backend supports leave + cancel-request; UI effects persist; private access revoked |
-| Observed behavior | Routes: `POST …/leave`, `POST …/cancel-request`. Auth via `requireAuth`/`req.auth` — **actual route POST** tests prove 401 + body `userId` ignored. Leave=approved; cancel=pending conditional delete. Sole/concurrent last-admin → `LAST_ADMIN`. Lifecycle rollback + race outcomes recorded. Cancel UI ungated from DEMO_MODE. Local PG 15/15 PASS at `f8f3787`. Hosted Preview **BLOCKED** (SSO) — not PASS. Demo mock unchanged. |
-| Capability | Demo: IMPLEMENTED · Hosted code: IMPLEMENTED · Hosted VERIFIED: **no** |
-| Owner | Cursor |
-| Candidate SHA / env | `f8f3787` · local_postgres_integration · Preview SSO-gated |
-| Evidence | `docs/audit/batch5-leave-cancel/` + `docs/audit/batch5-leave-cancel/logs/` |
-| Next action | Codex re-review of route-auth closeout; hosted retest when authorized Preview/Test env exists — never PASS hosted until then |
-| Status | **FIXED AWAITING RETEST** (hosted) |
+| Observed behavior | **Local:** leave/cancel lifecycle + actual `route.ts` POST tests PASS at `f8f3787` (Batch5 gate accepted). **Runtime:** green-home `vercel.json` is Expo `dist` + catch-all `/index.html`; no `next`, no `api/v1/[...path].ts`, no `vercel-dispatch.ts` → handlers **not** a Vercel function entry. Client sends Bearer; this branch `requireAuth` reads only `req.auth`. D02 branch has dispatcher + Bearer JWT + leave; **no** cancel-request. SSO 302 ≠ API presence. Demo mock leave/cancel still works. |
+| Capability | Demo: IMPLEMENTED · Hosted route **source**: IMPLEMENTED · Hosted **reachable**: NO on current deploy shape · Hosted VERIFIED: **no** |
+| Owner | Cursor (code) + owner (Preview env/bypass/DB names) |
+| Candidate SHA / env | local `f8f3787`; wiring map vs D02 `bcfe1bf` |
+| Evidence | `docs/audit/batch5-leave-cancel/` + `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md` |
+| Next action | After Codex accepts map: Cursor ports dispatcher + registers cancel-request + Bearer auth (selective, no full D02 merge); owner supplies Preview secrets/bypass/isolated DB — never PASS hosted until reachable JSON API proven |
+| Status | **FIXED AWAITING RETEST** (hosted; blocked on **runtime wiring** + access, not “SSO alone”) |
 
 ### ISSUE-005 — P2 — VERIFIED (process)
 | Field | Value |
@@ -116,12 +117,12 @@
 |-------|-------|
 | Route / journey | Hosted account persistence (multi-context) |
 | Expected meaning | Attendance/membership follow account across sessions/backends |
-| Observed behavior | Not executable without **hosted preview + credentials**. A physical second device is **not** inherently required — two isolated browser contexts can exercise same-account persistence once hosted env exists |
+| Observed behavior | Needs reachable hosted API + auth. Green-home Preview is SPA-only (no dispatcher). D02 had Test API historically with bypass. SSO 302 alone is insufficient; dual browser contexts suffice once API exists |
 | Capability | NOT VERIFIED |
-| Owner | Codex / env + Cursor |
-| Evidence | Prior audit S12/S13 BLOCKED; Vercel preview currently SSO-gated |
-| Next action | Obtain hosted preview access + creds; dual browser contexts; separate evidence lane. Do not invent device blockers |
-| Status | **BLOCKED** (true dependency: hosted credentials/environment) |
+| Owner | Owner (access/env) + Cursor (wiring after map clear) |
+| Evidence | `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md`; prior S12/S13 |
+| Next action | Same wiring + Preview access blockers as ISSUE-004; then dual-context persistence lane |
+| Status | **BLOCKED** (runtime wiring + hosted access — not device) |
 
 ### ISSUE-009 — P2 — NOT CHECKED
 | Field | Value |
@@ -225,12 +226,20 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 ---
 
-## Batch 5 — OPEN (local PG PASS; hosted journey BLOCKED; awaiting Codex re-review)
+## Batch 5 — LOCAL GATE ACCEPTED (hosted still AWAITING RETEST)
 
 **Theme:** Connected leave-club + cancel-pending-request (ISSUE-004) · related ISSUE-008 access  
 **Excluded:** merge/prod, credential/security changes, OCIF, inventing admin transfer/deletion, claiming hosted PASS  
-**`tested_sha`:** `f8f378707a2b973e3fc2ae9e688f0580af09adff` (route-auth closeout vs Codex `0309752`)  
-**Evidence:** `docs/audit/batch5-leave-cancel/` — **17 PASS / 0 FAIL / 2 BLOCKED**
+**`tested_sha`:** `f8f378707a2b973e3fc2ae9e688f0580af09adff`  
+**Evidence:** `docs/audit/batch5-leave-cancel/` — local **ACCEPTED**; hosted not VERIFIED  
+**Codex:** accepted local correction gate; full token/middleware/hosted **not** accepted by that gate
+
+## Runtime wiring diagnosis — STOP (before implementation)
+
+**Theme:** Which deployment actually serves mobile `/api/v1` for leave/cancel (ISSUE-004/008)  
+**Map:** `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md`  
+**Finding:** green-home Preview = SPA only; D02 = dispatcher + Bearer; cancel-request only on green-home source  
+**Next (after Codex clear):** Cursor selective port — not this turn
 
 ### Exit criteria
 
