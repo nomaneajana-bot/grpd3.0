@@ -82,7 +82,16 @@ export default function OnboardingWelcomeFinalScreen() {
         typeLabel={typeLabel}
         groupId={groupId}
         paceLabel={paceLabel}
-        runnersLabel="12 inscrits"
+        runnersLabel={
+          state.goal === "marche" || state.discoveryMode
+            ? "12 participants"
+            : "12 inscrits"
+        }
+        participantsNoun={
+          state.goal === "marche" || state.discoveryMode
+            ? "PARTICIPANTS"
+            : "COUREURS"
+        }
       />
     </OnboardingScreen>
   );

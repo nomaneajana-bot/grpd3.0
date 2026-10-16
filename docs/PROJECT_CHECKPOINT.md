@@ -1,45 +1,41 @@
 # GRPD Project Checkpoint
 
 **Updated:** 2026-10-16  
-**Working branch:** `cursor/mvp-live-journeys-3184` (from green-home)  
-**Prior packaging tip:** `cursor/green-home-ux-join-3184` @ `1e6f497` (CLEARED packaging — not hosted)  
-**Batch 6 local Codex correction:** **CLEARED** — `4dad749`  
+**Working branch:** `cursor/mvp-live-journeys-3184`  
+**Review that drove this batch:** interactive mock Preview @ `e8e9b05` (0708060337)  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
 
-**BATCH 7 — LIVE JOURNEY FIXES (mock) — B in progress, stop for retest.**  
-Owner interactive review found basic journey failures on explicit mock (not DEMO_MODE, not connected DB).  
-Priority: **B** club create → walk outing → creator access · then **C** discover join · then **A** login copy · then invitations.
+**BATCH 7 — LIVE MOCK JOURNEY FIXES A+B+C — STOP for interactive retest.**  
+Code fixes for review items 1–7 on explicit mock (`DEMO_MODE=false`).  
+Connected DB / hosted mutation still BLOCKED. No full journey acceptance.
 
-### Fixes landed (this tip)
+### Landed
 
-- Clubs tab re-reads focused club from storage/`?focus=` after create (no stale “j’aime courir”)
-- Walk/language idea → walk group defaults (no Élite / Sub 4:30); creator labelled **TU ES ADMIN**
-- No hash-to-Élite when member has no PR
-- Mock session create/get/join/leave/list work with `DEMO_MODE=false` (persist `mock:sessions`)
-- Discover fixture join no longer 404 solely because DEMO_MODE is false
-- Walk organise defaults to Marche; walk copy softened
+**A — Login/onboarding**
+- Welcome: “Sors. Avec les tiens.” + walk/language/course community copy
+- Phone/verify: no false SMS claim in mock/démo; mode hint (`000000` démo / `123456` mock)
+- Wrong OTP surfaces **Code invalide** — not PIN **Compte introuvable**
 
-### Not done yet
+**B — Club → walk → access** (prior commit `c40cccf`)
+- New club focused after create; walk groups; admin label; mock session persist
 
-- A: onboarding runners-only wording · SMS/code error clarity per mode  
-- C: full cancel path interactive retest  
-- D: invitations / two-account privacy  
-- Connected DB journeys  
-- Hosted / native / UAT acceptance  
+**C — Discover join → cancel**
+- Join works without DEMO_MODE; unit join→me→leave
 
-## Exact next action
+### Exact next action
 
-1. **Retest** Priority B on explicit mock: create invitation club from English Walk idea → lands on **new** club → organise Marche → publish club-only → creator opens detail (reload) → discover join SORTIE LONGUE FACILE.  
-2. Then Priority A login/onboarding copy.  
-3. No deploy / merge / spend / prod claim.
+1. **Interactive retest** on explicit mock (fresh storage): items 1–7 from the 16 Oct review.  
+2. Then D (invitations / two-account) — blocked paths ≠ PASS.  
+3. No deploy/merge/spend/prod claim from this tip.
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
-| Explicit mock journeys B | **FIXED AWAITING RETEST** |
-| DEMO_MODE | Separate — not this review path |
-| Connected DB | Unverified |
-| Hosted Preview | Not this batch |
+| Explicit mock A+B+C | **FIXED AWAITING RETEST** |
+| DEMO_MODE | Separate path — retest separately |
+| Connected / hosted | Unverified / BLOCKED |
+| D invitations | NOT STARTED |
+| Native / UAT | Separate |

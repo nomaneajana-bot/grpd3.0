@@ -56,6 +56,7 @@ export function NextSessionCard({
   groupId,
   paceLabel,
   runnersLabel,
+  participantsNoun = "COUREURS",
 }: {
   title: string;
   meta: string;
@@ -63,6 +64,8 @@ export function NextSessionCard({
   groupId: ClubPaceGroupId;
   paceLabel: string;
   runnersLabel: string;
+  /** Label above the count — PARTICIPANTS for walk/language, COUREURS for run. */
+  participantsNoun?: string;
 }) {
   return (
     <View style={sessionStyles.card}>
@@ -82,7 +85,7 @@ export function NextSessionCard({
           <Text style={sessionStyles.statValueAccent}>{paceLabel}</Text>
         </View>
         <View style={sessionStyles.statRight}>
-          <Text style={sessionStyles.statLabel}>COUREURS</Text>
+          <Text style={sessionStyles.statLabel}>{participantsNoun}</Text>
           <Text style={sessionStyles.statValue}>{runnersLabel}</Text>
         </View>
       </View>

@@ -6,35 +6,37 @@
 process.env.EXPO_PUBLIC_DEMO_MODE = "false";
 process.env.EXPO_PUBLIC_USE_MOCK_API = "true";
 
-const memory = new Map<string, string>();
+const sessionMemory = new Map<string, string>();
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   __esModule: true,
   default: {
-    getItem: jest.fn(async (k: string) => memory.get(k) ?? null),
+    getItem: jest.fn(async (k: string) => sessionMemory.get(k) ?? null),
     setItem: jest.fn(async (k: string, v: string) => {
-      memory.set(k, v);
+      sessionMemory.set(k, v);
     }),
     removeItem: jest.fn(async (k: string) => {
-      memory.delete(k);
+      sessionMemory.delete(k);
     }),
     multiSet: jest.fn(async (pairs: [string, string][]) => {
-      for (const [k, v] of pairs) memory.set(k, v);
+      for (const [k, v] of pairs) sessionMemory.set(k, v);
     }),
     multiGet: jest.fn(async (keys: string[]) =>
-      keys.map((k) => [k, memory.get(k) ?? null] as [string, string | null]),
+      keys.map(
+        (k) => [k, sessionMemory.get(k) ?? null] as [string, string | null],
+      ),
     ),
     multiRemove: jest.fn(async (keys: string[]) => {
-      for (const k of keys) memory.delete(k);
+      for (const k of keys) sessionMemory.delete(k);
     }),
-    getAllKeys: jest.fn(async () => [...memory.keys()]),
-    clear: jest.fn(async () => memory.clear()),
+    getAllKeys: jest.fn(async () => [...sessionMemory.keys()]),
+    clear: jest.fn(async () => sessionMemory.clear()),
   },
 }));
 
 describe("mock session persistence without DEMO_MODE", () => {
   beforeEach(() => {
-    memory.clear();
+    sessionMemory.clear();
     jest.resetModules();
     process.env.EXPO_PUBLIC_DEMO_MODE = "false";
     process.env.EXPO_PUBLIC_USE_MOCK_API = "true";
@@ -122,5 +124,41 @@ describe("mock session persistence without DEMO_MODE", () => {
     });
     expect(joined.status).toBe("joined");
     expect(joined.sessionId).toBe("explore-sortie-longue-facile");
+  });
+
+  it("join → my sessions → leave (cancel) keeps other outings", async () => {
+    await seedUser();
+    const { mockApiRequest } = await import("../api/mock");
+
+    await mockApiRequest("/api/v1/sessions/explore-sortie-longue-facile/join", {
+      method: "POST",
+      body: JSON.stringify({ groupId: "B" }),
+    });
+
+    const mine = await mockApiRequest<{ sessions: { id: string }[] }>(
+      "/api/v1/me/sessions",
+      { method: "GET" },
+    );
+    expect(mine.sessions.some((s) => s.id === "explore-sortie-longue-facile")).toBe(
+      true,
+    );
+    const beforeCount = mine.sessions.length;
+
+    const left = await mockApiRequest<{
+      attendance: { status: string };
+    }>("/api/v1/sessions/explore-sortie-longue-facile/leave", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    expect(left.attendance.status).toBe("left");
+
+    const after = await mockApiRequest<{ sessions: { id: string }[] }>(
+      "/api/v1/me/sessions",
+      { method: "GET" },
+    );
+    expect(
+      after.sessions.some((s) => s.id === "explore-sortie-longue-facile"),
+    ).toBe(false);
+    expect(after.sessions.length).toBe(beforeCount - 1);
   });
 });
