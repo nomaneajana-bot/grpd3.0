@@ -61,6 +61,11 @@ export type ClubAdminSettings = {
   accessCode?: string;
   interGroupAccessEnabled?: boolean;
   defaultInterGroupPolicy?: GroupPolicyMode;
+  /**
+   * Club group structure. Walk/language clubs must not default to running
+   * “Élite / Sub 4:30” labels. Set at create from explicit idea activity.
+   */
+  activityStructure?: "run" | "walk" | "neutral";
   groups: ClubAdminGroupOverride[];
   memberGroups: Record<string, ClubPaceGroupId>;
 };
@@ -84,7 +89,7 @@ function defaultGroupOverride(id: ClubPaceGroupId): ClubAdminGroupOverride {
   };
 }
 
-const DEFAULT_GROUPS: ClubAdminGroupOverride[] = [
+const DEFAULT_RUN_GROUPS: ClubAdminGroupOverride[] = [
   {
     id: "A",
     paceLabel: "Sub 4:30/km",
@@ -115,11 +120,55 @@ const DEFAULT_GROUPS: ClubAdminGroupOverride[] = [
   },
 ];
 
+/** Neutral / walk-language groups — no invented elite running pace. */
+const DEFAULT_WALK_GROUPS: ClubAdminGroupOverride[] = [
+  {
+    id: "A",
+    paceLabel: "Allure libre",
+    active: true,
+    displayName: "Groupe A — Conversation",
+    accessPolicy: "inherit",
+  },
+  {
+    id: "B",
+    paceLabel: "Allure libre",
+    active: true,
+    displayName: "Groupe B — Binômes",
+    accessPolicy: "inherit",
+  },
+  {
+    id: "C",
+    paceLabel: "Allure douce",
+    active: true,
+    displayName: "Groupe C — Marche douce",
+    accessPolicy: "inherit",
+  },
+  {
+    id: "D",
+    paceLabel: "Sans groupe",
+    active: true,
+    displayName: "Groupe D — Ouvert",
+    accessPolicy: "free",
+  },
+];
+
 export function defaultClubAdminSettings(): ClubAdminSettings {
   return {
     interGroupAccessEnabled: true,
     defaultInterGroupPolicy: "warn",
-    groups: DEFAULT_GROUPS.map((g) => ({ ...g })),
+    activityStructure: "run",
+    groups: DEFAULT_RUN_GROUPS.map((g) => ({ ...g })),
+    memberGroups: {},
+  };
+}
+
+/** Defaults for walk / language clubs created from an explicit idea activity. */
+export function defaultWalkClubAdminSettings(): ClubAdminSettings {
+  return {
+    interGroupAccessEnabled: true,
+    defaultInterGroupPolicy: "free",
+    activityStructure: "walk",
+    groups: DEFAULT_WALK_GROUPS.map((g) => ({ ...g })),
     memberGroups: {},
   };
 }
@@ -181,6 +230,8 @@ export function mergeClubAdminSettings(
       parsed.interGroupAccessEnabled ?? defaults.interGroupAccessEnabled,
     defaultInterGroupPolicy:
       normalized.defaultInterGroupPolicy ?? defaults.defaultInterGroupPolicy,
+    activityStructure:
+      parsed.activityStructure ?? defaults.activityStructure ?? "run",
     groups: normalizeGroups(normalized.groups ?? parsed.groups),
     memberGroups: parsed.memberGroups ?? {},
   };

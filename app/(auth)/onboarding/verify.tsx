@@ -1,5 +1,5 @@
 import { type Href, router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 
 import {
@@ -8,9 +8,18 @@ import {
 } from "@/components/onboarding/OtpCodeInput";
 import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
 import { OnboardingTitle } from "@/components/onboarding/OnboardingTitle";
-import { colors } from "@/constants/ui";
-import { useOnboarding } from "@/hooks/useOnboarding";
+import { colors, typography } from "@/constants/ui";
+import { DEMO_MODE, DEMO_OTP_CODE } from "@/lib/featureFlags";
 import { formatPhoneDisplay } from "@/lib/phoneFormat";
+import { useOnboarding } from "@/hooks/useOnboarding";
+
+const DEMO_PHONE_DIGITS = "708060337";
+const MOCK_OTP_CODE = "123456";
+
+function isDemoPhone(phone: string): boolean {
+  const digits = phone.replace(/\D/g, "");
+  return digits.endsWith(DEMO_PHONE_DIGITS);
+}
 
 export default function OnboardingVerifyScreen() {
   const { state, setState } = useOnboarding();
@@ -27,6 +36,28 @@ export default function OnboardingVerifyScreen() {
     ? formatPhoneDisplay(state.phone)
     : "+212 …";
 
+  const simMode =
+    DEMO_MODE || (!!state.phone && isDemoPhone(state.phone));
+  const expectedCode = DEMO_MODE ? DEMO_OTP_CODE : MOCK_OTP_CODE;
+
+  const subtitle = useMemo(() => {
+    if (simMode) {
+      return (
+        <>
+          Simulation — aucun SMS envoyé à{" "}
+          <Text style={styles.phoneBold}>{phoneDisplay}</Text>
+          {`. Entre le code ${expectedCode}.`}
+        </>
+      );
+    }
+    return (
+      <>
+        On a envoyé un code à{" "}
+        <Text style={styles.phoneBold}>{phoneDisplay}</Text>
+      </>
+    );
+  }, [simMode, phoneDisplay, expectedCode]);
+
   const handleVerify = async (value?: string) => {
     const c = (value ?? code).trim();
     if (c.length !== 6) return;
@@ -34,14 +65,17 @@ export default function OnboardingVerifyScreen() {
     router.push("/(auth)/onboarding/profile" as Href);
   };
 
-  const resendSlot =
-    resendSec > 0 ? (
-      <ResendCountdown seconds={resendSec} />
-    ) : (
-      <Text style={styles.resendActive} onPress={() => setResendSec(24)}>
-        Renvoyer le code
-      </Text>
-    );
+  const resendSlot = simMode ? (
+    <Text style={styles.simResend} testID="onboarding-verify-sim-note">
+      Pas de renvoi SMS — code de simulation : {expectedCode}
+    </Text>
+  ) : resendSec > 0 ? (
+    <ResendCountdown seconds={resendSec} />
+  ) : (
+    <Text style={styles.resendActive} onPress={() => setResendSec(24)}>
+      Renvoyer le code
+    </Text>
+  );
 
   return (
     <OnboardingScreen
@@ -50,19 +84,15 @@ export default function OnboardingVerifyScreen() {
       primaryDisabled={code.length !== 6}
     >
       <OnboardingTitle
-        title="Code reçu ?"
-        subtitle={
-          <>
-            On a envoyé un code à{" "}
-            <Text style={styles.phoneBold}>{phoneDisplay}</Text>
-          </>
-        }
+        title={simMode ? "Code de simulation" : "Code reçu ?"}
+        subtitle={subtitle}
       />
       <OtpCodeInput
         value={code}
         onChange={setCode}
         onComplete={(c) => void handleVerify(c)}
         resendSlot={resendSlot}
+        simulation={simMode}
       />
     </OnboardingScreen>
   );
@@ -77,5 +107,11 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontSize: 13,
     fontWeight: "500",
+  },
+  simResend: {
+    color: colors.text.accent,
+    fontSize: typography.sizes.sm,
+    fontWeight: "600",
+    textAlign: "center",
   },
 });

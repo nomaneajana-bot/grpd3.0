@@ -88,8 +88,6 @@ const CASUAL_TYPE_OPTIONS: Array<{ id: SessionMode; label: string }> = [
   { id: "walking", label: "Marche" },
 ] as const;
 
-const SESSION_TYPE_OPTIONS = ["FARTLEK", "SORTIE LONGUE", "SEUIL"] as const;
-
 // Pace picker options
 const PACE_MINUTE_OPTIONS = Array.from({ length: 6 }, (_, i) => i + 3); // 3-8
 const PACE_SECOND_OPTIONS = Array.from({ length: 60 }, (_, i) => i); // 0-59
@@ -1511,13 +1509,15 @@ export default function CreateSessionScreen() {
 
   // Session mode: workout-based or casual type
   const [sessionMode, setSessionMode] = useState<SessionMode>("workout");
-  const [sessionType, setSessionType] = useState<
-    "FARTLEK" | "SORTIE LONGUE" | "SEUIL"
-  >("FARTLEK");
   /** User-entered title — required for walk (must agree on detail). */
   const [outingTitle, setOutingTitle] = useState("");
   /** User-entered purpose / “à quoi s’attendre”. */
   const [outingPurpose, setOutingPurpose] = useState("");
+  /**
+   * Free-text structure / déroulé — shown for every session mode
+   * (replaces FARTLEK/SORTIE/SEUIL chips + associated-workout picker).
+   */
+  const [structureNotes, setStructureNotes] = useState("");
   /** Optional language — only when toggle on; never default to English. */
   const [includeLanguage, setIncludeLanguage] = useState(false);
   const [outingLanguage, setOutingLanguage] = useState("");
@@ -1707,6 +1707,29 @@ export default function CreateSessionScreen() {
   const [availableWorkouts, setAvailableWorkouts] = useState<WorkoutEntity[]>(
     [],
   );
+
+  // Walk/language clubs: default Organise to Marche (not FARTLEK), when clubId known.
+  useEffect(() => {
+    if (!explicitClubId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { getClubAdminSettings } = await import("@/lib/clubAdminStore");
+        const settings = await getClubAdminSettings(explicitClubId);
+        if (cancelled) return;
+        if (settings.activityStructure === "walk") {
+          setSessionMode("walking");
+          setSelectedWorkoutId(null);
+          setUsePaceGroups(false);
+        }
+      } catch {
+        /* keep workout default */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [explicitClubId]);
 
   // Load available workouts for picker
   useEffect(() => {
@@ -1912,37 +1935,32 @@ export default function CreateSessionScreen() {
         // Set spot
         setSpot(existingSession.spot);
 
-        // Determine session mode based on workoutId and typeLabel
-        if (existingSession.workoutId) {
-          // Has workout = structured workout mode
-          setSessionMode("workout");
-          const typeMap: Record<string, "FARTLEK" | "SORTIE LONGUE" | "SEUIL"> = {
-            FARTLEK: "FARTLEK",
-            SORTIE: "SORTIE LONGUE",
-            SEUIL: "SEUIL",
-          };
-          const detectedType = Object.keys(typeMap).find((key) =>
-            existingSession.typeLabel.toUpperCase().includes(key),
-          );
-          if (detectedType) {
-            setSessionType(typeMap[detectedType]);
-          }
-          setSelectedWorkoutId(existingSession.workoutId);
-        } else {
-          // No workout = casual type mode
+        // Determine session mode from typeLabel (associated-workout picker removed).
+        {
           const typeLabelUpper = existingSession.typeLabel.toUpperCase();
-          if (typeLabelUpper.includes("COURSE LIBRE") || typeLabelUpper.includes("LIBRE")) {
+          if (
+            typeLabelUpper.includes("COURSE LIBRE") ||
+            typeLabelUpper.includes("LIBRE")
+          ) {
             setSessionMode("casual_run");
           } else if (typeLabelUpper.includes("DÉCOUVERTE")) {
             setSessionMode("discovery_run");
-          } else if (typeLabelUpper.includes("MARCHE") || typeLabelUpper.includes("WALKING")) {
+          } else if (
+            typeLabelUpper.includes("MARCHE") ||
+            typeLabelUpper.includes("WALKING")
+          ) {
             setSessionMode("walking");
           } else {
-            // Fallback to workout mode if type is unclear
             setSessionMode("workout");
-            setSessionType("FARTLEK");
           }
           setSelectedWorkoutId(null);
+          setStructureNotes(existingSession.volume?.trim() || "");
+          if (existingSession.coachAdvice?.trim()) {
+            setOutingPurpose(existingSession.coachAdvice.trim());
+          }
+          if (existingSession.title?.trim()) {
+            setOutingTitle(existingSession.title.trim());
+          }
         }
 
         // Pre-fill group configs from paceGroupsOverride (new format) or paceGroups (legacy)
@@ -2016,8 +2034,7 @@ export default function CreateSessionScreen() {
         selectedHour,
         selectedMinute,
         sessionMode,
-        sessionType,
-        selectedWorkoutId,
+        structureNotes,
         sessionAudience,
         usePaceGroups,
         groupConfigs,
@@ -2032,8 +2049,7 @@ export default function CreateSessionScreen() {
       selectedHour,
       selectedMinute,
       sessionMode,
-      sessionType,
-      selectedWorkoutId,
+      structureNotes,
       sessionAudience,
       usePaceGroups,
       groupConfigs,
@@ -2046,8 +2062,7 @@ export default function CreateSessionScreen() {
 
   const formReady = isEditMode
     ? hasLoadedExistingSession
-    : hasInitializedAudience &&
-      (selectedWorkoutId == null || selectedWorkoutEntity != null);
+    : hasInitializedAudience;
 
   useEffect(() => {
     if (!formReady || baselineCapturedRef.current) return;
@@ -2091,10 +2106,10 @@ export default function CreateSessionScreen() {
         return;
       }
 
-      // Map sessionMode to sessionType
+      // Map sessionMode to sessionType (no FARTLEK/SORTIE/SEUIL subtype chips).
       let effectiveSessionType: string;
       if (sessionMode === "workout") {
-        effectiveSessionType = sessionType;
+        effectiveSessionType = "STRUCTURÉ";
       } else if (sessionMode === "casual_run") {
         effectiveSessionType = "COURSE LIBRE";
       } else if (sessionMode === "discovery_run") {
@@ -2102,8 +2117,9 @@ export default function CreateSessionScreen() {
       } else if (sessionMode === "walking") {
         effectiveSessionType = "MARCHE";
       } else {
-        effectiveSessionType = sessionType;
+        effectiveSessionType = "STRUCTURÉ";
       }
+      const structureTrimmed = structureNotes.trim() || null;
 
       if (sessionMode === "walking") {
         if (!outingTitle.trim()) {
@@ -2167,13 +2183,14 @@ export default function CreateSessionScreen() {
           timeLabel,
           sessionType: effectiveSessionType,
           groupConfigs: submittedGroups,
-          workoutId: sessionMode === "workout" ? selectedWorkoutId : null,
+          workoutId: null,
           visibility: sessionVisibility,
           hostGroupName,
           genderRestriction: genderRestrictionUi,
           title: walkTitle,
           purpose: walkPurpose,
           language: walkLanguage,
+          structureNotes: structureTrimmed,
         });
         const sessionWithAudience = {
           ...session,
@@ -2187,15 +2204,6 @@ export default function CreateSessionScreen() {
           id: editSessionId, // Preserve original ID
         });
 
-        // Mark workout as used if a workoutId is associated (only for structured workouts)
-        if (sessionMode === "workout" && selectedWorkoutId) {
-          try {
-            await markWorkoutUsed(selectedWorkoutId);
-          } catch (error) {
-            console.warn("Failed to mark workout as used:", error);
-          }
-        }
-
         markLeaving();
         router.back();
       } else {
@@ -2206,13 +2214,14 @@ export default function CreateSessionScreen() {
           timeLabel,
           sessionType: effectiveSessionType,
           groupConfigs: submittedGroups,
-          workoutId: sessionMode === "workout" ? selectedWorkoutId : null,
+          workoutId: null,
           visibility: sessionVisibility,
           hostGroupName,
           genderRestriction: genderRestrictionUi,
           title: walkTitle,
           purpose: walkPurpose,
           language: walkLanguage,
+          structureNotes: structureTrimmed,
         });
 
         const apiPayload: SessionCreateInput = {
@@ -2272,14 +2281,6 @@ export default function CreateSessionScreen() {
           }
         }
 
-        if (sessionMode === "workout" && selectedWorkoutId) {
-          try {
-            await markWorkoutUsed(selectedWorkoutId);
-          } catch (error) {
-            console.warn("Failed to mark workout as used:", error);
-          }
-        }
-
         markLeaving();
         router.push(`/session/${createdId}`);
       }
@@ -2326,7 +2327,8 @@ export default function CreateSessionScreen() {
         <View style={styles.card}>
           <Text style={styles.cardLabel}>TYPE DE SÉANCE</Text>
           <Text style={styles.cardSubtitle}>
-            Choisis si tu veux utiliser un workout structuré ou créer une séance libre.
+            Choisis le format de la sortie. Tu peux décrire la structure en texte
+            pour tous les types.
           </Text>
           
           {/* Mode selector */}
@@ -2422,7 +2424,8 @@ export default function CreateSessionScreen() {
           {sessionMode === "walking" ? (
             <View style={styles.walkMetaBlock} testID="session-walk-fields">
               <Text style={[styles.cardSubtitle, styles.sessionTypeSubtitle]}>
-                Titre, objectif et lieu doivent correspondre sur le détail.
+                Indique un titre, l’objectif et le lieu — ils apparaîtront sur
+                la fiche de la sortie.
               </Text>
               <Text style={styles.fieldLabel}>Titre</Text>
               <TextInput
@@ -2494,33 +2497,19 @@ export default function CreateSessionScreen() {
             </View>
           ) : null}
 
-          {sessionMode === "workout" ? (
-            <>
-              <Text style={[styles.cardSubtitle, styles.sessionTypeSubtitle]}>
-                Type de séance structurée
-              </Text>
-              <View style={styles.sessionTypeChips}>
-                {SESSION_TYPE_OPTIONS.map((type) => {
-                  const selected = sessionType === type;
-                  return (
-                    <SelectableChip
-                      key={type}
-                      label={type}
-                      selected={selected}
-                      uppercase
-                      showCheckmark
-                      onPress={() => {
-                        Haptics.impactAsync(
-                          Haptics.ImpactFeedbackStyle.Light,
-                        );
-                        setSessionType(type);
-                      }}
-                    />
-                  );
-                })}
-              </View>
-            </>
-          ) : null}
+          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
+            Structure / déroulé
+          </Text>
+          <TextInput
+            style={[styles.walkTextInput, styles.walkTextArea]}
+            value={structureNotes}
+            onChangeText={setStructureNotes}
+            placeholder="Ex. 10 min échauffement · 6×1 min vite / 1 min lent · retour au calme"
+            placeholderTextColor={colors.text.tertiary}
+            multiline
+            testID="session-structure-input"
+            accessibilityLabel="Structure de la séance"
+          />
         </View>
 
         {/* Card 2 - Infos de base */}
@@ -2567,24 +2556,6 @@ export default function CreateSessionScreen() {
               {timeLabel}
             </Text>
           </TouchableOpacity>
-          {sessionMode === "workout" && (
-            <>
-              <View style={styles.divider} />
-              <TouchableOpacity
-                style={styles.fieldRow}
-                onPress={() => setShowWorkoutPicker(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.fieldLabel}>Entraînement associé</Text>
-                <View style={styles.fieldInputRow}>
-                  <Text style={styles.fieldInput}>
-                    {selectedWorkoutName ?? "Aucun entraînement associé"}
-                  </Text>
-                  <Text style={styles.fieldChevron}>›</Text>
-                </View>
-              </TouchableOpacity>
-            </>
-          )}
         </View>
 
         <View style={styles.card}>
@@ -2674,8 +2645,7 @@ export default function CreateSessionScreen() {
         </View>
 
         {/* Groupes & allures — hidden for walking (no running pace/workout/PR required). */}
-        {sessionMode !== "walking" &&
-          (selectedWorkoutId || sessionMode !== "workout") && (
+        {sessionMode !== "walking" && (
           <View style={[styles.card, styles.groupsCard]} testID="session-pace-groups-card">
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardTitle}>Groupes & allures</Text>
@@ -2703,11 +2673,8 @@ export default function CreateSessionScreen() {
                 ? formatPaceLabel(paceSeconds)
                 : "—";
 
-              // Check if workout is fartlek or series (only for structured workouts)
-              const isIntervalWorkout =
-                sessionMode === "workout" &&
-                (selectedWorkoutEntity?.runType === "fartlek" ||
-                  selectedWorkoutEntity?.runType === "series");
+              // Interval fields were tied to associated-workout templates — removed.
+              const isIntervalWorkout = false;
 
               // Format duration helper
               const formatDuration = (seconds: number | null): string => {
@@ -2996,20 +2963,6 @@ export default function CreateSessionScreen() {
           }}
         />
       )}
-      {/* Workout Picker */}
-      {/* TODO[sessionFromWorkout]: Enforce that every session is created from a workout
-          once the builder is fully aligned with workout types. */}
-      <WorkoutPicker
-        visible={showWorkoutPicker}
-        title="Choisir un workout"
-        workouts={availableWorkouts}
-        selectedWorkoutId={selectedWorkoutId}
-        onClose={() => setShowWorkoutPicker(false)}
-        onSelect={(workoutId) => {
-          setSelectedWorkoutId(workoutId);
-          setShowWorkoutPicker(false);
-        }}
-      />
     </SafeAreaView>
   );
 }

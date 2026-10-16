@@ -1,44 +1,45 @@
 # GRPD Project Checkpoint
 
 **Updated:** 2026-10-16  
-**Working branch:** `cursor/green-home-ux-join-3184` (PR #6)  
-**Pinned product baseline (pre–Batch 1):** `c46ce86478e26e0e523fd1fd227adaf3a792b6e4`  
-**Batch 1–4:** DEMO gates CLEARED (see prior tips)  
-**Batch 5 local gate:** **ACCEPTED** — tested `f8f378707a2b973e3fc2ae9e688f0580af09adff`  
-**Runtime diagnosis:** accepted — map `6b05559` / tip `4403447`  
-**Batch 6 local Codex correction:** **CLEARED** — tested `4dad7495bcb1239dcc65e2a451d07f99db9cf43d`  
-**Batch 6 predeploy packaging `tested_sha`:** `1e6f49738819f27b5e49e4d60ee7f28d11e35223`  
-**Batch 6 packaging docs tip:** `953c9130a3ed312e8b81f309e5d7424e60443ae8`  
-**Batch 6 packaging evidence:** `docs/audit/batch6-predeploy-packaging/`  
+**Working branch:** `cursor/mvp-live-journeys-3184`  
+**Batch 7 / Batch A tip (create continuity):** `584c6efebcfb8ea7fd1cd6dcf8af7c9843d93005`  
+**Prior UX tip:** `dd658418297ede6f9c766395d11ccb413df4ee8d`  
+**Review that drove this tip:** Codex rejected create e2e on `dd65841`/`ddcaa09` (focus / Coureur / Élite A–D / D TOI)  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
 
-**BATCH 6 PREDEPLOY PACKAGING COMPLETE — STOP for Codex review.**  
-Expo connected web build + demo build · serverless CJS package (installed next/jose) · local PG health/auth smoke · static secret/DEMO scan · Preview checklist.  
-Vercel project/branch settings inspection: **BLOCKED** (no auth/login).  
-**Preserved:** Batch1–4 DEMO · Batch5 local · Batch6 local correction gate.  
-**No deploy / Production / merge / spending / OCIF / env mutations / new DB / protection changes.**
+**BATCH A — CREATE-ONBOARDING CONTINUITY — STOP for independent review.**  
+Profile + new-club focus persist; pace skip → no TOI; walk/language clubs without running Élite A–D; natural copy.  
+Structure/déroulé + finish auth + existing club data preserved. B retest **queued not accepted**.  
+Connected DB / hosted / production / env / security unchanged.
 
-## Exact next action
+### Landed (Batch A · tip `584c6ef`)
 
-1. **Codex** reviews packaging at `1e6f497` (logs + artifact paths + `PREVIEW_CHECKLIST.md`).  
-2. After clear: owner resolves only open checklist decisions (Preview `DATABASE_URL` / `AUTH_JWT_SECRET` / optional PIN allowlist / post-Preview client URL / Visit access).  
-3. No merge / prod / spending / credentials in git / OCIF.
+- Roles: Découvrir à mon rythme / Rejoindre un club / Créer un club  
+- Pace optional; skip → null group membership  
+- Welcome = actual choices; natural copy (no inventé)  
+- Mock verify: simulation — no “Code reçu automatiquement” without SMS  
+- Create path: focus new club, displayName from profile, walk defaults  
+- Local create journey smoke **19/19** + unit **20/20**
+
+### Queued (not accepted)
+
+- **B** club → private outing + Structure/déroulé persistence retest  
+- **D** invitations / two-account (exact blocker: no invite seed/approval here)
+
+### Exact next action
+
+1. **STOP — independent review** of tip `584c6ef` (fresh storage create path).  
+2. Do not declare B accepted. Do not PASS invite without D.  
+3. No deploy/env/security/prod/merge changes from this tip.
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
-| Demo | CLEARED Batches 1–4; separate `dist-demo` packaging PASS |
-| Local PG Batch5 | ACCEPTED |
-| Local Batch6 dispatcher/Bearer/PIN | **CLEARED** at `4dad749` |
-| Local predeploy packaging | **PASS** at `1e6f497` — not hosted acceptance |
-| Green-home Preview hosted API | **Not verified** · settings inspect **BLOCKED** |
-| Native / UAT | Not verified |
-
-### Unresolved (not decided)
-
-1. Creator auto-attendance  
-2. Public + club association  
-3. Admin leave transfer/deletion UX (currently reject sole admin — recorded)  
+| Explicit mock A+B+C | **FIXED AWAITING RETEST** |
+| DEMO_MODE | Separate path — retest separately |
+| Connected / hosted | Unverified / BLOCKED |
+| D invitations | NOT STARTED |
+| Native / UAT | Separate |

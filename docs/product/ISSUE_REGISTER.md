@@ -1,6 +1,11 @@
 # Issue Register (canonical)
 
-**Branch:** `cursor/green-home-ux-join-3184` (PR #6)  
+**Active journey branch:** `cursor/mvp-live-journeys-3184` (PR #7)  
+**Batch A create-continuity tip (FIXED AWAITING RETEST):** `584c6efebcfb8ea7fd1cd6dcf8af7c9843d93005`  
+**Prior Batch A UX tip:** `dd658418297ede6f9c766395d11ccb413df4ee8d`  
+**Batch A evidence:** `docs/audit/batch7-live-journeys/BATCH_A_ONBOARDING.md` · create smoke 19/19  
+**Batch A scope:** create-onboarding continuity (profile name + new-club focus; pace skip → no TOI; walk/language without Élite A–D; natural welcome/verify copy). Structure/déroulé preserved. B club→private outing **queued not accepted**. Invite path **BLOCKED for D** (no fake approval).  
+**Parent packaging branch:** `cursor/green-home-ux-join-3184` (PR #6)  
 **Pinned product baseline (pre–Batch 1):** `c46ce86478e26e0e523fd1fd227adaf3a792b6e4`  
 **Batch 1 tip (DEMO gate CLEARED):** `959b1ac18db002ef90fc430c1662f750e4796acf`  
 **Batch 1 DEMO gate:** **CLEARED** — hosted/native/UAT not accepted  

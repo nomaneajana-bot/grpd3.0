@@ -6,40 +6,41 @@ import { OnboardingTitle } from "@/components/onboarding/OnboardingTitle";
 import { PacePicker } from "@/components/onboarding/PacePicker";
 import { useOnboarding } from "@/hooks/useOnboarding";
 
+/** Soft default for the optional slider only — never invents a club group. */
 const DEFAULT_PACE = 5.25;
 
 export default function OnboardingPaceScreen() {
   const { state, setState } = useOnboarding();
   const [paceMinutes, setPaceMinutes] = useState(state.pace ?? DEFAULT_PACE);
-  const [refId, setRefId] = useState("run");
 
-  const handleContinue = async () => {
-    await setState({ pace: paceMinutes, discoveryMode: false });
+  const goNext = () => {
     router.push("/(auth)/onboarding/goal" as Href);
   };
 
-  const handleDiscovery = async () => {
+  /** Optional personalization — stores pace, does not assign a club group. */
+  const handleSavePace = async () => {
+    await setState({ pace: paceMinutes, discoveryMode: false });
+    goNext();
+  };
+
+  /** Skip — no pace, no invented Groupe A–D. */
+  const handleSkip = async () => {
     await setState({ discoveryMode: true, pace: undefined });
-    router.push("/(auth)/onboarding/goal" as Href);
+    goNext();
   };
 
   return (
     <OnboardingScreen
-      primaryLabel="Continuer"
-      onPrimaryPress={() => void handleContinue()}
-      secondaryLabel="Je ne sais pas encore — je découvre"
-      onSecondaryPress={() => void handleDiscovery()}
+      primaryLabel="Continuer avec cette allure"
+      onPrimaryPress={() => void handleSavePace()}
+      secondaryLabel="Passer — je n’ai pas besoin d’allure"
+      onSecondaryPress={() => void handleSkip()}
     >
       <OnboardingTitle
-        title="Ton allure confortable"
-        subtitle="L'allure où tu peux parler sans être essoufflé·e — on s'en sert pour te placer dans le bon groupe."
+        title="Allure de course (optionnel)"
+        subtitle="Utile seulement si tu cours. Marche, langue ou découverte : tu peux passer sans choisir d’allure."
       />
-      <PacePicker
-        paceMinutes={paceMinutes}
-        onPaceChange={setPaceMinutes}
-        selectedRefId={refId}
-        onRefSelect={(id) => setRefId(id)}
-      />
+      <PacePicker paceMinutes={paceMinutes} onPaceChange={setPaceMinutes} />
     </OnboardingScreen>
   );
 }

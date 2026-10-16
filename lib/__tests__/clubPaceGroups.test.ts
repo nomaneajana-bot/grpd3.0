@@ -72,10 +72,11 @@ describe("assignMemberToClubGroup", () => {
     expect(paceSecondsToClubGroupId(300)).toBe("B");
   });
 
-  it("is stable for the same user without pace (hash bucket)", () => {
+  it("defaults to open/social group D without pace (no invented Élite)", () => {
     const m = member({ userId: "stable-user-xyz" });
     const a = assignMemberToClubGroup(m, null);
     const b = assignMemberToClubGroup(m, null);
+    expect(a).toBe("D");
     expect(a).toBe(b);
     expect(["A", "B", "C", "D"]).toContain(a);
   });
@@ -104,7 +105,8 @@ describe("bucketMembersByGroup", () => {
     expect(total).toBe(roster.length);
     for (const m of roster) {
       const gid = assignMemberToClubGroup(m, settings);
-      expect(buckets[gid].count).toBeGreaterThanOrEqual(1);
+      expect(gid).not.toBeNull();
+      expect(buckets[gid!].count).toBeGreaterThanOrEqual(1);
     }
   });
 

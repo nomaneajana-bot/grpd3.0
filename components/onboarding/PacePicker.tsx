@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Slider from "@react-native-community/slider";
 
@@ -8,42 +8,35 @@ import {
   paceMinutesToSlider,
   sliderToPaceMinutes,
 } from "@/lib/paceFormat";
-import type { ClubPaceGroupId } from "@/lib/clubPaceGroups";
-import { getClubPaceGroupDef } from "@/lib/clubPaceGroups";
+import { nearestPaceReference } from "@/lib/paceNearestRef";
 import { borderRadius, colors, hairline, typography } from "@/constants/ui";
 
 type PacePickerProps = {
   paceMinutes: number;
   onPaceChange: (minutes: number) => void;
-  selectedRefId?: string;
-  onRefSelect?: (refId: string, minutes: number) => void;
 };
 
-export function PacePicker({
-  paceMinutes,
-  onPaceChange,
-  selectedRefId = "run",
-  onRefSelect,
-}: PacePickerProps) {
+/**
+ * Optional running personalization. Slider and reference rows share one value —
+ * the highlighted card is always the nearest reference to the slider.
+ * No invented club group (A–D) assignment during onboarding.
+ */
+export function PacePicker({ paceMinutes, onPaceChange }: PacePickerProps) {
   const slider = paceMinutesToSlider(paceMinutes);
-  const groupId = paceMinutes < 4.5 ? "A" : paceMinutes < 5.5 ? "B" : paceMinutes < 7 ? "C" : "D";
-  const group = getClubPaceGroupDef(groupId as ClubPaceGroupId);
+  const nearest = useMemo(
+    () => nearestPaceReference(paceMinutes),
+    [paceMinutes],
+  );
 
   return (
-    <View>
+    <View testID="onboarding-pace-picker">
       <View style={styles.heroCard}>
-        <View style={styles.heroTop}>
-          <Text style={styles.paceHero}>{formatPaceMinPerKm(paceMinutes)}</Text>
-          <View style={[styles.groupBadge, { backgroundColor: group.dotColor }]}>
-            <Text style={styles.groupLetter}>{groupId}</Text>
-          </View>
-        </View>
-        <View style={styles.groupRow}>
-          <View style={[styles.dot, { backgroundColor: group.dotColor }]} />
-          <Text style={styles.groupLabel}>
-            Groupe {groupId} — {group.label.replace(/^Groupe [A-D] — /, "")}
-          </Text>
-        </View>
+        <Text style={styles.paceHero} testID="onboarding-pace-value">
+          {formatPaceMinPerKm(paceMinutes)}
+        </Text>
+        <Text style={styles.optionalHint}>
+          Optionnel — seulement si tu cours et veux une allure de départ.
+        </Text>
         <Slider
           style={styles.slider}
           minimumValue={0}
@@ -53,6 +46,7 @@ export function PacePicker({
           minimumTrackTintColor={colors.accent.primary}
           maximumTrackTintColor={colors.surface.s4}
           thumbTintColor={colors.accent.primary}
+          testID="onboarding-pace-slider"
         />
         <View style={styles.scale}>
           <Text style={styles.scaleText}>3'30</Text>
@@ -63,14 +57,12 @@ export function PacePicker({
       </View>
       <View style={styles.refs}>
         {PACE_REFERENCES.map((ref) => {
-          const selected = selectedRefId === ref.id;
+          const selected = nearest.id === ref.id;
           return (
             <Pressable
               key={ref.id}
-              onPress={() => {
-                onPaceChange(ref.minutes);
-                onRefSelect?.(ref.id, ref.minutes);
-              }}
+              testID={`onboarding-pace-ref-${ref.id}`}
+              onPress={() => onPaceChange(ref.minutes)}
               style={[
                 styles.refRow,
                 selected && styles.refRowSelected,
@@ -82,7 +74,9 @@ export function PacePicker({
                 {String(Math.round((ref.minutes % 1) * 60)).padStart(2, "0")}
               </Text>
               <View style={styles.refTextCol}>
-                <Text style={[styles.refLabel, selected && styles.refLabelSelected]}>
+                <Text
+                  style={[styles.refLabel, selected && styles.refLabelSelected]}
+                >
                   {ref.label}
                 </Text>
                 {ref.hint && selected ? (
@@ -106,45 +100,18 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
-  heroTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
   paceHero: {
     color: colors.text.primary,
     fontSize: 28,
     fontWeight: "800",
     fontVariant: ["tabular-nums"],
+    marginBottom: 8,
   },
-  groupBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  groupLetter: {
-    color: colors.text.primary,
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  groupRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  groupLabel: {
-    color: colors.text.accent,
+  optionalHint: {
+    color: colors.text.secondary,
     fontSize: typography.sizes.sm,
-    fontWeight: "600",
+    lineHeight: 18,
+    marginBottom: 12,
   },
   slider: {
     width: "100%",

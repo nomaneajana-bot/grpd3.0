@@ -95,14 +95,6 @@ export function formatClubGroupLine(groupId: string | null | undefined): string 
   return `${g.label} · ${g.window}`;
 }
 
-function hashString(input: string): number {
-  let hash = 0;
-  for (let i = 0; i < input.length; i += 1) {
-    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
-  }
-  return hash;
-}
-
 function initialsFromName(name: string | null | undefined): string {
   if (!name?.trim()) return "?";
   const parts = name.trim().split(/\s+/);
@@ -144,10 +136,16 @@ export function discoveryGroup(): ClubPaceGroupId {
   return "D";
 }
 
+/**
+ * Home-group (TOI) assignment.
+ * Returns null when the member has no explicit assignment and no pace —
+ * and the club is walk/neutral (no automatic Groupe D on pace-skip).
+ * Run clubs still default to open/social D when no PR (existing behaviour).
+ */
 export function assignMemberToClubGroup(
   member: ClubRosterMember,
   adminSettings?: ClubAdminSettings | null,
-): ClubPaceGroupId {
+): ClubPaceGroupId | null {
   const assigned = adminSettings
     ? memberGroupFromAdminSettings(member.userId, adminSettings)
     : null;
@@ -155,9 +153,15 @@ export function assignMemberToClubGroup(
 
   const pace = bestPaceSecondsPerKm(member);
   if (pace != null) return paceSecondsToClubGroupId(pace);
-  const seed = hashString(member.userId || member.membershipId);
-  const ids: ClubPaceGroupId[] = ["A", "B", "C", "D"];
-  return ids[seed % ids.length];
+
+  const structure = adminSettings?.activityStructure;
+  if (structure === "walk" || structure === "neutral") {
+    // Unrestricted walk/language clubs: do not invent pace-group membership.
+    return null;
+  }
+
+  // Run clubs without PR: never invent Élite via userId hash — open/social D.
+  return discoveryGroup();
 }
 
 export function emptyGroupBuckets(): ClubGroupBuckets {
@@ -203,6 +207,7 @@ export function bucketMembersByGroup(
 
   for (const member of members) {
     const groupId = assignMemberToClubGroup(member, adminSettings);
+    if (!groupId) continue;
     const bucket = buckets[groupId];
     bucket.count += 1;
     if (bucket.sampleInitials.length < 2) {

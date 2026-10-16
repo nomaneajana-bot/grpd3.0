@@ -82,7 +82,7 @@ export default function OnboardingClubScreen() {
     >
       <OnboardingTitle
         title="Le code de ton club"
-        subtitle="Six lettres ou chiffres — ou colle le lien d'invitation de ton coach."
+        subtitle="Six lettres ou chiffres — ou colle le lien d’invitation. Sans code valide, l’accès reste bloqué (pas d’approbation inventée)."
       />
       <ClubCodeInput
         value={code}
@@ -96,7 +96,7 @@ export default function OnboardingClubScreen() {
       {clubName ? (
         <ClubFoundCard
           name={clubName}
-          subtitle="Club trouvé — tu es prêt·e à courir avec le groupe"
+          subtitle="Club trouvé — la suite dépend de l’invitation / de l’approbation du club"
           initials={clubInitials(clubName)}
         />
       ) : null}

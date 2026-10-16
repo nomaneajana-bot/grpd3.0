@@ -35,3 +35,7 @@ export async function getLoginOtpRequest(): Promise<StoredOtpRequest | null> {
     return null;
   }
 }
+
+export async function clearLoginOtpRequest(): Promise<void> {
+  await AsyncStorage.removeItem(LOGIN_OTP_REQUEST_KEY);
+}

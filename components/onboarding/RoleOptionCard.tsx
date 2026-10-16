@@ -10,6 +10,7 @@ type RoleOptionCardProps = {
   icon: keyof typeof Ionicons.glyphMap;
   selected?: boolean;
   onPress: () => void;
+  testID?: string;
 };
 
 export function RoleOptionCard({
@@ -18,9 +19,11 @@ export function RoleOptionCard({
   icon,
   selected = false,
   onPress,
+  testID,
 }: RoleOptionCardProps) {
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,

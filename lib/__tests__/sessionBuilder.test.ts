@@ -125,6 +125,20 @@ describe('sessionBuilder', () => {
     expect(result.defaultGroupId).toBe('open');
   });
 
+  it('uses structureNotes as volume for any session type', () => {
+    const notes = '10 min easy · 6x1 min / 1 min · cool-down';
+    const result = buildSessionFromForm({
+      spot: 'Marina',
+      dateISO: futureISO(),
+      timeLabel: '18:00',
+      sessionType: 'STRUCTURÉ',
+      groupConfigs: mockGroupConfigs,
+      structureNotes: notes,
+    });
+    expect(result.session.volume).toBe(notes);
+    expect(result.session.typeLabel).toBe('STRUCTURÉ');
+  });
+
   it('uses user title and purpose; language only when provided', () => {
     const withLang = buildSessionFromForm({
       spot: 'Phare Corniche',

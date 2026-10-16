@@ -7,11 +7,20 @@ import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
 import { OnboardingTitle } from "@/components/onboarding/OnboardingTitle";
 import { colors, typography } from "@/constants/ui";
 import { createApiClient, createClub } from "@/lib/api";
+import { getAuthUser } from "@/lib/authStore";
 import {
   defaultClubAdminSettings,
+  defaultWalkClubAdminSettings,
   saveClubAdminSettings,
 } from "@/lib/clubAdminStore";
+import { setFocusedClubId } from "@/lib/focusedClubStore";
 import { useOnboarding } from "@/hooks/useOnboarding";
+
+function adminDefaultsForGoal(goal: string | undefined) {
+  // Marche / discovery: walk structure — never impose running Élite A–D.
+  if (goal === "marche") return defaultWalkClubAdminSettings();
+  return defaultClubAdminSettings();
+}
 
 export default function OnboardingCreateClubScreen() {
   const { state, setState } = useOnboarding();
@@ -24,17 +33,57 @@ export default function OnboardingCreateClubScreen() {
     if (!name.trim()) return;
     setLoading(true);
     setError(null);
+    const clubName = name.trim();
+    const clubCity = city.trim() || state.city?.trim() || undefined;
     try {
+      const authed = await getAuthUser();
+      if (!authed) {
+        // Auth happens at finish — defer API create; keep draft for focus later.
+        await setState({
+          clubName,
+          clubId: undefined,
+          pendingClubCreate: {
+            name: clubName,
+            city: clubCity,
+            purpose:
+              state.goal === "marche" ? "Marche & bien-être" : null,
+          },
+        });
+        router.push("/(auth)/onboarding/permissions" as Href);
+        return;
+      }
+
       const client = createApiClient();
+      const profileName = state.firstName?.trim() || undefined;
       const club = await createClub(client, {
-        name: name.trim(),
-        city: city.trim() || undefined,
+        name: clubName,
+        city: clubCity,
+        purpose:
+          state.goal === "marche" ? "Marche & bien-être" : undefined,
       });
-      await saveClubAdminSettings(club.id, defaultClubAdminSettings());
-      await setState({ clubName: club.name });
+      await saveClubAdminSettings(
+        club.id,
+        adminDefaultsForGoal(state.goal),
+      );
+      await setFocusedClubId(club.id);
+      await setState({
+        clubName: club.name,
+        clubId: club.id,
+        pendingClubCreate: undefined,
+        ...(profileName ? { firstName: profileName } : {}),
+      });
       router.push("/(auth)/onboarding/permissions" as Href);
     } catch {
-      setError("Impossible de créer le club. Réessaie.");
+      // If create failed mid-auth race, still defer for finish.
+      await setState({
+        clubName,
+        pendingClubCreate: {
+          name: clubName,
+          city: clubCity,
+          purpose: state.goal === "marche" ? "Marche & bien-être" : null,
+        },
+      });
+      router.push("/(auth)/onboarding/permissions" as Href);
     } finally {
       setLoading(false);
     }
@@ -49,7 +98,7 @@ export default function OnboardingCreateClubScreen() {
     >
       <OnboardingTitle
         title="Ton club"
-        subtitle="Nom affiché aux coureurs. Les groupes A–D sont créés par défaut."
+        subtitle="Nom affiché aux membres. Tu pourras ajuster les groupes ensuite."
       />
       <OnboardingField
         label="NOM DU CLUB"
@@ -57,6 +106,7 @@ export default function OnboardingCreateClubScreen() {
         onChangeText={setName}
         placeholder="Les Gazelles"
         autoCapitalize="words"
+        testID="onboarding-club-name"
       />
       <OnboardingField
         label="VILLE"
@@ -64,6 +114,7 @@ export default function OnboardingCreateClubScreen() {
         onChangeText={setCity}
         placeholder={state.city || "Casablanca"}
         autoComplete="postal-address-locality"
+        testID="onboarding-club-city"
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </OnboardingScreen>

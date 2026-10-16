@@ -556,7 +556,9 @@ export async function ensureDemoWorld(): Promise<Club & { code: string }> {
 }
 
 export async function readDemoSessions(): Promise<ApiSession[]> {
-  await ensureDemoWorld();
+  // Only seed the Casablanca world in DEMO_MODE. Explicit mock mode must keep
+  // user-created sessions (club walks, etc.) without wiping mock:sessions.
+  if (DEMO_MODE) await ensureDemoWorld();
   const map = await readJson<MockSessionMap>(MOCK_SESSIONS_KEY, {});
   return Object.values(map).sort((a, b) => {
     const da = `${a.dateISO ?? ""}-${String(a.timeMinutes ?? 0).padStart(4, "0")}`;
@@ -568,7 +570,7 @@ export async function readDemoSessions(): Promise<ApiSession[]> {
 export async function readDemoSession(
   sessionId: string,
 ): Promise<ApiSession | null> {
-  await ensureDemoWorld();
+  if (DEMO_MODE) await ensureDemoWorld();
   const map = await readJson<MockSessionMap>(MOCK_SESSIONS_KEY, {});
   return map[sessionId] ?? null;
 }
@@ -585,7 +587,7 @@ export async function writeDemoSession(session: ApiSession): Promise<void> {
 export async function readAttendanceForSession(
   sessionId: string,
 ): Promise<MockAttendance[]> {
-  await ensureDemoWorld();
+  if (DEMO_MODE) await ensureDemoWorld();
   const map = await readJson<MockAttendanceMap>(MOCK_ATTENDANCE_KEY, {});
   return Object.values(map).filter((a) => a.sessionId === sessionId);
 }

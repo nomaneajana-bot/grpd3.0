@@ -76,6 +76,11 @@ export function buildSessionFromForm(params: {
   /** User-entered purpose / “à quoi s’attendre” — stored as coachAdvice */
   purpose?: string | null;
   /**
+   * Free-text structure / déroulé for any session type (replaces FARTLEK
+   * chips + associated-workout picker). When set, used as `volume`.
+   */
+  structureNotes?: string | null;
+  /**
    * Optional spoken language label when relevant (e.g. walk + language).
    * Never invent a default language (no mandatory English).
    */
@@ -143,8 +148,13 @@ export function buildSessionFromForm(params: {
       ? "LANGUES · MARCHE"
       : sessionType.toUpperCase();
 
+  const structureNotes = params.structureNotes?.trim() || "";
   let volume = "Séance personnalisée";
-  if (sessionType.includes("FARTLEK")) {
+  if (structureNotes) {
+    volume = structureNotes;
+  } else if (sessionType.includes("STRUCTUR")) {
+    volume = "Workout structuré";
+  } else if (sessionType.includes("FARTLEK")) {
     volume = "Fartlek personnalisé";
   } else if (sessionType.includes("SEUIL")) {
     volume = "Séance seuil personnalisée";

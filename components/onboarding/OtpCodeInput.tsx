@@ -10,6 +10,8 @@ type OtpCodeInputProps = {
   onChange: (code: string) => void;
   onComplete?: (code: string) => void;
   resendSlot?: React.ReactNode;
+  /** When true (simulation / mock), do not claim an SMS was received. */
+  simulation?: boolean;
 };
 
 export function OtpCodeInput({
@@ -17,6 +19,7 @@ export function OtpCodeInput({
   onChange,
   onComplete,
   resendSlot,
+  simulation = false,
 }: OtpCodeInputProps) {
   const inputs = useRef<(TextInput | null)[]>([]);
   const [focusedIndex, setFocusedIndex] = useState(0);
@@ -75,7 +78,9 @@ export function OtpCodeInput({
         })}
       </View>
       <View style={styles.hints}>
-        <Text style={styles.hint}>Code reçu automatiquement</Text>
+        {simulation ? null : (
+          <Text style={styles.hint}>Code reçu automatiquement</Text>
+        )}
         {resendSlot}
       </View>
     </View>
