@@ -7,7 +7,7 @@
 **Batch 5 local gate:** **ACCEPTED** — tested `f8f378707a2b973e3fc2ae9e688f0580af09adff`  
 **Runtime diagnosis:** accepted — map `6b05559` / tip `4403447`  
 **Batch 6 `tested_sha`:** `83b5e096d4f17ade3cd1660c7a1293f7d2906cbf`  
-**Batch 6 docs tip:** *(stamped after this commit)*  
+**Batch 6 docs tip:** `c7dfe327a7c346fb9521ca38280bfed98e8ba31f`  
 **Batch 6 evidence:** `docs/audit/batch6-runtime-wiring/` — local PG **21/21** + unit **11/11** · `hosted_claim: false` · `deploy_claim: false`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 

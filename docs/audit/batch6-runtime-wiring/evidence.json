@@ -1,8 +1,11 @@
 {
-  "batch": "Batch 6 — LOCAL runtime wiring (dispatcher + Bearer auth)",
-  "issues": ["ISSUE-004", "ISSUE-008"],
+  "batch": "Batch 6 \u2014 LOCAL runtime wiring (dispatcher + Bearer auth)",
+  "issues": [
+    "ISSUE-004",
+    "ISSUE-008"
+  ],
   "tested_sha": "83b5e096d4f17ade3cd1660c7a1293f7d2906cbf",
-  "tip_sha": "83b5e096d4f17ade3cd1660c7a1293f7d2906cbf",
+  "tip_sha": "c7dfe327a7c346fb9521ca38280bfed98e8ba31f",
   "prior_diagnosis": "6b05559 / tip 4403447 RUNTIME_MAP accepted",
   "branch": "cursor/green-home-ux-join-3184",
   "environment": "local_postgres_integration",
@@ -22,17 +25,43 @@
   },
   "batch5_semantics": "preserved (leaveClubForUserTx / cancelPendingClubRequestForUserTx)",
   "checks": {
-    "pg_batch5_lifecycle_and_route_bearer": { "ok": true, "detail": "15/15" },
-    "pg_batch6_health_json": { "ok": true },
-    "pg_batch6_unknown_path_json_404_not_html": { "ok": true },
-    "pg_batch6_missing_invalid_expired_bearer_401": { "ok": true },
-    "pg_batch6_organizer_participant_leave_cancel_isolation": { "ok": true },
-    "pg_batch6_last_admin_and_private_attendance": { "ok": true },
-    "pg_batch6_connected_client_explicit_url": { "ok": true },
-    "pg_batch6_missing_url_fails_not_silent_mock": { "ok": true },
-    "pg_batch6_vercel_json_api_rewrite": { "ok": true },
-    "unit_lifecycle_and_apiMode_demo": { "ok": true, "detail": "11/11" },
-    "hosted_preview_deploy": { "ok": false, "status": "NOT_RUN", "detail": "Batch6 local only; no deploy" }
+    "pg_batch5_lifecycle_and_route_bearer": {
+      "ok": true,
+      "detail": "15/15"
+    },
+    "pg_batch6_health_json": {
+      "ok": true
+    },
+    "pg_batch6_unknown_path_json_404_not_html": {
+      "ok": true
+    },
+    "pg_batch6_missing_invalid_expired_bearer_401": {
+      "ok": true
+    },
+    "pg_batch6_organizer_participant_leave_cancel_isolation": {
+      "ok": true
+    },
+    "pg_batch6_last_admin_and_private_attendance": {
+      "ok": true
+    },
+    "pg_batch6_connected_client_explicit_url": {
+      "ok": true
+    },
+    "pg_batch6_missing_url_fails_not_silent_mock": {
+      "ok": true
+    },
+    "pg_batch6_vercel_json_api_rewrite": {
+      "ok": true
+    },
+    "unit_lifecycle_and_apiMode_demo": {
+      "ok": true,
+      "detail": "11/11"
+    },
+    "hosted_preview_deploy": {
+      "ok": false,
+      "status": "NOT_RUN",
+      "detail": "Batch6 local only; no deploy"
+    }
   },
   "summary": {
     "passed": 21,
