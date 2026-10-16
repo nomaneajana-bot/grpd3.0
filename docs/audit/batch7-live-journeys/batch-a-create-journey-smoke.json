@@ -1,6 +1,6 @@
 {
   "base": "http://127.0.0.1:8082",
-  "tested_at": "2026-10-16T19:06:57.915Z",
+  "tested_at": "2026-10-16T21:00:39.726Z",
   "checks": [
     {
       "id": "Revue_sim_phone",
@@ -23,24 +23,24 @@
       "detail": "\nCode de simulation\nSimulation — aucun SMS envoyé à +212 7080 60 33 7. Entre le code 000000.\nPas de renvoi SMS — code de simulation : 000000\nVérifier"
     },
     {
-      "id": "Revue_pace_no_group_letters",
+      "id": "Revue_no_allure_step",
       "ok": true,
-      "detail": "\nAllure de course (optionnel)\nUtile seulement si tu cours. Marche, langue ou découverte : tu peux passer sans choisir d’allure.\n5'15 /km\nOptionnel — seulement si tu cours et veux une allure de départ"
+      "detail": "\nTon intention\nPas une promesse — un cap.\nMarche & bien-être\nMARCHE\nReprendre en douceur, sans pression de performance\nRégularité\nCourir plus souvent, sans viser une distance\n5 km\nPremier objectif chronométré\n10 km\nEndurance intermédiaire\nSemi-marathon\n21,1 km — un cap structura"
     },
     {
       "id": "Revue_welcome_natural_copy",
       "ok": true,
-      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nALLURE\nNon renseignée\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depu"
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depuis l’accueil quand tu "
     },
     {
       "id": "Revue_welcome_has_club",
       "ok": true,
-      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nALLURE\nNon renseignée\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depu"
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depuis l’accueil quand tu "
     },
     {
       "id": "Revue_welcome_no_youssef",
       "ok": true,
-      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nALLURE\nN"
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nCLUB\nMar"
     },
     {
       "id": "Revue_clubs_hub_loaded",
@@ -63,7 +63,7 @@
       "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
     },
     {
-      "id": "Revue_no_toi_groupe_d_on_skip",
+      "id": "Revue_no_toi_groupe_d_without_allure",
       "ok": true,
       "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
     },
@@ -114,26 +114,5 @@
   "summary": {
     "pass": 19,
     "fail": 0
-  },
-  "tested_sha": "584c6efebcfb8ea7fd1cd6dcf8af7c9843d93005",
-  "branch": "cursor/mvp-live-journeys-3184",
-  "environment": "local_expo_web_demo_mode",
-  "hosted_claim": false,
-  "connected_claim": false,
-  "script": "scripts/batch-a-create-journey-smoke.mjs",
-  "screenshots": [
-    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-00-start.png",
-    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-01-phone.png",
-    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-02-verify.png",
-    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-03-role.png",
-    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-04-pace.png",
-    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-05-create-club.png",
-    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-06-welcome.png",
-    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-07-home.png",
-    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-08-clubs.png",
-    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-09-reload-clubs.png",
-    "docs/audit/batch7-live-journeys/screenshots/create-j-second-00-form.png",
-    "docs/audit/batch7-live-journeys/screenshots/create-j-second-01-after.png",
-    "docs/audit/batch7-live-journeys/screenshots/create-j-second-02-clubs.png"
-  ]
+  }
 }

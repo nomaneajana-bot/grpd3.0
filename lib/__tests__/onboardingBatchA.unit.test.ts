@@ -1,24 +1,16 @@
 /**
- * Batch A — onboarding UX: inclusive roles, pace sync, truthful welcome helpers.
+ * Batch A — onboarding UX: inclusive roles, no allure step, truthful welcome.
  */
 
-import { nearestPaceReference } from "../paceNearestRef";
+import { ONBOARDING_STEP_BY_SEGMENT, ONBOARDING_TOTAL_STEPS } from "../onboardingSteps";
 
-describe("nearestPaceReference — single value for slider + cards", () => {
-  it("highlights run at 5'00", () => {
-    expect(nearestPaceReference(5).id).toBe("run");
-  });
-
-  it("highlights run for default 5.25 (not a desynced 5'00 sticky id)", () => {
-    expect(nearestPaceReference(5.25).id).toBe("run");
-  });
-
-  it("highlights talk near 6", () => {
-    expect(nearestPaceReference(6.1).id).toBe("talk");
-  });
-
-  it("highlights walk near 7+", () => {
-    expect(nearestPaceReference(7.2).id).toBe("walk");
+describe("onboarding steps — allure removed", () => {
+  it("maps role then goal without a live pace step index gap", () => {
+    expect(ONBOARDING_STEP_BY_SEGMENT.role).toBe(4);
+    expect(ONBOARDING_STEP_BY_SEGMENT.goal).toBe(5);
+    // Deep-link leftover /pace shares goal index (redirect only).
+    expect(ONBOARDING_STEP_BY_SEGMENT.pace).toBe(ONBOARDING_STEP_BY_SEGMENT.goal);
+    expect(ONBOARDING_TOTAL_STEPS).toBe(9);
   });
 });
 

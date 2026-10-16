@@ -14,8 +14,9 @@ export default function OnboardingRoleScreen() {
 
   const handleContinue = async () => {
     if (!role) return;
-    await setState({ role });
-    router.push("/(auth)/onboarding/pace" as Href);
+    // No allure step — never invent pace or Groupe A–D from onboarding.
+    await setState({ role, pace: undefined, discoveryMode: true });
+    router.push("/(auth)/onboarding/goal" as Href);
   };
 
   return (
