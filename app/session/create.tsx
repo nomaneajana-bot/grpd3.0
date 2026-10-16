@@ -136,34 +136,31 @@ function OptionPicker({
   onClose,
   onSelect,
   allowCustom = false,
-  customLabel = "+ Ajouter un nouveau spot",
+  customLabel = "Nom du lieu",
   onAddCustom,
 }: OptionPickerProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [customValue, setCustomValue] = useState("");
+  const [query, setQuery] = useState("");
 
-  // Reset inputs when picker closes
   useEffect(() => {
-    if (!visible) {
-      setSearchQuery("");
-      setCustomValue("");
-    }
+    if (!visible) setQuery("");
   }, [visible]);
 
-  // Filter options based on search query
-  const filteredOptions = searchQuery
+  const trimmedQuery = query.trim();
+  const filteredOptions = trimmedQuery
     ? options.filter((option) =>
-        option.toLowerCase().includes(searchQuery.toLowerCase()),
+        option.toLowerCase().includes(trimmedQuery.toLowerCase()),
       )
     : options;
+  const exactMatch = options.some(
+    (o) => o.toLowerCase() === trimmedQuery.toLowerCase(),
+  );
+  const canCreate =
+    allowCustom && Boolean(onAddCustom) && trimmedQuery.length > 0 && !exactMatch;
 
   const handleAddCustom = () => {
-    const trimmed = (customValue || searchQuery).trim();
-    if (trimmed && onAddCustom) {
-      onAddCustom(trimmed);
-      setCustomValue("");
-      setSearchQuery("");
-    }
+    if (!canCreate || !onAddCustom) return;
+    onAddCustom(trimmedQuery);
+    setQuery("");
   };
 
   return (
@@ -181,42 +178,79 @@ function OptionPicker({
         />
         <View style={styles.pickerContainer}>
           <TouchableWithoutFeedback>
-            <View style={styles.pickerCard}>
+            <View style={styles.pickerCard} testID="session-spot-picker">
+              <View style={styles.pickerHandleWrap} accessibilityElementsHidden>
+                <View style={styles.pickerHandle} />
+              </View>
               <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>{title.toUpperCase()}</Text>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={styles.pickerTitle}>{title}</Text>
+                  {allowCustom ? (
+                    <Text style={styles.pickerSubtitle}>
+                      Choisis un lieu ou ajoute le tien
+                    </Text>
+                  ) : null}
+                </View>
                 <TouchableOpacity
                   onPress={onClose}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Fermer"
                 >
                   <Text style={styles.pickerHeaderAction}>Fermer</Text>
                 </TouchableOpacity>
               </View>
-              
-              {/* Search field */}
-              {allowCustom && (
+
+              {allowCustom ? (
                 <View style={styles.pickerSearchContainer}>
                   <TextInput
                     style={styles.pickerSearchInput}
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    placeholder="Rechercher un spot..."
-                    placeholderTextColor="#808080"
-                    autoCapitalize="none"
+                    value={query}
+                    onChangeText={setQuery}
+                    placeholder={customLabel}
+                    placeholderTextColor={colors.text.tertiary}
+                    autoCapitalize="sentences"
+                    returnKeyType={canCreate ? "done" : "search"}
+                    onSubmitEditing={() => {
+                      if (canCreate) handleAddCustom();
+                      else if (filteredOptions[0]) {
+                        onSelect(filteredOptions[0]);
+                        onClose();
+                      }
+                    }}
+                    testID="session-spot-custom-input"
+                    accessibilityLabel="Lieu de rendez-vous"
                   />
                 </View>
-              )}
+              ) : null}
 
-            <ScrollView
-              style={styles.pickerOptionsList}
-              showsVerticalScrollIndicator={false}
-            >
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((option, index) => {
-                  const isSelected = option === selectedValue;
-                  return (
-                    <View key={option}>
-                      {index > 0 && <View style={styles.pickerOptionDivider} />}
+              <ScrollView
+                style={styles.pickerOptionsList}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {canCreate ? (
+                  <TouchableOpacity
+                    style={styles.pickerCreateRow}
+                    onPress={handleAddCustom}
+                    activeOpacity={0.85}
+                    testID="session-spot-custom-add"
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ajouter ${trimmedQuery}`}
+                  >
+                    <Text style={styles.pickerCreateLabel}>Ajouter</Text>
+                    <Text style={styles.pickerCreateValue} numberOfLines={1}>
+                      {trimmedQuery}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+
+                {filteredOptions.length > 0 ? (
+                  filteredOptions.map((option) => {
+                    const isSelected = option === selectedValue;
+                    return (
                       <TouchableOpacity
+                        key={option}
                         style={[
                           styles.pickerOption,
                           isSelected && styles.pickerOptionSelected,
@@ -226,51 +260,32 @@ function OptionPicker({
                           onClose();
                         }}
                         activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: isSelected }}
                       >
                         <Text
                           style={[
                             styles.pickerOptionText,
                             isSelected && styles.pickerOptionTextSelected,
                           ]}
+                          numberOfLines={1}
                         >
                           {option}
                         </Text>
+                        {isSelected ? (
+                          <Text style={styles.pickerOptionCheck}>✓</Text>
+                        ) : null}
                       </TouchableOpacity>
-                    </View>
-                  );
-                })
-              ) : (
-                <View style={styles.pickerEmptyState}>
-                  <Text style={styles.pickerEmptyText}>Aucun spot trouvé</Text>
-                </View>
-              )}
-            </ScrollView>
-
-              {/* Always-visible custom input field */}
-              {allowCustom && (
-                <View style={styles.pickerCustomInputContainer}>
-                  <TextInput
-                    style={styles.pickerCustomInput}
-                    value={customValue}
-                    onChangeText={setCustomValue}
-                    placeholder={customLabel}
-                    placeholderTextColor="#808080"
-                    onSubmitEditing={handleAddCustom}
-                    returnKeyType="done"
-                    testID="session-spot-custom-input"
-                  />
-                  <TouchableOpacity
-                    style={styles.pickerCustomSaveButton}
-                    onPress={handleAddCustom}
-                    activeOpacity={0.8}
-                    testID="session-spot-custom-add"
-                    accessibilityRole="button"
-                    accessibilityLabel="Ajouter un spot"
-                  >
-                    <Text style={styles.pickerCustomSaveText}>Ajouter</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+                    );
+                  })
+                ) : !canCreate ? (
+                  <View style={styles.pickerEmptyState}>
+                    <Text style={styles.pickerEmptyText}>
+                      Aucun lieu correspondant
+                    </Text>
+                  </View>
+                ) : null}
+              </ScrollView>
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -2780,13 +2795,13 @@ export default function CreateSessionScreen() {
       {/* Option Pickers */}
       <OptionPicker
         visible={showSpotPicker}
-        title="Choisir un spot"
+        title="Lieu de rendez-vous"
         options={spots}
         selectedValue={spot}
         onClose={() => setShowSpotPicker(false)}
         onSelect={(value) => setSpot(value)}
         allowCustom
-        customLabel="+ Ajouter un nouveau spot"
+        customLabel="Ex. Marina, Corniche, Parc…"
         onAddCustom={async (value) => {
           const { addSpot } = await import("../../lib/spotsStore");
           const updatedSpots = await addSpot(value);
@@ -3295,71 +3310,119 @@ const styles = StyleSheet.create({
   },
   pickerBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
     justifyContent: "flex-end",
     alignItems: "center",
   },
   pickerContainer: {
     width: "100%",
-    maxWidth: 600,
-    maxHeight: "85%",
+    maxWidth: 560,
+    maxHeight: "78%",
   },
   pickerCard: {
-    backgroundColor: colors.background.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: colors.background.frame,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
     width: "100%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 16,
+    paddingBottom: 28,
+    overflow: "hidden",
+  },
+  pickerHandleWrap: {
+    alignItems: "center",
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  pickerHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.18)",
   },
   pickerHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.08)",
+    alignItems: "flex-start",
+    paddingHorizontal: 22,
+    paddingTop: 8,
+    paddingBottom: 14,
   },
   pickerTitle: {
     color: colors.text.primary,
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "600",
-    letterSpacing: 0.5,
+    letterSpacing: -0.4,
+  },
+  pickerSubtitle: {
+    marginTop: 4,
+    color: colors.text.secondary,
+    fontSize: 14,
+    lineHeight: 20,
   },
   pickerOptionsList: {
-    maxHeight: 350,
+    maxHeight: 340,
     flexGrow: 0,
+    paddingHorizontal: 14,
+    paddingBottom: 8,
   },
   pickerOption: {
-    paddingVertical: 18,
-    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 15,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    marginBottom: 4,
     backgroundColor: "transparent",
   },
   pickerOptionSelected: {
-    backgroundColor: "rgba(32, 129, 255, 0.15)",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#2081FF",
+    backgroundColor: colors.accent.sageDim,
   },
   pickerOptionDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    backgroundColor: colors.border.default,
     marginVertical: 4,
   },
   pickerOptionText: {
+    flex: 1,
     color: colors.text.primary,
     fontSize: 16,
-    fontWeight: "400",
+    fontWeight: "500",
+    letterSpacing: -0.2,
   },
   pickerOptionTextSelected: {
     color: colors.text.primary,
+    fontWeight: "600",
+  },
+  pickerOptionCheck: {
+    marginLeft: 12,
+    color: colors.accent.primary,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  pickerCreateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    marginBottom: 8,
+    backgroundColor: colors.background.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
+  },
+  pickerCreateLabel: {
+    color: colors.accent.primary,
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  pickerCreateValue: {
+    flex: 1,
+    color: colors.text.primary,
+    fontSize: 16,
     fontWeight: "600",
   },
   pickerCustomOption: {
@@ -3367,7 +3430,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: "rgba(32, 129, 255, 0.4)",
+    borderColor: colors.border.default,
     borderStyle: "dashed",
     borderRadius: 12,
   },
@@ -3377,22 +3440,21 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   pickerSearchContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingHorizontal: 22,
     paddingBottom: 12,
   },
   pickerSearchInput: {
-    backgroundColor: colors.background.inputDark,
-    borderRadius: 12,
+    backgroundColor: colors.background.card,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
+    paddingVertical: 14,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border.default,
     color: colors.text.primary,
-    fontSize: 15,
+    fontSize: 16,
   },
   pickerEmptyState: {
-    padding: 24,
+    padding: 28,
     alignItems: "center",
   },
   pickerEmptyText: {
@@ -3406,8 +3468,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
     gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.08)",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border.default,
     backgroundColor: colors.background.elevated,
   },
   pickerCustomInput: {
@@ -3430,9 +3492,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pickerCustomSaveText: {
-    color: colors.text.primary,
+    color: colors.background.primary,
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   // Shared wheel picker styles (used by both TimePicker and PaceWheelPicker)
   wheelPickerContainer: {
