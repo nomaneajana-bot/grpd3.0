@@ -1,7 +1,7 @@
 import { type Href, router } from "expo-router";
 import * as Clipboard from "expo-clipboard";
-import React, { useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 import { ClubCodeInput } from "@/components/onboarding/ClubCodeInput";
 import { ClubFoundCard } from "@/components/onboarding/ClubFoundCard";
@@ -12,6 +12,8 @@ import {
 } from "@/components/onboarding/InviteLinkRow";
 import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
 import { OnboardingTitle } from "@/components/onboarding/OnboardingTitle";
+import { WelcomeBackground } from "@/components/onboarding/WelcomeBackground";
+import { welcomeTheme } from "@/components/onboarding/onboardingTheme";
 import { colors, typography } from "@/constants/ui";
 import { useOnboarding } from "@/hooks/useOnboarding";
 
@@ -28,7 +30,18 @@ export default function OnboardingClubScreen() {
   const [code, setCode] = useState(state.clubCode ?? "");
   const [error, setError] = useState<string | null>(null);
   const [clubName, setClubName] = useState<string | null>(state.clubName ?? null);
+  const [clubCity, setClubCity] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Draft loads async — keep local reveal in sync with persisted club.
+  useEffect(() => {
+    if (state.clubName?.trim()) {
+      setClubName(state.clubName.trim());
+    }
+    if (state.clubCode?.trim()) {
+      setCode(state.clubCode.trim().toUpperCase());
+    }
+  }, [state.clubName, state.clubCode]);
 
   const lookup = async (raw: string) => {
     const trimmed = raw.trim().toUpperCase();
@@ -38,11 +51,14 @@ export default function OnboardingClubScreen() {
     try {
       const membership = await joinClubWithCode(trimmed);
       const name = membership.club?.name ?? "Ton club";
+      const city = membership.club?.city?.trim() || null;
       setClubName(name);
+      setClubCity(city);
       await setState({ clubCode: trimmed, clubName: name });
     } catch {
-      setError("Code invalide. Vérifie avec ton coach.");
+      setError("Ce code ne correspond à aucun club.");
       setClubName(null);
+      setClubCity(null);
     } finally {
       setLoading(false);
     }
@@ -55,62 +71,103 @@ export default function OnboardingClubScreen() {
       if (match) {
         setCode(match[0]!.toUpperCase());
         void lookup(match[0]!);
+      } else {
+        setError("Aucun code trouvé dans le presse-papiers.");
       }
     } catch {
-      /* clipboard unavailable */
+      setError("Impossible de lire le presse-papiers.");
     }
   };
 
-  const primaryLabel = clubName ? `Rejoindre ${clubName}` : "Rejoindre le club";
+  const found = Boolean(clubName);
+  const primaryLabel = found ? `Entrer dans ${clubName}` : "Rejoindre le club";
+
+  const clearClub = () => {
+    setClubName(null);
+    setClubCity(null);
+    setCode("");
+    setError(null);
+    void setState({ clubCode: undefined, clubName: undefined });
+  };
 
   return (
     <OnboardingScreen
+      background={<WelcomeBackground />}
+      ctaVariant="welcome"
       primaryLabel={primaryLabel}
       onPrimaryPress={() => {
-        if (clubName) {
+        if (found) {
           router.push("/(auth)/onboarding/permissions" as Href);
           return;
         }
         void lookup(code);
       }}
       primaryLoading={loading}
-      primaryDisabled={!clubName && code.length < 6}
-      secondaryLabel="Continuer sans club"
-      onSecondaryPress={() =>
-        router.push("/(auth)/onboarding/permissions" as Href)
-      }
+      primaryDisabled={!found && code.length < 6}
+      secondaryLabel={found ? "Ce n’est pas mon club" : "Continuer sans club"}
+      onSecondaryPress={() => {
+        if (found) {
+          clearClub();
+          return;
+        }
+        router.push("/(auth)/onboarding/permissions" as Href);
+      }}
     >
-      <OnboardingTitle
-        title="Le code de ton club"
-        subtitle="Six lettres ou chiffres — ou colle le lien d’invitation. Sans code valide, l’accès reste bloqué (pas d’approbation inventée)."
-      />
-      <ClubCodeInput
-        value={code}
-        onChange={(c) => {
-          setCode(c);
-          setError(null);
-          if (c.length < 6) setClubName(null);
-        }}
-        onComplete={(c) => void lookup(c)}
-      />
-      {clubName ? (
+      {found && clubName ? (
         <ClubFoundCard
           name={clubName}
-          subtitle="Club trouvé — la suite dépend de l’invitation / de l’approbation du club"
+          city={clubCity}
+          subtitle="Invitation reconnue. La suite dépend de l’approbation du club."
           initials={clubInitials(clubName)}
         />
-      ) : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <OrDivider />
-      <InviteLinkRow onPress={() => void handlePasteLink()} />
+      ) : (
+        <View style={styles.enter}>
+          <OnboardingTitle
+            kicker="REJOINDRE"
+            title="Ton club"
+            titleMuted="t’attend."
+            subtitle="Entre le code à six caractères, ou colle le lien d’invitation."
+          />
+          <ClubCodeInput
+            value={code}
+            onChange={(c) => {
+              setCode(c);
+              setError(null);
+              if (c.length < 6) {
+                setClubName(null);
+                setClubCity(null);
+              }
+            }}
+            onComplete={(c) => void lookup(c)}
+          />
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <OrDivider />
+          <InviteLinkRow onPress={() => void handlePasteLink()} />
+          <Text style={styles.footnote}>
+            Sans code valide, l’accès reste bloqué — on n’invente pas
+            d’approbation.
+          </Text>
+        </View>
+      )}
+      {found && error ? <Text style={styles.error}>{error}</Text> : null}
     </OnboardingScreen>
   );
 }
 
 const styles = StyleSheet.create({
+  enter: {
+    paddingTop: 8,
+  },
   error: {
     color: colors.text.error,
-    marginTop: 10,
+    marginTop: 12,
     fontSize: typography.sizes.sm,
+    lineHeight: 20,
+  },
+  footnote: {
+    color: welcomeTheme.textMuted,
+    fontSize: typography.sizes.sm,
+    lineHeight: 20,
+    marginTop: 28,
   },
 });
