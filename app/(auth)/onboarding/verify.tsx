@@ -92,6 +92,7 @@ export default function OnboardingVerifyScreen() {
         onChange={setCode}
         onComplete={(c) => void handleVerify(c)}
         resendSlot={resendSlot}
+        simulation={simMode}
       />
     </OnboardingScreen>
   );

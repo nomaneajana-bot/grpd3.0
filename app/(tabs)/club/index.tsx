@@ -72,7 +72,9 @@ export default function ClubScreen() {
   const focusFromRoute = Array.isArray(focusParam) ? focusParam[0] : focusParam;
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
   const [roster, setRoster] = useState<ClubRosterMember[]>([]);
-  const [userGroupId, setUserGroupId] = useState<"A" | "B" | "C" | "D">("D");
+  const [userGroupId, setUserGroupId] = useState<"A" | "B" | "C" | "D" | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
@@ -151,9 +153,19 @@ export default function ClubScreen() {
             authUser && adminCfg
               ? memberGroupFromSettings(authUser.id, adminCfg)
               : null;
-          setUserGroupId(
-            assigned ?? inferUserClubGroupId(profile, joined, paces),
-          );
+          if (assigned) {
+            setUserGroupId(assigned);
+          } else if (
+            adminCfg?.activityStructure === "walk" ||
+            adminCfg?.activityStructure === "neutral"
+          ) {
+            // Pace skipped / walk club: no invented home group.
+            setUserGroupId(null);
+          } else {
+            setUserGroupId(
+              inferUserClubGroupId(profile, joined, paces),
+            );
+          }
         }
       } else {
         setRoster([]);

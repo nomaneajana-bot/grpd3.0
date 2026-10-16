@@ -38,7 +38,7 @@ export default function OnboardingPaceScreen() {
     >
       <OnboardingTitle
         title="Allure de course (optionnel)"
-        subtitle="Utile seulement si tu cours. Marche, langue ou découverte : tu peux passer — aucun groupe ne sera inventé."
+        subtitle="Utile seulement si tu cours. Marche, langue ou découverte : tu peux passer sans choisir d’allure."
       />
       <PacePicker paceMinutes={paceMinutes} onPaceChange={setPaceMinutes} />
     </OnboardingScreen>

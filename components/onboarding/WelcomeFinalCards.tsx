@@ -14,7 +14,7 @@ export function WelcomeHero({ firstName }: { firstName: string }) {
         C’est prêt, <Text style={heroStyles.name}>{firstName}.</Text>
       </Text>
       <Text style={heroStyles.sub}>
-        Voici ce que tu as choisi — rien d’autre n’est inventé.
+        Récap de ton parcours — tu pourras tout ajuster plus tard.
       </Text>
     </View>
   );
@@ -77,11 +77,11 @@ export function OnboardingSummaryCard({ state }: { state: OnboardingState }) {
     });
   }
   if (pace) {
-    rows.push({ label: "Allure (optionnelle)", value: pace });
+    rows.push({ label: "Allure", value: pace });
   } else {
     rows.push({
       label: "Allure",
-      value: "Non renseignée — aucun groupe inventé",
+      value: "Non renseignée",
     });
   }
   if (clubName) {
@@ -97,8 +97,8 @@ export function OnboardingSummaryCard({ state }: { state: OnboardingState }) {
         </View>
       ))}
       <Text style={summaryStyles.footnote} testID="onboarding-summary-footnote">
-        Aucune séance n’est réservée automatiquement. Tu rejoins ou organises
-        depuis l’accueil quand tu veux.
+        Tu peux rejoindre ou organiser une sortie depuis l’accueil quand tu
+        veux.
       </Text>
     </View>
   );

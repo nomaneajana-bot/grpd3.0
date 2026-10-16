@@ -404,11 +404,18 @@ async function mockCreateClub(
 
   clubs[club.id] = club;
   await writeJson(MOCK_CLUBS_KEY, clubs);
+  const { getRunnerProfile } = await import('../profileStore');
+  const profile = await getRunnerProfile();
+  const displayName =
+    profile?.firstName?.trim() ||
+    profile?.name?.trim() ||
+    null;
   await upsertMembership({
     userId: user.id,
     clubId: club.id,
     status: 'approved',
     role: 'admin',
+    displayName: displayName ?? undefined,
   });
 
   return club;

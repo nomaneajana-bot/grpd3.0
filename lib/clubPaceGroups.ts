@@ -136,10 +136,16 @@ export function discoveryGroup(): ClubPaceGroupId {
   return "D";
 }
 
+/**
+ * Home-group (TOI) assignment.
+ * Returns null when the member has no explicit assignment and no pace —
+ * and the club is walk/neutral (no automatic Groupe D on pace-skip).
+ * Run clubs still default to open/social D when no PR (existing behaviour).
+ */
 export function assignMemberToClubGroup(
   member: ClubRosterMember,
   adminSettings?: ClubAdminSettings | null,
-): ClubPaceGroupId {
+): ClubPaceGroupId | null {
   const assigned = adminSettings
     ? memberGroupFromAdminSettings(member.userId, adminSettings)
     : null;
@@ -147,8 +153,14 @@ export function assignMemberToClubGroup(
 
   const pace = bestPaceSecondsPerKm(member);
   if (pace != null) return paceSecondsToClubGroupId(pace);
-  // No PR / no explicit assignment: never invent Élite via userId hash.
-  // Default to the open/social group until pace or admin assignment exists.
+
+  const structure = adminSettings?.activityStructure;
+  if (structure === "walk" || structure === "neutral") {
+    // Unrestricted walk/language clubs: do not invent pace-group membership.
+    return null;
+  }
+
+  // Run clubs without PR: never invent Élite via userId hash — open/social D.
   return discoveryGroup();
 }
 
@@ -195,6 +207,7 @@ export function bucketMembersByGroup(
 
   for (const member of members) {
     const groupId = assignMemberToClubGroup(member, adminSettings);
+    if (!groupId) continue;
     const bucket = buckets[groupId];
     bucket.count += 1;
     if (bucket.sampleInitials.length < 2) {

@@ -105,7 +105,8 @@ describe("bucketMembersByGroup", () => {
     expect(total).toBe(roster.length);
     for (const m of roster) {
       const gid = assignMemberToClubGroup(m, settings);
-      expect(buckets[gid].count).toBeGreaterThanOrEqual(1);
+      expect(gid).not.toBeNull();
+      expect(buckets[gid!].count).toBeGreaterThanOrEqual(1);
     }
   });
 

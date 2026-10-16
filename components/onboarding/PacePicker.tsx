@@ -35,8 +35,7 @@ export function PacePicker({ paceMinutes, onPaceChange }: PacePickerProps) {
           {formatPaceMinPerKm(paceMinutes)}
         </Text>
         <Text style={styles.optionalHint}>
-          Optionnel — uniquement si tu cours et veux une allure de départ. Aucun
-          groupe inventé.
+          Optionnel — seulement si tu cours et veux une allure de départ.
         </Text>
         <Slider
           style={styles.slider}
