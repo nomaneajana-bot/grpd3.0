@@ -8,7 +8,7 @@
 **Runtime diagnosis:** accepted — map `6b05559` / tip `4403447`  
 **Batch 6 local Codex correction:** **CLEARED** — tested `4dad7495bcb1239dcc65e2a451d07f99db9cf43d`  
 **Batch 6 predeploy packaging `tested_sha`:** `1e6f49738819f27b5e49e4d60ee7f28d11e35223`  
-**Batch 6 packaging docs tip:** `66bf5faddacb21d0e99e6c13bde9039af94621ad`  
+**Batch 6 packaging docs tip:** `100f728b7086e1345864b66baba3f24f370a55e1`  
 **Batch 6 packaging evidence:** `docs/audit/batch6-predeploy-packaging/`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 

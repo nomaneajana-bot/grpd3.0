@@ -72,5 +72,5 @@
   "note": "Packaging only. Preserves Batch6 local gate. No deploy/env mutate/new DB/spend/merge/prod.",
   "generated_at": "2026-10-16T02:05:00.000Z",
   "tested_sha": "1e6f49738819f27b5e49e4d60ee7f28d11e35223",
-  "tip_sha": "66bf5faddacb21d0e99e6c13bde9039af94621ad"
+  "tip_sha": "100f728b7086e1345864b66baba3f24f370a55e1"
 }
