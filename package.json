@@ -17,6 +17,7 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "test:unit": "jest --testPathIgnorePatterns=integration",
+    "typecheck:server": "node scripts/typecheck-server.mjs",
     "test:integration:pg": "jest --runInBand lib/server/__tests__/clubLeaveCancel.integration.test.ts lib/server/__tests__/vercelDispatch.integration.test.ts",
     "test:integration:pg:batch5": "jest --runInBand lib/server/__tests__/clubLeaveCancel.integration.test.ts",
     "test:integration:pg:batch6": "jest --runInBand lib/server/__tests__/vercelDispatch.integration.test.ts"
@@ -66,9 +67,12 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
     "@types/jest": "^29.5.14",
     "@types/node": "^25.0.10",
     "@types/react": "~19.1.0",
+    "babel-jest": "^30.5.2",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "jest": "^29.7.0",

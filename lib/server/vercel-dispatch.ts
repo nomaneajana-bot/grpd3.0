@@ -2,6 +2,7 @@
 // Only routes that exist on this branch are registered (Batch6 selective port).
 
 import * as routeModule0 from "../../app/api/v1/health/route";
+import * as routeModuleAuthPinLogin from "../../app/api/v1/auth/pin/login/route";
 import * as routeModule1 from "../../app/api/v1/clubs/route";
 import * as routeModule2 from "../../app/api/v1/clubs/resolve/route";
 import * as routeModule3 from "../../app/api/v1/clubs/join/route";
@@ -55,6 +56,7 @@ function staticRoute(
 
 const STATIC_ROUTES: Record<string, RouteMatch> = Object.fromEntries([
   staticRoute("health", async () => routeModule0),
+  staticRoute("auth/pin/login", async () => routeModuleAuthPinLogin),
   staticRoute("clubs", async () => routeModule1),
   staticRoute("clubs/resolve", async () => routeModule2),
   staticRoute("clubs/join", async () => routeModule3),

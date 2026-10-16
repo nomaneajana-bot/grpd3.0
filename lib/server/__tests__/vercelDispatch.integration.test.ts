@@ -39,37 +39,44 @@ import { signAppAccessToken } from "@/lib/server/app-jwt";
 import { dispatchApiRequest } from "@/lib/server/vercel-dispatch";
 import vercelHandler from "../../../api/v1/[...path]";
 import { createApiClient } from "@/lib/api/client";
-import { assertConnectedApiUrl, resolveApiTransport } from "@/lib/api/mode";
-import { ApiError } from "@/lib/api/errors";
+import { loginWithPin } from "@/lib/api/auth";
 import { NextRequest } from "next/server";
-import * as apiMode from "@/lib/api/mode";
 
 const describePg = SKIP ? describe.skip : describe;
 
-async function signExpiredToken(userId: string): Promise<string> {
+function b64url(input: Buffer | string): string {
+  const buf = Buffer.isBuffer(input) ? input : Buffer.from(input, "utf8");
+  return buf
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+}
+
+async function mintHmacToken(
+  payload: Record<string, unknown>,
+  opts?: { header?: Record<string, unknown>; secret?: string },
+): Promise<string> {
   const { createHmac } = await import("crypto");
-  const secret = TEST_JWT_SECRET;
-  const b64url = (input: Buffer | string) => {
-    const buf = Buffer.isBuffer(input) ? input : Buffer.from(input, "utf8");
-    return buf
-      .toString("base64")
-      .replace(/=/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
-  };
-  const now = Math.floor(Date.now() / 1000);
-  const header = b64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = b64url(
-    JSON.stringify({
-      sub: userId,
-      iss: "grpd",
-      iat: now - 3600,
-      exp: now - 60,
-    }),
+  const header = b64url(
+    JSON.stringify(opts?.header ?? { alg: "HS256", typ: "JWT" }),
   );
-  const data = `${header}.${payload}`;
-  const sig = createHmac("sha256", secret).update(data).digest();
+  const body = b64url(JSON.stringify(payload));
+  const data = `${header}.${body}`;
+  const sig = createHmac("sha256", opts?.secret ?? TEST_JWT_SECRET)
+    .update(data)
+    .digest();
   return `${data}.${b64url(sig)}`;
+}
+
+async function signExpiredToken(userId: string): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  return mintHmacToken({
+    sub: userId,
+    iss: "grpd",
+    iat: now - 3600,
+    exp: now - 60,
+  });
 }
 
 function assertJsonResponse(res: Response, status: number) {
@@ -264,14 +271,42 @@ describePg("Batch6 Vercel dispatcher + Bearer (PostgreSQL)", () => {
     expect(entry.body).toMatch(/NOT_FOUND/);
   });
 
-  it("missing / invalid / expired Bearer → 401 via entry + dispatch; no DB mutation", async () => {
+  it("missing / invalid / expired / claim-broken Bearer → 401 via entry + dispatch; no DB mutation", async () => {
     const { club, memberId } = await seedClub();
     const before = await prisma.clubMembership.count({
       where: { clubId: club.id },
     });
+    const now = Math.floor(Date.now() / 1000);
     const expired = await signExpiredToken(memberId);
+    const missingExp = await mintHmacToken({
+      sub: memberId,
+      iss: "grpd",
+      iat: now,
+    });
+    const stringExp = await mintHmacToken({
+      sub: memberId,
+      iss: "grpd",
+      iat: now,
+      exp: String(now + 3600),
+    });
+    const wrongSig = await mintHmacToken(
+      { sub: memberId, iss: "grpd", iat: now, exp: now + 3600 },
+      { secret: "wrong-batch6-secret-not-for-prod" },
+    );
+    const wrongAlg = await mintHmacToken(
+      { sub: memberId, iss: "grpd", iat: now, exp: now + 3600 },
+      { header: { alg: "none", typ: "JWT" } },
+    );
 
-    for (const token of [null, "not-a-jwt", expired] as const) {
+    for (const token of [
+      null,
+      "not-a-jwt",
+      expired,
+      missingExp,
+      stringExp,
+      wrongSig,
+      wrongAlg,
+    ] as const) {
       const leave = await dispatch("POST", `clubs/${club.id}/leave`, {
         token,
       });
@@ -374,7 +409,7 @@ describePg("Batch6 Vercel dispatcher + Bearer (PostgreSQL)", () => {
     ).toBe(MembershipStatus.approved);
   });
 
-  it("connected ApiClient (DEMO/mock false + explicit URL) leave/cancel; missing URL fails", async () => {
+  it("connected ApiClient: real resolver (no spy), missing URL fails, leave/cancel; demo independent", async () => {
     const { club, memberId, pendingId } = await seedClub();
     const memberTok = await signAppAccessToken(memberId);
     const pendingTok = await signAppAccessToken(pendingId);
@@ -388,7 +423,10 @@ describePg("Batch6 Vercel dispatcher + Bearer (PostgreSQL)", () => {
           res.end(JSON.stringify({ ok: false, error: { code: "NOT_FOUND" } }));
           return;
         }
-        const segments = url.pathname.slice("/api/v1/".length).split("/");
+        const segments = url.pathname
+          .slice("/api/v1/".length)
+          .split("/")
+          .filter(Boolean);
         const chunks: Buffer[] = [];
         for await (const c of req) chunks.push(c as Buffer);
         const raw = Buffer.concat(chunks).toString("utf8");
@@ -416,30 +454,55 @@ describePg("Batch6 Vercel dispatcher + Bearer (PostgreSQL)", () => {
       }
     });
 
-    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    await new Promise<void>((resolve) =>
+      server.listen(0, "127.0.0.1", resolve),
+    );
     const addr = server.address();
     if (!addr || typeof addr === "string") throw new Error("no addr");
     const baseUrl = `http://127.0.0.1:${addr.port}`;
 
-    // Connected mode must not silently mock when URL missing.
-    expect(() => assertConnectedApiUrl("")).toThrow(ApiError);
-    try {
-      assertConnectedApiUrl("");
-    } catch (e) {
-      expect(e).toBeInstanceOf(ApiError);
-      expect((e as ApiError).code).toBe("MISSING_API_URL");
-    }
-
-    // Force connected transport for this exercise (DEMO_MODE is a module const).
-    const transportSpy = jest
-      .spyOn(apiMode, "resolveApiTransport")
-      .mockImplementation(async (baseUrl?: string) => {
-        const url = (baseUrl ?? "").trim();
-        return { mode: "connected" as const, useMock: false, apiUrl: url };
-      });
+    const prevDemo = process.env.EXPO_PUBLIC_DEMO_MODE;
+    const prevMock = process.env.EXPO_PUBLIC_USE_MOCK_API;
+    const prevUrl = process.env.EXPO_PUBLIC_API_URL;
 
     try {
-      const missing = createApiClient({
+      // Isolated connected env: demo/mock false, explicit URL, AsyncStorage mock → null.
+      process.env.EXPO_PUBLIC_DEMO_MODE = "false";
+      delete process.env.EXPO_PUBLIC_USE_MOCK_API;
+      process.env.EXPO_PUBLIC_API_URL = baseUrl;
+      jest.resetModules();
+      jest.doMock("@react-native-async-storage/async-storage", () => ({
+        __esModule: true,
+        default: {
+          getItem: jest.fn(async () => null),
+          setItem: jest.fn(async () => undefined),
+          removeItem: jest.fn(async () => undefined),
+          clear: jest.fn(async () => undefined),
+          getAllKeys: jest.fn(async () => []),
+          multiGet: jest.fn(async () => []),
+          multiSet: jest.fn(async () => undefined),
+          multiRemove: jest.fn(async () => undefined),
+        },
+      }));
+
+      const mode = await import("@/lib/api/mode");
+      const { createApiClient: createClient } = await import("@/lib/api/client");
+      const { ApiError: Err } = await import("@/lib/api/errors");
+
+      expect(() => mode.assertConnectedApiUrl("")).toThrow(Err);
+      try {
+        mode.assertConnectedApiUrl("");
+      } catch (e) {
+        expect(e).toBeInstanceOf(Err);
+        expect((e as InstanceType<typeof Err>).code).toBe("MISSING_API_URL");
+      }
+
+      const resolved = await mode.resolveApiTransport(baseUrl);
+      expect(resolved.mode).toBe("connected");
+      expect(resolved.useMock).toBe(false);
+      expect(resolved.apiUrl).toBe(baseUrl);
+
+      const missing = createClient({
         baseUrl: "",
         getAccessToken: async () => memberTok,
       });
@@ -447,7 +510,7 @@ describePg("Batch6 Vercel dispatcher + Bearer (PostgreSQL)", () => {
         missing.request(`/api/v1/clubs/${club.id}/leave`, { method: "POST" }),
       ).rejects.toMatchObject({ code: "MISSING_API_URL" });
 
-      const client = createApiClient({
+      const client = createClient({
         baseUrl,
         getAccessToken: async () => memberTok,
       });
@@ -461,7 +524,7 @@ describePg("Batch6 Vercel dispatcher + Bearer (PostgreSQL)", () => {
         }),
       ).toBeNull();
 
-      const pendingClient = createApiClient({
+      const pendingClient = createClient({
         baseUrl,
         getAccessToken: async () => pendingTok,
       });
@@ -475,12 +538,143 @@ describePg("Batch6 Vercel dispatcher + Bearer (PostgreSQL)", () => {
         }),
       ).toBeNull();
 
-      // Sanity: resolver reports connected when URL present
-      const resolved = await resolveApiTransport(baseUrl);
-      expect(resolved.useMock).toBe(false);
-      expect(resolved.apiUrl).toBe(baseUrl);
+      // Demo remains independent of connected URL presence.
+      process.env.EXPO_PUBLIC_DEMO_MODE = "true";
+      process.env.EXPO_PUBLIC_API_URL = baseUrl;
+      delete process.env.EXPO_PUBLIC_USE_MOCK_API;
+      jest.resetModules();
+      const demoMode = await import("@/lib/api/mode");
+      const demoTransport = await demoMode.resolveApiTransport(baseUrl);
+      expect(demoTransport.mode).toBe("demo");
+      expect(demoTransport.useMock).toBe(true);
     } finally {
-      transportSpy.mockRestore();
+      if (prevDemo === undefined) delete process.env.EXPO_PUBLIC_DEMO_MODE;
+      else process.env.EXPO_PUBLIC_DEMO_MODE = prevDemo;
+      if (prevMock === undefined) delete process.env.EXPO_PUBLIC_USE_MOCK_API;
+      else process.env.EXPO_PUBLIC_USE_MOCK_API = prevMock;
+      if (prevUrl === undefined) delete process.env.EXPO_PUBLIC_API_URL;
+      else process.env.EXPO_PUBLIC_API_URL = prevUrl;
+      jest.resetModules();
+      await new Promise<void>((resolve, reject) =>
+        server.close((err) => (err ? reject(err) : resolve())),
+      );
+    }
+  });
+
+  it("PIN login via real entry → token → protected leave; bad login rejected", async () => {
+    const { club, memberId } = await seedClub();
+    const phone = `+2126${String(Date.now()).slice(-8)}`;
+    const pin = "424242";
+    const allowlist = JSON.stringify([
+      { phone, pin, userId: memberId, profileComplete: true },
+    ]);
+    const prevAllow = process.env.PIN_ALLOWLIST_JSON;
+    process.env.PIN_ALLOWLIST_JSON = allowlist;
+
+    const server = http.createServer(async (req, res) => {
+      try {
+        const host = req.headers.host ?? "127.0.0.1";
+        const url = new URL(req.url ?? "/", `http://${host}`);
+        if (!url.pathname.startsWith("/api/v1/")) {
+          res.writeHead(404, { "content-type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: { code: "NOT_FOUND" } }));
+          return;
+        }
+        const segments = url.pathname
+          .slice("/api/v1/".length)
+          .split("/")
+          .filter(Boolean);
+        const chunks: Buffer[] = [];
+        for await (const c of req) chunks.push(c as Buffer);
+        const raw = Buffer.concat(chunks).toString("utf8");
+        const headers = new Headers();
+        for (const [k, v] of Object.entries(req.headers)) {
+          if (v) headers.set(k, Array.isArray(v) ? v.join(",") : v);
+        }
+        const nextReq = new NextRequest(url, {
+          method: req.method,
+          headers,
+          body: ["GET", "HEAD"].includes(req.method ?? "")
+            ? undefined
+            : raw || undefined,
+        });
+        const response = await dispatchApiRequest(nextReq, segments);
+        const text = await response.text();
+        res.writeHead(response.status, {
+          "content-type":
+            response.headers.get("content-type") ?? "application/json",
+        });
+        res.end(text);
+      } catch (e) {
+        res.writeHead(500, { "content-type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: { message: String(e) } }));
+      }
+    });
+
+    await new Promise<void>((resolve) =>
+      server.listen(0, "127.0.0.1", resolve),
+    );
+    const addr = server.address();
+    if (!addr || typeof addr === "string") throw new Error("no addr");
+    const baseUrl = `http://127.0.0.1:${addr.port}`;
+
+    const prevDemo = process.env.EXPO_PUBLIC_DEMO_MODE;
+    const prevMock = process.env.EXPO_PUBLIC_USE_MOCK_API;
+
+    try {
+      process.env.EXPO_PUBLIC_DEMO_MODE = "false";
+      delete process.env.EXPO_PUBLIC_USE_MOCK_API;
+
+      // Bad login via Vercel entry (real route + dispatcher).
+      const badEntry = await invokeVercelEntry(
+        "POST",
+        "/api/v1/auth/pin/login",
+        { body: { phone, pin: "000000" } },
+      );
+      expect(badEntry.statusCode).toBe(401);
+      expect(badEntry.body).toMatch(/INVALID_PIN/);
+
+      // Good login through client contract → token → protected leave.
+      const anon = createApiClient({ baseUrl, getAccessToken: async () => null });
+      const auth = await loginWithPin(anon, { phone, pin });
+      expect(auth.user.id).toBe(memberId);
+      expect(auth.tokens.accessToken).toBeTruthy();
+
+      const authed = createApiClient({
+        baseUrl,
+        getAccessToken: async () => auth.tokens.accessToken,
+      });
+      await authed.request(`/api/v1/clubs/${club.id}/leave`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      expect(
+        await prisma.clubMembership.findUnique({
+          where: { userId_clubId: { userId: memberId, clubId: club.id } },
+        }),
+      ).toBeNull();
+
+      // Entry-level good login also mints a usable Bearer.
+      const goodEntry = await invokeVercelEntry(
+        "POST",
+        "/api/v1/auth/pin/login",
+        { body: { phone, pin } },
+      );
+      expect(goodEntry.statusCode).toBe(200);
+      const goodBody = JSON.parse(goodEntry.body) as {
+        ok: boolean;
+        data: { tokens: { accessToken: string }; user: { id: string } };
+      };
+      expect(goodBody.ok).toBe(true);
+      expect(goodBody.data.user.id).toBe(memberId);
+      expect(goodBody.data.tokens.accessToken).toBeTruthy();
+    } finally {
+      if (prevAllow === undefined) delete process.env.PIN_ALLOWLIST_JSON;
+      else process.env.PIN_ALLOWLIST_JSON = prevAllow;
+      if (prevDemo === undefined) delete process.env.EXPO_PUBLIC_DEMO_MODE;
+      else process.env.EXPO_PUBLIC_DEMO_MODE = prevDemo;
+      if (prevMock === undefined) delete process.env.EXPO_PUBLIC_USE_MOCK_API;
+      else process.env.EXPO_PUBLIC_USE_MOCK_API = prevMock;
       await new Promise<void>((resolve, reject) =>
         server.close((err) => (err ? reject(err) : resolve())),
       );

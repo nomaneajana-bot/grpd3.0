@@ -1,5 +1,5 @@
 // Jest configuration for Expo/React Native
-// Using ts-jest for pure logic tests
+// Using ts-jest for pure logic tests; babel-jest for ESM-only deps (jose).
 
 module.exports = {
   preset: "ts-jest",
@@ -10,7 +10,7 @@ module.exports = {
     "!lib/**/*.d.ts",
     "!lib/**/__tests__/**",
   ],
-  moduleFileExtensions: ["ts", "tsx", "js", "jsx"],
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "mjs", "cjs"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   transform: {
     "^.+\\.tsx?$": [
@@ -20,10 +20,14 @@ module.exports = {
         tsconfig: "<rootDir>/tsconfig.jest.json",
       },
     ],
+    // jose ships ESM-only; babel-jest converts it for the CJS Jest runtime.
+    "^.+\\.(js|mjs)$": [
+      "babel-jest",
+      { configFile: "./babel.jest.config.js" },
+    ],
   },
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
   },
-  // jose is ESM-only; allow Jest to transform it for dynamic import()
   transformIgnorePatterns: ["/node_modules/(?!(jose)/)"],
 };
