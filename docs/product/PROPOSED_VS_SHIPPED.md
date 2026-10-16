@@ -20,7 +20,7 @@ Rule going forward: **ship when prompted; do not park behind “say the word.”
 
 | Item | Status | Promise |
 |------|--------|---------|
-| **Visibility simplify** (`Qui peut venir` → open \| club-only; drop Femmes/Équipe as access) | **Implementing now** | Canvas existed; user said **DO IT** |
+| **Visibility simplify** (`Qui peut venir` → open \| club-only; drop Femmes/Équipe as access) | **SHIPPED** `cursor/visibility-simplify-3184` | Canvas existed; user said **DO IT** |
 | Member groups canvas | Design + **v1 code shipped** | Was gated; fixed |
 
 ## Explicitly blocked / not accepted (do not fake PASS)
