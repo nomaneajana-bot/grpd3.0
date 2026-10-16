@@ -4,9 +4,15 @@ import {
   registerDevice,
   registerWithPin,
 } from "@/lib/api";
-import { getOrCreateDeviceId, storeAuthData } from "@/lib/authStore";
+import {
+  getAuthData,
+  getOrCreateDeviceId,
+  setUseMockApi,
+  storeAuthData,
+} from "@/lib/authStore";
 import {
   clearOnboardingState,
+  getOnboardingState,
   type OnboardingState,
 } from "@/lib/onboardingStore";
 import { registerForPushNotificationsAsync } from "@/lib/notifications";
@@ -16,8 +22,21 @@ import {
   type DistanceGoal,
   type RunnerProfile,
 } from "@/lib/profileStore";
+import { normalizePhone } from "@/lib/phone-normalize";
+import { DEMO_MODE } from "@/lib/featureFlags";
 import { Platform } from "react-native";
 import type { OnboardingGoal } from "@/lib/onboardingStore";
+
+const DEMO_PHONE_DIGITS = "708060337";
+
+function isDemoPhone(phone: string): boolean {
+  const digits = phone.replace(/\D/g, "");
+  return (
+    digits === DEMO_PHONE_DIGITS ||
+    digits === `0${DEMO_PHONE_DIGITS}` ||
+    digits.endsWith(DEMO_PHONE_DIGITS)
+  );
+}
 
 function mapGoal(goal?: OnboardingGoal): DistanceGoal {
   switch (goal) {
@@ -52,24 +71,41 @@ export async function persistOnboardingProfile(
 export async function completeOnboardingAuth(
   state: OnboardingState,
 ): Promise<void> {
-  if (!state.phone?.trim() || !state.code?.trim()) return;
+  const rawPhone = state.phone?.trim();
+  const pin = state.code?.trim();
+  if (!rawPhone || !pin) {
+    throw new Error(
+      "Téléphone ou code manquant — termine la vérification avant l'accueil.",
+    );
+  }
+
+  const phone = normalizePhone(rawPhone);
+  const useMock = DEMO_MODE || isDemoPhone(phone);
+  if (useMock) {
+    await setUseMockApi(true);
+  }
 
   const deviceId = await getOrCreateDeviceId();
-  const client = createApiClient();
+  const client = createApiClient(useMock ? { baseUrl: "" } : undefined);
   try {
     const result = await registerWithPin(client, {
-      phone: state.phone.trim(),
-      pin: state.code.trim(),
+      phone,
+      pin,
       deviceId,
     });
     await storeAuthData({ tokens: result.tokens, user: result.user, deviceId });
   } catch {
     const result = await loginWithPin(client, {
-      phone: state.phone.trim(),
-      pin: state.code.trim(),
+      phone,
+      pin,
       deviceId,
     });
     await storeAuthData({ tokens: result.tokens, user: result.user, deviceId });
+  }
+
+  const auth = await getAuthData();
+  if (!auth) {
+    throw new Error("Connexion non enregistrée — réessaie.");
   }
 
   try {
@@ -91,8 +127,17 @@ export async function completeOnboardingAuth(
   }
 }
 
-export async function finishOnboarding(state: OnboardingState): Promise<void> {
-  await persistOnboardingProfile(state);
-  await completeOnboardingAuth(state);
+/**
+ * Persist profile + auth, then clear draft onboarding.
+ * Re-reads storage so welcome is not dependent on a stale React snapshot.
+ * Does not clear onboarding if auth failed (avoids auth-gate → welcome loop).
+ */
+export async function finishOnboarding(
+  state?: OnboardingState,
+): Promise<void> {
+  const fresh = await getOnboardingState();
+  const merged: OnboardingState = { ...fresh, ...state };
+  await persistOnboardingProfile(merged);
+  await completeOnboardingAuth(merged);
   await clearOnboardingState();
 }

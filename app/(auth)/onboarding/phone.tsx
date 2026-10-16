@@ -6,7 +6,17 @@ import { CountryPhoneInput } from "@/components/onboarding/CountryPhoneInput";
 import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
 import { OnboardingTitle } from "@/components/onboarding/OnboardingTitle";
 import { colors, typography } from "@/constants/ui";
+import { setUseMockApi } from "@/lib/authStore";
+import { DEMO_MODE } from "@/lib/featureFlags";
+import { normalizePhone } from "@/lib/phone-normalize";
 import { useOnboarding } from "@/hooks/useOnboarding";
+
+const DEMO_PHONE_DIGITS = "708060337";
+
+function isDemoPhoneDigits(local: string): boolean {
+  const d = local.replace(/\D/g, "");
+  return d === DEMO_PHONE_DIGITS || d === `0${DEMO_PHONE_DIGITS}`;
+}
 
 export default function OnboardingPhoneScreen() {
   const { setState } = useOnboarding();
@@ -14,12 +24,17 @@ export default function OnboardingPhoneScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const handleContinue = async () => {
-    if (digits.replace(/\D/g, "").length < 9) {
+    const local = digits.replace(/\D/g, "");
+    if (local.length < 9) {
       setError("Entre un numéro valide.");
       return;
     }
     setError(null);
-    const phone = `+212${digits.replace(/\D/g, "")}`;
+    const phone = normalizePhone(local);
+    // Same rule as returning-login: dedicated mock phone / DEMO → mock transport.
+    if (DEMO_MODE || isDemoPhoneDigits(local)) {
+      await setUseMockApi(true);
+    }
     await setState({ phone });
     router.push("/(auth)/onboarding/verify" as Href);
   };

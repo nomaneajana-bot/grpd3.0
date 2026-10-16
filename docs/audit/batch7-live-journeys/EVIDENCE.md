@@ -11,8 +11,9 @@
 
 | # | Issue | Status |
 |---|-------|--------|
-| 1 | Onboarding runners-only “Cours.” | FIXED — community/walk/language copy |
+| 1 | Onboarding runners-only “Cours.” | FIXED — community/walk/language copy (role/pace screens still runner-framed — logged) |
 | 2 | Wrong code → Compte introuvable; SMS claim; mode hidden | FIXED — OTP errors preserved; mock/démo hints; no false SMS |
+| — | New-user « Voir l'accueil » → first onboarding again | FIXED — finishOnboarding requires auth; normalize phone; mock for demo phone; stay on screen on error |
 | 3 | Create → old club active | FIXED (prior tip) |
 | 4 | Élite / TU ES MEMBRE on walk club | FIXED (prior tip) |
 | 5 | Organise FARTLEK + internal walk copy | FIXED (prior tip) |

@@ -18,6 +18,7 @@ Connected DB / hosted mutation still BLOCKED. No full journey acceptance.
 - Welcome: “Sors. Avec les tiens.” + walk/language/course community copy
 - Phone/verify: no false SMS claim in mock/démo; mode hint (`000000` démo / `123456` mock)
 - Wrong OTP surfaces **Code invalide** — not PIN **Compte introuvable**
+- **New-user finish:** persist mock/PIN auth before clear; no silent tabs→onboarding loop; phone E.164 normalize
 
 **B — Club → walk → access** (prior commit `c40cccf`)
 - New club focused after create; walk groups; admin label; mock session persist
