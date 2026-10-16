@@ -1,0 +1,139 @@
+{
+  "base": "http://127.0.0.1:8082",
+  "tested_at": "2026-10-16T19:06:57.915Z",
+  "checks": [
+    {
+      "id": "Revue_sim_phone",
+      "ok": true,
+      "detail": "\nTon numéro\nMode simulation — aucun SMS n’est envoyé. Entre le code indiqué ci-dessous à l’étape suivante.\n🇲🇦\n+212\n▾\nSimulation démo · code 000000 — aucun SMS réel\nEn continuant, tu acceptes nos Co"
+    },
+    {
+      "id": "Revue_no_auto_sms_claim_on_phone",
+      "ok": true,
+      "detail": "\nTon numéro\nMode simulation — aucun SMS n’est envoyé. Entre le code indiqué ci-dessous à l’étape suivante.\n🇲🇦\n+212\n▾\nSimulation démo · code 000000 — aucun SM"
+    },
+    {
+      "id": "Revue_sim_verify",
+      "ok": true,
+      "detail": "\nCode de simulation\nSimulation — aucun SMS envoyé à +212 7080 60 33 7. Entre le code 000000.\nPas de renvoi SMS — code de simulation : 000000\nVérifier"
+    },
+    {
+      "id": "Revue_no_code_auto_received",
+      "ok": true,
+      "detail": "\nCode de simulation\nSimulation — aucun SMS envoyé à +212 7080 60 33 7. Entre le code 000000.\nPas de renvoi SMS — code de simulation : 000000\nVérifier"
+    },
+    {
+      "id": "Revue_pace_no_group_letters",
+      "ok": true,
+      "detail": "\nAllure de course (optionnel)\nUtile seulement si tu cours. Marche, langue ou découverte : tu peux passer sans choisir d’allure.\n5'15 /km\nOptionnel — seulement si tu cours et veux une allure de départ"
+    },
+    {
+      "id": "Revue_welcome_natural_copy",
+      "ok": true,
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nALLURE\nNon renseignée\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depu"
+    },
+    {
+      "id": "Revue_welcome_has_club",
+      "ok": true,
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nALLURE\nNon renseignée\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depu"
+    },
+    {
+      "id": "Revue_welcome_no_youssef",
+      "ok": true,
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nALLURE\nN"
+    },
+    {
+      "id": "Revue_clubs_hub_loaded",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "Revue_clubs_shows_new_club",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "Revue_clubs_admin",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce"
+    },
+    {
+      "id": "Revue_no_elite_running_groups",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "Revue_no_toi_groupe_d_on_skip",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "Revue_display_name_not_coureur",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "Revue_reload_keeps_club",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "Revue_reload_keeps_name",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "second_club_exists_or_listed",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nEnglish Walk B\nEWB\nEnglish Walk B\nRabat · Club sur invitation · 1 membre\nTU ES ADMIN\nAucun objectif renseigné pour ce club.\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à English "
+    },
+    {
+      "id": "first_club_preserved",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nEnglish Walk B\nEWB\nEnglish Walk B\nRabat · Club sur invitation · 1 membre\nTU ES ADMIN\nAucun objectif renseigné pour ce club.\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à English "
+    },
+    {
+      "id": "invite_not_marked_pass",
+      "ok": true,
+      "detail": "blocker recorded — no fabricated invite PASS"
+    }
+  ],
+  "blockers": [
+    {
+      "path": "invitation / Rejoindre un club",
+      "exact": "Invite fixture unavailable in this batch. Do not PASS. Remaining for batch D: invitation create → pending → approval + two-account private visibility."
+    }
+  ],
+  "clubs": [
+    {
+      "firstName": "Revue",
+      "clubName": "Marche revue A",
+      "city": "Casablanca"
+    }
+  ],
+  "summary": {
+    "pass": 19,
+    "fail": 0
+  },
+  "tested_sha": "584c6efebcfb8ea7fd1cd6dcf8af7c9843d93005",
+  "branch": "cursor/mvp-live-journeys-3184",
+  "environment": "local_expo_web_demo_mode",
+  "hosted_claim": false,
+  "connected_claim": false,
+  "script": "scripts/batch-a-create-journey-smoke.mjs",
+  "screenshots": [
+    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-00-start.png",
+    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-01-phone.png",
+    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-02-verify.png",
+    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-03-role.png",
+    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-04-pace.png",
+    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-05-create-club.png",
+    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-06-welcome.png",
+    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-07-home.png",
+    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-08-clubs.png",
+    "docs/audit/batch7-live-journeys/screenshots/create-j-Revue-09-reload-clubs.png",
+    "docs/audit/batch7-live-journeys/screenshots/create-j-second-00-form.png",
+    "docs/audit/batch7-live-journeys/screenshots/create-j-second-01-after.png",
+    "docs/audit/batch7-live-journeys/screenshots/create-j-second-02-clubs.png"
+  ]
+}
