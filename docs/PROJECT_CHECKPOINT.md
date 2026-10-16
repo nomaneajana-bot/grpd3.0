@@ -1,8 +1,8 @@
 # GRPD Project Checkpoint
 
 **Updated:** 2026-10-16  
-**Working branch:**   
-**Batch 7 tested_sha:** `cursor/mvp-live-journeys-3184`  
+**Working branch:** `cursor/mvp-live-journeys-3184`  
+**Batch 7 tested_sha:** `b67980e90ad5f1b2bc3784b580593aabb04f74d6`  
 **Review that drove this batch:** interactive mock Preview @ `e8e9b05` (0708060337)  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
