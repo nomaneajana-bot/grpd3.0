@@ -38,8 +38,6 @@ import { prisma } from "@/lib/server/prisma";
 import { signAppAccessToken } from "@/lib/server/app-jwt";
 import { dispatchApiRequest } from "@/lib/server/vercel-dispatch";
 import vercelHandler from "../../../api/v1/[...path]";
-import { createApiClient } from "@/lib/api/client";
-import { loginWithPin } from "@/lib/api/auth";
 import { NextRequest } from "next/server";
 
 const describePg = SKIP ? describe.skip : describe;
@@ -620,10 +618,33 @@ describePg("Batch6 Vercel dispatcher + Bearer (PostgreSQL)", () => {
 
     const prevDemo = process.env.EXPO_PUBLIC_DEMO_MODE;
     const prevMock = process.env.EXPO_PUBLIC_USE_MOCK_API;
+    const prevUrl = process.env.EXPO_PUBLIC_API_URL;
 
     try {
+      // Re-load client under connected env (DEMO_MODE is a module const).
       process.env.EXPO_PUBLIC_DEMO_MODE = "false";
       delete process.env.EXPO_PUBLIC_USE_MOCK_API;
+      process.env.EXPO_PUBLIC_API_URL = baseUrl;
+      jest.resetModules();
+      jest.doMock("@react-native-async-storage/async-storage", () => ({
+        __esModule: true,
+        default: {
+          getItem: jest.fn(async () => null),
+          setItem: jest.fn(async () => undefined),
+          removeItem: jest.fn(async () => undefined),
+          clear: jest.fn(async () => undefined),
+          getAllKeys: jest.fn(async () => []),
+          multiGet: jest.fn(async () => []),
+          multiSet: jest.fn(async () => undefined),
+          multiRemove: jest.fn(async () => undefined),
+        },
+      }));
+      const { createApiClient: createClient } = await import("@/lib/api/client");
+      const { loginWithPin: pinLogin } = await import("@/lib/api/auth");
+      const mode = await import("@/lib/api/mode");
+      const transport = await mode.resolveApiTransport(baseUrl);
+      expect(transport.mode).toBe("connected");
+      expect(transport.useMock).toBe(false);
 
       // Bad login via Vercel entry (real route + dispatcher).
       const badEntry = await invokeVercelEntry(
@@ -635,12 +656,13 @@ describePg("Batch6 Vercel dispatcher + Bearer (PostgreSQL)", () => {
       expect(badEntry.body).toMatch(/INVALID_PIN/);
 
       // Good login through client contract → token → protected leave.
-      const anon = createApiClient({ baseUrl, getAccessToken: async () => null });
-      const auth = await loginWithPin(anon, { phone, pin });
+      // Minting a token in-test is NOT login coverage — this path must call login.
+      const anon = createClient({ baseUrl, getAccessToken: async () => null });
+      const auth = await pinLogin(anon, { phone, pin });
       expect(auth.user.id).toBe(memberId);
       expect(auth.tokens.accessToken).toBeTruthy();
 
-      const authed = createApiClient({
+      const authed = createClient({
         baseUrl,
         getAccessToken: async () => auth.tokens.accessToken,
       });
@@ -654,7 +676,7 @@ describePg("Batch6 Vercel dispatcher + Bearer (PostgreSQL)", () => {
         }),
       ).toBeNull();
 
-      // Entry-level good login also mints a usable Bearer.
+      // Entry-level good login also mints a usable Bearer (dispatch register).
       const goodEntry = await invokeVercelEntry(
         "POST",
         "/api/v1/auth/pin/login",
@@ -675,6 +697,9 @@ describePg("Batch6 Vercel dispatcher + Bearer (PostgreSQL)", () => {
       else process.env.EXPO_PUBLIC_DEMO_MODE = prevDemo;
       if (prevMock === undefined) delete process.env.EXPO_PUBLIC_USE_MOCK_API;
       else process.env.EXPO_PUBLIC_USE_MOCK_API = prevMock;
+      if (prevUrl === undefined) delete process.env.EXPO_PUBLIC_API_URL;
+      else process.env.EXPO_PUBLIC_API_URL = prevUrl;
+      jest.resetModules();
       await new Promise<void>((resolve, reject) =>
         server.close((err) => (err ? reject(err) : resolve())),
       );
