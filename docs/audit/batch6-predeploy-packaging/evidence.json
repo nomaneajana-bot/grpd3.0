@@ -1,6 +1,9 @@
 {
-  "batch": "Batch 6 — predeployment packaging (Expo connected web + serverless bundle)",
-  "issues": ["ISSUE-004", "ISSUE-008"],
+  "batch": "Batch 6 \u2014 predeployment packaging (Expo connected web + serverless bundle)",
+  "issues": [
+    "ISSUE-004",
+    "ISSUE-008"
+  ],
   "prior_accepted_local_batch6": "4dad7495bcb1239dcc65e2a451d07f99db9cf43d",
   "branch": "cursor/green-home-ux-join-3184",
   "environment": "local_packaging",
@@ -25,11 +28,21 @@
     "EXPO_PUBLIC_API_URL": "http://127.0.0.1:3999"
   },
   "checks": {
-    "expo_web_connected_build": { "ok": true },
-    "static_connected_no_secrets_demo_false_url_embedded": { "ok": true },
-    "expo_web_demo_build_usable": { "ok": true },
-    "static_demo_demo_true": { "ok": true },
-    "serverless_bundle_includes_jose_next_dispatch_jwt": { "ok": true },
+    "expo_web_connected_build": {
+      "ok": true
+    },
+    "static_connected_no_secrets_demo_false_url_embedded": {
+      "ok": true
+    },
+    "expo_web_demo_build_usable": {
+      "ok": true
+    },
+    "static_demo_demo_true": {
+      "ok": true
+    },
+    "serverless_bundle_includes_jose_next_dispatch_jwt": {
+      "ok": true
+    },
     "serverless_runtime_import_health_auth_leave_local_pg": {
       "ok": true,
       "detail": "7/7 smoke checks; disposable local PG only; no remote writes"
@@ -54,5 +67,6 @@
   ],
   "checklist": "docs/audit/batch6-predeploy-packaging/PREVIEW_CHECKLIST.md",
   "note": "Packaging only. Preserves Batch6 local gate. No deploy/env mutate/new DB/spend/merge/prod.",
-  "generated_at": "2026-10-16T02:05:00.000Z"
+  "generated_at": "2026-10-16T02:05:00.000Z",
+  "tested_sha": "1e6f49738819f27b5e49e4d60ee7f28d11e35223"
 }

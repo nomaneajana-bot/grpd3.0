@@ -1,6 +1,6 @@
 # Batch 6 — predeployment packaging evidence
 
-- **tested_sha:** *(filled at stamp — packaging tip)*  
+- **tested_sha:** `1e6f49738819f27b5e49e4d60ee7f28d11e35223`  
 - **prior local Batch6 (CLEARED):** `4dad7495bcb1239dcc65e2a451d07f99db9cf43d`  
 - **branch:** `cursor/green-home-ux-join-3184`  
 - **hosted_claim / deploy_claim:** false  
