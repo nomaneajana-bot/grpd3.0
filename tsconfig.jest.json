@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react",
+    "esModuleInterop": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "ES2020",
+    "skipLibCheck": true,
+    "paths": {
+      "@/*": ["./*"],
+      "next/server": ["./test/shims/next-server.ts"]
+    },
+    "baseUrl": ".",
+    "types": ["jest", "node"]
+  },
+  "include": [
+    "lib/**/*.ts",
+    "app/api/**/*.ts",
+    "types/**/*.ts",
+    "test/shims/**/*.ts"
+  ]
+}

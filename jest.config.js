@@ -16,14 +16,14 @@ module.exports = {
     "^.+\\.tsx?$": [
       "ts-jest",
       {
-        tsconfig: {
-          jsx: "react",
-          esModuleInterop: true,
-        },
+        // Includes app/api + lib/server (excluded from root Expo tsconfig)
+        tsconfig: "<rootDir>/tsconfig.jest.json",
       },
     ],
   },
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
+    // Real route handlers import next/server; package is not a workspace dep.
+    "^next/server$": "<rootDir>/test/shims/next-server.ts",
   },
 };

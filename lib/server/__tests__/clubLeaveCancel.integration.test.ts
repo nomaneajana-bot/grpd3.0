@@ -2,6 +2,12 @@
  * Batch 5 — ISSUE-004 hosted leave / cancel-request
  * Isolated PostgreSQL integration (not mock).
  *
+ * Auth coverage invokes the **actual** exported POST handlers from
+ * `app/api/v1/clubs/[id]/leave/route.ts` and `…/cancel-request/route.ts`
+ * with Request-compatible NextRequest inputs using the Auth.js v5 contract
+ * (`req.auth?.user?.id` via `requireAuth` in lib/server/auth-helpers.ts).
+ * Production auth helpers are unchanged.
+ *
  * Requires: DATABASE_URL pointing at a disposable Postgres DB with migrations applied.
  * Skip when unset: `SKIP_PG_INTEGRATION=1` or missing DATABASE_URL.
  */
@@ -13,11 +19,10 @@ import {
   SessionVisibility,
   AttendanceStatus,
 } from "@prisma/client";
+import { NextRequest } from "next/server";
 import {
   cancelPendingClubRequestForUserTx,
   leaveClubForUserTx,
-  runAuthenticatedCancelRequest,
-  runAuthenticatedLeave,
 } from "../clubMembershipLifecycle";
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -26,18 +31,96 @@ const SKIP =
   !DATABASE_URL ||
   /mock|memory/i.test(DATABASE_URL);
 
+/** Shared Prisma for routes + assertions (same DB as route singleton). */
+jest.mock("@/lib/server/prisma", () => {
+  const { PrismaClient: PC } = require("@prisma/client");
+  const client = new PC({
+    datasources: { db: { url: process.env.DATABASE_URL } },
+  });
+  return { prisma: client };
+});
+
+import { prisma } from "@/lib/server/prisma";
+import { POST as leavePOST } from "@/app/api/v1/clubs/[id]/leave/route";
+import { POST as cancelPOST } from "@/app/api/v1/clubs/[id]/cancel-request/route";
+
 const describePg = SKIP ? describe.skip : describe;
 
+type AuthFixture =
+  | { kind: "missing" }
+  | { kind: "null_auth" }
+  | { kind: "empty_id" }
+  | { kind: "non_string_id" }
+  | { kind: "user"; userId: string };
+
+function attachAuth(
+  req: NextRequest,
+  auth: AuthFixture,
+): NextRequest & { auth?: unknown } {
+  const r = req as NextRequest & { auth?: unknown };
+  switch (auth.kind) {
+    case "missing":
+      delete r.auth;
+      break;
+    case "null_auth":
+      r.auth = null;
+      break;
+    case "empty_id":
+      r.auth = { user: { id: "" } };
+      break;
+    case "non_string_id":
+      r.auth = { user: { id: 99 } };
+      break;
+    case "user":
+      r.auth = { user: { id: auth.userId } };
+      break;
+  }
+  return r;
+}
+
+function makeClubRequest(
+  pathSuffix: "leave" | "cancel-request",
+  clubId: string,
+  auth: AuthFixture,
+  body?: Record<string, unknown>,
+): NextRequest {
+  const req = new NextRequest(
+    `http://test.local/api/v1/clubs/${clubId}/${pathSuffix}`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body ?? {}),
+    },
+  );
+  return attachAuth(req, auth);
+}
+
+async function invokeLeave(
+  clubId: string,
+  auth: AuthFixture,
+  body?: Record<string, unknown>,
+): Promise<{ status: number; body: Record<string, unknown> }> {
+  const res = await leavePOST(makeClubRequest("leave", clubId, auth, body), {
+    params: Promise.resolve({ id: clubId }),
+  });
+  return { status: res.status, body: (await res.json()) as Record<string, unknown> };
+}
+
+async function invokeCancel(
+  clubId: string,
+  auth: AuthFixture,
+  body?: Record<string, unknown>,
+): Promise<{ status: number; body: Record<string, unknown> }> {
+  const res = await cancelPOST(
+    makeClubRequest("cancel-request", clubId, auth, body),
+    { params: Promise.resolve({ id: clubId }) },
+  );
+  return { status: res.status, body: (await res.json()) as Record<string, unknown> };
+}
+
 describePg("club leave + cancel-request (PostgreSQL)", () => {
-  let prisma: PrismaClient;
   const suffix = `b5_${Date.now().toString(36)}`;
   let clubSeq = 0;
-
-  beforeAll(() => {
-    prisma = new PrismaClient({
-      datasources: { db: { url: DATABASE_URL! } },
-    });
-  });
 
   afterAll(async () => {
     await prisma.$disconnect();
@@ -161,40 +244,63 @@ describePg("club leave + cancel-request (PostgreSQL)", () => {
     });
   });
 
-  it("route auth: null actor → 401; empty actor → 401 (leave + cancel)", async () => {
+  it("actual leave/cancel POST: missing/invalid auth → Response 401, no DB mutation", async () => {
     const { club } = await seedClub();
-    for (const actor of [null, undefined, ""] as const) {
-      const leave = await runAuthenticatedLeave(prisma, actor, club.id);
-      expect(leave.status).toBe(401);
-      expect(leave.body.ok).toBe(false);
-
-      const cancel = await runAuthenticatedCancelRequest(prisma, actor, club.id);
-      expect(cancel.status).toBe(401);
-      expect(cancel.body.ok).toBe(false);
-    }
-    const still = await prisma.clubMembership.count({
+    const before = await prisma.clubMembership.count({
       where: { clubId: club.id },
     });
-    expect(still).toBe(3);
+
+    const invalids: AuthFixture[] = [
+      { kind: "missing" },
+      { kind: "null_auth" },
+      { kind: "empty_id" },
+      { kind: "non_string_id" },
+    ];
+
+    for (const auth of invalids) {
+      const leave = await invokeLeave(club.id, auth);
+      expect(leave.status).toBe(401);
+      expect(leave.body.ok).toBe(false);
+      expect(
+        (leave.body.error as { code?: string } | undefined)?.code,
+      ).toBe("UNAUTHORIZED");
+
+      const cancel = await invokeCancel(club.id, auth);
+      expect(cancel.status).toBe(401);
+      expect(cancel.body.ok).toBe(false);
+      expect(
+        (cancel.body.error as { code?: string } | undefined)?.code,
+      ).toBe("UNAUTHORIZED");
+    }
+
+    const after = await prisma.clubMembership.count({
+      where: { clubId: club.id },
+    });
+    expect(after).toBe(before);
+    expect(after).toBe(3);
   });
 
-  it("actor isolation: outsider leave/cancel does not remove another member or pending", async () => {
+  it("actual leave/cancel POST: actor from auth only — body userId ignored (isolation)", async () => {
     const { club, memberId, pendingId, outsiderId } = await seedClub();
-    const leave = await runAuthenticatedLeave(prisma, outsiderId, club.id);
+
+    // Outsider authenticated, body claims memberId — must not remove member
+    const leave = await invokeLeave(club.id, { kind: "user", userId: outsiderId }, {
+      userId: memberId,
+    });
     expect(leave.status).toBe(200);
-    expect((leave.body.data as { alreadyAbsent?: boolean })?.alreadyAbsent).toBe(
-      true,
-    );
+    expect(
+      (leave.body.data as { alreadyAbsent?: boolean } | undefined)?.alreadyAbsent,
+    ).toBe(true);
 
     const memberStill = await prisma.clubMembership.findUnique({
       where: { userId_clubId: { userId: memberId, clubId: club.id } },
     });
     expect(memberStill?.status).toBe(MembershipStatus.approved);
 
-    const cancel = await runAuthenticatedCancelRequest(
-      prisma,
-      outsiderId,
+    const cancel = await invokeCancel(
       club.id,
+      { kind: "user", userId: outsiderId },
+      { userId: pendingId },
     );
     expect(cancel.status).toBe(404);
 
@@ -203,13 +309,32 @@ describePg("club leave + cancel-request (PostgreSQL)", () => {
     });
     expect(pendingStill?.status).toBe(MembershipStatus.pending);
 
-    const approvedCancel = await runAuthenticatedCancelRequest(
-      prisma,
-      memberId,
+    // Approved member cannot cancel via body pointing at pendingId
+    const approvedCancel = await invokeCancel(
       club.id,
+      { kind: "user", userId: memberId },
+      { userId: pendingId },
     );
     expect(approvedCancel.status).toBe(409);
-    expect(pendingStill?.status).toBe(MembershipStatus.pending);
+    const pendingUnchanged = await prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId: pendingId, clubId: club.id } },
+    });
+    expect(pendingUnchanged?.status).toBe(MembershipStatus.pending);
+
+    // Authenticated member leave removes only self
+    const selfLeave = await invokeLeave(club.id, {
+      kind: "user",
+      userId: memberId,
+    });
+    expect(selfLeave.status).toBe(200);
+    const memberGone = await prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId: memberId, clubId: club.id } },
+    });
+    expect(memberGone).toBeNull();
+    const pendingAfter = await prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId: pendingId, clubId: club.id } },
+    });
+    expect(pendingAfter?.status).toBe(MembershipStatus.pending);
   });
 
   it("approved member leaves: membership removed, members-only attendance left, public attendance unchanged, club persists", async () => {
@@ -427,38 +552,60 @@ describePg("club leave + cancel-request (PostgreSQL)", () => {
     expect(gone).toBeNull();
   });
 
-  it("PG race: cancel pending vs concurrent approval — never deletes approved", async () => {
-    // Repeat to stress interleaving under Serializable + conditional delete.
+  it("PG race: cancel pending vs concurrent approval — record both outcomes", async () => {
     for (let i = 0; i < 12; i++) {
       const { club, pendingId } = await seedClub({ slugPrefix: "race" });
 
-      const [cancelResult] = await Promise.all([
-        cancelPendingClubRequestForUserTx(prisma, {
+      const cancelP = cancelPendingClubRequestForUserTx(prisma, {
+        userId: pendingId,
+        clubId: club.id,
+      });
+      const approveP = prisma.clubMembership.updateMany({
+        where: {
           userId: pendingId,
           clubId: club.id,
-        }),
-        prisma.clubMembership
-          .updateMany({
-            where: {
-              userId: pendingId,
-              clubId: club.id,
-              status: MembershipStatus.pending,
-            },
-            data: { status: MembershipStatus.approved },
-          })
-          .catch(() => ({ count: 0 })),
+          status: MembershipStatus.pending,
+        },
+        data: { status: MembershipStatus.approved },
+      });
+
+      const [cancelSettled, approveSettled] = await Promise.allSettled([
+        cancelP,
+        approveP,
       ]);
+
+      // Do not swallow unexpected failures — only fulfilled paths are permitted.
+      if (cancelSettled.status !== "fulfilled") {
+        throw new Error(
+          `cancel rejected unexpectedly: ${String(cancelSettled.reason)}`,
+        );
+      }
+      if (approveSettled.status !== "fulfilled") {
+        throw new Error(
+          `approval rejected unexpectedly: ${String(approveSettled.reason)}`,
+        );
+      }
+
+      const cancelResult = cancelSettled.value;
+      const approveResult = approveSettled.value;
 
       const existing = await prisma.clubMembership.findUnique({
         where: { userId_clubId: { userId: pendingId, clubId: club.id } },
       });
 
-      if (existing) {
-        expect(existing.status).toBe(MembershipStatus.approved);
+      if (!existing) {
+        // Cancel won: pending deleted before approval matched.
+        expect(cancelResult.ok).toBe(true);
+        expect(approveResult.count).toBe(0);
+      } else if (existing.status === MembershipStatus.approved) {
+        // Approval won: conditional cancel must not wipe approved.
         expect(cancelResult.ok).toBe(false);
         if (!cancelResult.ok) expect(cancelResult.code).toBe("WRONG_STATUS");
+        expect(approveResult.count).toBe(1);
       } else {
-        expect(cancelResult.ok).toBe(true);
+        throw new Error(
+          `unexpected cancel-vs-approval outcome: status=${existing.status} cancel=${JSON.stringify(cancelResult)} approveCount=${approveResult.count}`,
+        );
       }
     }
   });
