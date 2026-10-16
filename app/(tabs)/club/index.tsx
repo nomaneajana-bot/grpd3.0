@@ -17,7 +17,6 @@ import * as Haptics from "expo-haptics";
 import { ClubFeedRow } from "@/components/club/ClubFeedRow";
 import { ClubNavCard } from "@/components/club/ClubNavCard";
 import { ClubOverviewCard } from "@/components/club/ClubOverviewCard";
-import { ClubPaceGroupRow } from "@/components/club/ClubPaceGroupRow";
 import { GroupedList } from "@/components/redesign/GroupedList";
 import { SectionHeader } from "@/components/redesign/SectionHeader";
 import { SectionLabel } from "@/components/redesign/SectionLabel";
@@ -53,12 +52,16 @@ import {
 } from "@/lib/clubAdminStore";
 import {
   assignMemberToClubGroup,
-  bucketMembersByGroup,
-  CLUB_PACE_GROUP_DEFS,
-  countSessionsThisWeekForGroup,
   formatFoundedYear,
   inferUserClubGroupId,
 } from "@/lib/clubPaceGroups";
+import {
+  bucketRosterByColorGroup,
+  isMemberOrgEnabled,
+  memberAssignedGroupId,
+  sortedActiveColorGroups,
+} from "@/lib/clubMemberGroups";
+import { MemberGroupRow } from "@/components/club/MemberGroupRow";
 import { apiSessionToSessionData, type SessionData } from "@/lib/sessionData";
 import { getJoinedSessions } from "@/lib/joinedSessionsStore";
 import {
@@ -72,9 +75,7 @@ export default function ClubScreen() {
   const focusFromRoute = Array.isArray(focusParam) ? focusParam[0] : focusParam;
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
   const [roster, setRoster] = useState<ClubRosterMember[]>([]);
-  const [userGroupId, setUserGroupId] = useState<"A" | "B" | "C" | "D" | null>(
-    null,
-  );
+  const [userGroupId, setUserGroupId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
@@ -140,30 +141,30 @@ export default function ClubScreen() {
         );
         setJoinedIds(new Set((joined ?? []).map((j) => j.sessionId)));
         setAdminSettings(adminCfg);
-        // TOI must use the same assignment as roster bucket counts
-        // (assignMemberToClubGroup), not a separate profile/pace inference.
+        // TOI: explicit color-group assignment only when member org is on.
+        // Never invent Élite / Groupe D for walk or opted-out clubs.
         const authUser = await getAuthUser();
-        const meOnRoster = authUser
-          ? (rosterResult.members ?? []).find((m) => m.userId === authUser.id)
-          : undefined;
-        if (meOnRoster) {
-          setUserGroupId(assignMemberToClubGroup(meOnRoster, adminCfg));
+        if (isMemberOrgEnabled(adminCfg) && authUser) {
+          setUserGroupId(memberAssignedGroupId(authUser.id, adminCfg));
+        } else if (
+          adminCfg?.activityStructure === "walk" ||
+          adminCfg?.activityStructure === "neutral" ||
+          !adminCfg?.memberOrgEnabled
+        ) {
+          setUserGroupId(null);
         } else {
-          const assigned =
-            authUser && adminCfg
-              ? memberGroupFromSettings(authUser.id, adminCfg)
-              : null;
-          if (assigned) {
-            setUserGroupId(assigned);
-          } else if (
-            adminCfg?.activityStructure === "walk" ||
-            adminCfg?.activityStructure === "neutral"
-          ) {
-            // Pace skipped / walk club: no invented home group.
-            setUserGroupId(null);
+          const meOnRoster = authUser
+            ? (rosterResult.members ?? []).find((m) => m.userId === authUser.id)
+            : undefined;
+          if (meOnRoster) {
+            setUserGroupId(assignMemberToClubGroup(meOnRoster, adminCfg));
           } else {
+            const assigned =
+              authUser && adminCfg
+                ? memberGroupFromSettings(authUser.id, adminCfg)
+                : null;
             setUserGroupId(
-              inferUserClubGroupId(profile, joined, paces),
+              assigned ?? inferUserClubGroupId(profile, joined, paces),
             );
           }
         }
@@ -209,7 +210,6 @@ export default function ClubScreen() {
     (primaryMembership?.role === "admin" ||
       primaryMembership?.role === "coach");
   const club = primaryMembership?.club;
-  const groupBuckets = bucketMembersByGroup(roster, adminSettings);
   const memberCount = roster.length > 0 ? roster.length : undefined;
   const foundedYear = formatFoundedYear(club?.createdAt);
 
@@ -493,66 +493,58 @@ export default function ClubScreen() {
               )}
             </View>
 
-            <SectionHeader
-              label={
-                adminSettings?.activityStructure === "walk"
-                  ? "GROUPES"
-                  : "GROUPES DE PACE"
-              }
-            />
-            {(isClubAdmin
-              ? CLUB_PACE_GROUP_DEFS
-              : CLUB_PACE_GROUP_DEFS.filter((group) => {
-                  const admin = adminSettings?.groups.find(
-                    (g) => g.id === group.id,
+            {isMemberOrgEnabled(adminSettings) &&
+            sortedActiveColorGroups(adminSettings).length > 0 ? (
+              <>
+                <SectionHeader label="GROUPES" />
+                {sortedActiveColorGroups(adminSettings).map((group) => {
+                  const colorBuckets = adminSettings
+                    ? bucketRosterByColorGroup(roster, adminSettings)
+                    : {};
+                  const bucket = colorBuckets[group.id] ?? {
+                    count: 0,
+                    sampleInitials: [],
+                  };
+                  return (
+                    <MemberGroupRow
+                      key={group.id}
+                      group={group}
+                      memberCount={bucket.count}
+                      sampleInitials={bucket.sampleInitials}
+                      isUserGroup={userGroupId === group.id}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(tabs)/club/group-detail",
+                          params: {
+                            clubId: primaryMembership?.clubId ?? "",
+                            groupId: group.id,
+                          },
+                        } as Href)
+                      }
+                    />
                   );
-                  return admin?.active !== false;
-                })
-            ).map((group) => {
-              const bucket = groupBuckets[group.id];
-              const adminGroup = adminSettings?.groups.find(
-                (g) => g.id === group.id,
-              );
-              const adminPace = adminGroup?.paceLabel;
-              const displayLabel =
-                adminGroup?.displayName?.trim() || group.label;
-              const isActive = adminGroup?.active !== false;
-              const sessionsWk = countSessionsThisWeekForGroup(
-                group.id,
-                roster,
-                weekSessionCount,
-                adminSettings,
-              );
-              return (
-                <ClubPaceGroupRow
-                  key={group.id}
-                  group={{
-                    ...group,
-                    label: displayLabel,
-                    paceLabel: adminPace ?? group.paceLabel,
-                  }}
-                  paceLabel={
-                    isActive
-                      ? adminPace
-                      : `${adminPace ?? group.paceLabel} · Inactif`
-                  }
-                  memberCount={bucket.count}
-                  sampleInitials={bucket.sampleInitials}
-                  sessionsThisWeek={sessionsWk}
-                  isUserGroup={userGroupId === group.id}
-                  isSelected={userGroupId === group.id}
+                })}
+              </>
+            ) : isClubAdmin && !isMemberOrgEnabled(adminSettings) ? (
+              <>
+                <SectionHeader label="GROUPES" />
+                <Pressable
+                  testID="club-enable-member-org"
                   onPress={() =>
-                    router.push({
-                      pathname: "/(tabs)/club/group-detail",
-                      params: {
-                        clubId: primaryMembership?.clubId ?? "",
-                        groupId: group.id,
-                      },
-                    } as Href)
+                    router.push("/(tabs)/club/settings" as Href)
                   }
-                />
-              );
-            })}
+                  style={styles.enableGroupsCard}
+                >
+                  <Text style={styles.enableGroupsTitle}>
+                    Organiser les membres
+                  </Text>
+                  <Text style={styles.enableGroupsSub}>
+                    Active des groupes couleur (optionnel) — sans imposer
+                    l’allure.
+                  </Text>
+                </Pressable>
+              </>
+            ) : null}
 
             {isClubAdmin ? (
               <>
@@ -795,6 +787,25 @@ const styles = StyleSheet.create({
     color: colors.accent.charcoal,
     fontSize: 15,
     fontWeight: "700",
+  },
+  enableGroupsCard: {
+    backgroundColor: colors.surface.s2,
+    borderRadius: 16,
+    borderWidth: hairline,
+    borderColor: colors.border.default,
+    padding: 16,
+    marginBottom: 8,
+  },
+  enableGroupsTitle: {
+    color: colors.text.primary,
+    fontSize: typography.sizes.base,
+    fontWeight: "700",
+  },
+  enableGroupsSub: {
+    color: colors.text.secondary,
+    fontSize: typography.sizes.sm,
+    lineHeight: 20,
+    marginTop: 6,
   },
   clubSwitcher: {
     paddingHorizontal: redesignTheme.screen.horizontalPadding,

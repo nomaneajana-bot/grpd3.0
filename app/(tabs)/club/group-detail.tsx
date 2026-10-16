@@ -41,6 +41,10 @@ import {
   getClubPaceGroupDef,
   type ClubPaceGroupId,
 } from "@/lib/clubPaceGroups";
+import {
+  memberAssignedGroupId,
+  memberGroupColor,
+} from "@/lib/clubMemberGroups";
 import { groupPolicyInfoText } from "@/lib/interGroupPolicy";
 import { useUnsavedChangesGuard } from "@/lib/useUnsavedChangesGuard";
 import type { ClubRosterMember } from "@/types/api";
@@ -62,7 +66,13 @@ export default function ClubGroupDetailScreen() {
     clubId?: string;
     groupId?: string;
   }>();
-  const gid = (groupId ?? "A") as ClubPaceGroupId;
+  const rawGroupId = groupId ?? "A";
+  const isLegacyPaceId =
+    rawGroupId === "A" ||
+    rawGroupId === "B" ||
+    rawGroupId === "C" ||
+    rawGroupId === "D";
+  const gid = (isLegacyPaceId ? rawGroupId : "A") as ClubPaceGroupId;
   const def = getClubPaceGroupDef(gid);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -113,16 +123,30 @@ export default function ClubGroupDetailScreen() {
     void load();
   }, [load]);
 
-  const displayName = settings ? getGroupDisplayName(gid, settings) : def.label;
-  const paceLabel =
-    settings?.groups.find((g) => g.id === gid)?.paceLabel ?? def.paceLabel;
+  const colorGroup = settings?.colorGroups?.find((g) => g.id === rawGroupId);
+  const displayName = colorGroup
+    ? colorGroup.name
+    : settings
+      ? getGroupDisplayName(gid, settings)
+      : def.label;
+  const paceLabel = colorGroup
+    ? colorGroup.note?.trim() || "Groupe membres"
+    : settings?.groups.find((g) => g.id === gid)?.paceLabel ?? def.paceLabel;
+  const accentColor = colorGroup
+    ? memberGroupColor(colorGroup.colorKey)
+    : def.dotColor;
 
   const membersInGroup = useMemo(() => {
     if (!settings) return [];
+    if (colorGroup || settings.memberOrgEnabled) {
+      return roster.filter(
+        (m) => memberAssignedGroupId(m.userId, settings) === rawGroupId,
+      );
+    }
     return roster.filter(
       (m) => assignMemberToClubGroup(m, settings) === gid,
     );
-  }, [roster, settings, gid]);
+  }, [roster, settings, gid, rawGroupId, colorGroup]);
 
   const isDirty = useMemo(() => {
     if (!initialSnapshotRef.current) return false;
@@ -206,14 +230,14 @@ export default function ClubGroupDetailScreen() {
         </Pressable>
         <View style={styles.headerRow}>
           <View style={styles.titleRow}>
-            <View style={[styles.dot, { backgroundColor: def.dotColor }]} />
+            <View style={[styles.dot, { backgroundColor: accentColor }]} />
             <Text style={styles.screenTitle} numberOfLines={2}>
               {displayName}
             </Text>
           </View>
-          {hasAdminAccess ? (
+          {hasAdminAccess && isLegacyPaceId && !colorGroup ? (
             <TextActionButton
-              label="Modifier"
+              label="modifier"
               variant="secondary"
               onPress={() =>
                 router.push({
@@ -238,10 +262,12 @@ export default function ClubGroupDetailScreen() {
               <Text style={styles.statLabel}>MEMBRES</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: def.dotColor }]}>
+              <Text style={[styles.statValue, { color: accentColor }]}>
                 {paceLabel}
               </Text>
-              <Text style={styles.statLabel}>ALLURE</Text>
+              <Text style={styles.statLabel}>
+                {colorGroup ? "NOTE" : "ALLURE"}
+              </Text>
             </View>
           </View>
 

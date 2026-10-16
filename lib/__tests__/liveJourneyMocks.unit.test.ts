@@ -51,14 +51,15 @@ describe("walk club admin defaults", () => {
     } = await import("../clubAdminStore");
     const walk = defaultWalkClubAdminSettings();
     expect(walk.activityStructure).toBe("walk");
-    const blob = JSON.stringify(walk.groups);
+    expect(walk.memberOrgEnabled).toBe(false);
+    expect(walk.colorGroups ?? []).toEqual([]);
+    const blob = JSON.stringify(walk);
     expect(blob).not.toMatch(/Élite|Elite|Sub 4:30/i);
-    expect(walk.groups.some((g) => /Conversation|Ouvert|Marche/i.test(g.displayName ?? ""))).toBe(
-      true,
-    );
 
     const run = defaultClubAdminSettings();
     expect(run.activityStructure).toBe("run");
-    expect(run.groups[0].displayName).toMatch(/Élite/);
+    expect(run.memberOrgEnabled).toBe(false);
+    expect(run.colorGroups ?? []).toEqual([]);
+    expect(JSON.stringify(run)).not.toMatch(/Élite|Elite|Sub 4:30/i);
   });
 });
