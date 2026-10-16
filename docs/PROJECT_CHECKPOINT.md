@@ -7,8 +7,8 @@
 **Batch 5 local gate:** **ACCEPTED** — tested `f8f378707a2b973e3fc2ae9e688f0580af09adff`  
 **Runtime diagnosis:** accepted — map `6b05559` / tip `4403447`  
 **Batch 6 local Codex correction:** **CLEARED** — tested `4dad7495bcb1239dcc65e2a451d07f99db9cf43d`  
-**Batch 6 predeploy packaging `tested_sha`:** *(see evidence after stamp)*  
-**Batch 6 packaging docs tip:**   
+**Batch 6 predeploy packaging `tested_sha`:** `1e6f49738819f27b5e49e4d60ee7f28d11e35223`  
+**Batch 6 packaging docs tip:** `66bf5faddacb21d0e99e6c13bde9039af94621ad`  
 **Batch 6 packaging evidence:** `docs/audit/batch6-predeploy-packaging/`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
@@ -22,7 +22,7 @@ Vercel project/branch settings inspection: **BLOCKED** (no auth/login).
 
 ## Exact next action
 
-1. **Codex** reviews packaging at the stamped tested SHA (logs + artifact paths + checklist).  
+1. **Codex** reviews packaging at `1e6f497` (logs + artifact paths + `PREVIEW_CHECKLIST.md`).  
 2. After clear: owner resolves only open checklist decisions (Preview `DATABASE_URL` / `AUTH_JWT_SECRET` / optional PIN allowlist / post-Preview client URL / Visit access).  
 3. No merge / prod / spending / credentials in git / OCIF.
 
@@ -33,7 +33,7 @@ Vercel project/branch settings inspection: **BLOCKED** (no auth/login).
 | Demo | CLEARED Batches 1–4; separate `dist-demo` packaging PASS |
 | Local PG Batch5 | ACCEPTED |
 | Local Batch6 dispatcher/Bearer/PIN | **CLEARED** at `4dad749` |
-| Local predeploy packaging | **PASS** (this tip) — not hosted acceptance |
+| Local predeploy packaging | **PASS** at `1e6f497` — not hosted acceptance |
 | Green-home Preview hosted API | **Not verified** · settings inspect **BLOCKED** |
 | Native / UAT | Not verified |
 
