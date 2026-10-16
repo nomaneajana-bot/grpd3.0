@@ -1518,9 +1518,6 @@ export default function CreateSessionScreen() {
    * (replaces FARTLEK/SORTIE/SEUIL chips + associated-workout picker).
    */
   const [structureNotes, setStructureNotes] = useState("");
-  /** Optional language — only when toggle on; never default to English. */
-  const [includeLanguage, setIncludeLanguage] = useState(false);
-  const [outingLanguage, setOutingLanguage] = useState("");
   /** Inline validation (web Alert dialogs are unreliable for harness). */
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -2040,8 +2037,6 @@ export default function CreateSessionScreen() {
         groupConfigs,
         outingTitle,
         outingPurpose,
-        includeLanguage,
-        outingLanguage,
       }),
     [
       spot,
@@ -2055,8 +2050,6 @@ export default function CreateSessionScreen() {
       groupConfigs,
       outingTitle,
       outingPurpose,
-      includeLanguage,
-      outingLanguage,
     ],
   );
 
@@ -2138,13 +2131,6 @@ export default function CreateSessionScreen() {
         setFormError("Lieu requis — choisis un lieu de rendez-vous.");
         return;
       }
-      if (includeLanguage && !outingLanguage.trim()) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setFormError(
-          "Langue — indique la langue, ou désactive l’option langue.",
-        );
-        return;
-      }
 
       const publishTimeMinutes = selectedHour * 60 + selectedMinute;
       if (!isSelectableOutingDateTime(dateISO, publishTimeMinutes)) {
@@ -2168,10 +2154,6 @@ export default function CreateSessionScreen() {
         walkSkipsPace || !usePaceGroups ? [] : effectiveGroups;
       const walkTitle = outingTitle.trim() || null;
       const walkPurpose = outingPurpose.trim() || null;
-      const walkLanguage =
-        includeLanguage && outingLanguage.trim()
-          ? outingLanguage.trim()
-          : null;
 
       if (isEditMode && editSessionId) {
         // Update existing session
@@ -2187,7 +2169,6 @@ export default function CreateSessionScreen() {
           genderRestriction: genderRestrictionUi,
           title: walkTitle,
           purpose: walkPurpose,
-          language: walkLanguage,
           structureNotes: structureTrimmed,
         });
         const sessionWithAudience = {
@@ -2218,7 +2199,6 @@ export default function CreateSessionScreen() {
           genderRestriction: genderRestrictionUi,
           title: walkTitle,
           purpose: walkPurpose,
-          language: walkLanguage,
           structureNotes: structureTrimmed,
         });
 
@@ -2456,45 +2436,6 @@ export default function CreateSessionScreen() {
               testID="session-purpose-input"
               accessibilityLabel="Objectif de la sortie"
             />
-            <Pressable
-              style={[styles.fieldRow, { marginTop: 12 }]}
-              onPress={() => {
-                const next = !includeLanguage;
-                setIncludeLanguage(next);
-                if (!next) setOutingLanguage("");
-              }}
-              testID="session-language-toggle"
-              accessibilityRole="switch"
-              accessibilityState={{ checked: includeLanguage }}
-              accessibilityLabel="Inclure une langue"
-            >
-              <Text style={styles.fieldLabel}>Inclure une langue</Text>
-              <Switch
-                value={includeLanguage}
-                onValueChange={(on) => {
-                  setIncludeLanguage(on);
-                  if (!on) setOutingLanguage("");
-                }}
-                trackColor={{ false: "#2a2f3a", true: colors.accent.primary }}
-                thumbColor="#ffffff"
-              />
-            </Pressable>
-            {includeLanguage ? (
-              <>
-                <Text style={[styles.fieldLabel, { marginTop: 8 }]}>
-                  Langue (optionnelle — aucune valeur par défaut)
-                </Text>
-                <TextInput
-                  style={styles.walkTextInput}
-                  value={outingLanguage}
-                  onChangeText={setOutingLanguage}
-                  placeholder="Ex. Français, darija…"
-                  placeholderTextColor={colors.text.tertiary}
-                  testID="session-language-input"
-                  accessibilityLabel="Langue de la sortie"
-                />
-              </>
-            ) : null}
             <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
               Structure / déroulé
             </Text>

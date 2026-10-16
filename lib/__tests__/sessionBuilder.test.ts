@@ -158,24 +158,8 @@ describe('sessionBuilder', () => {
     }
   });
 
-  it('uses user title and purpose; language only when provided', () => {
-    const withLang = buildSessionFromForm({
-      spot: 'Phare Corniche',
-      dateISO: futureISO(),
-      timeLabel: '09:00',
-      sessionType: 'MARCHE',
-      groupConfigs: [],
-      title: 'English by the sea',
-      purpose: 'Une marche pour pratiquer, à ton rythme.',
-      language: 'Anglais',
-    });
-    expect(withLang.session.title).toBe('English by the sea');
-    expect(withLang.session.typeLabel).toBe('LANGUES · MARCHE');
-    expect(withLang.session.volume).toBe('Anglais');
-    expect(withLang.session.coachAdvice).toMatch(/pratiquer/);
-    expect(withLang.session.experience?.format).toBe('language');
-
-    const noLang = buildSessionFromForm({
+  it('uses user title and purpose without language (organise UI removed)', () => {
+    const result = buildSessionFromForm({
       spot: 'Phare Corniche',
       dateISO: futureISO(),
       timeLabel: '09:00',
@@ -183,9 +167,13 @@ describe('sessionBuilder', () => {
       groupConfigs: [],
       title: 'Marche du dimanche',
       purpose: 'Balade tranquille',
+      structureNotes: '10 min échauffement · marche libre',
     });
-    expect(noLang.session.typeLabel).toBe('MARCHE');
-    expect(noLang.session.volume).not.toMatch(/English|Anglais/i);
-    expect(noLang.session.experience?.format).toBe('community');
+    expect(result.session.title).toBe('Marche du dimanche');
+    expect(result.session.typeLabel).toBe('MARCHE');
+    expect(result.session.coachAdvice).toBe('Balade tranquille');
+    expect(result.session.volume).toBe('10 min échauffement · marche libre');
+    expect(result.session.volume).not.toMatch(/English|Anglais/i);
+    expect(result.session.experience?.format).toBe('community');
   });
 });

@@ -114,10 +114,12 @@ async function assertModeFields(page, modeLabel, shotName) {
     .first()
     .isVisible()
     .catch(() => false);
+  const langToggle = await page.getByTestId("session-language-toggle").count();
   check(`${modeLabel}_detail_block`, block > 0, `block=${block}`);
   check(`${modeLabel}_title`, title > 0 && titleVisible, `title=${title} visible=${titleVisible}`);
   check(`${modeLabel}_purpose`, purpose > 0, `purpose=${purpose}`);
   check(`${modeLabel}_structure`, structure > 0, `structure=${structure}`);
+  check(`${modeLabel}_no_language_toggle`, langToggle === 0, `langToggle=${langToggle}`);
 }
 
 async function main() {
