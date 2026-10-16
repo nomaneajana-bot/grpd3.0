@@ -8,7 +8,6 @@ import {
   TabIconHome,
   TabIconProfile,
   TabIconSessions,
-  TabIconWorkouts,
 } from "@/components/navigation/tab-icons";
 import { HapticTab } from "@/components/haptic-tab";
 import { experienceTheme } from "@/components/experiences/ExperienceUI";
@@ -54,9 +53,6 @@ export default function TabLayout() {
           if (route.name === "my-sessions") {
             return <TabIconSessions color={c} />;
           }
-          if (route.name === "workouts") {
-            return <TabIconWorkouts color={c} />;
-          }
           if (route.name === "club") {
             return <TabIconClub color={c} />;
           }
@@ -70,14 +66,8 @@ export default function TabLayout() {
     >
       <Tabs.Screen name="index" options={{ title: "Découvrir" }} />
       <Tabs.Screen name="my-sessions" options={{ title: "Mes sorties" }} />
-      {/* Advanced training stays available but secondary — not in the primary tab bar */}
-      <Tabs.Screen
-        name="workouts"
-        options={{
-          title: "Entraînement",
-          href: null,
-        }}
-      />
+      {/* workouts file kept as Redirect only — never shown in tab bar */}
+      <Tabs.Screen name="workouts" options={{ href: null }} />
       <Tabs.Screen name="club" options={{ title: "Clubs" }} />
       <Tabs.Screen name="profile" options={{ title: "Profil" }} />
     </Tabs>

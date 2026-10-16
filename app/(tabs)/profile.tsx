@@ -43,8 +43,8 @@ const UNITS_LABELS: Record<SettingsPreferences["units"], string> = {
 };
 
 /**
- * Primary community profile — membership identity only.
- * Training metrics live on /profile/training (secondary).
+ * Community profile — membership identity only.
+ * Advanced training (PRs / streak / workouts) removed from product surface.
  */
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
@@ -192,20 +192,6 @@ export default function ProfileScreen() {
               <Text style={styles.prefLink}>Tout gérer dans Paramètres ›</Text>
             </TouchableOpacity>
           </View>
-
-          <ProfileSectionHeader title="ENTRAÎNEMENT" />
-          <TouchableOpacity
-            style={styles.trainingRow}
-            onPress={() => router.push("/profile/training")}
-            accessibilityRole="button"
-            accessibilityLabel="Entraînement avancé"
-            testID="profile-training-link"
-          >
-            <Text style={styles.trainingTitle}>Entraînement avancé</Text>
-            <Text style={styles.trainingSub}>
-              Records, objectifs, profil physique et workouts
-            </Text>
-          </TouchableOpacity>
         </ScrollView>
       </ScreenContainer>
     </SafeAreaView>
@@ -225,9 +211,6 @@ type ProfileStyles = {
   prefValue: TextStyle;
   prefLink: TextStyle;
   prefDivider: ViewStyle;
-  trainingRow: ViewStyle;
-  trainingTitle: TextStyle;
-  trainingSub: TextStyle;
 };
 
 const styles = StyleSheet.create<ProfileStyles>({
@@ -297,24 +280,5 @@ const styles = StyleSheet.create<ProfileStyles>({
   prefDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border.default,
-  },
-  trainingRow: {
-    backgroundColor: colors.background.card,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.default,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 12,
-    gap: 4,
-  },
-  trainingTitle: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.base,
-    fontWeight: "600",
-  },
-  trainingSub: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
   },
 });

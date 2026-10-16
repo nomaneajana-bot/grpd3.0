@@ -247,29 +247,30 @@ try {
   const profileText = await bodyText();
   record(
     "profile_no_primary_streak_prs",
-    !/SÉRIE EN COURS|RECORDS PERSONNELS|Pas de PR pour l'instant|Sub-50 sur 10/i.test(
+    !/SÉRIE EN COURS|RECORDS PERSONNELS|Pas de PR pour l'instant|Sub-50 sur 10|Entraînement avancé/i.test(
       profileText,
-    ) && /Entraînement avancé/i.test(profileText),
-    "primary must not show streak/PR/goal cards",
+    ),
+    "primary must not show streak/PR/goal/advanced-training cards",
   );
   record(
-    "profile_has_training_link",
-    /Entraînement avancé/i.test(profileText),
+    "profile_training_removed",
+    !/Entraînement avancé|profile-training-link/i.test(profileText),
   );
   record("profile_has_clubs_section", /CLUBS|Aucun club|MEMBRE/i.test(profileText));
 
-  // Open training secondary
+  // Advanced training removed — leftover deep link must land on community profile
   try {
-    await clickTestId("profile-training-link");
-    await new Promise((r) => setTimeout(r, 1500));
-    await shot("06-training-secondary.png");
-    const trainText = await bodyText();
+    await page.goto(BASE + "/profile/training", { waitUntil: "networkidle0" });
+    await new Promise((r) => setTimeout(r, 1200));
+    await shot("06-training-redirect-profile.png");
+    const afterTrain = await bodyText();
     record(
-      "training_secondary_has_metrics",
-      /OBJECTIF|RECORDS|PROFIL PHYSIQUE|WORKOUTS/i.test(trainText),
+      "training_route_redirects_to_profile",
+      /Profil|CLUBS|PRÉFÉRENCES/i.test(afterTrain) &&
+        !/SÉRIE EN COURS|RECORDS PERSONNELS|Entraînement avancé/i.test(afterTrain),
     );
   } catch (e) {
-    record("training_secondary_has_metrics", false, String(e));
+    record("training_route_redirects_to_profile", false, String(e));
   }
 
   // Create club 1
