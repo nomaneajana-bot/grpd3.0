@@ -259,4 +259,4 @@ Source-reviewed associations only — **not runtime VERIFIED**.
 **Batch 3 (demo evidence executed, awaiting Codex):** M01 `/idea/[id]`, M02 purpose-led `/club/create`, M03 club home purpose/outings + organise association, ISSUE-002.  
 **Batch 3 (DEMO CLEARED functional):** idea → club create → club home → organise (ISSUE-002); Tab supported, not full a11y.  
 **Batch 4 (DEMO CLEARED):** TOI / roster (ISSUE-011) at `3dff8ed`.  
-**Batch 5 (local PG PASS; hosted BLOCKED):** leave + cancel-request (ISSUE-004) at `3befb19` (Codex `88da14e` fixes).
+**Batch 5 (local PG PASS; hosted BLOCKED not PASS):** leave + cancel-request (ISSUE-004) at `f8f3787` (actual route POST auth closeout).

@@ -1,0 +1,10 @@
+tested_sha=f8f378707a2b973e3fc2ae9e688f0580af09adff
+checked_at=2026-10-16T00:08:58Z
+url=https://grpd30-git-cursor-green-home-ux-j-75ed8a-noas-projects-0b3f311d.vercel.app
+HTTP/2 302
+cache-control: no-store, max-age=0
+content-type: text/plain
+location: https://vercel.com/sso-api?...
+server: Vercel
+set-cookie: _vercel_sso_nonce=***REDACTED***
+note: Hosted Preview remains SSO-BLOCKED (not PASS). Protection unchanged. No credentials used.

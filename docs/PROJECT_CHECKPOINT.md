@@ -7,17 +7,17 @@
 **Batch 2 tip (DEMO gate CLEARED):** `6d36691234ec4d8fbdddd4ff92ba818e02b1d957`  
 **Batch 3 tip (DEMO gate CLEARED functional):** `75356094d741c63cbfbfca2fa7301042784a2fbf`  
 **Batch 4 tip (DEMO gate CLEARED):** `3dff8ed2f2af5075fd3fd71660a2dd307d9c2851` (Codex accepted correction)  
-**Batch 5 docs tip:** `366590f8a04eca75041fc1b635c8a0305d9b86bd`  
-**Batch 5 `tested_sha`:** `3befb19c9627973ebefa72a438e38b429f0c44b7`  
-**Batch 5 evidence:** `docs/audit/batch5-leave-cancel/evidence.json` — **17 PASS / 0 FAIL / 2 BLOCKED** · `hosted_claim: false` · env `local_postgres_integration` · Codex base `88da14e`  
+**Batch 5 docs tip:** *(stamped after this commit)*  
+**Batch 5 `tested_sha`:** `f8f378707a2b973e3fc2ae9e688f0580af09adff`  
+**Batch 5 evidence:** `docs/audit/batch5-leave-cancel/evidence.json` — **17 PASS / 0 FAIL / 2 BLOCKED** · `hosted_claim: false` · env `local_postgres_integration` · Codex base `0309752`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
 
-**BATCH 5 Codex `88da14e` fixes COMPLETE — STOP for Codex re-review.**  
-ISSUE-004: leave/cancel races serialized; conditional cancel; route 401/actor isolation; lifecycle rollback; French UX; cancel UI ungated from DEMO_MODE.  
-Local PostgreSQL integration **PASS** (15/15 PG + 5/5 unit).  
-Hosted Preview dual-browser journey **BLOCKED** (SSO 302; protection unchanged; no credential changes). ISSUE-008 remains blocked on hosted access.  
+**BATCH 5 Codex route-auth closeout COMPLETE — STOP for Codex re-review.**  
+ISSUE-004: actual `route.ts` POST handlers tested for 401 + actor isolation; races/rollback retained; French UX; cancel UI ungated.  
+Local PostgreSQL integration **PASS** (15/15 PG + 5/5 unit). Logs under `docs/audit/batch5-leave-cancel/logs/`.  
+Hosted Preview dual-browser journey **BLOCKED** (SSO 302 — not PASS). ISSUE-008 remains blocked.  
 No merge / production / spending / OCIF / next batch.
 
 ## Preview (Nouamane)
@@ -28,7 +28,7 @@ No merge / production / spending / OCIF / next batch.
 
 ## Exact next action
 
-1. **Codex** re-reviews Batch 5 at `3befb19` (race/auth/rollback/French/DEMO_MODE-cancel + PG evidence + hosted blocker).  
+1. **Codex** re-reviews Batch 5 at `f8f3787` (actual route POST auth 401 + body isolation + race outcomes + repo logs + hosted BLOCKED).  
 2. After clear: hosted retest when authorized Preview/Test env exists (ISSUE-004 hosted VERIFIED / ISSUE-008).  
 3. No merge / prod / spending / credentials / OCIF.
 
@@ -38,7 +38,7 @@ No merge / production / spending / OCIF / next batch.
 |---------|--------|
 | Demo | Batch1–4 CLEARED; mock leave/cancel preserved |
 | Hosted | Code landed; **not** VERIFIED (SSO blocker). ISSUE-004 FIXED AWAITING RETEST (hosted) |
-| Local PG integration | PASS at `3befb19` (15/15 + races) |
+| Local PG integration | PASS at `f8f3787` (15/15; actual route POST auth) |
 | Native | Not verified |
 | UAT | Not run |
 

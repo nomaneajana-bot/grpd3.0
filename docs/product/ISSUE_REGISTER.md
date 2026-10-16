@@ -14,7 +14,7 @@
 **Batch 4 tip (DEMO gate CLEARED):** `3dff8ed2f2af5075fd3fd71660a2dd307d9c2851`  
 **Batch 4 DEMO gate:** **CLEARED** (Codex accepted correction — real admin move of B)  
 **Batch 4 evidence:** `docs/audit/batch4-toi-roster/evidence.json` — **37 PASS / 0 FAIL / 3 BLOCKED**  
-**Batch 5 tip under test / `tested_sha`:** `3befb19c9627973ebefa72a438e38b429f0c44b7` (Codex base `88da14e`)  
+**Batch 5 tip under test / `tested_sha`:** `f8f378707a2b973e3fc2ae9e688f0580af09adff` (Codex base `0309752`)  
 **Batch 5 evidence:** `docs/audit/batch5-leave-cancel/evidence.json` — **17 PASS / 0 FAIL / 2 BLOCKED** · `local_postgres_integration` · `hosted_claim: false`  
 **Method:** Statuses are NOT CHECKED / FAILED / FIXED AWAITING RETEST / VERIFIED / BLOCKED.  
 **Capability:** IMPLEMENTED / PARTIAL / NOT IMPLEMENTED / UNSUPPORTED — never treat NOT IMPLEMENTED as PASS.
@@ -67,12 +67,12 @@
 |-------|-------|
 | Route / journey | Leave club / cancel pending · Clubs UI → API |
 | Expected meaning | Connected backend supports leave + cancel-request; UI effects persist; private access revoked |
-| Observed behavior | Routes: `POST …/leave`, `POST …/cancel-request`. Actor-only (401). Leave=approved; cancel=pending conditional delete. Sole/concurrent last-admin → `LAST_ADMIN`. Members-only attendance → `left` on leave; lifecycle rollback tested. Connected cancel UI ungated from DEMO_MODE. Local PG 15/15 PASS at `3befb19`. Hosted Preview journey **BLOCKED** (SSO). Demo mock unchanged. |
+| Observed behavior | Routes: `POST …/leave`, `POST …/cancel-request`. Auth via `requireAuth`/`req.auth` — **actual route POST** tests prove 401 + body `userId` ignored. Leave=approved; cancel=pending conditional delete. Sole/concurrent last-admin → `LAST_ADMIN`. Lifecycle rollback + race outcomes recorded. Cancel UI ungated from DEMO_MODE. Local PG 15/15 PASS at `f8f3787`. Hosted Preview **BLOCKED** (SSO) — not PASS. Demo mock unchanged. |
 | Capability | Demo: IMPLEMENTED · Hosted code: IMPLEMENTED · Hosted VERIFIED: **no** |
 | Owner | Cursor |
-| Candidate SHA / env | `3befb19` · local_postgres_integration · Preview SSO-gated |
-| Evidence | `docs/audit/batch5-leave-cancel/` + `/opt/cursor/artifacts/batch5-*-codex.log` |
-| Next action | Codex re-review of `88da14e` fixes; hosted retest when authorized Preview/Test env exists — never PASS hosted until then |
+| Candidate SHA / env | `f8f3787` · local_postgres_integration · Preview SSO-gated |
+| Evidence | `docs/audit/batch5-leave-cancel/` + `docs/audit/batch5-leave-cancel/logs/` |
+| Next action | Codex re-review of route-auth closeout; hosted retest when authorized Preview/Test env exists — never PASS hosted until then |
 | Status | **FIXED AWAITING RETEST** (hosted) |
 
 ### ISSUE-005 — P2 — VERIFIED (process)
@@ -229,20 +229,23 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 **Theme:** Connected leave-club + cancel-pending-request (ISSUE-004) · related ISSUE-008 access  
 **Excluded:** merge/prod, credential/security changes, OCIF, inventing admin transfer/deletion, claiming hosted PASS  
-**`tested_sha`:** `3befb19c9627973ebefa72a438e38b429f0c44b7` (fixes vs Codex `88da14e`)  
+**`tested_sha`:** `f8f378707a2b973e3fc2ae9e688f0580af09adff` (route-auth closeout vs Codex `0309752`)  
 **Evidence:** `docs/audit/batch5-leave-cancel/` — **17 PASS / 0 FAIL / 2 BLOCKED**
 
 ### Exit criteria
 
-- [x] Routes `leave` + `cancel-request` (authenticated actor only; 401 tested)  
+- [x] Routes `leave` + `cancel-request` — **actual POST handlers** return 401 on missing/invalid auth  
+- [x] Actor isolation: body-supplied `userId` cannot override `req.auth`  
 - [x] Pending → cancel (conditional); approved → leave; wrong status rejected  
 - [x] Sole admin leave rejected; concurrent last-admin race serialized  
 - [x] Never delete club / other users as side effect  
 - [x] Members-only attendance revoked on leave; public attendance unchanged  
-- [x] Duplicate cancel race, cancel-vs-approval race, lifecycle rollback, persistence — PG  
+- [x] Duplicate cancel race; cancel-vs-approval records both outcomes (no swallowed errors)  
+- [x] Lifecycle rollback (membership + attendance)  
 - [x] Connected cancel UI not DEMO_MODE-gated  
 - [x] French errors without internal API/design wording  
-- [x] Hosted access checked — SSO 302 blocker reported (no credential changes)  
+- [x] Repo-relative sanitized logs under `docs/audit/batch5-leave-cancel/logs/`  
+- [x] Hosted access checked — SSO 302 **BLOCKED** (not PASS; no credential changes)  
 - [ ] Hosted dual-browser VERIFIED (BLOCKED)  
 - [ ] Codex acceptance  
 

@@ -1,0 +1,17 @@
+
+> grpd3.0@1.0.0 test:unit
+> jest --testPathIgnorePatterns=integration --testPathPattern=clubMembershipLifecycle
+
+PASS lib/__tests__/clubMembershipLifecycle.unit.test.ts
+  evaluateLeaveEligibility
+    ✓ allows idempotent leave when membership already absent (2 ms)
+    ✓ rejects pending membership with user-facing French (no API jargon)
+    ✓ rejects sole approved admin leave with user-facing French (no invent jargon) (1 ms)
+    ✓ allows approved member leave
+    ✓ allows admin leave when another approved admin remains
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        1.25 s, estimated 2 s
+Ran all test suites matching /clubMembershipLifecycle/i.

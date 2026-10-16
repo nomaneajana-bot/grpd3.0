@@ -1,9 +1,10 @@
 {
   "batch": "Batch 5 — ISSUE-004 leave / cancel-request (+ ISSUE-008 access)",
   "issues": ["ISSUE-004", "ISSUE-008"],
-  "tested_sha": "3befb19c9627973ebefa72a438e38b429f0c44b7",
-  "tip_sha": "3befb19c9627973ebefa72a438e38b429f0c44b7",
-  "codex_review_base": "88da14e",
+  "tested_sha": "f8f378707a2b973e3fc2ae9e688f0580af09adff",
+  "tip_sha": "f8f378707a2b973e3fc2ae9e688f0580af09adff",
+  "codex_review_base": "0309752",
+  "prior_code_sha": "3befb19c9627973ebefa72a438e38b429f0c44b7",
   "branch": "cursor/green-home-ux-join-3184",
   "environment": "local_postgres_integration",
   "hosted_claim": false,
@@ -22,18 +23,27 @@
     "concurrency": "FOR UPDATE on approved admins + Serializable + retry"
   },
   "demo_behavior": "preserved (mock leave/cancel unchanged)",
+  "auth_test_method": {
+    "handlers": [
+      "app/api/v1/clubs/[id]/leave/route.ts#POST",
+      "app/api/v1/clubs/[id]/cancel-request/route.ts#POST"
+    ],
+    "contract": "requireAuth(req) → req.auth?.user?.id (lib/server/auth-helpers.ts)",
+    "request_input": "Request-compatible NextRequest via test/shims/next-server.ts (next package not a workspace dependency)",
+    "removed_wrappers": "runAuthenticatedLeave / runAuthenticatedCancelRequest / requireActorUserId deleted (were not called by routes)"
+  },
   "checks": {
     "unit_evaluateLeaveEligibility": {
       "ok": true,
       "detail": "5/5 incl. French copy without API jargon"
     },
-    "pg_route_auth_401": {
+    "pg_route_auth_401_actual_handlers": {
       "ok": true,
-      "detail": "null/undefined/empty actor → 401 leave+cancel; rows untouched"
+      "detail": "actual POST leave+cancel: missing/null/empty/non-string auth → Response 401 UNAUTHORIZED; membership count unchanged"
     },
-    "pg_actor_isolation": {
+    "pg_route_actor_isolation_body_userid_ignored": {
       "ok": true,
-      "detail": "outsider leave alreadyAbsent; outsider cancel 404; approved cancel 409; others intact"
+      "detail": "auth outsider + body.userId=member/pending does not mutate those rows; auth member leave removes only self"
     },
     "pg_approved_leave_revokes_members_only_attendance": {
       "ok": true,
@@ -73,7 +83,7 @@
     },
     "pg_race_cancel_vs_approval": {
       "ok": true,
-      "detail": "12 iterations; never deletes approved; cancel WRONG_STATUS or ok"
+      "detail": "12 iterations; Promise.allSettled both outcomes; only cancel-won (ok+approveCount0) or approve-won (WRONG_STATUS+count1); unexpected reject fails"
     },
     "pg_lifecycle_rollback_membership_and_attendance": {
       "ok": true,
@@ -89,17 +99,17 @@
     },
     "ui_cancel_not_demo_mode_gated": {
       "ok": true,
-      "detail": "club-cancel-pending-btn always rendered; DEMO_MODE unsupported branch removed"
+      "detail": "club-cancel-pending-btn always rendered (prior closeout; source still ungated)"
     },
     "hosted_dual_browser_journey": {
       "ok": false,
       "status": "BLOCKED",
-      "detail": "SSO 302; no authorized test Preview/Test env"
+      "detail": "SSO 302; no authorized test Preview/Test env — not PASS"
     },
     "issue_008_multi_context": {
       "ok": false,
       "status": "BLOCKED",
-      "detail": "depends on hosted creds; SSO protection only"
+      "detail": "depends on hosted creds; SSO protection only — not PASS"
     }
   },
   "summary": {
@@ -110,10 +120,10 @@
   },
   "screenshots": [],
   "logs": [
-    "/opt/cursor/artifacts/batch5-unit-codex.log",
-    "/opt/cursor/artifacts/batch5-pg-integration-codex.log",
-    "/opt/cursor/artifacts/batch5-hosted-sso-blocker.log"
+    "docs/audit/batch5-leave-cancel/logs/unit-lifecycle.log",
+    "docs/audit/batch5-leave-cancel/logs/pg-integration.log",
+    "docs/audit/batch5-leave-cancel/logs/hosted-sso-blocker.log"
   ],
-  "note": "Codex 88da14e fixes retested at 3befb19. No hosted PASS. Isolated DB only.",
-  "generated_at": "2026-10-15T19:54:00.000Z"
+  "note": "Codex 0309752/3befb19 gap closed: auth tests call actual route POST exports. Hosted SSO BLOCKED not PASS. Local PG only. No cloud-localhost advertised as laptop preview.",
+  "generated_at": "2026-10-16T00:09:00.000Z"
 }
