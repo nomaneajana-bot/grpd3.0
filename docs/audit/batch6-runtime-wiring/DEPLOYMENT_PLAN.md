@@ -1,6 +1,6 @@
 # Batch6 — reviewed deployment plan (no deploy this batch)
 
-**Code tip tested locally:** *(updated after Codex corrections — see evidence.json `tested_sha`)*  
+**Code tip tested locally:** `4dad7495bcb1239dcc65e2a451d07f99db9cf43d`  
 **Scope:** plan only — Cursor does **not** deploy, create Neon/Vercel resources, or change project security in this batch.
 
 ## Target

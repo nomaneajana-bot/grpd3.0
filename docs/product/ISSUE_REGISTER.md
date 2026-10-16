@@ -17,8 +17,8 @@
 **Batch 5 local gate:** **ACCEPTED** — tested `f8f378707a2b973e3fc2ae9e688f0580af09adff`  
 **Batch 5 evidence:** `docs/audit/batch5-leave-cancel/` · `hosted_claim: false`  
 **Runtime diagnosis:** accepted — `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md`  
-**Batch 6 local wiring:** tested `83b5e096d4f17ade3cd1660c7a1293f7d2906cbf` — dispatcher+Bearer local PASS; **no hosted deploy this batch**  
-**Batch 6 evidence:** `docs/audit/batch6-runtime-wiring/`  
+**Batch 6 local wiring:** tested `4dad7495bcb1239dcc65e2a451d07f99db9cf43d` — jose JWT + PIN login + real connected tests (Codex corrections); **no hosted deploy this batch**  
+**Batch 6 evidence:** `docs/audit/batch6-runtime-wiring/` · prior review `74fef39`/`83b5e09` NOT cleared  
 **Method:** Statuses are NOT CHECKED / FAILED / FIXED AWAITING RETEST / VERIFIED / BLOCKED.  
 **Capability:** IMPLEMENTED / PARTIAL / NOT IMPLEMENTED / UNSUPPORTED — never treat NOT IMPLEMENTED as PASS.
 
@@ -70,12 +70,12 @@
 |-------|-------|
 | Route / journey | Leave club / cancel pending · Clubs UI → API |
 | Expected meaning | Connected backend supports leave + cancel-request; UI effects persist; private access revoked |
-| Observed behavior | **Local Batch5+6:** leave/cancel lifecycle preserved; Vercel entry+dispatch+cancel-request+health+Bearer auth PASS at `83b5e09` (21 PG). Connected client + missing-URL fail tested locally. **Hosted:** not deployed/verified this batch — needs Preview `DATABASE_URL`+`AUTH_JWT_SECRET` for this branch (D02 DB/bypass not assumed). Demo mock still works. |
+| Observed behavior | **Local Batch5+6 (Codex corrections):** leave/cancel lifecycle preserved; jose Bearer + PIN login on dispatch; connected client uses real resolver (no spy); login→token→protected leave PASS at `4dad749` (PG 22). **Hosted:** not deployed/verified — Preview settings **UNVERIFIED** (not inspected). Demo mock still works. |
 | Capability | Demo: IMPLEMENTED · Local API mount: IMPLEMENTED · Hosted VERIFIED: **no** |
 | Owner | Cursor (code done locally) + owner (Preview env/access) |
-| Candidate SHA / env | `83b5e09` · local_postgres_integration |
+| Candidate SHA / env | `4dad749` · local_postgres_integration |
 | Evidence | `docs/audit/batch6-runtime-wiring/` + Batch5 logs |
-| Next action | Codex review Batch6; then owner Preview env + deploy verify per `DEPLOYMENT_PLAN.md` — never PASS hosted until health JSON + leave/cancel on Preview |
+| Next action | Codex re-review Batch6 at `4dad749`; then owner Preview env + deploy verify per `DEPLOYMENT_PLAN.md` — never PASS hosted until health JSON + leave/cancel on Preview |
 | Status | **FIXED AWAITING RETEST** (hosted; local wiring done; Preview env/access remaining) |
 
 ### ISSUE-005 — P2 — VERIFIED (process)
@@ -240,13 +240,14 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 **Map:** `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md` (`6b05559`)
 
-## Batch 6 — LOCAL PASS (hosted deploy not run)
+## Batch 6 — LOCAL PASS after Codex corrections (hosted deploy not run)
 
-**Theme:** Selective D02-style dispatch + Bearer on green-home; preserve Batch5 semantics; cancel-request + health  
-**`tested_sha`:** `83b5e096d4f17ade3cd1660c7a1293f7d2906cbf`  
-**Evidence:** `docs/audit/batch6-runtime-wiring/` — PG 21/21 · unit 11/11 · `deploy_claim: false`  
-**Plan:** `DEPLOYMENT_PLAN.md` (Preview env for this branch; no D02 DB assumption)  
-**STOP:** Codex review before Preview deploy
+**Theme:** Selective D02-style dispatch + jose Bearer + PIN login; preserve Batch5 semantics; cancel-request + health  
+**`tested_sha`:** `4dad7495bcb1239dcc65e2a451d07f99db9cf43d`  
+**Prior review:** `74fef39` / `83b5e09` — NOT cleared  
+**Evidence:** `docs/audit/batch6-runtime-wiring/` — PG 22/22 · unit 113/113 · typecheck PASS · `deploy_claim: false`  
+**Plan:** `DEPLOYMENT_PLAN.md` (Preview settings **UNVERIFIED**; no D02 DB assumption; no new DB by agent)  
+**STOP:** Codex re-review before Preview deploy
 
 ### Exit criteria
 

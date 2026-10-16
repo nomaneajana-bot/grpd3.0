@@ -6,23 +6,23 @@
 **Batch 1–4:** DEMO gates CLEARED (see prior tips)  
 **Batch 5 local gate:** **ACCEPTED** — tested `f8f378707a2b973e3fc2ae9e688f0580af09adff`  
 **Runtime diagnosis:** accepted — map `6b05559` / tip `4403447`  
-**Batch 6 `tested_sha`:** `83b5e096d4f17ade3cd1660c7a1293f7d2906cbf`  
-**Batch 6 docs tip:** `c7dfe327a7c346fb9521ca38280bfed98e8ba31f`  
-**Batch 6 evidence:** `docs/audit/batch6-runtime-wiring/` — local PG **21/21** + unit **11/11** · `hosted_claim: false` · `deploy_claim: false`  
+**Batch 6 `tested_sha`:** `4dad7495bcb1239dcc65e2a451d07f99db9cf43d`  
+**Batch 6 evidence:** `docs/audit/batch6-runtime-wiring/` — local PG **22/22** + unit **113/113** + typecheck PASS · `hosted_claim: false` · `deploy_claim: false`  
+**Prior Codex Batch6 review:** `74fef39` / `83b5e09` — **NOT cleared**; corrections in tested SHA above  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
 
-**BATCH 6 LOCAL RUNTIME INTEGRATION COMPLETE — STOP for Codex review.**  
-Dispatcher + Bearer auth + cancel-request registration + health JSON landed and tested locally against disposable Postgres (synthetic `AUTH_JWT_SECRET`).  
-Batch5 leave/cancel transaction semantics preserved. Demo mode unit still PASS.  
-**No deploy / Production / merge / spending / OCIF / Neon-Vercel rebuild this batch.**  
+**BATCH 6 CODEX CORRECTIONS COMPLETE — STOP for Codex re-review.**  
+jose JWT restored (strict claims) · PIN login on dispatcher · real connected resolver tests · login→token→protected · server typecheck · deploy-plan settings **UNVERIFIED**.  
+Batch5 leave/cancel transaction semantics preserved. Demo/apiMode unit still PASS.  
+**No deploy / Production / merge / spending / OCIF / Neon-Vercel rebuild / new DB this batch.**  
 Deployment plan (review only): `docs/audit/batch6-runtime-wiring/DEPLOYMENT_PLAN.md`.
 
 ## Exact next action
 
-1. **Codex** reviews Batch6 at `83b5e09` (entry/dispatch/auth/tests/logs + deployment plan).  
-2. After clear: owner sets Preview `DATABASE_URL` + `AUTH_JWT_SECRET` for **this** branch (isolated DB — not assumed D02); then Preview verify health + leave/cancel.  
+1. **Codex** re-reviews Batch6 at `4dad749` (jose/claims, connected resolver, PIN login path, typecheck, UNVERIFIED plan).  
+2. After clear: owner confirms/sets Preview `DATABASE_URL` + `AUTH_JWT_SECRET` for **this** branch (isolated DB — not assumed D02; agent does not create DB); then Preview verify health + leave/cancel.  
 3. No merge / prod / spending / credentials in git / OCIF.
 
 ## Surfaces
@@ -31,8 +31,8 @@ Deployment plan (review only): `docs/audit/batch6-runtime-wiring/DEPLOYMENT_PLAN
 |---------|--------|
 | Demo | CLEARED Batches 1–4; mock leave/cancel preserved; apiMode unit PASS |
 | Local PG Batch5 | ACCEPTED |
-| Local Batch6 dispatcher/Bearer | **PASS** at `83b5e09` |
-| Green-home Preview hosted API | **Not verified** (no deploy this batch; plan ready) |
+| Local Batch6 dispatcher/Bearer/PIN | **PASS** at `4dad749` (Codex corrections) |
+| Green-home Preview hosted API | **Not verified** (no deploy; settings UNVERIFIED) |
 | D02 Preview/DB | Historical only — not assumed for this branch |
 | Native / UAT | Not verified |
 
