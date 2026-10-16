@@ -49,7 +49,7 @@ export default function OnboardingCreateClubScreen() {
     >
       <OnboardingTitle
         title="Ton club"
-        subtitle="Nom affiché aux coureurs. Les groupes A–D sont créés par défaut."
+        subtitle="Nom affiché aux membres. Tu pourras ajuster les groupes ensuite."
       />
       <OnboardingField
         label="NOM DU CLUB"

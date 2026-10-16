@@ -1,5 +1,5 @@
 import { type Href, router } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Linking, StyleSheet, Text } from "react-native";
 
 import { CountryPhoneInput } from "@/components/onboarding/CountryPhoneInput";
@@ -7,11 +7,12 @@ import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
 import { OnboardingTitle } from "@/components/onboarding/OnboardingTitle";
 import { colors, typography } from "@/constants/ui";
 import { setUseMockApi } from "@/lib/authStore";
-import { DEMO_MODE } from "@/lib/featureFlags";
+import { DEMO_MODE, DEMO_OTP_CODE } from "@/lib/featureFlags";
 import { normalizePhone } from "@/lib/phone-normalize";
 import { useOnboarding } from "@/hooks/useOnboarding";
 
 const DEMO_PHONE_DIGITS = "708060337";
+const MOCK_OTP_CODE = "123456";
 
 function isDemoPhoneDigits(local: string): boolean {
   const d = local.replace(/\D/g, "");
@@ -23,6 +24,15 @@ export default function OnboardingPhoneScreen() {
   const [digits, setDigits] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const localDigits = digits.replace(/\D/g, "");
+  const simMode = DEMO_MODE || isDemoPhoneDigits(localDigits);
+  const modeHint = useMemo(() => {
+    if (!simMode) return null;
+    return DEMO_MODE
+      ? `Simulation démo · code ${DEMO_OTP_CODE} — aucun SMS réel`
+      : `Simulation mock · code ${MOCK_OTP_CODE} — aucun SMS réel`;
+  }, [simMode]);
+
   const handleContinue = async () => {
     const local = digits.replace(/\D/g, "");
     if (local.length < 9) {
@@ -31,7 +41,6 @@ export default function OnboardingPhoneScreen() {
     }
     setError(null);
     const phone = normalizePhone(local);
-    // Same rule as returning-login: dedicated mock phone / DEMO → mock transport.
     if (DEMO_MODE || isDemoPhoneDigits(local)) {
       await setUseMockApi(true);
     }
@@ -41,15 +50,24 @@ export default function OnboardingPhoneScreen() {
 
   return (
     <OnboardingScreen
-      primaryLabel="Recevoir le code"
+      primaryLabel={simMode ? "Continuer (simulation)" : "Recevoir le code"}
       onPrimaryPress={() => void handleContinue()}
       primaryDisabled={digits.length < 9}
     >
       <OnboardingTitle
         title="Ton numéro"
-        subtitle="On t'envoie un code pour vérifier. C'est gratuit et tu peux le changer plus tard."
+        subtitle={
+          simMode
+            ? "Mode simulation — aucun SMS n’est envoyé. Entre le code indiqué ci-dessous à l’étape suivante."
+            : "On t’envoie un code pour vérifier. C’est gratuit et tu peux le changer plus tard."
+        }
       />
       <CountryPhoneInput value={digits} onChange={setDigits} />
+      {modeHint ? (
+        <Text style={styles.modeHint} testID="onboarding-phone-sim-hint">
+          {modeHint}
+        </Text>
+      ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Text style={styles.legal}>
         En continuant, tu acceptes nos{" "}
@@ -73,6 +91,12 @@ export default function OnboardingPhoneScreen() {
 }
 
 const styles = StyleSheet.create({
+  modeHint: {
+    color: colors.text.accent,
+    marginTop: 12,
+    fontSize: typography.sizes.sm,
+    fontWeight: "600",
+  },
   error: {
     color: colors.text.error,
     marginTop: 10,
