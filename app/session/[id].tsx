@@ -1129,12 +1129,40 @@ export default function SessionScreen() {
                             ? "Marche en groupe. Accessible à tous — aucun rythme de course imposé."
                             : "Séance d'entraînement structurée pour améliorer la performance."}
           </Text>
-          {(session.typeLabel || "").toUpperCase().startsWith("LANGUES") &&
-          session.volume?.trim() ? (
-            <Text style={styles.languageMeta} testID="session-language-label">
-              Langue · {session.volume.trim()}
-            </Text>
-          ) : null}
+          {(() => {
+            const typeUpper = (session.typeLabel || "").toUpperCase();
+            const vol = session.volume?.trim() || "";
+            if (!vol) return null;
+            const isLangues = typeUpper.startsWith("LANGUES");
+            // Legacy: language-only walks stored the language string in volume.
+            const languageOnly =
+              isLangues &&
+              vol.length <= 40 &&
+              !/[·•]/.test(vol) &&
+              !/\d+\s*(min|×|x)/i.test(vol);
+            if (languageOnly) {
+              return (
+                <Text style={styles.languageMeta} testID="session-language-label">
+                  Langue · {vol}
+                </Text>
+              );
+            }
+            return (
+              <>
+                <Text
+                  style={[styles.infoLabelSmall, { marginTop: 16, marginBottom: 8 }]}
+                >
+                  Structure / déroulé
+                </Text>
+                <Text
+                  style={styles.descriptionText}
+                  testID="session-structure-text"
+                >
+                  {vol}
+                </Text>
+              </>
+            );
+          })()}
         </View>
 
         {/* Workout Summary Card */}

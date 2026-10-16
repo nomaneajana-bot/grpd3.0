@@ -99,7 +99,7 @@ const phoneRoutes = [
   ["07-outing-create-phone", "/session/create"],
   ["08-profile-phone", "/profile"],
   ["09-settings-phone", "/profile/settings"],
-  ["10-training-phone", "/profile/training"],
+  ["10-profile-after-training-removed", "/(tabs)/profile"],
 ];
 
 for (const [name, route] of phoneRoutes) {

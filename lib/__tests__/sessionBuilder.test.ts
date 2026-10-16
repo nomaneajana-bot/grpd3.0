@@ -40,16 +40,17 @@ describe('sessionBuilder', () => {
   });
 
   it('should generate dateISO and timeMinutes', () => {
+    // Use a future slot — today 06:00 fails once wall-clock passes 06:00.
     const result = buildSessionFromForm({
       spot: 'Marina',
-      dateISO: todayISO(),
-      timeLabel: '06:00',
+      dateISO: futureISO(1),
+      timeLabel: '18:30',
       sessionType: 'FARTLEK',
       groupConfigs: mockGroupConfigs,
     });
 
     expect(result.session.dateISO).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(result.session.timeMinutes).toBe(360); // 6:00 = 360 minutes
+    expect(result.session.timeMinutes).toBe(18 * 60 + 30);
   });
 
   it('should set recommendedGroupId to C by default when C active', () => {
@@ -139,24 +140,26 @@ describe('sessionBuilder', () => {
     expect(result.session.typeLabel).toBe('STRUCTURÉ');
   });
 
-  it('uses user title and purpose; language only when provided', () => {
-    const withLang = buildSessionFromForm({
-      spot: 'Phare Corniche',
-      dateISO: futureISO(),
-      timeLabel: '09:00',
-      sessionType: 'MARCHE',
-      groupConfigs: [],
-      title: 'English by the sea',
-      purpose: 'Une marche pour pratiquer, à ton rythme.',
-      language: 'Anglais',
-    });
-    expect(withLang.session.title).toBe('English by the sea');
-    expect(withLang.session.typeLabel).toBe('LANGUES · MARCHE');
-    expect(withLang.session.volume).toBe('Anglais');
-    expect(withLang.session.coachAdvice).toMatch(/pratiquer/);
-    expect(withLang.session.experience?.format).toBe('language');
+  it('keeps title and purpose for workout / libre / découverte (same as marche)', () => {
+    for (const sessionType of ['STRUCTURÉ', 'COURSE LIBRE', 'DÉCOUVERTE'] as const) {
+      const result = buildSessionFromForm({
+        spot: 'Marina',
+        dateISO: futureISO(),
+        timeLabel: '18:00',
+        sessionType,
+        groupConfigs: sessionType === 'STRUCTURÉ' ? mockGroupConfigs : [],
+        title: `Titre ${sessionType}`,
+        purpose: `Objectif ${sessionType}`,
+        structureNotes: `Déroulé ${sessionType}`,
+      });
+      expect(result.session.title).toBe(`Titre ${sessionType}`);
+      expect(result.session.coachAdvice).toBe(`Objectif ${sessionType}`);
+      expect(result.session.volume).toBe(`Déroulé ${sessionType}`);
+    }
+  });
 
-    const noLang = buildSessionFromForm({
+  it('uses user title and purpose without language (organise UI removed)', () => {
+    const result = buildSessionFromForm({
       spot: 'Phare Corniche',
       dateISO: futureISO(),
       timeLabel: '09:00',
@@ -164,9 +167,13 @@ describe('sessionBuilder', () => {
       groupConfigs: [],
       title: 'Marche du dimanche',
       purpose: 'Balade tranquille',
+      structureNotes: '10 min échauffement · marche libre',
     });
-    expect(noLang.session.typeLabel).toBe('MARCHE');
-    expect(noLang.session.volume).not.toMatch(/English|Anglais/i);
-    expect(noLang.session.experience?.format).toBe('community');
+    expect(result.session.title).toBe('Marche du dimanche');
+    expect(result.session.typeLabel).toBe('MARCHE');
+    expect(result.session.coachAdvice).toBe('Balade tranquille');
+    expect(result.session.volume).toBe('10 min échauffement · marche libre');
+    expect(result.session.volume).not.toMatch(/English|Anglais/i);
+    expect(result.session.experience?.format).toBe('community');
   });
 });
