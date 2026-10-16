@@ -25,8 +25,8 @@
 | Rule | I | R | U | Notes |
 |------|---|---|---|-------|
 | Standalone public outing: no *inherited* club from focused membership | I | R | | Choosing public without opting into a club must not silently inherit focused `clubId` |
-| Every `visibility: public` create forces `clubId: null` | I | | **U** | Current code simplification — **not** a user-approved requirement. Does **not** establish that every public *club* outing must lose association |
-| Public outing that remains associated with a club (soft link) | | | **U** | Unresolved product question — see § Unresolved |
+| Every `visibility: public` create forces `clubId: null` | | | | **Superseded** — soft association allowed when organizer binds a club |
+| Public outing that remains associated with a club (soft link) | I | R | | Soft `clubId` on public for branding (“Organisé avec”); access stays open. Standalone public still nulls clubId. |
 | `visibility: members` ⇒ `clubId` required | I | R | | Invariant (a) |
 | Demo public seeds must not carry accidental clubId | I | R | | Fixed in `demoSeed` on tip |
 | Members-only private logistics hidden from non-members | I (demo mock + hosted GET) | R | | **Current baseline — preserve.** Prefer gated 404 / inaccessible over leaking spot/time/private copy. No permission needed to keep this. |
@@ -102,7 +102,7 @@
 
 ## Unresolved questions (product — only true open items)
 
-1. **Public + club association:** May a public outing keep a soft `clubId` (or equivalent) for discovery/branding, or must association always be cleared? (Current code always nulls — treat as **I**, not **R**.)
+1. **Public + club association:** **Resolved** — soft `clubId` allowed on public when organizer binds a club; show “Organisé avec”; access unchanged.
 2. **Creator auto-attendance:** Should the creator always appear as joined on create for public and members-only outings?
 3. **Invite expiry:** Should invite codes expire, and what UX states are required?
 4. **Outing cancellation:** Is status-cancelled (vs host delete) required before stakeholder UAT?

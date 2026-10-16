@@ -943,8 +943,9 @@ async function mockCreateSession(input: SessionCreateInput): Promise<ApiSession>
     targetPace: input.targetPace,
     estimatedDistanceKm: input.estimatedDistanceKm,
     recommendedGroupId: input.recommendedGroupId,
-  // Public outings must not inherit club context
-  clubId: visibility === 'members' ? clubId : null,
+  // Soft association: public may keep an explicit clubId for branding
+  // (access stays open). Members-only still requires clubId (invariant a).
+  clubId,
   visibility,
     genderRestriction: input.genderRestriction ?? 'none',
     hostUserId: user.id,

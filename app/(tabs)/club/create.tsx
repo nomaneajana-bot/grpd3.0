@@ -134,6 +134,8 @@ export default function ClubCreateScreen() {
             autoCapitalize="words"
             editable={!isSubmitting}
             accessibilityLabel="Nom du club"
+            accessibilityHint="Champ 1 sur 5 — nom du club"
+            nativeID="club-create-field-name"
             testID="club-name-input"
           />
 
@@ -147,6 +149,8 @@ export default function ClubCreateScreen() {
             autoCapitalize="words"
             editable={!isSubmitting}
             accessibilityLabel="Ville"
+            accessibilityHint="Champ 2 sur 5 — ville"
+            nativeID="club-create-field-city"
             testID="club-city-input"
           />
 
@@ -167,6 +171,8 @@ export default function ClubCreateScreen() {
             numberOfLines={4}
             editable={!isSubmitting}
             accessibilityLabel="Pourquoi vous retrouver"
+            accessibilityHint="Champ 3 sur 5 — objectif du club"
+            nativeID="club-create-field-purpose"
             testID="club-purpose-input"
           />
 
@@ -175,7 +181,10 @@ export default function ClubCreateScreen() {
             <Pressable
               testID="club-visibility-members"
               accessibilityRole="button"
+              accessibilityLabel="Sur invitation"
+              accessibilityHint="Champ 4 sur 5 — accès au club"
               accessibilityState={{ selected: visibility === "members" }}
+              nativeID="club-create-field-visibility-members"
               onPress={() => setVisibility("members")}
               style={[ui.chip, visibility === "members" && ui.chipOn]}
             >
@@ -191,7 +200,9 @@ export default function ClubCreateScreen() {
             <Pressable
               testID="club-visibility-public"
               accessibilityRole="button"
+              accessibilityLabel="Public"
               accessibilityState={{ selected: visibility === "public" }}
+              nativeID="club-create-field-visibility-public"
               onPress={() => setVisibility("public")}
               style={[ui.chip, visibility === "public" && ui.chipOn]}
             >

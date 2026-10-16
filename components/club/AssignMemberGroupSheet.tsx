@@ -39,11 +39,15 @@ export function AssignMemberGroupSheet({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-          <Text style={styles.kicker}>AFFECTER</Text>
+          <Text style={styles.kicker}>
+            {memberName === "Moi" ? "MON GROUPE" : "AFFECTER"}
+          </Text>
           <Text style={styles.title} numberOfLines={1}>
             {memberName}
           </Text>
-          <Text style={styles.sub}>Choisis un groupe couleur — un seul, ou aucun.</Text>
+          <Text style={styles.sub}>
+            Choisis un groupe couleur — un seul, ou aucun.
+          </Text>
           <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
             {groups.map((g) => (
               <GroupChip
