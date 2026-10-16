@@ -168,6 +168,7 @@ describe('sessionBuilder', () => {
       title: 'Marche du dimanche',
       purpose: 'Balade tranquille',
       structureNotes: '10 min échauffement · marche libre',
+      organizerName: 'Revue',
     });
     expect(result.session.title).toBe('Marche du dimanche');
     expect(result.session.typeLabel).toBe('MARCHE');
@@ -175,5 +176,20 @@ describe('sessionBuilder', () => {
     expect(result.session.volume).toBe('10 min échauffement · marche libre');
     expect(result.session.volume).not.toMatch(/English|Anglais/i);
     expect(result.session.experience?.format).toBe('community');
+    expect(result.session.coachName).toBe('Revue');
+    expect(result.session.coachName).not.toMatch(/Youssef/i);
+  });
+
+  it('does not invent a coach name when organizer omitted', () => {
+    const result = buildSessionFromForm({
+      spot: 'Marina',
+      dateISO: futureISO(),
+      timeLabel: '18:00',
+      sessionType: 'MARCHE',
+      groupConfigs: [],
+      title: 'Sortie test',
+      purpose: 'Note',
+    });
+    expect(result.session.coachName).toBeUndefined();
   });
 });

@@ -893,7 +893,11 @@ export default function SessionScreen() {
             <TouchableOpacity
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               onPress={() => {
-                const phoneNumber = session.coachPhone || "+212708060337";
+                const phoneNumber = session.coachPhone?.trim();
+                if (!phoneNumber) {
+                  showToast("Aucun contact pour cette sortie.", "error");
+                  return;
+                }
                 const message = encodeURIComponent(
                   `Séance "${session.title}" — ${session.dateLabel}`,
                 );
@@ -1094,8 +1098,11 @@ export default function SessionScreen() {
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Organisateur</Text>
-            <Text style={[styles.infoValue, styles.organizerValue]}>
-              {session.coachName || "Équipe GRPD"}
+            <Text
+              style={[styles.infoValue, styles.organizerValue]}
+              testID="session-organizer-name"
+            >
+              {session.coachName?.trim() || "Organisateur"}
             </Text>
           </View>
 
@@ -1182,35 +1189,44 @@ export default function SessionScreen() {
           </View>
         )}
 
-        <TouchableOpacity
-          style={styles.whatsappButtonFull}
-          onPress={() => {
-            const phoneNumber = session.coachPhone || "+212708060337";
-            const message = encodeURIComponent(
-              `Bonjour, je souhaite rejoindre la séance "${session.title}" le ${session.dateLabel}`,
-            );
-            const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
-            Linking.openURL(whatsappUrl).catch((err) => {
-              console.warn("Failed to open WhatsApp:", err);
-            });
-          }}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.whatsappButtonFullText}>Contacter via WhatsApp</Text>
-        </TouchableOpacity>
+        {session.coachPhone?.trim() ? (
+          <TouchableOpacity
+            style={styles.whatsappButtonFull}
+            onPress={() => {
+              const phoneNumber = session.coachPhone!.trim();
+              const message = encodeURIComponent(
+                `Bonjour, je souhaite rejoindre la séance "${session.title}" le ${session.dateLabel}`,
+              );
+              const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
+              Linking.openURL(whatsappUrl).catch((err) => {
+                console.warn("Failed to open WhatsApp:", err);
+              });
+            }}
+            activeOpacity={0.85}
+            testID="session-contact-whatsapp"
+          >
+            <Text style={styles.whatsappButtonFullText}>
+              Contacter via WhatsApp
+            </Text>
+          </TouchableOpacity>
+        ) : null}
 
         <SessionCoachAdviceCard
           coachName={session.coachName}
           coachAdvice={session.coachAdvice}
           engineContext={coachEngineContext}
-          onAskQuestion={() => {
-            const phoneNumber = session.coachPhone || "+212708060337";
-            const message = encodeURIComponent(
-              `Question sur la séance "${session.title}" le ${session.dateLabel}`,
-            );
-            const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
-            Linking.openURL(whatsappUrl).catch(() => {});
-          }}
+          onAskQuestion={
+            session.coachPhone?.trim()
+              ? () => {
+                  const phoneNumber = session.coachPhone!.trim();
+                  const message = encodeURIComponent(
+                    `Question sur la séance "${session.title}" le ${session.dateLabel}`,
+                  );
+                  const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
+                  Linking.openURL(whatsappUrl).catch(() => {});
+                }
+              : undefined
+          }
         />
 
         {/* Groups Section */}
@@ -1541,35 +1557,40 @@ export default function SessionScreen() {
               </Text>
             </View>
             <View style={styles.divider} />
-            <View style={styles.cardSection}>
-              <Text style={styles.infoLabelSmall}>Conseil coach</Text>
-              <Text style={styles.infoValueSmall}>
-                {session.coachAdvice ||
-                  "Prends un tour de chauffe très léger. Hydrate-toi bien avant et après la séance. Vêtements adaptés à la météo."}
-              </Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.cardSection}>
-              <Text style={styles.infoLabelSmall}>En cas d&apos;urgence</Text>
-              <TouchableOpacity
-                style={styles.whatsappButton}
-                onPress={() => {
-                  const phoneNumber = session.coachPhone || "+212708060337";
-                  const message = encodeURIComponent(
-                    `Urgence - Séance ${session.title}`,
-                  );
-                  const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
-                  Linking.openURL(whatsappUrl).catch((err) => {
-                    console.warn("Failed to open WhatsApp:", err);
-                  });
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.whatsappButtonText}>
-                  📱 Contacter {session.coachName || "le responsable"}
+            {session.coachAdvice?.trim() ? (
+              <View style={styles.cardSection}>
+                <Text style={styles.infoLabelSmall}>Note de l&apos;organisateur</Text>
+                <Text style={styles.infoValueSmall}>
+                  {session.coachAdvice.trim()}
                 </Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            ) : null}
+            {session.coachPhone?.trim() ? (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.cardSection}>
+                  <Text style={styles.infoLabelSmall}>Contact</Text>
+                  <TouchableOpacity
+                    style={styles.whatsappButton}
+                    onPress={() => {
+                      const phoneNumber = session.coachPhone!.trim();
+                      const message = encodeURIComponent(
+                        `Séance ${session.title}`,
+                      );
+                      const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
+                      Linking.openURL(whatsappUrl).catch((err) => {
+                        console.warn("Failed to open WhatsApp:", err);
+                      });
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.whatsappButtonText}>
+                      Contacter {session.coachName?.trim() || "l'organisateur"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : null}
           </View>
         )}
 
