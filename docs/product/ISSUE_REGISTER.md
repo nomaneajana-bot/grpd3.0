@@ -17,8 +17,9 @@
 **Batch 5 local gate:** **ACCEPTED** — tested `f8f378707a2b973e3fc2ae9e688f0580af09adff`  
 **Batch 5 evidence:** `docs/audit/batch5-leave-cancel/` · `hosted_claim: false`  
 **Runtime diagnosis:** accepted — `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md`  
-**Batch 6 local wiring:** tested `4dad7495bcb1239dcc65e2a451d07f99db9cf43d` — jose JWT + PIN login + real connected tests (Codex corrections); **no hosted deploy this batch**  
-**Batch 6 evidence:** `docs/audit/batch6-runtime-wiring/` · prior review `74fef39`/`83b5e09` NOT cleared  
+**Batch 6 local wiring:** **CLEARED** at `4dad7495bcb1239dcc65e2a451d07f99db9cf43d` — jose JWT + PIN login + real connected tests  
+**Batch 6 predeploy packaging:** see `docs/audit/batch6-predeploy-packaging/` — local packaging PASS; hosted/settings **BLOCKED/NOT_RUN**  
+**Batch 6 runtime evidence:** `docs/audit/batch6-runtime-wiring/`  
 **Method:** Statuses are NOT CHECKED / FAILED / FIXED AWAITING RETEST / VERIFIED / BLOCKED.  
 **Capability:** IMPLEMENTED / PARTIAL / NOT IMPLEMENTED / UNSUPPORTED — never treat NOT IMPLEMENTED as PASS.
 
@@ -75,8 +76,8 @@
 | Owner | Cursor (code done locally) + owner (Preview env/access) |
 | Candidate SHA / env | `4dad749` · local_postgres_integration |
 | Evidence | `docs/audit/batch6-runtime-wiring/` + Batch5 logs |
-| Next action | Codex re-review Batch6 at `4dad749`; then owner Preview env + deploy verify per `DEPLOYMENT_PLAN.md` — never PASS hosted until health JSON + leave/cancel on Preview |
-| Status | **FIXED AWAITING RETEST** (hosted; local wiring done; Preview env/access remaining) |
+| Next action | Codex review packaging tip; then owner resolves `PREVIEW_CHECKLIST.md` decisions + Preview verify — never PASS hosted until health JSON + leave/cancel on Preview |
+| Status | **FIXED AWAITING RETEST** (hosted; local wiring+packaging done; Preview env/access remaining) |
 
 ### ISSUE-005 — P2 — VERIFIED (process)
 | Field | Value |
@@ -240,14 +241,14 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 **Map:** `docs/audit/batch5-runtime-wiring/RUNTIME_MAP.md` (`6b05559`)
 
-## Batch 6 — LOCAL PASS after Codex corrections (hosted deploy not run)
+## Batch 6 — LOCAL CLEARED + packaging PASS (hosted deploy not run)
 
-**Theme:** Selective D02-style dispatch + jose Bearer + PIN login; preserve Batch5 semantics; cancel-request + health  
-**`tested_sha`:** `4dad7495bcb1239dcc65e2a451d07f99db9cf43d`  
-**Prior review:** `74fef39` / `83b5e09` — NOT cleared  
-**Evidence:** `docs/audit/batch6-runtime-wiring/` — PG 22/22 · unit 113/113 · typecheck PASS · `deploy_claim: false`  
-**Plan:** `DEPLOYMENT_PLAN.md` (Preview settings **UNVERIFIED**; no D02 DB assumption; no new DB by agent)  
-**STOP:** Codex re-review before Preview deploy
+**Theme:** Dispatch + jose Bearer + PIN login; then predeploy Expo/serverless packaging  
+**Local correction CLEARED:** `4dad7495bcb1239dcc65e2a451d07f99db9cf43d`  
+**Packaging evidence:** `docs/audit/batch6-predeploy-packaging/` · checklist `PREVIEW_CHECKLIST.md`  
+**Runtime evidence:** `docs/audit/batch6-runtime-wiring/`  
+**Vercel settings:** inspection **BLOCKED** (no auth) · `deploy_claim: false`  
+**STOP:** Codex packaging review before any Preview deploy
 
 ### Exit criteria
 

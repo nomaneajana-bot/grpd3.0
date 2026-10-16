@@ -6,35 +6,34 @@
 **Batch 1–4:** DEMO gates CLEARED (see prior tips)  
 **Batch 5 local gate:** **ACCEPTED** — tested `f8f378707a2b973e3fc2ae9e688f0580af09adff`  
 **Runtime diagnosis:** accepted — map `6b05559` / tip `4403447`  
-**Batch 6 `tested_sha`:** `4dad7495bcb1239dcc65e2a451d07f99db9cf43d`  
-**Batch 6 docs tip:** `557233e3516cc486f840b599bd940d6603a6fda6`  
-**Batch 6 evidence:** `docs/audit/batch6-runtime-wiring/` — local PG **22/22** + unit **113/113** + typecheck PASS · `hosted_claim: false` · `deploy_claim: false`  
-**Prior Codex Batch6 review:** `74fef39` / `83b5e09` — **NOT cleared**; corrections in tested SHA above  
+**Batch 6 local Codex correction:** **CLEARED** — tested `4dad7495bcb1239dcc65e2a451d07f99db9cf43d`  
+**Batch 6 predeploy packaging `tested_sha`:** *(see evidence after stamp)*  
+**Batch 6 packaging evidence:** `docs/audit/batch6-predeploy-packaging/`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
 
-**BATCH 6 CODEX CORRECTIONS COMPLETE — STOP for Codex re-review.**  
-jose JWT restored (strict claims) · PIN login on dispatcher · real connected resolver tests · login→token→protected · server typecheck · deploy-plan settings **UNVERIFIED**.  
-Batch5 leave/cancel transaction semantics preserved. Demo/apiMode unit still PASS.  
-**No deploy / Production / merge / spending / OCIF / Neon-Vercel rebuild / new DB this batch.**  
-Deployment plan (review only): `docs/audit/batch6-runtime-wiring/DEPLOYMENT_PLAN.md`.
+**BATCH 6 PREDEPLOY PACKAGING COMPLETE — STOP for Codex review.**  
+Expo connected web build + demo build · serverless CJS package (installed next/jose) · local PG health/auth smoke · static secret/DEMO scan · Preview checklist.  
+Vercel project/branch settings inspection: **BLOCKED** (no auth/login).  
+**Preserved:** Batch1–4 DEMO · Batch5 local · Batch6 local correction gate.  
+**No deploy / Production / merge / spending / OCIF / env mutations / new DB / protection changes.**
 
 ## Exact next action
 
-1. **Codex** re-reviews Batch6 at `4dad749` (jose/claims, connected resolver, PIN login path, typecheck, UNVERIFIED plan).  
-2. After clear: owner confirms/sets Preview `DATABASE_URL` + `AUTH_JWT_SECRET` for **this** branch (isolated DB — not assumed D02; agent does not create DB); then Preview verify health + leave/cancel.  
+1. **Codex** reviews packaging at the stamped tested SHA (logs + artifact paths + checklist).  
+2. After clear: owner resolves only open checklist decisions (Preview `DATABASE_URL` / `AUTH_JWT_SECRET` / optional PIN allowlist / post-Preview client URL / Visit access).  
 3. No merge / prod / spending / credentials in git / OCIF.
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
-| Demo | CLEARED Batches 1–4; mock leave/cancel preserved; apiMode unit PASS |
+| Demo | CLEARED Batches 1–4; separate `dist-demo` packaging PASS |
 | Local PG Batch5 | ACCEPTED |
-| Local Batch6 dispatcher/Bearer/PIN | **PASS** at `4dad749` (Codex corrections) |
-| Green-home Preview hosted API | **Not verified** (no deploy; settings UNVERIFIED) |
-| D02 Preview/DB | Historical only — not assumed for this branch |
+| Local Batch6 dispatcher/Bearer/PIN | **CLEARED** at `4dad749` |
+| Local predeploy packaging | **PASS** (this tip) — not hosted acceptance |
+| Green-home Preview hosted API | **Not verified** · settings inspect **BLOCKED** |
 | Native / UAT | Not verified |
 
 ### Unresolved (not decided)

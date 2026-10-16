@@ -1,0 +1,58 @@
+{
+  "batch": "Batch 6 — predeployment packaging (Expo connected web + serverless bundle)",
+  "issues": ["ISSUE-004", "ISSUE-008"],
+  "prior_accepted_local_batch6": "4dad7495bcb1239dcc65e2a451d07f99db9cf43d",
+  "branch": "cursor/green-home-ux-join-3184",
+  "environment": "local_packaging",
+  "hosted_claim": false,
+  "deploy_claim": false,
+  "vercel_settings_inspection": {
+    "status": "BLOCKED",
+    "cli": "logged out",
+    "mcp": "needsAuth",
+    "login_attempted": false,
+    "note": "No account creation, auth, or remote reads of secret values"
+  },
+  "artifacts": {
+    "expo_connected": "dist-connected/",
+    "expo_demo": "dist-demo/",
+    "serverless_bundle": ".packaging/serverless/api-v1.cjs",
+    "serverless_summary": ".packaging/serverless/bundle-summary.json"
+  },
+  "connected_build_flags": {
+    "EXPO_PUBLIC_DEMO_MODE": "false",
+    "EXPO_PUBLIC_USE_MOCK_API": "false",
+    "EXPO_PUBLIC_API_URL": "http://127.0.0.1:3999"
+  },
+  "checks": {
+    "expo_web_connected_build": { "ok": true },
+    "static_connected_no_secrets_demo_false_url_embedded": { "ok": true },
+    "expo_web_demo_build_usable": { "ok": true },
+    "static_demo_demo_true": { "ok": true },
+    "serverless_bundle_includes_jose_next_dispatch_jwt": { "ok": true },
+    "serverless_runtime_import_health_auth_leave_local_pg": {
+      "ok": true,
+      "detail": "7/7 smoke checks; disposable local PG only; no remote writes"
+    },
+    "vercel_project_branch_settings_readonly": {
+      "ok": false,
+      "status": "BLOCKED"
+    },
+    "hosted_preview_deploy": {
+      "ok": false,
+      "status": "NOT_RUN"
+    }
+  },
+  "logs": [
+    "docs/audit/batch6-predeploy-packaging/logs/expo-web-connected-build.log",
+    "docs/audit/batch6-predeploy-packaging/logs/expo-web-demo-build.log",
+    "docs/audit/batch6-predeploy-packaging/logs/static-connected-scan.log",
+    "docs/audit/batch6-predeploy-packaging/logs/static-demo-scan.log",
+    "docs/audit/batch6-predeploy-packaging/logs/serverless-package.log",
+    "docs/audit/batch6-predeploy-packaging/logs/serverless-local-smoke.log",
+    "docs/audit/batch6-predeploy-packaging/logs/packaging-inventory.log"
+  ],
+  "checklist": "docs/audit/batch6-predeploy-packaging/PREVIEW_CHECKLIST.md",
+  "note": "Packaging only. Preserves Batch6 local gate. No deploy/env mutate/new DB/spend/merge/prod.",
+  "generated_at": "2026-10-16T02:05:00.000Z"
+}
