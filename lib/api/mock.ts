@@ -832,83 +832,78 @@ async function mockGetMemberships(): Promise<ClubMembershipsResult> {
 async function mockListSessions(query: {
   clubId?: string | null;
 }): Promise<{ sessions: ApiSession[] }> {
-  if (DEMO_MODE) {
-    let sessions = await readDemoSessions();
-    if (query.clubId) {
-      sessions = sessions.filter((s) => s.clubId === query.clubId);
-    }
-    const user = await getAuthUser();
-    // Align with hosted GET /api/v1/sessions: members-only logistics stay off lists
-    // for outsiders / pending. Host + approved members retain access.
-    if (user) {
-      const memberships = await readMemberships();
-      const approvedClubIds = new Set(
-        Object.values(memberships)
-          .filter((m) => m.userId === user.id && m.status === 'approved')
-          .map((m) => m.clubId),
-      );
-      sessions = sessions.filter((session) => {
-        if (session.visibility !== 'members') return true;
-        if (session.hostUserId === user.id) return true;
-        return Boolean(session.clubId && approvedClubIds.has(session.clubId));
-      });
-      const attendanceAll = await Promise.all(
-        sessions.map(async (s) => ({
-          session: s,
-          rows: await readAttendanceForSession(s.id),
-        })),
-      );
-      sessions = attendanceAll.map(({ session, rows }) => {
-        const mine = rows.find((r) => r.userId === user.id);
-        return {
-          ...session,
-          attendanceStatus: mine?.status ?? null,
-          attendanceGroupId: mine?.groupId ?? null,
-        };
-      });
-    } else {
-      sessions = sessions.filter((s) => s.visibility !== 'members');
-    }
-    return { sessions };
+  // Persist/list for both DEMO_MODE and explicit mock (USE_MOCK_API).
+  let sessions = await readDemoSessions();
+  if (query.clubId) {
+    sessions = sessions.filter((s) => s.clubId === query.clubId);
   }
-  return { sessions: [] };
-}
-
-async function mockGetSession(sessionId: string): Promise<ApiSession> {
-  if (DEMO_MODE) {
-    const session = await resolveDemoSession(sessionId);
-    if (!session) throw new ApiError(404, 'Session not found');
-    const user = await getAuthUser();
-
-    // Members-only: hide existence from non-members (direct-link privacy).
-    // Host retains access even if they are no longer a member.
-    if (session.visibility === 'members') {
-      if (!user) throw new ApiError(404, 'Session not found');
-      const isHost = session.hostUserId === user.id;
-      if (!isHost) {
-        const memberships = await readMemberships();
-        const isMember = Object.values(memberships).some(
-          (m) =>
-            m.userId === user.id &&
-            m.clubId === session.clubId &&
-            m.status === 'approved',
-        );
-        if (!isMember) throw new ApiError(404, 'Session not found');
-      }
-    }
-
-    if (user) {
-      const rows = await readAttendanceForSession(sessionId);
+  const user = await getAuthUser();
+  // Align with hosted GET /api/v1/sessions: members-only logistics stay off lists
+  // for outsiders / pending. Host + approved members retain access.
+  if (user) {
+    const memberships = await readMemberships();
+    const approvedClubIds = new Set(
+      Object.values(memberships)
+        .filter((m) => m.userId === user.id && m.status === 'approved')
+        .map((m) => m.clubId),
+    );
+    sessions = sessions.filter((session) => {
+      if (session.visibility !== 'members') return true;
+      if (session.hostUserId === user.id) return true;
+      return Boolean(session.clubId && approvedClubIds.has(session.clubId));
+    });
+    const attendanceAll = await Promise.all(
+      sessions.map(async (s) => ({
+        session: s,
+        rows: await readAttendanceForSession(s.id),
+      })),
+    );
+    sessions = attendanceAll.map(({ session, rows }) => {
       const mine = rows.find((r) => r.userId === user.id);
       return {
         ...session,
         attendanceStatus: mine?.status ?? null,
         attendanceGroupId: mine?.groupId ?? null,
       };
-    }
-    return session;
+    });
+  } else {
+    sessions = sessions.filter((s) => s.visibility !== 'members');
   }
-  throw new ApiError(404, 'Session not found');
+  return { sessions };
+}
+
+async function mockGetSession(sessionId: string): Promise<ApiSession> {
+  const session = await resolveDemoSession(sessionId);
+  if (!session) throw new ApiError(404, 'Session not found');
+  const user = await getAuthUser();
+
+  // Members-only: hide existence from non-members (direct-link privacy).
+  // Host retains access even if they are no longer a member.
+  if (session.visibility === 'members') {
+    if (!user) throw new ApiError(404, 'Session not found');
+    const isHost = session.hostUserId === user.id;
+    if (!isHost) {
+      const memberships = await readMemberships();
+      const isMember = Object.values(memberships).some(
+        (m) =>
+          m.userId === user.id &&
+          m.clubId === session.clubId &&
+          m.status === 'approved',
+      );
+      if (!isMember) throw new ApiError(404, 'Session not found');
+    }
+  }
+
+  if (user) {
+    const rows = await readAttendanceForSession(sessionId);
+    const mine = rows.find((r) => r.userId === user.id);
+    return {
+      ...session,
+      attendanceStatus: mine?.status ?? null,
+      attendanceGroupId: mine?.groupId ?? null,
+    };
+  }
+  return session;
 }
 
 async function mockCreateSession(input: SessionCreateInput): Promise<ApiSession> {
@@ -959,9 +954,8 @@ async function mockCreateSession(input: SessionCreateInput): Promise<ApiSession>
     attendanceGroupId: null,
   };
 
-  if (DEMO_MODE) {
-    await writeDemoSession(session);
-  }
+  // Always persist in the mock transport (DEMO and explicit mock).
+  await writeDemoSession(session);
   return session;
 }
 
@@ -971,7 +965,6 @@ async function mockJoinSession(
 ): Promise<SessionJoinResult> {
   const user = await getAuthUser();
   if (!user) throw new ApiError(401, 'Unauthorized');
-  if (!DEMO_MODE) throw new ApiError(404, 'Not found');
 
   // Demo harness: one-shot controlled failure for retry evidence (never auto-PASS).
   const g = globalThis as typeof globalThis & {
@@ -1034,7 +1027,9 @@ async function mockJoinSession(
 async function mockLeaveSession(sessionId: string): Promise<SessionLeaveResult> {
   const user = await getAuthUser();
   if (!user) throw new ApiError(401, 'Unauthorized');
-  if (!DEMO_MODE) throw new ApiError(404, 'Not found');
+
+  const session = await resolveDemoSession(sessionId);
+  if (!session) throw new ApiError(404, 'Not found');
 
   const id = `att_${sessionId}_${user.id}`;
   const rows = await readAttendanceForSession(sessionId);
@@ -1060,7 +1055,6 @@ async function mockLeaveSession(sessionId: string): Promise<SessionLeaveResult> 
 }
 
 async function mockMySessions(): Promise<MySessionsResult> {
-  if (!DEMO_MODE) return { sessions: [] };
   const user = await getAuthUser();
   if (!user) return { sessions: [] };
   const sessions = await readDemoSessions();
@@ -1084,30 +1078,28 @@ async function mockMySessions(): Promise<MySessionsResult> {
 async function mockSessionParticipants(
   sessionId: string,
 ): Promise<SessionParticipantsResult> {
-  if (DEMO_MODE) {
-    const session = await readDemoSession(sessionId);
-    if (!session) throw new ApiError(404, 'Session not found');
+  const session = await resolveDemoSession(sessionId);
+  if (!session) throw new ApiError(404, 'Session not found');
 
-    // Members-only gate: non-members cannot list participants
-    if (session.visibility === 'members') {
-      const user = await getAuthUser();
-      if (!user) throw new ApiError(401, 'Unauthorized');
+  // Members-only gate: non-members cannot list participants
+  if (session.visibility === 'members') {
+    const user = await getAuthUser();
+    if (!user) throw new ApiError(401, 'Unauthorized');
+    const isHost = session.hostUserId === user.id;
+    if (!isHost) {
       const memberships = await readMemberships();
       const isMember = Object.values(memberships).some(
         (m) =>
           m.userId === user.id &&
-          m.clubId === (session.clubId ?? DEMO_CLUB_ID) &&
+          m.clubId === session.clubId &&
           m.status === 'approved',
       );
       if (!isMember) throw new ApiError(403, 'Members only');
     }
-
-    const attendance = await readAttendanceForSession(sessionId);
-    return buildParticipantsResult(session, attendance);
   }
 
-  // Legacy screenshot fixture for non-demo mock
-  return buildScreenshotDemoSessionParticipants(sessionId);
+  const attendance = await readAttendanceForSession(sessionId);
+  return buildParticipantsResult(session, attendance);
 }
 
 async function mockLeaveClub(clubId: string): Promise<{ ok: true }> {
@@ -1126,36 +1118,33 @@ async function mockLeaveClub(clubId: string): Promise<{ ok: true }> {
 
   // Leaving a club must revoke members-only attendance for that club
   // (membership ≠ attendance, but members-only access requires membership).
-  if (DEMO_MODE) {
-    const { removeJoinedSession, getJoinedSessions } = await import(
-      '../joinedSessionsStore'
-    );
-    const { getUserSessions } = await import('../sessionStore');
-    const demoSessions = await readDemoSessions();
-    const localSessions = await getUserSessions().catch(() => []);
-    const membersOnlyIds = new Set<string>();
-    for (const session of [...demoSessions, ...localSessions]) {
-      if (session.clubId === clubId && session.visibility === 'members') {
-        membersOnlyIds.add(session.id);
-      }
+  const { removeJoinedSession, getJoinedSessions } = await import(
+    '../joinedSessionsStore'
+  );
+  const { getUserSessions } = await import('../sessionStore');
+  const storedSessions = await readDemoSessions();
+  const localSessions = await getUserSessions().catch(() => []);
+  const membersOnlyIds = new Set<string>();
+  for (const session of [...storedSessions, ...localSessions]) {
+    if (session.clubId === clubId && session.visibility === 'members') {
+      membersOnlyIds.add(session.id);
     }
-    for (const sessionId of membersOnlyIds) {
-      const rows = await readAttendanceForSession(sessionId);
-      const mine = rows.find((r) => r.userId === user.id);
-      if (mine && mine.status === 'joined') {
-        await upsertAttendance({
-          ...mine,
-          status: 'left',
-        });
-      }
-      await removeJoinedSession(sessionId);
+  }
+  for (const sessionId of membersOnlyIds) {
+    const rows = await readAttendanceForSession(sessionId);
+    const mine = rows.find((r) => r.userId === user.id);
+    if (mine && mine.status === 'joined') {
+      await upsertAttendance({
+        ...mine,
+        status: 'left',
+      });
     }
-    // Clear orphaned local joins that still point at this club's members-only ids
-    const joined = await getJoinedSessions();
-    for (const row of joined) {
-      if (membersOnlyIds.has(row.sessionId)) {
-        await removeJoinedSession(row.sessionId);
-      }
+    await removeJoinedSession(sessionId);
+  }
+  const joined = await getJoinedSessions();
+  for (const row of joined) {
+    if (membersOnlyIds.has(row.sessionId)) {
+      await removeJoinedSession(row.sessionId);
     }
   }
 

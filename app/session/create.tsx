@@ -1708,6 +1708,29 @@ export default function CreateSessionScreen() {
     [],
   );
 
+  // Walk/language clubs: default Organise to Marche (not FARTLEK), when clubId known.
+  useEffect(() => {
+    if (!explicitClubId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { getClubAdminSettings } = await import("@/lib/clubAdminStore");
+        const settings = await getClubAdminSettings(explicitClubId);
+        if (cancelled) return;
+        if (settings.activityStructure === "walk") {
+          setSessionMode("walking");
+          setSelectedWorkoutId(null);
+          setUsePaceGroups(false);
+        }
+      } catch {
+        /* keep workout default */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [explicitClubId]);
+
   // Load available workouts for picker
   useEffect(() => {
     const loadWorkouts = async () => {
@@ -2422,7 +2445,8 @@ export default function CreateSessionScreen() {
           {sessionMode === "walking" ? (
             <View style={styles.walkMetaBlock} testID="session-walk-fields">
               <Text style={[styles.cardSubtitle, styles.sessionTypeSubtitle]}>
-                Titre, objectif et lieu doivent correspondre sur le détail.
+                Indique un titre, l’objectif et le lieu — ils apparaîtront sur
+                la fiche de la sortie.
               </Text>
               <Text style={styles.fieldLabel}>Titre</Text>
               <TextInput

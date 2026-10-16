@@ -95,14 +95,6 @@ export function formatClubGroupLine(groupId: string | null | undefined): string 
   return `${g.label} · ${g.window}`;
 }
 
-function hashString(input: string): number {
-  let hash = 0;
-  for (let i = 0; i < input.length; i += 1) {
-    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
-  }
-  return hash;
-}
-
 function initialsFromName(name: string | null | undefined): string {
   if (!name?.trim()) return "?";
   const parts = name.trim().split(/\s+/);
@@ -155,9 +147,9 @@ export function assignMemberToClubGroup(
 
   const pace = bestPaceSecondsPerKm(member);
   if (pace != null) return paceSecondsToClubGroupId(pace);
-  const seed = hashString(member.userId || member.membershipId);
-  const ids: ClubPaceGroupId[] = ["A", "B", "C", "D"];
-  return ids[seed % ids.length];
+  // No PR / no explicit assignment: never invent Élite via userId hash.
+  // Default to the open/social group until pace or admin assignment exists.
+  return discoveryGroup();
 }
 
 export function emptyGroupBuckets(): ClubGroupBuckets {

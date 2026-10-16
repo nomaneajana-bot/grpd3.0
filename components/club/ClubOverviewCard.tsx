@@ -12,7 +12,7 @@ type ClubOverviewCardProps = {
   city?: string | null;
   purpose?: string | null;
   visibility?: "public" | "members" | null;
-  status: "member" | "pending";
+  status: "admin" | "member" | "pending";
 };
 
 export function ClubOverviewCard({
@@ -40,7 +40,11 @@ export function ClubOverviewCard({
   if (foundedYear && !city?.trim()) metaParts.push(`Fondé ${foundedYear}`);
 
   const statusLabel =
-    status === "member" ? "TU ES MEMBRE" : "EN ATTENTE D'APPROBATION";
+    status === "admin"
+      ? "TU ES ADMIN"
+      : status === "member"
+        ? "TU ES MEMBRE"
+        : "EN ATTENTE D'APPROBATION";
 
   return (
     <View style={styles.card} testID="club-overview-card">

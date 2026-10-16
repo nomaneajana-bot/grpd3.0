@@ -20,6 +20,11 @@ import {
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { createApiClient, createClub } from "@/lib/api";
+import {
+  defaultClubAdminSettings,
+  defaultWalkClubAdminSettings,
+  saveClubAdminSettings,
+} from "@/lib/clubAdminStore";
 import { EXPERIENCE_PREVIEWS } from "@/lib/experiences";
 import { setFocusedClubId } from "@/lib/focusedClubStore";
 import type { ClubVisibility } from "@/types/api";
@@ -64,9 +69,18 @@ export default function ClubCreateScreen() {
         purpose: purpose.trim() || undefined,
         visibility,
       });
+      // Explicit idea activity only — do not invent running structure from free text.
+      const adminDefaults =
+        fromIdea?.activity === "walk"
+          ? defaultWalkClubAdminSettings()
+          : defaultClubAdminSettings();
+      await saveClubAdminSettings(club.id, adminDefaults);
       await setFocusedClubId(club.id);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/club" as Href);
+      router.replace({
+        pathname: "/club",
+        params: { focus: club.id },
+      } as Href);
     } catch (error) {
       console.warn("Create club failed:", error);
       showToast("Impossible de créer le club. Réessaie.", "error");

@@ -1,4 +1,4 @@
-import { type Href, router, useFocusEffect } from "expo-router";
+import { type Href, router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -68,9 +68,11 @@ import {
 import type { ClubMembership, ClubRosterMember } from "@/types/api";
 
 export default function ClubScreen() {
+  const { focus: focusParam } = useLocalSearchParams<{ focus?: string }>();
+  const focusFromRoute = Array.isArray(focusParam) ? focusParam[0] : focusParam;
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
   const [roster, setRoster] = useState<ClubRosterMember[]>([]);
-  const [userGroupId, setUserGroupId] = useState<"A" | "B" | "C" | "D">("B");
+  const [userGroupId, setUserGroupId] = useState<"A" | "B" | "C" | "D">("D");
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
@@ -88,6 +90,19 @@ export default function ClubScreen() {
     else setIsLoading(true);
 
     try {
+      // Always re-read focus from storage (create writes storage while this tab
+      // may stay mounted with stale React state). Route ?focus= wins once.
+      const storedFocus = await readFocusedClubId();
+      const preferredFocus =
+        (focusFromRoute?.trim() || storedFocus || focusedClubId || "").trim() ||
+        null;
+      if (preferredFocus && preferredFocus !== focusedClubId) {
+        setFocusedClubId(preferredFocus);
+      }
+      if (focusFromRoute?.trim()) {
+        await persistFocusedClubId(focusFromRoute.trim());
+      }
+
       const client = createApiClient();
       const result = await getMyMemberships(client);
       const list = result.memberships ?? [];
@@ -95,13 +110,14 @@ export default function ClubScreen() {
 
       const approved = list.filter((m) => m.status === "approved");
       const primary =
-        approved.find((m) => m.clubId === focusedClubId) ??
+        approved.find((m) => m.clubId === preferredFocus) ??
         approved[0] ??
         list.find((m) => m.status === "pending") ??
         null;
 
       if (primary?.status === "approved" && primary.clubId) {
-        if (!focusedClubId) {
+        // Never overwrite a stored/route focus with approved[0].
+        if (!preferredFocus) {
           setFocusedClubId(primary.clubId);
           void persistFocusedClubId(primary.clubId);
         }
@@ -159,18 +175,7 @@ export default function ClubScreen() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [showToast, focusedClubId]);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const stored = await readFocusedClubId();
-      if (!cancelled && stored) setFocusedClubId(stored);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  }, [showToast, focusedClubId, focusFromRoute]);
 
   useFocusEffect(
     useCallback(() => {
@@ -368,7 +373,13 @@ export default function ClubScreen() {
               city={club.city}
               purpose={club.description}
               visibility={club.visibility}
-              status="member"
+              status={
+                isClubAdmin
+                  ? "admin"
+                  : isPendingMember
+                    ? "pending"
+                    : "member"
+              }
             />
 
             <View style={styles.clubOutingsBlock} testID="club-outings-section">
@@ -470,7 +481,13 @@ export default function ClubScreen() {
               )}
             </View>
 
-            <SectionHeader label="GROUPES DE PACE" />
+            <SectionHeader
+              label={
+                adminSettings?.activityStructure === "walk"
+                  ? "GROUPES"
+                  : "GROUPES DE PACE"
+              }
+            />
             {(isClubAdmin
               ? CLUB_PACE_GROUP_DEFS
               : CLUB_PACE_GROUP_DEFS.filter((group) => {
@@ -481,12 +498,13 @@ export default function ClubScreen() {
                 })
             ).map((group) => {
               const bucket = groupBuckets[group.id];
-              const adminPace = adminSettings?.groups.find(
+              const adminGroup = adminSettings?.groups.find(
                 (g) => g.id === group.id,
-              )?.paceLabel;
-              const isActive =
-                adminSettings?.groups.find((g) => g.id === group.id)
-                  ?.active !== false;
+              );
+              const adminPace = adminGroup?.paceLabel;
+              const displayLabel =
+                adminGroup?.displayName?.trim() || group.label;
+              const isActive = adminGroup?.active !== false;
               const sessionsWk = countSessionsThisWeekForGroup(
                 group.id,
                 roster,
@@ -496,7 +514,11 @@ export default function ClubScreen() {
               return (
                 <ClubPaceGroupRow
                   key={group.id}
-                  group={group}
+                  group={{
+                    ...group,
+                    label: displayLabel,
+                    paceLabel: adminPace ?? group.paceLabel,
+                  }}
                   paceLabel={
                     isActive
                       ? adminPace
