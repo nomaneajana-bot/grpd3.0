@@ -98,7 +98,10 @@ async function enterOtp(page, code) {
     check(
       "welcome_no_rythme_row",
       /C.est prêt|BIENVENUE/i.test(welcome) &&
-        !/RYTHME|sorties\s*\/\s*semaine|Cadence visée/i.test(welcome),
+        !/^RYTHME$/m.test(welcome) &&
+        !/sorties\s*\/\s*semaine|séances\s*\/\s*semaine|Cadence visée/i.test(
+          welcome,
+        ),
       welcome.slice(0, 280),
     );
   } catch (e) {

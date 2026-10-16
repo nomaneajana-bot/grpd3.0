@@ -1,6 +1,6 @@
 {
   "base": "http://127.0.0.1:8082",
-  "tested_at": "2026-10-16T21:00:39.726Z",
+  "tested_at": "2026-10-16T21:08:02.637Z",
   "checks": [
     {
       "id": "Revue_sim_phone",
@@ -28,19 +28,29 @@
       "detail": "\nTon intention\nPas une promesse — un cap.\nMarche & bien-être\nMARCHE\nReprendre en douceur, sans pression de performance\nRégularité\nCourir plus souvent, sans viser une distance\n5 km\nPremier objectif chronométré\n10 km\nEndurance intermédiaire\nSemi-marathon\n21,1 km — un cap structura"
     },
     {
+      "id": "Revue_no_cadence_slider",
+      "ok": true,
+      "detail": "\nTon intention\nPas une promesse — un cap.\nMarche & bien-être\nMARCHE\nReprendre en douceur, sans pression de performance\nRégularité\nCourir plus souvent, sans viser une distance\n5 km\nPremier objectif chronométré\n10 km\nEndurance intermédiaire\nSemi-marathon\n21,1 km — un cap structura"
+    },
+    {
       "id": "Revue_welcome_natural_copy",
       "ok": true,
-      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depuis l’accueil quand tu "
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depuis l’accueil quand tu veux.\nVoir l'accueil"
     },
     {
       "id": "Revue_welcome_has_club",
       "ok": true,
-      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depuis l’accueil quand tu "
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depuis l’accueil quand tu veux.\nVoir l'accueil"
     },
     {
       "id": "Revue_welcome_no_youssef",
       "ok": true,
-      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nCLUB\nMar"
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nCLUB\nMarche revue A\nTu peux rejoindre ou orga"
+    },
+    {
+      "id": "Revue_welcome_no_cadence_row",
+      "ok": true,
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depuis l’accueil quand tu veux.\nVoir l'accueil"
     },
     {
       "id": "Revue_clubs_hub_loaded",
@@ -112,7 +122,7 @@
     }
   ],
   "summary": {
-    "pass": 19,
+    "pass": 21,
     "fail": 0
   }
 }

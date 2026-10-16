@@ -1,0 +1,20 @@
+PASS goal_has_intention 
+Ton intention
+Pas une promesse — un cap.
+Marche & bien-être
+MARCHE
+Reprendre en douceur, sans pression de performance
+
+PASS cadence_slider_absent 
+Ton intention
+Pas une promesse — un cap.
+Marche & bien-être
+MARCHE
+Reprendre en douceur, sans pression de performance
+
+PASS welcome_no_rythme_row BIENVENUE · ÉTAPE FINALE
+C’est prêt, SansCadence.
+Récap de ton parcours — tu pourras tout ajuster plus tard.
+PARCOURS
+Dé
+SUMMARY { pass: 3, fail: 0 }

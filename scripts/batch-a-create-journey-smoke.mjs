@@ -186,9 +186,10 @@ async function runCreatePath(page, { firstName, clubName, city }) {
   );
   check(
     `${firstName}_welcome_no_cadence_row`,
-    !/RYTHME|sorties\s*\/\s*semaine|séances\s*\/\s*semaine|Cadence visée/i.test(
-      welcome,
-    ),
+    !/^RYTHME$/m.test(welcome) &&
+      !/sorties\s*\/\s*semaine|séances\s*\/\s*semaine|Cadence visée/i.test(
+        welcome,
+      ),
     welcome.slice(0, 280),
   );
 
