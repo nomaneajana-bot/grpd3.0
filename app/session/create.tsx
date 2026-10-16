@@ -2419,10 +2419,11 @@ export default function CreateSessionScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Same detail fields for every type (Marche block parity). */}
           <View style={styles.walkMetaBlock} testID="session-detail-fields">
             <Text style={[styles.cardSubtitle, styles.sessionTypeSubtitle]}>
-              Titre, objectif et structure — visibles sur la fiche de la sortie,
-              quel que soit le type.
+              Indique un titre, l&apos;objectif et le lieu — ils apparaîtront sur
+              la fiche de la sortie.
             </Text>
             <Text style={styles.fieldLabel}>Titre</Text>
             <TextInput
@@ -2454,23 +2455,6 @@ export default function CreateSessionScreen() {
               multiline
               testID="session-purpose-input"
               accessibilityLabel="Objectif de la sortie"
-            />
-            <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
-              Structure / déroulé
-            </Text>
-            <TextInput
-              style={[styles.walkTextInput, styles.walkTextArea]}
-              value={structureNotes}
-              onChangeText={setStructureNotes}
-              placeholder={
-                sessionMode === "walking"
-                  ? "Ex. 10 min échauffement · marche libre · étirements"
-                  : "Ex. 10 min échauffement · 6×1 min vite / 1 min lent · retour au calme"
-              }
-              placeholderTextColor={colors.text.tertiary}
-              multiline
-              testID="session-structure-input"
-              accessibilityLabel="Structure de la séance"
             />
             <Pressable
               style={[styles.fieldRow, { marginTop: 12 }]}
@@ -2511,6 +2495,19 @@ export default function CreateSessionScreen() {
                 />
               </>
             ) : null}
+            <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
+              Structure / déroulé
+            </Text>
+            <TextInput
+              style={[styles.walkTextInput, styles.walkTextArea]}
+              value={structureNotes}
+              onChangeText={setStructureNotes}
+              placeholder="Ex. 10 min échauffement · 6×1 min vite / 1 min lent · retour au calme"
+              placeholderTextColor={colors.text.tertiary}
+              multiline
+              testID="session-structure-input"
+              accessibilityLabel="Structure de la séance"
+            />
             {formError ? (
               <Text style={styles.formErrorText} testID="session-form-error">
                 {formError}
