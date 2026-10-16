@@ -1,31 +1,32 @@
 # Batch 7 — live mock journey fixes
 
-- **branch:** `cursor/mvp-live-journeys-3184`
-- **tested_sha:** `b67980e90ad5f1b2bc3784b580593aabb04f74d6`
-- **review candidate that failed:** `e8e9b05` on Preview mock (0708060337)
-- **environment:** unit + local explicit mock (`DEMO_MODE=false`)
+- **branch:** `cursor/mvp-live-journeys-3184` (PR #7)
+- **tested_sha (Batch A onboarding code tip):** `dd658418297ede6f9c766395d11ccb413df4ee8d`
+- **Codex prior PASS (finish→home on c09ede0):** Commencer mock 0708060337/123456 → solo → home
+- **review that failed earlier:** `e8e9b05` Preview mock
+- **environment:** unit + Preview explicit mock (`DEMO_MODE=false`)
 - **hosted_claim / connected_claim:** false
-- **interactive retest:** PENDING (owner/Codex browser)
+- **Batch A detail:** `BATCH_A_ONBOARDING.md`
+- **interactive Batch A review:** STOP — awaiting Codex/owner after this tip
 
 ## Fixed vs review items
 
 | # | Issue | Status |
 |---|-------|--------|
-| 1 | Onboarding runners-only “Cours.” | FIXED — community/walk/language copy (role/pace screens still runner-framed — logged) |
-| 2 | Wrong code → Compte introuvable; SMS claim; mode hidden | FIXED — OTP errors preserved; mock/démo hints; no false SMS |
-| — | New-user « Voir l'accueil » → first onboarding again | FIXED — finishOnboarding requires auth; normalize phone; mock for demo phone; stay on screen on error |
-| 3 | Create → old club active | FIXED (prior tip) |
-| 4 | Élite / TU ES MEMBRE on walk club | FIXED (prior tip) |
-| 5 | Organise FARTLEK + internal walk copy | FIXED (prior tip) |
-| 6 | Private walk inaccessible | FIXED (prior tip) |
-| 7 | Discover join fails | FIXED (prior tip) + cancel unit |
+| 1 | Onboarding runners-only | **FIXED AWAITING RETEST** — inclusive roles; welcome/index community copy |
+| 2 | Wrong code / SMS / mode | FIXED — OTP clarity; mock/démo simulation disclosed (no SMS claim) |
+| — | Finish → onboarding loop | FIXED — auth persistence kept |
+| — | Pace confusing / invented group | **FIXED AWAITING RETEST** — optional; synced slider/cards; no Groupe inventé |
+| — | Fake Coach Youssef / outing welcome | **FIXED AWAITING RETEST** — truthful summary only |
+| 3–7 | Club / walk / discover | Prior tips; **B structure persistence + private outing retest QUEUED not accepted** |
+| D | Invite / two-account | **BLOCKED** — exact: no invite seed/approval in this batch; do not PASS |
 
 ## Unit
 
-- `loginVerifyErrors` — wrong 000000 → Code invalide; 123456 OK
-- `mockSessionPersistence` — create→get; join; join→me→leave
-- `liveJourneyMocks` — walk defaults; no invented Élite
+- `onboardingBatchA` — pace nearest-ref sync
+- `finishOnboardingAuth` — auth before clear
+- `loginVerifyErrors` · `mockSessionPersistence` · `liveJourneyMocks`
 
 ## Not claimed
 
-D invitations / two-account · connected DB · hosted · native · UAT · full journey acceptance
+B club→private outing acceptance · structure persistence retest · D invitations · connected DB · hosted · native · UAT · full journey acceptance

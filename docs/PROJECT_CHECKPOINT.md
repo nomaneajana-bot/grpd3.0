@@ -2,35 +2,35 @@
 
 **Updated:** 2026-10-16  
 **Working branch:** `cursor/mvp-live-journeys-3184`  
-**Batch 7 tested_sha:** `b67980e90ad5f1b2bc3784b580593aabb04f74d6`  
-**Review that drove this batch:** interactive mock Preview @ `e8e9b05` (0708060337)  
+**Batch 7 / Batch A tip:** `dd658418297ede6f9c766395d11ccb413df4ee8d`  
+**Review that drove Batch A:** Codex PASS finish→home on `c09ede0`; then bounded onboarding UX  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
 
-**BATCH 7 — LIVE MOCK JOURNEY FIXES A+B+C — STOP for interactive retest.**  
-Code fixes for review items 1–7 on explicit mock (`DEMO_MODE=false`).  
-Connected DB / hosted mutation still BLOCKED. No full journey acceptance.
+**BATCH A — FINISH ONBOARDING (func+UX) — STOP for review.**  
+Inclusive roles, optional pace (no invented group), truthful welcome, mock simulation copy.  
+Structure/déroulé + finish auth persistence preserved. B retest **queued not accepted**.  
+Connected DB / hosted / production unchanged.
 
-### Landed
+### Landed (Batch A)
 
-**A — Login/onboarding**
-- Welcome: “Sors. Avec les tiens.” + walk/language/course community copy
-- Phone/verify: no false SMS claim in mock/démo; mode hint (`000000` démo / `123456` mock)
-- Wrong OTP surfaces **Code invalide** — not PIN **Compte introuvable**
-- **New-user finish:** persist mock/PIN auth before clear; no silent tabs→onboarding loop; phone E.164 normalize
+- Roles: Découvrir à mon rythme / Rejoindre un club / Créer un club  
+- Pace optional + synced slider/cards; skip invente aucun Groupe A–D  
+- Welcome = actual choices only (no Coach Youssef / fake outing / 12 participants)  
+- Mock Commencer: simulation, pas de SMS  
+- Finish auth persistence kept  
 
-**B — Club → walk → access** (prior commit `c40cccf`)
-- New club focused after create; walk groups; admin label; mock session persist
+### Queued (not accepted)
 
-**C — Discover join → cancel**
-- Join works without DEMO_MODE; unit join→me→leave
+- **B** club → private outing + Structure/déroulé persistence retest  
+- **D** invitations / two-account (exact blocker: no invite seed/approval here)
 
 ### Exact next action
 
-1. **Interactive retest** on explicit mock (fresh storage): items 1–7 from the 16 Oct review.  
-2. Then D (invitations / two-account) — blocked paths ≠ PASS.  
-3. No deploy/merge/spend/prod claim from this tip.
+1. **STOP — review Batch A** on Preview tip `dd65841` (fresh storage).  
+2. Do not declare B accepted. Do not PASS invite without D.  
+3. No deploy/env/security/prod changes from this tip.
 
 ## Surfaces
 
