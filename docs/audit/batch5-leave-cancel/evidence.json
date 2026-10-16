@@ -1,8 +1,11 @@
 {
-  "batch": "Batch 5 — ISSUE-004 leave / cancel-request (+ ISSUE-008 access)",
-  "issues": ["ISSUE-004", "ISSUE-008"],
+  "batch": "Batch 5 \u2014 ISSUE-004 leave / cancel-request (+ ISSUE-008 access)",
+  "issues": [
+    "ISSUE-004",
+    "ISSUE-008"
+  ],
   "tested_sha": "f8f378707a2b973e3fc2ae9e688f0580af09adff",
-  "tip_sha": "f8f378707a2b973e3fc2ae9e688f0580af09adff",
+  "tip_sha": "abe641296bc5bbc6af5c503979d8650842110e4a",
   "codex_review_base": "0309752",
   "prior_code_sha": "3befb19c9627973ebefa72a438e38b429f0c44b7",
   "branch": "cursor/green-home-ux-join-3184",
@@ -28,7 +31,7 @@
       "app/api/v1/clubs/[id]/leave/route.ts#POST",
       "app/api/v1/clubs/[id]/cancel-request/route.ts#POST"
     ],
-    "contract": "requireAuth(req) → req.auth?.user?.id (lib/server/auth-helpers.ts)",
+    "contract": "requireAuth(req) \u2192 req.auth?.user?.id (lib/server/auth-helpers.ts)",
     "request_input": "Request-compatible NextRequest via test/shims/next-server.ts (next package not a workspace dependency)",
     "removed_wrappers": "runAuthenticatedLeave / runAuthenticatedCancelRequest / requireActorUserId deleted (were not called by routes)"
   },
@@ -39,7 +42,7 @@
     },
     "pg_route_auth_401_actual_handlers": {
       "ok": true,
-      "detail": "actual POST leave+cancel: missing/null/empty/non-string auth → Response 401 UNAUTHORIZED; membership count unchanged"
+      "detail": "actual POST leave+cancel: missing/null/empty/non-string auth \u2192 Response 401 UNAUTHORIZED; membership count unchanged"
     },
     "pg_route_actor_isolation_body_userid_ignored": {
       "ok": true,
@@ -47,7 +50,7 @@
     },
     "pg_approved_leave_revokes_members_only_attendance": {
       "ok": true,
-      "detail": "membership deleted; members-only → left; public joined unchanged; club persists"
+      "detail": "membership deleted; members-only \u2192 left; public joined unchanged; club persists"
     },
     "pg_leave_idempotent_retry": {
       "ok": true,
@@ -87,7 +90,7 @@
     },
     "pg_lifecycle_rollback_membership_and_attendance": {
       "ok": true,
-      "detail": "hook throw after attendance revoke → membership approved + attendance joined"
+      "detail": "hook throw after attendance revoke \u2192 membership approved + attendance joined"
     },
     "pg_wrong_club_isolation": {
       "ok": true,
@@ -104,12 +107,12 @@
     "hosted_dual_browser_journey": {
       "ok": false,
       "status": "BLOCKED",
-      "detail": "SSO 302; no authorized test Preview/Test env — not PASS"
+      "detail": "SSO 302; no authorized test Preview/Test env \u2014 not PASS"
     },
     "issue_008_multi_context": {
       "ok": false,
       "status": "BLOCKED",
-      "detail": "depends on hosted creds; SSO protection only — not PASS"
+      "detail": "depends on hosted creds; SSO protection only \u2014 not PASS"
     }
   },
   "summary": {
