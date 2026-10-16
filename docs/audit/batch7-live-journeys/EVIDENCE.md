@@ -7,6 +7,8 @@
 - **environment:** unit + Preview explicit mock (`DEMO_MODE=false`)
 - **hosted_claim / connected_claim:** false
 - **Batch A detail:** `BATCH_A_ONBOARDING.md`
+- **local UI smoke:** 13/13 PASS (`batch-a-ui-smoke.json` + `screenshots/batch-a-*.png`)
+- **Preview SSO for agent:** BLOCKED — Codex/owner retest on Preview with SSO
 - **interactive Batch A review:** STOP — awaiting Codex/owner after this tip
 
 ## Fixed vs review items
