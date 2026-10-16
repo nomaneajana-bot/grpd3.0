@@ -7,7 +7,7 @@
 **Batch 5 local gate:** **ACCEPTED** — tested `f8f378707a2b973e3fc2ae9e688f0580af09adff`  
 **Runtime diagnosis:** accepted — map `6b05559` / tip `4403447`  
 **Batch 6 `tested_sha`:** `4dad7495bcb1239dcc65e2a451d07f99db9cf43d`  
-**Batch 6 docs tip: `e30fa085b8a54797f650a482fb17b8c617069842`  
+**Batch 6 docs tip:** `557233e3516cc486f840b599bd940d6603a6fda6`  
 **Batch 6 evidence:** `docs/audit/batch6-runtime-wiring/` — local PG **22/22** + unit **113/113** + typecheck PASS · `hosted_claim: false` · `deploy_claim: false`  
 **Prior Codex Batch6 review:** `74fef39` / `83b5e09` — **NOT cleared**; corrections in tested SHA above  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`

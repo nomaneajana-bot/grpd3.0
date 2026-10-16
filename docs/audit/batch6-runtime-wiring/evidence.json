@@ -118,5 +118,6 @@
   "deployment_plan_settings_status": "UNVERIFIED (not inspected this batch)",
   "note": "Local Batch6 Codex corrections only. Preview settings UNVERIFIED \u2014 not labeled missing from source alone. No new DB created. No deploy/prod/merge/spend/OCIF.",
   "generated_at": "2026-10-16T01:42:00.000Z",
-  "tip_sha": "e30fa085b8a54797f650a482fb17b8c617069842"
+  "tip_sha": "557233e3516cc486f840b599bd940d6603a6fda6",
+  "evidence_docs_sha": "e30fa085b8a54797f650a482fb17b8c617069842"
 }
