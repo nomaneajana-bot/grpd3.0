@@ -1,7 +1,7 @@
 # Batch 7 — live mock journey fixes
 
 - **branch:** `cursor/mvp-live-journeys-3184`
-- **tested_sha:** *(stamp after commit)*
+- **tested_sha:** `b67980e90ad5f1b2bc3784b580593aabb04f74d6`
 - **review candidate that failed:** `e8e9b05` on Preview mock (0708060337)
 - **environment:** unit + local explicit mock (`DEMO_MODE=false`)
 - **hosted_claim / connected_claim:** false
