@@ -85,7 +85,7 @@ export function formatDateLabel(date: Date, timeMinutes: number): string {
 }
 
 /**
- * Check if date is in the future
+ * Check if date is in the future (calendar day >= today)
  */
 export function isFutureDate(dateISO: string): boolean {
   if (!dateISO) return false;
@@ -102,6 +102,125 @@ export function isFutureDate(dateISO: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** Today as YYYY-MM-DD in local time. */
+export function todayISO(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+    now.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+/**
+ * Next `count` calendar days starting from today (inclusive), as ISO dates.
+ * Used by session create date picker — real dates, never invented weekdays.
+ */
+export function upcomingDateOptions(count = 14): {
+  dateISO: string;
+  label: string;
+}[] {
+  const options: { dateISO: string; label: string }[] = [];
+  const dayNames = [
+    "DIMANCHE",
+    "LUNDI",
+    "MARDI",
+    "MERCREDI",
+    "JEUDI",
+    "VENDREDI",
+    "SAMEDI",
+  ];
+  const monthNames = [
+    "JANVIER",
+    "FÉVRIER",
+    "MARS",
+    "AVRIL",
+    "MAI",
+    "JUIN",
+    "JUILLET",
+    "AOÛT",
+    "SEPTEMBRE",
+    "OCTOBRE",
+    "NOVEMBRE",
+    "DÉCEMBRE",
+  ];
+  const start = new Date();
+  start.setHours(12, 0, 0, 0);
+  for (let i = 0; i < count; i += 1) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const dateISO = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate(),
+    ).padStart(2, "0")}`;
+    options.push({
+      dateISO,
+      label: `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]}`,
+    });
+  }
+  return options;
+}
+
+/**
+ * Reject past calendar days. Returns false for invalid ISO.
+ */
+export function isSelectableOutingDate(dateISO: string): boolean {
+  return isFutureDate(dateISO);
+}
+
+/**
+ * Reject invalid ISO or a date+time that is already in the past (local clock).
+ * Calendar-today is allowed only when the chosen time is still upcoming.
+ */
+export function isSelectableOutingDateTime(
+  dateISO: string,
+  timeMinutes: number,
+): boolean {
+  if (!dateISO || !/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) return false;
+  if (
+    typeof timeMinutes !== "number" ||
+    !Number.isFinite(timeMinutes) ||
+    timeMinutes < 0 ||
+    timeMinutes > 1439
+  ) {
+    return false;
+  }
+  if (!isSelectableOutingDate(dateISO)) return false;
+
+  const [y, m, d] = dateISO.split("-").map((n) => parseInt(n, 10));
+  const hour = Math.floor(timeMinutes / 60);
+  const minute = timeMinutes % 60;
+  const when = new Date(y, m - 1, d, hour, minute, 0, 0);
+  if (isNaN(when.getTime())) return false;
+  return when.getTime() > Date.now();
+}
+
+/** Default create time: next half-hour slot at least 30 minutes ahead; else tomorrow 09:00. */
+export function defaultUpcomingOutingTime(now = new Date()): {
+  dateISO: string;
+  hour: number;
+  minute: number;
+  timeMinutes: number;
+} {
+  const candidate = new Date(now.getTime() + 30 * 60 * 1000);
+  let minutes = candidate.getMinutes();
+  let hour = candidate.getHours();
+  if (minutes > 0 && minutes <= 30) minutes = 30;
+  else if (minutes > 30) {
+    minutes = 0;
+    hour += 1;
+  }
+  if (hour >= 24) {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateISO = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(
+      tomorrow.getDate(),
+    ).padStart(2, "0")}`;
+    return { dateISO, hour: 9, minute: 0, timeMinutes: 9 * 60 };
+  }
+  const dateISO = `${candidate.getFullYear()}-${String(candidate.getMonth() + 1).padStart(2, "0")}-${String(
+    candidate.getDate(),
+  ).padStart(2, "0")}`;
+  return { dateISO, hour, minute: minutes, timeMinutes: hour * 60 + minutes };
 }
 
 /**

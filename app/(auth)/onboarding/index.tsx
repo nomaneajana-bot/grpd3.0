@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { FeatureRow } from "@/components/onboarding/FeatureRow";
 import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
+import { WelcomeBackground } from "@/components/onboarding/WelcomeBackground";
 import { welcomeTheme } from "@/components/onboarding/onboardingTheme";
 
 export default function OnboardingWelcomeScreen() {
@@ -11,6 +12,7 @@ export default function OnboardingWelcomeScreen() {
     <OnboardingScreen
       scroll={false}
       ctaVariant="welcome"
+      background={<WelcomeBackground />}
       paddingHorizontal={welcomeTheme.screenPaddingHorizontal}
       primaryLabel="Commencer"
       onPrimaryPress={() => router.push("/(auth)/onboarding/phone" as Href)}

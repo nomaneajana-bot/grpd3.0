@@ -25,18 +25,17 @@ import {
   createApiClient,
   getMyMemberships,
   leaveClub,
+  resetDemoData,
   updateMyPrs,
 } from "@/lib/api";
 import { clearAuthData, getAuthUser } from "@/lib/authStore";
 import { getClubAdminSettings } from "@/lib/clubAdminStore";
-import { inferUserClubGroupId } from "@/lib/clubPaceGroups";
 import { confirmAction } from "@/lib/confirmAction";
-import { getJoinedSessions } from "@/lib/joinedSessionsStore";
+import { DEMO_MODE } from "@/lib/featureFlags";
 import { interGroupModeLabel } from "@/lib/interGroupPolicy";
 import { formatPhoneDisplay } from "@/lib/phoneFormat";
 import {
   getRunnerProfile,
-  getReferencePaces,
   getTestRecords,
   saveRunnerProfile,
   type RunnerProfile,
@@ -77,9 +76,9 @@ export default function SettingsScreen() {
   });
 
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
-  const [userGroupId, setUserGroupId] = useState("B");
   const [interGroupPolicyLabel, setInterGroupPolicyLabel] =
     useState("Avertissement");
+  const [isResettingDemo, setIsResettingDemo] = useState(false);
 
   const buildPrSummary = async (): Promise<PrSummary> => {
     const tests = await getTestRecords();
@@ -119,10 +118,9 @@ export default function SettingsScreen() {
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [runner, prefs, paces, authUser] = await Promise.all([
+      const [runner, prefs, authUser] = await Promise.all([
         getRunnerProfile(),
         getSettingsPreferences(),
-        getReferencePaces(),
         getAuthUser(),
       ]);
 
@@ -154,8 +152,6 @@ export default function SettingsScreen() {
             const mode = admin.defaultInterGroupPolicy ?? "warn";
             setInterGroupPolicyLabel(interGroupModeLabel(mode));
           }
-          const joined = await getJoinedSessions();
-          setUserGroupId(inferUserClubGroupId(runner, joined, paces));
         } catch (error) {
           console.warn("Failed to load club settings context:", error);
         }
@@ -279,8 +275,28 @@ export default function SettingsScreen() {
     }
   };
 
-  const openPlaceholder = (title: string) => {
-    Alert.alert(title, "Bientôt disponible.");
+  const handleResetDemo = async () => {
+    if (!DEMO_MODE || isResettingDemo) return;
+    const ok = await confirmAction({
+      title: "Reset demo",
+      message:
+        "Efface les données locales et réinitialise le monde de démo Casablanca.",
+      confirmLabel: "Réinitialiser",
+      destructive: true,
+    });
+    if (!ok) return;
+    setIsResettingDemo(true);
+    try {
+      await resetDemoData();
+      await clearAuthData();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace("/(auth)/phone");
+    } catch (error) {
+      console.warn("Reset demo failed:", error);
+      Alert.alert("Erreur", "Impossible de réinitialiser la démo.");
+    } finally {
+      setIsResettingDemo(false);
+    }
   };
 
   if (isLoading) {
@@ -322,12 +338,12 @@ export default function SettingsScreen() {
             value={
               phoneNumber ? formatPhoneDisplay(phoneNumber) : "—"
             }
-            onPress={() => openPlaceholder("Téléphone")}
+            showChevron={false}
           />
           <SettingsNavRow
             title="Photo de profil"
             value={`Initiale ${profileInitial}`}
-            onPress={() => openPlaceholder("Photo de profil")}
+            comingSoon
           />
         </SettingsGroup>
 
@@ -336,12 +352,12 @@ export default function SettingsScreen() {
           <SettingsNavRow
             title="Langue"
             value={LANGUAGE_LABELS[language]}
-            onPress={() => openPlaceholder("Langue")}
+            comingSoon
           />
           <SettingsNavRow
             title="Unités"
             value={UNITS_LABELS[units]}
-            onPress={() => openPlaceholder("Unités")}
+            comingSoon
           />
         </SettingsGroup>
 
@@ -406,24 +422,24 @@ export default function SettingsScreen() {
             <Text style={styles.clubSubtitle}>
               Membre de{" "}
               <Text style={styles.clubName}>{clubName}</Text>
-              {" · "}Groupe {userGroupId}
             </Text>
           }
         >
           CLUB
         </SettingsSectionLabel>
         <SettingsGroup>
-          <SettingsNavRow
-            title="Politique d'accès inter-groupes"
-            value={interGroupPolicyLabel}
-            onPress={() => {
-              if (primaryMembership?.clubId) {
-                router.push("/(tabs)/club/settings");
-              } else {
-                openPlaceholder("Politique d'accès inter-groupes");
-              }
-            }}
-          />
+          {primaryMembership?.clubId ? (
+            <SettingsNavRow
+              title="Politique d'accès inter-groupes"
+              value={interGroupPolicyLabel}
+              onPress={() => router.push("/(tabs)/club/settings")}
+            />
+          ) : (
+            <SettingsNavRow
+              title="Politique d'accès inter-groupes"
+              comingSoon
+            />
+          )}
           <SettingsNavRow
             title="Quitter le club"
             destructive
@@ -433,19 +449,21 @@ export default function SettingsScreen() {
 
         <SettingsSectionLabel>À PROPOS</SettingsSectionLabel>
         <SettingsGroup>
+          <SettingsNavRow title="Conditions d'utilisation" comingSoon />
+          <SettingsNavRow title="Confidentialité" comingSoon />
+          <SettingsNavRow title="Contacter le support" comingSoon />
           <SettingsNavRow
-            title="Conditions d'utilisation"
-            onPress={() => openPlaceholder("Conditions d'utilisation")}
+            title="Version"
+            value={versionLabel}
+            showChevron={false}
+            onLongPress={
+              DEMO_MODE
+                ? () => {
+                    void handleResetDemo();
+                  }
+                : undefined
+            }
           />
-          <SettingsNavRow
-            title="Confidentialité"
-            onPress={() => openPlaceholder("Confidentialité")}
-          />
-          <SettingsNavRow
-            title="Contacter le support"
-            onPress={() => openPlaceholder("Contacter le support")}
-          />
-          <SettingsNavRow title="Version" value={versionLabel} showChevron={false} />
         </SettingsGroup>
 
         <Pressable

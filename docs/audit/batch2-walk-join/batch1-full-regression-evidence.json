@@ -1,0 +1,178 @@
+{
+  "batch": "Batch 1 — PRIVATE OUTING ACCESS + TRUSTWORTHY EVIDENCE",
+  "issues": [
+    "ISSUE-001",
+    "ISSUE-005",
+    "ISSUE-010-privacy"
+  ],
+  "tested_sha": "75356094d741c63cbfbfca2fa7301042784a2fbf",
+  "tip_sha": "75356094d741c63cbfbfca2fa7301042784a2fbf",
+  "branch": "cursor/green-home-ux-join-3184",
+  "environment": "demo",
+  "hosted_claim": false,
+  "note": "DEMO_MODE mock only. Server/hosted list+GET filters exist separately; this run does not claim hosted. Pending membership is established via UI request for the exact target club — outsider is never substituted for pending.",
+  "unique_logistics": {
+    "spot": "ZB1V7HEUK9",
+    "titleToken": "ZB1V7HEUK9"
+  },
+  "target_club_name": "Batch1 Club ZB1V7HEUK9",
+  "checks": {
+    "login_member_host": {
+      "ok": true,
+      "detail": "0611111111 (new club admin)"
+    },
+    "host_club_created": {
+      "ok": true,
+      "detail": "http://localhost:8081/club"
+    },
+    "audience_club_selected": {
+      "ok": true,
+      "detail": ""
+    },
+    "unique_spot_seeded": {
+      "ok": true,
+      "detail": "ZB1V7HEUK9"
+    },
+    "ISSUE-001_publish_real_outing_id": {
+      "ok": true,
+      "detail": "/session/session_1791944392051_xrf2yc1d"
+    },
+    "member_positive_control_detail": {
+      "ok": true,
+      "detail": "unique logistics visible: ZB1V7HEUK9"
+    },
+    "member_not_inaccessible_state": {
+      "ok": true,
+      "detail": "http://localhost:8081/session/session_1791944392051_xrf2yc1d"
+    },
+    "member_reload_still_accessible": {
+      "ok": true,
+      "detail": "/session/session_1791944392051_xrf2yc1d"
+    },
+    "discover_list_hides_unique_private_spot": {
+      "ok": true,
+      "detail": "ZB1V7HEUK9"
+    },
+    "login_outsider": {
+      "ok": true,
+      "detail": "0699999999"
+    },
+    "outsider_direct_link_inaccessible": {
+      "ok": true,
+      "detail": "http://localhost:8081/session/session_1791944392051_xrf2yc1d"
+    },
+    "outsider_unique_logistics_absent": {
+      "ok": true,
+      "detail": "absent"
+    },
+    "outsider_no_join_only_is_insufficient": {
+      "ok": true,
+      "detail": "assert inaccessible + logistics absent, not merely no join button"
+    },
+    "outsider_list_unique_logistics_absent": {
+      "ok": true,
+      "detail": "ZB1V7HEUK9"
+    },
+    "outsider_relogin_still_gated": {
+      "ok": true,
+      "detail": "http://localhost:8081/session/session_1791944392051_xrf2yc1d"
+    },
+    "login_pending_identity": {
+      "ok": true,
+      "detail": "0688888888"
+    },
+    "pending_request_submit_clicked": {
+      "ok": true,
+      "detail": "Batch1 Club ZB1V7HEUK9"
+    },
+    "pending_setup_membership_pending_not_approved": {
+      "ok": true,
+      "detail": "{\"userId\":\"user_1791944433521_r7j4tpkl\",\"clubId\":\"club_1791944384522_q361z6p3\",\"status\":\"pending\",\"approved\":false,\"pending\":true}"
+    },
+    "M07_pending_club_state_visible": {
+      "ok": true,
+      "detail": "pending for Batch1 Club ZB1V7HEUK9"
+    },
+    "pending_direct_link_inaccessible": {
+      "ok": true,
+      "detail": "http://localhost:8081/session/session_1791944392051_xrf2yc1d"
+    },
+    "pending_unique_logistics_absent": {
+      "ok": true,
+      "detail": "absent"
+    },
+    "pending_list_unique_logistics_absent": {
+      "ok": true,
+      "detail": "ZB1V7HEUK9"
+    },
+    "pending_reload_still_gated": {
+      "ok": true,
+      "detail": "{\"userId\":\"user_1791944433521_r7j4tpkl\",\"clubId\":\"club_1791944384522_q361z6p3\",\"status\":\"pending\",\"approved\":false,\"pending\":true}"
+    },
+    "pending_relogin_still_pending_not_approved": {
+      "ok": true,
+      "detail": "{\"userId\":\"user_1791944433521_r7j4tpkl\",\"clubId\":\"club_1791944384522_q361z6p3\",\"status\":\"pending\",\"approved\":false,\"pending\":true}"
+    },
+    "pending_relogin_still_gated": {
+      "ok": true,
+      "detail": "http://localhost:8081/session/session_1791944392051_xrf2yc1d"
+    },
+    "invite_for_leave_test": {
+      "ok": true,
+      "detail": "BATCHSSR"
+    },
+    "ISSUE-010_approved_member_positive_before_leave": {
+      "ok": true,
+      "detail": "http://localhost:8081/session/session_1791944392051_xrf2yc1d"
+    },
+    "member_b_left_club": {
+      "ok": true,
+      "detail": ""
+    },
+    "ISSUE-010_after_leave_inaccessible": {
+      "ok": true,
+      "detail": "http://localhost:8081/session/session_1791944392051_xrf2yc1d"
+    },
+    "ISSUE-010_after_leave_logistics_absent": {
+      "ok": true,
+      "detail": "absent"
+    },
+    "M08_design_annotation_not_in_product": {
+      "ok": true,
+      "detail": "annotation must stay design-only"
+    }
+  },
+  "screenshots": [
+    "docs/audit/batch1-privacy/screenshots/01-member-home.png",
+    "docs/audit/batch1-privacy/screenshots/01b-club-created.png",
+    "docs/audit/batch1-privacy/screenshots/02-create-form-members.png",
+    "docs/audit/batch1-privacy/screenshots/03-member-detail-after-publish.png",
+    "docs/audit/batch1-privacy/screenshots/04-member-reload.png",
+    "docs/audit/batch1-privacy/screenshots/05-discover-list.png",
+    "docs/audit/batch1-privacy/screenshots/06-outsider-direct-link.png",
+    "docs/audit/batch1-privacy/screenshots/07-outsider-list.png",
+    "docs/audit/batch1-privacy/screenshots/08-outsider-relogin.png",
+    "docs/audit/batch1-privacy/screenshots/09-club-pending.png",
+    "docs/audit/batch1-privacy/screenshots/10-pending-direct-link.png",
+    "docs/audit/batch1-privacy/screenshots/11-pending-list.png",
+    "docs/audit/batch1-privacy/screenshots/12-pending-reload.png",
+    "docs/audit/batch1-privacy/screenshots/13-pending-relogin.png",
+    "docs/audit/batch1-privacy/screenshots/14-member-b-before-leave.png",
+    "docs/audit/batch1-privacy/screenshots/15-member-b-after-leave-club.png",
+    "docs/audit/batch1-privacy/screenshots/16-member-b-outing-after-leave.png",
+    "docs/audit/batch1-privacy/screenshots/17-m08-product-check.png"
+  ],
+  "outing_id": "session_1791944392051_xrf2yc1d",
+  "errors": [],
+  "private_markers": [
+    "ZB1V7HEUK9",
+    "ZB1V7HEUK9",
+    "ZB1V7HEUK9"
+  ],
+  "summary": {
+    "passed": 31,
+    "failed": 0,
+    "total": 31
+  },
+  "generated_at": "2026-10-14T02:21:40.117Z"
+}

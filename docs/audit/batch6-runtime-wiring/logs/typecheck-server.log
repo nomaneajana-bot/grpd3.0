@@ -1,0 +1,5 @@
+
+> grpd3.0@1.0.0 typecheck:server
+> node scripts/typecheck-server.mjs
+
+PASS strict TypeScript check: 37 backend route/helper/adapter entrypoints and their dependencies (workspace typescript 5.9.3)

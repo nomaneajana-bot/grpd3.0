@@ -1,0 +1,10 @@
+=== config names only (no values) ===
+DATABASE_URL AUTH_JWT_SECRET PIN_ALLOWLIST_JSON EXPO_PUBLIC_API_URL EXPO_PUBLIC_DEMO_MODE EXPO_PUBLIC_USE_MOCK_API SUPABASE_URL SUPABASE_JWT_SECRET
+=== typecheck ===
+
+> grpd3.0@1.0.0 typecheck:server
+> node scripts/typecheck-server.mjs
+
+PASS strict TypeScript check: 37 backend route/helper/adapter entrypoints and their dependencies (workspace typescript 5.9.3)
+=== tested tip after docs stamp will differ; code SHA for corrections ===
+9711091edf4c8f89fe8897bc9eeacfa64096fb8e

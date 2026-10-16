@@ -68,6 +68,8 @@ export function OtpCodeInput({
               selectTextOnFocus
               placeholder=""
               placeholderTextColor={colors.text.tertiary}
+              accessibilityLabel={`Chiffre OTP ${i + 1}`}
+              testID={`otp-digit-${i}`}
             />
           );
         })}

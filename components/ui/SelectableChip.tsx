@@ -22,6 +22,7 @@ type SelectableChipProps = {
   labelStyle?: StyleProp<TextStyle>;
   uppercase?: boolean;
   accessibilityLabel?: string;
+  testID?: string;
 };
 
 export function SelectableChip({
@@ -34,9 +35,11 @@ export function SelectableChip({
   labelStyle,
   uppercase = false,
   accessibilityLabel,
+  testID,
 }: SelectableChipProps) {
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected }}

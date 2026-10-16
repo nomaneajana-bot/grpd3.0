@@ -3,6 +3,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/server/prisma";
 import { jsonOk, jsonError } from "@/lib/server/api-response";
+import { getAuthUserId } from "@/lib/server/auth-helpers";
+import { requireClubPermission } from "@/lib/server/role-checks";
 import { sessionIdParamSchema } from "@/lib/server/validators";
 
 function serializeSession(session: {
@@ -80,6 +82,23 @@ export async function GET(
     });
 
     if (!session) return jsonError("Session not found", "NOT_FOUND", 404);
+
+    // Members-only: hide existence from non-members (direct-link privacy).
+    // Host retains access even without current membership.
+    if (session.visibility === "members") {
+      const userId = await getAuthUserId(req);
+      const isHost = Boolean(userId) && session.hostUserId === userId;
+      if (!isHost) {
+        if (!userId || !session.clubId) {
+          return jsonError("Session not found", "NOT_FOUND", 404);
+        }
+        try {
+          await requireClubPermission(userId, session.clubId, "view");
+        } catch {
+          return jsonError("Session not found", "NOT_FOUND", 404);
+        }
+      }
+    }
 
     return jsonOk(serializeSession(session));
   } catch (e) {

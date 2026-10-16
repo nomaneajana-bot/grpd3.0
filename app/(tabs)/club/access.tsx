@@ -37,6 +37,7 @@ export default function ClubAccessScreen() {
   const [requestMessage, setRequestMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+  const [inviteClubId, setInviteClubId] = useState<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
   const loadMemberships = useCallback(async () => {
@@ -57,16 +58,23 @@ export default function ClubAccessScreen() {
     loadMemberships();
   }, [loadMemberships]);
 
+  const approvedMemberships = memberships.filter((m) => m.status === "approved");
+  const adminMemberships = approvedMemberships.filter(
+    (m) => m.role === "admin" || m.role === "coach",
+  );
+  /** Prefer explicitly selected admin club, else first admin club (multi-club safe). */
+  const adminMembership =
+    adminMemberships.find((m) => m.clubId === inviteClubId) ??
+    adminMemberships[0] ??
+    null;
   const primaryMembership =
-    memberships.find((m) => m.status === "approved") ??
+    adminMembership ??
+    approvedMemberships[0] ??
     memberships.find((m) => m.status === "pending") ??
     null;
   const isApprovedMember = primaryMembership?.status === "approved";
   const isPendingMember = primaryMembership?.status === "pending";
-  const isInClub = isApprovedMember || isPendingMember;
-  const isCoachOrAdmin =
-    isApprovedMember &&
-    (primaryMembership?.role === "admin" || primaryMembership?.role === "coach");
+  const isCoachOrAdmin = Boolean(adminMembership);
 
   const handleJoinByCode = async () => {
     if (!inviteCode.trim()) {
@@ -84,7 +92,7 @@ export default function ClubAccessScreen() {
     } catch (error) {
       console.warn("Join by code failed:", error);
       showToast(
-        "Impossible de rejoindre ce club. Vérifie le code ou l'API.",
+        "Impossible de rejoindre ce club. Vérifie le code.",
         "error",
       );
     } finally {
@@ -178,6 +186,37 @@ export default function ClubAccessScreen() {
         {isCoachOrAdmin && (
           <Card style={styles.card}>
             <Text style={styles.cardLabel}>RESPONSABLE</Text>
+            {adminMemberships.length > 1 ? (
+              <View style={styles.clubPickRow} testID="invite-club-picker">
+                {adminMemberships.map((m) => {
+                  const active = m.clubId === primaryMembership?.clubId;
+                  return (
+                    <Pressable
+                      key={m.clubId}
+                      testID={`invite-club-${m.clubId}`}
+                      onPress={() => {
+                        setInviteClubId(m.clubId);
+                        setGeneratedInviteCode(null);
+                      }}
+                      style={[
+                        styles.clubPickChip,
+                        active && styles.clubPickChipOn,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.clubPickText,
+                          active && styles.clubPickTextOn,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {m.club?.name ?? "Club"}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
             <Pressable
               style={({ pressed }) => [
                 styles.secondaryButton,
@@ -197,20 +236,35 @@ export default function ClubAccessScreen() {
               ]}
               onPress={handleGenerateInvite}
               disabled={isGeneratingInvite}
+              accessibilityRole="button"
+              accessibilityLabel="Générer un code d'invitation"
+              testID="club-generate-invite"
             >
               <Text style={styles.secondaryButtonText}>
                 Générer un code d&apos;invitation
+                {primaryMembership?.club?.name
+                  ? ` · ${primaryMembership.club.name}`
+                  : ""}
               </Text>
             </Pressable>
             {generatedInviteCode && (
               <View style={styles.inviteRow}>
-                <Text style={styles.inviteCode}>{generatedInviteCode}</Text>
+                <Text
+                  style={styles.inviteCode}
+                  testID="club-invite-code"
+                  accessibilityLabel={`Code ${generatedInviteCode}`}
+                >
+                  {generatedInviteCode}
+                </Text>
                 <Pressable
                   style={({ pressed }) => [
                     styles.copyButton,
                     pressed && styles.copyButtonPressed,
                   ]}
                   onPress={handleCopyInvite}
+                  accessibilityRole="button"
+                  accessibilityLabel="Copier le code"
+                  testID="club-copy-invite"
                 >
                   <Text style={styles.copyButtonText}>Copier</Text>
                 </Pressable>
@@ -230,25 +284,28 @@ export default function ClubAccessScreen() {
               placeholder="Ex: CRC2026"
               placeholderTextColor={colors.text.tertiary}
               autoCapitalize="characters"
-              editable={!isApprovedMember}
+              editable={!isSubmitting}
+              accessibilityLabel="Code d'invitation"
+              testID="club-invite-code-input"
             />
           </View>
           <Pressable
             style={({ pressed }) => [
               styles.primaryButton,
-              (pressed || isSubmitting || isApprovedMember) &&
-                styles.primaryButtonPressed,
+              (pressed || isSubmitting) && styles.primaryButtonPressed,
             ]}
             onPress={handleJoinByCode}
-            disabled={isSubmitting || isApprovedMember}
+            disabled={isSubmitting}
+            accessibilityRole="button"
+            accessibilityLabel="Rejoindre avec code"
+            testID="club-join-by-code"
           >
-            <Text style={styles.primaryButtonText}>
-              {isApprovedMember ? "Déjà membre" : "Rejoindre"}
-            </Text>
+            <Text style={styles.primaryButtonText}>Rejoindre</Text>
           </Pressable>
           {isApprovedMember && (
             <Text style={styles.helperText}>
-              Tu es déjà membre d&apos;un club.
+              Tu peux rejoindre plusieurs clubs. Ce code ajoutera un club
+              supplémentaire.
             </Text>
           )}
         </Card>
@@ -262,9 +319,11 @@ export default function ClubAccessScreen() {
               value={clubSlug}
               onChangeText={setClubSlug}
               placeholder="Ex: Casablanca Running Club"
-              placeholderTextColor={colors.text.tertiary}
+              placeholderTextColor={colors.text.secondary}
               autoCapitalize="none"
-              editable={!isInClub}
+              editable={!isSubmitting}
+              accessibilityLabel="Nom du club"
+              testID="club-request-name-input"
             />
             <Text style={styles.helperText}>
               Si tu n&apos;as pas de code, entre le nom du club.
@@ -277,9 +336,10 @@ export default function ClubAccessScreen() {
               value={requestMessage}
               onChangeText={setRequestMessage}
               placeholder="Pourquoi tu veux rejoindre ?"
-              placeholderTextColor={colors.text.tertiary}
+              placeholderTextColor={colors.text.secondary}
               autoCapitalize="sentences"
-              editable={!isInClub}
+              editable={!isSubmitting}
+              testID="club-request-message-input"
             />
           </View>
           <Pressable
@@ -288,14 +348,13 @@ export default function ClubAccessScreen() {
               (pressed || isSubmitting) && styles.secondaryButtonPressed,
             ]}
             onPress={handleRequestJoin}
-            disabled={isSubmitting || isInClub}
+            disabled={isSubmitting || isPendingMember}
+            accessibilityRole="button"
+            accessibilityLabel="Envoyer la demande"
+            testID="club-request-submit"
           >
             <Text style={styles.secondaryButtonText}>
-              {isPendingMember
-                ? "Demande en attente"
-                : isApprovedMember
-                  ? "Déjà membre"
-                  : "Envoyer la demande"}
+              {isPendingMember ? "Demande en attente" : "Envoyer la demande"}
             </Text>
           </Pressable>
           {isPendingMember && (
@@ -305,23 +364,24 @@ export default function ClubAccessScreen() {
           )}
         </Card>
 
-        {!isApprovedMember && (
-          <Card style={styles.card}>
-            <Text style={styles.cardLabel}>CRÉER UN CLUB</Text>
-            <Pressable
-              style={({ pressed }) => [
-                styles.createButton,
-                pressed && styles.createButtonPressed,
-              ]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push("/(tabs)/club/create" as Href);
-              }}
-            >
-              <Text style={styles.createButtonText}>Créer un club</Text>
-            </Pressable>
-          </Card>
-        )}
+        <Card style={styles.card}>
+          <Text style={styles.cardLabel}>CRÉER UN CLUB</Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.createButton,
+              pressed && styles.createButtonPressed,
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/(tabs)/club/create" as Href);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Créer un club"
+            testID="club-create-nav"
+          >
+            <Text style={styles.createButtonText}>Créer un club</Text>
+          </Pressable>
+        </Card>
 
         {isLoading ? (
           <Text style={styles.helperText}>Chargement…</Text>
@@ -335,6 +395,32 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  clubPickRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+  clubPickChip: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.elevated,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  clubPickChipOn: {
+    backgroundColor: colors.accent.sage,
+    borderColor: colors.accent.sage,
+  },
+  clubPickText: {
+    color: colors.text.primary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  clubPickTextOn: {
+    color: colors.accent.charcoal,
   },
   header: {
     paddingHorizontal: 14,

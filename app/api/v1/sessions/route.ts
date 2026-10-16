@@ -2,9 +2,10 @@
 // GET  /api/v1/sessions – list sessions
 
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/server/prisma";
-import { requireAuth } from "@/lib/server/auth-helpers";
+import { getAuthUserId, requireAuth } from "@/lib/server/auth-helpers";
 import { hasClubPermission } from "@/lib/server/role-checks";
 import { jsonOk, jsonError } from "@/lib/server/api-response";
 
@@ -96,7 +97,7 @@ function serializeSession(session: {
 
 export async function POST(req: NextRequest) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const body = await req.json().catch(() => null);
     const parsed = createSchema.safeParse(body ?? {});
     if (!parsed.success) {
@@ -152,7 +153,7 @@ export async function POST(req: NextRequest) {
         coachName: data.coachName ?? null,
         workoutId: data.workoutId ?? null,
         isCustom: data.isCustom ?? true,
-        paceGroups: data.paceGroups ?? null,
+        paceGroups: data.paceGroups ?? Prisma.JsonNull,
       },
     });
 
@@ -171,6 +172,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const clubId = searchParams.get("clubId") ?? null;
     const from = searchParams.get("from") ?? null;
+    const userId = await getAuthUserId(req);
 
     const where: Record<string, unknown> = {};
     if (clubId) where.clubId = clubId;
@@ -182,7 +184,24 @@ export async function GET(req: NextRequest) {
       take: 50,
     });
 
-    return jsonOk({ sessions: sessions.map(serializeSession) });
+    // Drop members-only sessions the viewer cannot access (host or approved member).
+    const visible = [];
+    for (const session of sessions) {
+      if (session.visibility !== "members") {
+        visible.push(session);
+        continue;
+      }
+      if (userId && session.hostUserId === userId) {
+        visible.push(session);
+        continue;
+      }
+      if (userId && session.clubId) {
+        const ok = await hasClubPermission(userId, session.clubId, "view");
+        if (ok) visible.push(session);
+      }
+    }
+
+    return jsonOk({ sessions: visible.map(serializeSession) });
   } catch (e) {
     console.error("List sessions:", e);
     return jsonError("Internal server error", "INTERNAL_ERROR", 500);

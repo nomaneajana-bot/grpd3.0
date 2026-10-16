@@ -2,7 +2,15 @@
 
 import { buildSessionFromForm } from '../sessionBuilder';
 import type { SessionGroupConfig } from '../sessionBuilder';
-import type { SessionData } from '../sessionData';
+import { todayISO } from '../dateHelpers';
+
+function futureISO(daysAhead = 2): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate(),
+  ).padStart(2, '0')}`;
+}
 
 describe('sessionBuilder', () => {
   const mockGroupConfigs: SessionGroupConfig[] = [
@@ -15,7 +23,7 @@ describe('sessionBuilder', () => {
   it('should create session with correct structure', () => {
     const result = buildSessionFromForm({
       spot: 'Marina',
-      dateLabel: 'LUNDI 10',
+      dateISO: futureISO(),
       timeLabel: '06:00',
       sessionType: 'FARTLEK',
       groupConfigs: mockGroupConfigs,
@@ -34,7 +42,7 @@ describe('sessionBuilder', () => {
   it('should generate dateISO and timeMinutes', () => {
     const result = buildSessionFromForm({
       spot: 'Marina',
-      dateLabel: 'LUNDI 10',
+      dateISO: todayISO(),
       timeLabel: '06:00',
       sessionType: 'FARTLEK',
       groupConfigs: mockGroupConfigs,
@@ -44,13 +52,18 @@ describe('sessionBuilder', () => {
     expect(result.session.timeMinutes).toBe(360); // 6:00 = 360 minutes
   });
 
-  it('should set recommendedGroupId to C by default', () => {
+  it('should set recommendedGroupId to C by default when C active', () => {
+    const withC: SessionGroupConfig[] = mockGroupConfigs.map((g) =>
+      g.id === 'C'
+        ? { ...g, isActive: true, paceSecondsPerKm: 330 }
+        : g,
+    );
     const result = buildSessionFromForm({
       spot: 'Marina',
-      dateLabel: 'LUNDI 10',
+      dateISO: futureISO(),
       timeLabel: '06:00',
       sessionType: 'FARTLEK',
-      groupConfigs: mockGroupConfigs,
+      groupConfigs: withC,
     });
 
     expect(result.defaultGroupId).toBe('C');
@@ -60,7 +73,7 @@ describe('sessionBuilder', () => {
   it('should include workoutId when provided', () => {
     const result = buildSessionFromForm({
       spot: 'Marina',
-      dateLabel: 'LUNDI 10',
+      dateISO: futureISO(),
       timeLabel: '06:00',
       sessionType: 'FARTLEK',
       groupConfigs: mockGroupConfigs,
@@ -73,7 +86,7 @@ describe('sessionBuilder', () => {
   it('should create paceGroupsOverride for active groups', () => {
     const result = buildSessionFromForm({
       spot: 'Marina',
-      dateLabel: 'LUNDI 10',
+      dateISO: futureISO(),
       timeLabel: '06:00',
       sessionType: 'FARTLEK',
       groupConfigs: mockGroupConfigs,
@@ -82,5 +95,64 @@ describe('sessionBuilder', () => {
     expect(result.session.paceGroupsOverride).toBeDefined();
     expect(result.session.paceGroupsOverride!.length).toBe(2);
     expect(result.session.paceGroupsOverride!.every(g => g.isActive)).toBe(true);
+  });
+
+  it('should reject past dates', () => {
+    expect(() =>
+      buildSessionFromForm({
+        spot: 'Marina',
+        dateISO: '2020-01-01',
+        timeLabel: '06:00',
+        sessionType: 'FARTLEK',
+        groupConfigs: mockGroupConfigs,
+      }),
+    ).toThrow(/PAST_DATE/);
+  });
+
+  it('should not invent 10km or 5:00 pace for walks without groups', () => {
+    const result = buildSessionFromForm({
+      spot: 'Corniche',
+      dateISO: futureISO(),
+      timeLabel: '18:00',
+      sessionType: 'MARCHE',
+      groupConfigs: [],
+    });
+
+    expect(result.session.estimatedDistanceKm).toBe(0);
+    expect(result.session.targetPace).toBe('Allure libre');
+    expect(result.session.volume).toMatch(/Marche/i);
+    expect(result.session.paceGroups).toEqual([]);
+    expect(result.defaultGroupId).toBe('open');
+  });
+
+  it('uses user title and purpose; language only when provided', () => {
+    const withLang = buildSessionFromForm({
+      spot: 'Phare Corniche',
+      dateISO: futureISO(),
+      timeLabel: '09:00',
+      sessionType: 'MARCHE',
+      groupConfigs: [],
+      title: 'English by the sea',
+      purpose: 'Une marche pour pratiquer, à ton rythme.',
+      language: 'Anglais',
+    });
+    expect(withLang.session.title).toBe('English by the sea');
+    expect(withLang.session.typeLabel).toBe('LANGUES · MARCHE');
+    expect(withLang.session.volume).toBe('Anglais');
+    expect(withLang.session.coachAdvice).toMatch(/pratiquer/);
+    expect(withLang.session.experience?.format).toBe('language');
+
+    const noLang = buildSessionFromForm({
+      spot: 'Phare Corniche',
+      dateISO: futureISO(),
+      timeLabel: '09:00',
+      sessionType: 'MARCHE',
+      groupConfigs: [],
+      title: 'Marche du dimanche',
+      purpose: 'Balade tranquille',
+    });
+    expect(noLang.session.typeLabel).toBe('MARCHE');
+    expect(noLang.session.volume).not.toMatch(/English|Anglais/i);
+    expect(noLang.session.experience?.format).toBe('community');
   });
 });

@@ -51,8 +51,9 @@ import {
   getClubAdminSettings,
   type ClubAdminGroupOverride,
 } from "../../lib/clubAdminStore";
+import { getFocusedClubId } from "../../lib/focusedClubStore";
 import { createSession as createSessionLocal, updateSession } from "../../lib/sessionStore";
-import type { SessionCreateInput } from "../../types/api";
+import type { ClubMembership, SessionCreateInput } from "../../types/api";
 import {
     getWorkoutBasePaceSeconds,
     getWorkoutIntervalDefaults,
@@ -63,18 +64,17 @@ import {
     markWorkoutUsed,
     type WorkoutEntity,
 } from "../../lib/workoutStore";
+import {
+  defaultUpcomingOutingTime,
+  isSelectableOutingDateTime,
+  todayISO,
+  upcomingDateOptions,
+} from "../../lib/dateHelpers";
 import type { ScrollEndEvent } from "../../types/events";
 
-// Static options (spots will be stateful)
-const DATE_OPTIONS = [
-  "LUNDI 10",
-  "MARDI 11",
-  "MERCREDI 12",
-  "JEUDI 13",
-  "VENDREDI 14",
-  "SAMEDI 15",
-  "DIMANCHE 16",
-];
+// Real upcoming calendar days (no invented "LUNDI 10")
+const DATE_CHOICES = upcomingDateOptions(14);
+const DEFAULT_OUTING_WHEN = defaultUpcomingOutingTime();
 
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i); // 0-23
 const MINUTE_OPTIONS = [0, 15, 30, 45];
@@ -160,10 +160,11 @@ function OptionPicker({
     : options;
 
   const handleAddCustom = () => {
-    const trimmed = customValue.trim();
+    const trimmed = (customValue || searchQuery).trim();
     if (trimmed && onAddCustom) {
       onAddCustom(trimmed);
       setCustomValue("");
+      setSearchQuery("");
     }
   };
 
@@ -258,16 +259,18 @@ function OptionPicker({
                     placeholderTextColor="#808080"
                     onSubmitEditing={handleAddCustom}
                     returnKeyType="done"
+                    testID="session-spot-custom-input"
                   />
-                  {customValue.trim() && (
-                    <TouchableOpacity
-                      style={styles.pickerCustomSaveButton}
-                      onPress={handleAddCustom}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.pickerCustomSaveText}>Ajouter</Text>
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity
+                    style={styles.pickerCustomSaveButton}
+                    onPress={handleAddCustom}
+                    activeOpacity={0.8}
+                    testID="session-spot-custom-add"
+                    accessibilityRole="button"
+                    accessibilityLabel="Ajouter un spot"
+                  >
+                    <Text style={styles.pickerCustomSaveText}>Ajouter</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>
@@ -1380,16 +1383,28 @@ function DistancePicker({
 // SessionGroupConfig is now imported from lib/sessionBuilder.ts
 
 export default function CreateSessionScreen() {
-  const { workoutId, sessionId } = useLocalSearchParams<{
-    workoutId?: string;
-    sessionId?: string;
-  }>();
+  const { workoutId, sessionId, clubId: clubIdParam, audience: audienceParam } =
+    useLocalSearchParams<{
+      workoutId?: string;
+      sessionId?: string;
+      clubId?: string;
+      audience?: string;
+    }>();
   const isEditMode = Boolean(sessionId && !Array.isArray(sessionId));
   const editSessionId = isEditMode
     ? Array.isArray(sessionId)
       ? sessionId[0]
       : sessionId
     : null;
+  const explicitClubId = (() => {
+    const raw = Array.isArray(clubIdParam) ? clubIdParam[0] : clubIdParam;
+    const id = raw?.trim();
+    return id ? id : null;
+  })();
+  const explicitAudience = (() => {
+    const raw = Array.isArray(audienceParam) ? audienceParam[0] : audienceParam;
+    return raw === "club" || raw === "team" || raw === "public" ? raw : null;
+  })();
 
   // Spots are loaded from persistent storage
   const [spots, setSpots] = useState<string[]>(["Marina", "Parc", "Piste"]);
@@ -1421,43 +1436,93 @@ export default function CreateSessionScreen() {
         const runner = await getRunnerProfile();
         setProfile(runner);
         if (!hasInitializedAudience && !isEditMode) {
-          if (runner?.clubName) {
-            setSessionAudience("club");
+          // Explicit organise-from-club binds members audience.
+          // Standalone create defaults to public so a stale focused club
+          // cannot silently attach a later outing.
+          if (explicitClubId || explicitAudience === "club" || explicitAudience === "team") {
+            setSessionAudience(explicitAudience === "team" ? "team" : "club");
+          } else if (explicitAudience === "public") {
+            setSessionAudience("public");
+          } else {
+            setSessionAudience("public");
           }
           setHasInitializedAudience(true);
         }
       } catch (error) {
         console.warn("Failed to load profile for session audience:", error);
+        if (!hasInitializedAudience && !isEditMode) {
+          setSessionAudience("public");
+          setHasInitializedAudience(true);
+        }
       }
     };
 
     loadProfile();
-  }, [hasInitializedAudience, isEditMode]);
+  }, [
+    hasInitializedAudience,
+    isEditMode,
+    explicitClubId,
+    explicitAudience,
+  ]);
+
+  const [approvedClubs, setApprovedClubs] = useState<ClubMembership[]>([]);
 
   useEffect(() => {
     const loadMemberships = async () => {
       try {
         const client = createApiClient();
-        const result = await getMyMemberships(client);
-        const approved = (result.memberships ?? []).find((m) => m.status === "approved");
-        setPrimaryClubId(approved?.clubId ?? null);
+        const [result, focusedId] = await Promise.all([
+          getMyMemberships(client),
+          getFocusedClubId(),
+        ]);
+        const approved = (result.memberships ?? []).filter(
+          (m) => m.status === "approved",
+        );
+        setApprovedClubs(approved);
+        if (explicitClubId) {
+          const bound =
+            approved.find((m) => m.clubId === explicitClubId) ?? null;
+          setPrimaryClubId(bound?.clubId ?? explicitClubId);
+          return;
+        }
+        // Standalone create: do not auto-bind focused club. User must pick
+        // club audience + club explicitly when organising for members.
+        if (focusedId && approved.some((m) => m.clubId === focusedId)) {
+          setPrimaryClubId(null);
+        } else {
+          setPrimaryClubId(null);
+        }
       } catch {
+        setApprovedClubs([]);
         setPrimaryClubId(null);
       }
     };
     loadMemberships();
-  }, []);
+  }, [explicitClubId]);
 
-  // Date and time state
-  const [dateLabel, setDateLabel] = useState<string>("LUNDI 10");
-  const [selectedHour, setSelectedHour] = useState<number>(6);
-  const [selectedMinute, setSelectedMinute] = useState<number>(0);
+  // Date and time — default to an explicitly upcoming local slot (not past 06:00 today).
+  const [dateISO, setDateISO] = useState<string>(DEFAULT_OUTING_WHEN.dateISO);
+  const dateLabel =
+    DATE_CHOICES.find((d) => d.dateISO === dateISO)?.label ?? dateISO;
+  const [selectedHour, setSelectedHour] = useState<number>(DEFAULT_OUTING_WHEN.hour);
+  const [selectedMinute, setSelectedMinute] = useState<number>(
+    DEFAULT_OUTING_WHEN.minute,
+  );
 
   // Session mode: workout-based or casual type
   const [sessionMode, setSessionMode] = useState<SessionMode>("workout");
   const [sessionType, setSessionType] = useState<
     "FARTLEK" | "SORTIE LONGUE" | "SEUIL"
   >("FARTLEK");
+  /** User-entered title — required for walk (must agree on detail). */
+  const [outingTitle, setOutingTitle] = useState("");
+  /** User-entered purpose / “à quoi s’attendre”. */
+  const [outingPurpose, setOutingPurpose] = useState("");
+  /** Optional language — only when toggle on; never default to English. */
+  const [includeLanguage, setIncludeLanguage] = useState(false);
+  const [outingLanguage, setOutingLanguage] = useState("");
+  /** Inline validation (web Alert dialogs are unreliable for harness). */
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Track if we've loaded the existing session (to prevent re-initialization)
   const [hasLoadedExistingSession, setHasLoadedExistingSession] =
@@ -1575,6 +1640,28 @@ export default function CreateSessionScreen() {
       cancelled = true;
     };
   }, [primaryClubId]);
+
+  // Demo/E2E hook: evidence harness can set an explicit date/time fixture.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const w = window as typeof window & {
+      __GRPD_E2E_OUTING_WHEN__?: {
+        dateISO?: string;
+        hour?: number;
+        minute?: number;
+      };
+    };
+    const apply = () => {
+      const fixture = w.__GRPD_E2E_OUTING_WHEN__;
+      if (!fixture) return;
+      if (fixture.dateISO) setDateISO(fixture.dateISO);
+      if (typeof fixture.hour === "number") setSelectedHour(fixture.hour);
+      if (typeof fixture.minute === "number") setSelectedMinute(fixture.minute);
+    };
+    apply();
+    const id = window.setInterval(apply, 400);
+    return () => window.clearInterval(id);
+  }, []);
 
   // Format time as HH:MM
   const timeLabel = `${selectedHour.toString().padStart(2, "0")}:${selectedMinute.toString().padStart(2, "0")}`;
@@ -1810,12 +1897,17 @@ export default function CreateSessionScreen() {
           setSelectedMinute(minute);
         }
 
-        // Extract date part (everything before the time)
-        const datePart = existingSession.dateLabel.replace(
-          /\s+\d{2}:\d{2}$/,
-          "",
-        );
-        setDateLabel(datePart);
+        // Prefer stored ISO; fall back to matching label among upcoming choices
+        if (existingSession.dateISO) {
+          setDateISO(existingSession.dateISO);
+        } else {
+          const datePart = existingSession.dateLabel.replace(
+            /\s+\d{2}:\d{2}$/,
+            "",
+          );
+          const match = DATE_CHOICES.find((d) => d.label === datePart);
+          setDateISO(match?.dateISO ?? todayISO());
+        }
 
         // Set spot
         setSpot(existingSession.spot);
@@ -1920,7 +2012,7 @@ export default function CreateSessionScreen() {
     () =>
       JSON.stringify({
         spot,
-        dateLabel,
+        dateISO,
         selectedHour,
         selectedMinute,
         sessionMode,
@@ -1929,10 +2021,14 @@ export default function CreateSessionScreen() {
         sessionAudience,
         usePaceGroups,
         groupConfigs,
+        outingTitle,
+        outingPurpose,
+        includeLanguage,
+        outingLanguage,
       }),
     [
       spot,
-      dateLabel,
+      dateISO,
       selectedHour,
       selectedMinute,
       sessionMode,
@@ -1941,6 +2037,10 @@ export default function CreateSessionScreen() {
       sessionAudience,
       usePaceGroups,
       groupConfigs,
+      outingTitle,
+      outingPurpose,
+      includeLanguage,
+      outingLanguage,
     ],
   );
 
@@ -2005,20 +2105,65 @@ export default function CreateSessionScreen() {
         effectiveSessionType = sessionType;
       }
 
-      // Build effective groups from groupConfigs
+      if (sessionMode === "walking") {
+        if (!outingTitle.trim()) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setFormError("Titre requis — donne un titre à ta sortie marche.");
+          return;
+        }
+        if (!outingPurpose.trim()) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setFormError(
+            "Objectif requis — décris l’objectif ou ce à quoi s’attendre.",
+          );
+          return;
+        }
+        if (!spot.trim()) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setFormError("Lieu requis — choisis un lieu de rendez-vous.");
+          return;
+        }
+        if (includeLanguage && !outingLanguage.trim()) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setFormError(
+            "Langue — indique la langue, ou désactive l’option langue.",
+          );
+          return;
+        }
+      }
+
+      const publishTimeMinutes = selectedHour * 60 + selectedMinute;
+      if (!isSelectableOutingDateTime(dateISO, publishTimeMinutes)) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError(
+          "Date/heure invalide — choisis un créneau encore à venir.",
+        );
+        return;
+      }
+      setFormError(null);
+
+      // Build effective groups from groupConfigs — walks never require pace groups.
       const effectiveGroups = groupConfigs
         .filter((g) => g.isActive && g.paceSecondsPerKm !== null)
         .map((g) => ({
           ...g,
           effectivePaceSecondsPerKm: g.paceSecondsPerKm! as number,
         }));
-      const submittedGroups = usePaceGroups ? effectiveGroups : [];
+      const walkSkipsPace = sessionMode === "walking";
+      const submittedGroups =
+        walkSkipsPace || !usePaceGroups ? [] : effectiveGroups;
+      const walkTitle = outingTitle.trim() || null;
+      const walkPurpose = outingPurpose.trim() || null;
+      const walkLanguage =
+        includeLanguage && outingLanguage.trim()
+          ? outingLanguage.trim()
+          : null;
 
       if (isEditMode && editSessionId) {
         // Update existing session
         const { session, defaultGroupId } = buildSessionFromForm({
           spot,
-          dateLabel,
+          dateISO,
           timeLabel,
           sessionType: effectiveSessionType,
           groupConfigs: submittedGroups,
@@ -2026,6 +2171,9 @@ export default function CreateSessionScreen() {
           visibility: sessionVisibility,
           hostGroupName,
           genderRestriction: genderRestrictionUi,
+          title: walkTitle,
+          purpose: walkPurpose,
+          language: walkLanguage,
         });
         const sessionWithAudience = {
           ...session,
@@ -2054,7 +2202,7 @@ export default function CreateSessionScreen() {
         // Create new session (API first; fallback to local if API unavailable)
         const { id, session, defaultGroupId } = buildSessionFromForm({
           spot,
-          dateLabel,
+          dateISO,
           timeLabel,
           sessionType: effectiveSessionType,
           groupConfigs: submittedGroups,
@@ -2062,6 +2210,9 @@ export default function CreateSessionScreen() {
           visibility: sessionVisibility,
           hostGroupName,
           genderRestriction: genderRestrictionUi,
+          title: walkTitle,
+          purpose: walkPurpose,
+          language: walkLanguage,
         });
 
         const apiPayload: SessionCreateInput = {
@@ -2074,15 +2225,15 @@ export default function CreateSessionScreen() {
           volume: session.volume,
           targetPace: session.targetPace,
           estimatedDistanceKm: session.estimatedDistanceKm,
-          recommendedGroupId: session.recommendedGroupId,
-          paceGroups: usePaceGroups ? session.paceGroups : [],
+          recommendedGroupId: session.recommendedGroupId || "open",
+          paceGroups: walkSkipsPace || !usePaceGroups ? [] : session.paceGroups,
           clubId: sessionVisibility === "members" ? primaryClubId : null,
           visibility: sessionVisibility,
           genderRestriction: audienceFields.genderRestriction,
           workoutId: session.workoutId ?? null,
           isCustom: true,
           hostGroupName: session.hostGroupName ?? null,
-          meetingPoint: session.meetingPoint ?? null,
+          meetingPoint: session.meetingPoint ?? session.spot ?? null,
           coachAdvice: session.coachAdvice ?? null,
           coachPhone: session.coachPhone ?? null,
           coachName: session.coachName ?? null,
@@ -2135,10 +2286,11 @@ export default function CreateSessionScreen() {
     } catch (error) {
       console.error("Failed to publish session:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(
-        "Publication impossible",
-        "Ta séance n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.",
-      );
+      const message =
+        error instanceof Error && error.message.startsWith("PAST_DATE")
+          ? "Choisis une date d'aujourd'hui ou dans le futur."
+          : "Ta séance n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.";
+      Alert.alert("Publication impossible", message);
     } finally {
       setIsPublishing(false);
     }
@@ -2251,8 +2403,10 @@ export default function CreateSessionScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setSessionMode("walking");
                 setSelectedWorkoutId(null);
+                setUsePaceGroups(false);
               }}
               activeOpacity={0.7}
+              testID="session-mode-walking"
             >
               <Text
                 style={[
@@ -2264,6 +2418,81 @@ export default function CreateSessionScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {sessionMode === "walking" ? (
+            <View style={styles.walkMetaBlock} testID="session-walk-fields">
+              <Text style={[styles.cardSubtitle, styles.sessionTypeSubtitle]}>
+                Titre, objectif et lieu doivent correspondre sur le détail.
+              </Text>
+              <Text style={styles.fieldLabel}>Titre</Text>
+              <TextInput
+                style={styles.walkTextInput}
+                value={outingTitle}
+                onChangeText={setOutingTitle}
+                placeholder="Ex. Marche du dimanche"
+                placeholderTextColor={colors.text.tertiary}
+                testID="session-title-input"
+                accessibilityLabel="Titre de la sortie"
+              />
+              <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
+                Objectif / à quoi s&apos;attendre
+              </Text>
+              <TextInput
+                style={[styles.walkTextInput, styles.walkTextArea]}
+                value={outingPurpose}
+                onChangeText={setOutingPurpose}
+                placeholder="Décris la sortie en une ou deux phrases"
+                placeholderTextColor={colors.text.tertiary}
+                multiline
+                testID="session-purpose-input"
+                accessibilityLabel="Objectif de la sortie"
+              />
+              <Pressable
+                style={[styles.fieldRow, { marginTop: 12 }]}
+                onPress={() => {
+                  const next = !includeLanguage;
+                  setIncludeLanguage(next);
+                  if (!next) setOutingLanguage("");
+                }}
+                testID="session-language-toggle"
+                accessibilityRole="switch"
+                accessibilityState={{ checked: includeLanguage }}
+                accessibilityLabel="Inclure une langue"
+              >
+                <Text style={styles.fieldLabel}>Inclure une langue</Text>
+                <Switch
+                  value={includeLanguage}
+                  onValueChange={(on) => {
+                    setIncludeLanguage(on);
+                    if (!on) setOutingLanguage("");
+                  }}
+                  trackColor={{ false: "#2a2f3a", true: colors.accent.primary }}
+                  thumbColor="#ffffff"
+                />
+              </Pressable>
+              {includeLanguage ? (
+                <>
+                  <Text style={[styles.fieldLabel, { marginTop: 8 }]}>
+                    Langue (optionnelle — aucune valeur par défaut)
+                  </Text>
+                  <TextInput
+                    style={styles.walkTextInput}
+                    value={outingLanguage}
+                    onChangeText={setOutingLanguage}
+                    placeholder="Ex. Français, darija…"
+                    placeholderTextColor={colors.text.tertiary}
+                    testID="session-language-input"
+                    accessibilityLabel="Langue de la sortie"
+                  />
+                </>
+              ) : null}
+              {formError ? (
+                <Text style={styles.formErrorText} testID="session-form-error">
+                  {formError}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
 
           {sessionMode === "workout" ? (
             <>
@@ -2301,27 +2530,42 @@ export default function CreateSessionScreen() {
             style={styles.fieldRow}
             onPress={() => setShowSpotPicker(true)}
             activeOpacity={0.7}
+            testID="session-spot-field"
+            accessibilityRole="button"
+            accessibilityLabel="Choisir un spot"
           >
             <Text style={styles.fieldLabel}>Spot</Text>
-            <Text style={styles.fieldInput}>{spot}</Text>
+            <Text style={styles.fieldInput} testID="session-spot-value">
+              {spot}
+            </Text>
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.fieldRow}
             onPress={() => setShowDatePicker(true)}
             activeOpacity={0.7}
+            testID="session-date-field"
+            accessibilityRole="button"
+            accessibilityLabel="Choisir une date"
           >
             <Text style={styles.fieldLabel}>Date</Text>
-            <Text style={styles.fieldInput}>{dateLabel}</Text>
+            <Text style={styles.fieldInput} testID="session-date-value">
+              {dateLabel}
+            </Text>
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.fieldRow}
             onPress={() => setShowTimePicker(true)}
             activeOpacity={0.7}
+            testID="session-time-field"
+            accessibilityRole="button"
+            accessibilityLabel="Choisir une heure"
           >
             <Text style={styles.fieldLabel}>Heure</Text>
-            <Text style={styles.fieldInput}>{timeLabel}</Text>
+            <Text style={styles.fieldInput} testID="session-time-value">
+              {timeLabel}
+            </Text>
           </TouchableOpacity>
           {sessionMode === "workout" && (
             <>
@@ -2331,10 +2575,10 @@ export default function CreateSessionScreen() {
                 onPress={() => setShowWorkoutPicker(true)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.fieldLabel}>Workout associé</Text>
+                <Text style={styles.fieldLabel}>Entraînement associé</Text>
                 <View style={styles.fieldInputRow}>
                   <Text style={styles.fieldInput}>
-                    {selectedWorkoutName ?? "Aucun workout associé"}
+                    {selectedWorkoutName ?? "Aucun entraînement associé"}
                   </Text>
                   <Text style={styles.fieldChevron}>›</Text>
                 </View>
@@ -2348,19 +2592,29 @@ export default function CreateSessionScreen() {
           <Text style={styles.cardSubtitle}>
             Qui peut voir et rejoindre cette séance ?
           </Text>
-          <View style={styles.audienceChips}>
+          <View style={styles.audienceChips} testID="session-audience-chips">
             {SESSION_AUDIENCE_OPTIONS.map((opt) => {
               const on = sessionAudience === opt.id;
               return (
                 <SelectableChip
                   key={opt.id}
+                  testID={`session-audience-${opt.id}`}
                   label={opt.label}
                   selected={on}
                   showCheckmark
+                  accessibilityLabel={opt.label}
                   labelStyle={styles.audienceChipLabel}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setSessionAudience(opt.id);
+                    if (opt.id === "public") {
+                      // Standalone public must not keep a stale club target.
+                      if (!explicitClubId) setPrimaryClubId(null);
+                    } else if (explicitClubId) {
+                      setPrimaryClubId(explicitClubId);
+                    } else if (!primaryClubId && approvedClubs.length === 1) {
+                      setPrimaryClubId(approvedClubs[0].clubId);
+                    }
                   }}
                 />
               );
@@ -2372,16 +2626,62 @@ export default function CreateSessionScreen() {
                 ?.hint
             }
           </Text>
+          {(sessionAudience === "club" || sessionAudience === "team") &&
+          approvedClubs.length > 0 ? (
+            <View style={styles.clubPickBlock} testID="create-club-picker">
+              <Text style={styles.clubPickLabel}>CLUB CIBLE</Text>
+              {explicitClubId ? (
+                <Text style={styles.audienceNote} testID="create-club-bound">
+                  Sortie associée à{" "}
+                  {approvedClubs.find((m) => m.clubId === primaryClubId)?.club
+                    ?.name ?? primaryClubId}
+                  . Association explicite depuis le club.
+                </Text>
+              ) : null}
+              <View style={styles.audienceChips}>
+                {approvedClubs.map((m) => {
+                  const on = m.clubId === primaryClubId;
+                  const label = m.club?.name ?? m.clubId;
+                  return (
+                    <View key={m.clubId} testID={`create-club-${m.clubId}`}>
+                      <SelectableChip
+                        label={label}
+                        selected={on}
+                        showCheckmark
+                        accessibilityLabel={`Club ${label}`}
+                        labelStyle={styles.audienceChipLabel}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setPrimaryClubId(m.clubId);
+                        }}
+                      />
+                    </View>
+                  );
+                })}
+              </View>
+              <Text style={styles.audienceNote}>
+                La séance membres cible uniquement ce club — pas les autres. Une
+                sortie publique n’hérite pas de ce club.
+              </Text>
+            </View>
+          ) : null}
+          {sessionAudience === "public" ? (
+            <Text style={styles.audienceNote} testID="create-public-no-club">
+              Sortie autonome : aucun club ne sera associé (règle actuelle
+              préservée).
+            </Text>
+          ) : null}
         </View>
 
-        {/* Card 2 - Groupes & allures */}
-        {(selectedWorkoutId || sessionMode !== "workout") && (
-          <View style={[styles.card, styles.groupsCard]}>
+        {/* Groupes & allures — hidden for walking (no running pace/workout/PR required). */}
+        {sessionMode !== "walking" &&
+          (selectedWorkoutId || sessionMode !== "workout") && (
+          <View style={[styles.card, styles.groupsCard]} testID="session-pace-groups-card">
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardTitle}>Groupes & allures</Text>
             </View>
             <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>Utiliser des groupes d'allure</Text>
+              <Text style={styles.fieldLabel}>Utiliser des groupes d&apos;allure</Text>
               <Switch
                 value={usePaceGroups}
                 onValueChange={setUsePaceGroups}
@@ -2528,6 +2828,15 @@ export default function CreateSessionScreen() {
           </View>
         )}
 
+        {formError ? (
+          <Text
+            style={[styles.formErrorText, { marginHorizontal: 20 }]}
+            testID="session-form-error-banner"
+          >
+            {formError}
+          </Text>
+        ) : null}
+
         {/* Bottom spacing for CTA */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
@@ -2538,6 +2847,11 @@ export default function CreateSessionScreen() {
           style={[styles.ctaButton, isPublishing && styles.ctaButtonDisabled]}
           onPress={handlePublish}
           disabled={isPublishing}
+          accessibilityRole="button"
+          accessibilityLabel={
+            isEditMode ? "Mettre à jour la séance" : "Publier la séance"
+          }
+          testID="session-publish-btn"
         >
           <Text style={styles.ctaButtonText}>
             {isPublishing
@@ -2572,10 +2886,13 @@ export default function CreateSessionScreen() {
       <OptionPicker
         visible={showDatePicker}
         title="Choisir une date"
-        options={DATE_OPTIONS}
+        options={DATE_CHOICES.map((d) => d.label)}
         selectedValue={dateLabel}
         onClose={() => setShowDatePicker(false)}
-        onSelect={(value) => setDateLabel(value)}
+        onSelect={(value) => {
+          const match = DATE_CHOICES.find((d) => d.label === value);
+          if (match) setDateISO(match.dateISO);
+        }}
       />
       <TimePicker
         visible={showTimePicker}
@@ -2765,6 +3082,32 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 16,
   },
+  walkMetaBlock: {
+    marginTop: 8,
+  },
+  walkTextInput: {
+    backgroundColor: colors.background.input,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "500",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 6,
+  },
+  walkTextArea: {
+    minHeight: 72,
+    textAlignVertical: "top",
+  },
+  formErrorText: {
+    marginTop: 12,
+    color: colors.text.error,
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 18,
+  },
   fieldRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -2835,6 +3178,16 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     fontSize: 12,
     marginTop: 8,
+  },
+  clubPickBlock: {
+    marginTop: 14,
+  },
+  clubPickLabel: {
+    color: colors.text.tertiary,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginBottom: 2,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
@@ -3008,17 +3361,17 @@ const styles = StyleSheet.create({
   ctaButton: {
     backgroundColor: colors.accent.primary,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 26,
+    paddingVertical: 17,
+    borderRadius: 16,
     alignItems: "center",
   },
   ctaButtonDisabled: {
     opacity: 0.6,
   },
   ctaButtonText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.background.primary,
+    fontSize: 15,
+    fontWeight: "700",
   },
   modalBackdrop: {
     flex: 1,

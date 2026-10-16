@@ -22,16 +22,19 @@ import { GroupedList } from "@/components/redesign/GroupedList";
 import { SectionHeader } from "@/components/redesign/SectionHeader";
 import { SectionLabel } from "@/components/redesign/SectionLabel";
 import { redesignTheme } from "@/constants/redesignTheme";
+import { ScreenContainer } from "@/components/ui/ScreenContainer";
 import { Toast } from "@/components/ui/Toast";
-import { colors, spacing } from "@/constants/ui";
+import { borderRadius, colors, hairline, spacing, typography } from "@/constants/ui";
+
 import { useToast } from "@/hooks/useToast";
 import {
+  cancelClubRequest,
   createApiClient,
   getClubRoster,
   getMyMemberships,
-  getMySessions,
   joinClubByCode,
   leaveClub,
+  listSessions,
 } from "@/lib/api";
 import {
   buildClubActivityFeed,
@@ -40,11 +43,16 @@ import {
 import { confirmAction } from "@/lib/confirmAction";
 import { getAuthUser } from "@/lib/authStore";
 import {
+  getFocusedClubId as readFocusedClubId,
+  setFocusedClubId as persistFocusedClubId,
+} from "@/lib/focusedClubStore";
+import {
   getClubAdminSettings,
   memberGroupFromSettings,
   type ClubAdminSettings,
 } from "@/lib/clubAdminStore";
 import {
+  assignMemberToClubGroup,
   bucketMembersByGroup,
   CLUB_PACE_GROUP_DEFS,
   countSessionsThisWeekForGroup,
@@ -71,6 +79,8 @@ export default function ClubScreen() {
     null,
   );
   const [clubSessions, setClubSessions] = useState<SessionData[]>([]);
+  const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
+  const [focusedClubId, setFocusedClubId] = useState<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
   const loadData = useCallback(async (refresh = false) => {
@@ -83,37 +93,56 @@ export default function ClubScreen() {
       const list = result.memberships ?? [];
       setMemberships(list);
 
+      const approved = list.filter((m) => m.status === "approved");
       const primary =
-        list.find((m) => m.status === "approved") ??
+        approved.find((m) => m.clubId === focusedClubId) ??
+        approved[0] ??
         list.find((m) => m.status === "pending") ??
         null;
 
       if (primary?.status === "approved" && primary.clubId) {
-        const [rosterResult, profile, joined, paces, adminCfg, mySessions] =
+        if (!focusedClubId) {
+          setFocusedClubId(primary.clubId);
+          void persistFocusedClubId(primary.clubId);
+        }
+        const [rosterResult, profile, joined, paces, adminCfg, clubSessionResult] =
           await Promise.all([
             getClubRoster(client, primary.clubId),
             getRunnerProfile(),
             getJoinedSessions(),
             getReferencePaces(),
             getClubAdminSettings(primary.clubId),
-            getMySessions(client),
+            listSessions(client, { clubId: primary.clubId }),
           ]);
         setRoster(rosterResult.members ?? []);
         setClubSessions(
-          (mySessions.sessions ?? []).map(apiSessionToSessionData),
+          (clubSessionResult.sessions ?? [])
+            .map(apiSessionToSessionData)
+            .filter((s) => s.clubId === primary.clubId),
         );
+        setJoinedIds(new Set((joined ?? []).map((j) => j.sessionId)));
         setAdminSettings(adminCfg);
+        // TOI must use the same assignment as roster bucket counts
+        // (assignMemberToClubGroup), not a separate profile/pace inference.
         const authUser = await getAuthUser();
-        const assigned =
-          authUser && adminCfg
-            ? memberGroupFromSettings(authUser.id, adminCfg)
-            : null;
-        setUserGroupId(
-          assigned ?? inferUserClubGroupId(profile, joined, paces),
-        );
+        const meOnRoster = authUser
+          ? (rosterResult.members ?? []).find((m) => m.userId === authUser.id)
+          : undefined;
+        if (meOnRoster) {
+          setUserGroupId(assignMemberToClubGroup(meOnRoster, adminCfg));
+        } else {
+          const assigned =
+            authUser && adminCfg
+              ? memberGroupFromSettings(authUser.id, adminCfg)
+              : null;
+          setUserGroupId(
+            assigned ?? inferUserClubGroupId(profile, joined, paces),
+          );
+        }
       } else {
         setRoster([]);
         setClubSessions([]);
+        setJoinedIds(new Set());
         setAdminSettings(null);
       }
     } catch (error) {
@@ -122,7 +151,7 @@ export default function ClubScreen() {
       setRoster([]);
       if (!refresh) {
         showToast(
-          "Impossible de charger le club. Vérifie l'API.",
+          "Impossible de charger le club. Réessaie.",
           "error",
         );
       }
@@ -130,7 +159,18 @@ export default function ClubScreen() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [showToast]);
+  }, [showToast, focusedClubId]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const stored = await readFocusedClubId();
+      if (!cancelled && stored) setFocusedClubId(stored);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -138,9 +178,12 @@ export default function ClubScreen() {
     }, [loadData]),
   );
 
+  const approvedMemberships = memberships.filter((m) => m.status === "approved");
+  const pendingMemberships = memberships.filter((m) => m.status === "pending");
   const primaryMembership =
-    memberships.find((m) => m.status === "approved") ??
-    memberships.find((m) => m.status === "pending") ??
+    approvedMemberships.find((m) => m.clubId === focusedClubId) ??
+    approvedMemberships[0] ??
+    pendingMemberships[0] ??
     null;
   const isApprovedMember = primaryMembership?.status === "approved";
   const isPendingMember = primaryMembership?.status === "pending";
@@ -164,14 +207,46 @@ export default function ClubScreen() {
     if (!ok) return;
     setIsSubmitting(true);
     try {
+      const leftClubId = primaryMembership.clubId;
       const client = createApiClient();
-      await leaveClub(client, primaryMembership.clubId);
+      await leaveClub(client, leftClubId);
+      setFocusedClubId((prev) => {
+        const next = prev === leftClubId ? null : prev;
+        void persistFocusedClubId(next);
+        return next;
+      });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast("Tu as quitté le club.", "success");
       await loadData(true);
     } catch (error) {
       console.warn("Leave club failed:", error);
       showToast("Impossible de quitter le club pour le moment.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancelPending = async () => {
+    if (!primaryMembership?.clubId || primaryMembership.status !== "pending") {
+      return;
+    }
+    const ok = await confirmAction({
+      title: "Annuler la demande",
+      message: `Retirer ta demande pour ${club?.name ?? "ce club"} ?`,
+      confirmLabel: "Annuler la demande",
+      destructive: true,
+    });
+    if (!ok) return;
+    setIsSubmitting(true);
+    try {
+      const client = createApiClient();
+      await cancelClubRequest(client, primaryMembership.clubId);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast("Demande annulée.", "success");
+      await loadData(true);
+    } catch (error) {
+      console.warn("Cancel club request failed:", error);
+      showToast("Impossible d'annuler la demande.", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -214,7 +289,8 @@ export default function ClubScreen() {
     : "Espace privé · validation admin.";
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScreenContainer>
       {toast && (
         <Toast
           message={toast.message}
@@ -224,12 +300,16 @@ export default function ClubScreen() {
       )}
 
       <View style={styles.toprow}>
-        <Text style={styles.pg}>Club</Text>
+        <Text style={styles.pg} accessibilityRole="header">
+          Clubs
+        </Text>
         <Text style={styles.roleSub}>{roleSubtitle}</Text>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
+        testID="clubs-scroll"
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -244,13 +324,132 @@ export default function ClubScreen() {
           </View>
         ) : isApprovedMember && club ? (
           <>
+            {approvedMemberships.length > 1 ? (
+              <View style={styles.clubSwitcher} testID="club-switcher">
+                <Text style={styles.clubSwitcherLabel}>MES CLUBS</Text>
+                <View style={styles.clubSwitcherRow}>
+                  {approvedMemberships.map((m) => {
+                    const active = m.clubId === primaryMembership?.clubId;
+                    return (
+                      <Pressable
+                        key={m.clubId}
+                        testID={`club-switch-${m.clubId}`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        accessibilityLabel={m.club?.name ?? m.clubId}
+                        onPress={() => {
+                          setFocusedClubId(m.clubId);
+                          void persistFocusedClubId(m.clubId);
+                        }}
+                        style={[
+                          styles.clubSwitcherChip,
+                          active && styles.clubSwitcherChipOn,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.clubSwitcherChipText,
+                            active && styles.clubSwitcherChipTextOn,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {m.club?.name ?? "Club"}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
             <ClubOverviewCard
               clubName={club.name}
               memberCount={memberCount ?? 1}
               foundedYear={foundedYear}
               city={club.city}
+              purpose={club.description}
+              visibility={club.visibility}
               status="member"
             />
+
+            <View style={styles.clubOutingsBlock} testID="club-outings-section">
+              <Text style={styles.clubOutingsHeading}>Les sorties du club</Text>
+              <Text style={styles.clubOutingsHint}>
+                Chaque sortie a sa propre inscription. L’adhésion au club ne
+                t’inscrit à aucune sortie.
+              </Text>
+              {clubSessions.length === 0 ? (
+                <View style={styles.clubOutingsEmpty} testID="club-outings-empty">
+                  <Text style={styles.clubOutingsEmptyTitle}>
+                    Pas encore de sortie pour ce club.
+                  </Text>
+                  <Text style={styles.clubOutingsHint}>
+                    Organise la première — elle restera associée à{" "}
+                    {club.name}.
+                  </Text>
+                </View>
+              ) : (
+                clubSessions.map((session) => {
+                  const joined = joinedIds.has(session.id);
+                  const attendance =
+                    session.attendanceStatus === "joined" || joined
+                      ? "joined"
+                      : session.attendanceStatus === "left"
+                        ? "left"
+                        : "none";
+                  return (
+                    <Pressable
+                      key={session.id}
+                      testID={`club-outing-${session.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Voir la sortie ${session.title}`}
+                      onPress={() =>
+                        router.push(`/session/${session.id}` as Href)
+                      }
+                      style={styles.clubOutingCard}
+                    >
+                      <Text style={styles.clubOutingTag}>
+                        {(session.typeLabel || "SORTIE").toUpperCase()}
+                        {session.visibility === "members"
+                          ? " · MEMBRES"
+                          : " · PUBLIC"}
+                      </Text>
+                      <Text style={styles.clubOutingTitle}>{session.title}</Text>
+                      <Text style={styles.clubOutingMeta}>
+                        {session.dateLabel}
+                        {session.spot ? ` · ${session.spot}` : ""}
+                      </Text>
+                      <Text
+                        style={styles.clubOutingAttendance}
+                        testID={`club-outing-attendance-${session.id}`}
+                      >
+                        {attendance === "joined"
+                          ? "Tu es inscrit·e à cette sortie."
+                          : attendance === "left"
+                            ? "Tu as annulé ta participation."
+                            : "Tu n’es pas inscrit·e à cette sortie."}
+                      </Text>
+                      <Text style={styles.clubOutingLink}>Voir la sortie →</Text>
+                    </Pressable>
+                  );
+                })
+              )}
+              <Pressable
+                testID="club-organise-outing-cta"
+                accessibilityRole="button"
+                accessibilityLabel={`Organiser une sortie pour ${club.name}`}
+                onPress={() => {
+                  const clubId = primaryMembership?.clubId;
+                  if (!clubId) return;
+                  void persistFocusedClubId(clubId);
+                  router.push(
+                    `/session/create?clubId=${encodeURIComponent(clubId)}&audience=club` as Href,
+                  );
+                }}
+                style={styles.organiseBtn}
+              >
+                <Text style={styles.organiseBtnText}>Organiser une sortie</Text>
+              </Pressable>
+            </View>
 
             <SectionHeader
               label="FIL D'ACTIVITÉ"
@@ -348,6 +547,9 @@ export default function ClubScreen() {
             ) : null}
 
             <Pressable
+              testID="club-leave-btn"
+              accessibilityRole="button"
+              accessibilityLabel="Quitter le club"
               style={({ pressed }) => [
                 styles.quitZone,
                 pressed && { opacity: 0.5 },
@@ -360,16 +562,55 @@ export default function ClubScreen() {
           </>
         ) : isPendingMember && club ? (
           <>
-            <SectionLabel>MON CLUB</SectionLabel>
-            <ClubOverviewCard
-              clubName={club.name}
-              memberCount={memberCount ?? 0}
-              foundedYear={foundedYear}
-              status="pending"
-            />
-            <Text style={styles.pendingHint}>
-              Ta demande est en cours de validation par un responsable du club.
-            </Text>
+            <View testID="club-pending-panel" style={styles.pendingPanel}>
+              <Text style={styles.pendingTitle} testID="club-pending-title">
+                Ta demande est envoyée.
+              </Text>
+              <Text style={styles.pendingClubName}>{club.name}</Text>
+              <Text style={styles.pendingTag}>EN ATTENTE D&apos;APPROBATION</Text>
+              <Text style={styles.pendingHint}>
+                Le club doit accepter ta demande avant que tu puisses accéder à
+                ses sorties privées.
+              </Text>
+              <View style={styles.pendingDivider} />
+              <Text style={styles.pendingSection}>Et maintenant ?</Text>
+              <Text style={styles.pendingHint}>
+                Tu peux continuer à découvrir les sorties publiques.
+              </Text>
+              <Text style={styles.pendingSmall}>
+                Une demande n&apos;est ni une adhésion confirmée ni une
+                inscription à une sortie.
+              </Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.pendingCancelField,
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={() => void handleCancelPending()}
+                disabled={isSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Annuler ma demande"
+                testID="club-cancel-pending-btn"
+              >
+                <Text style={styles.pendingCancelText}>
+                  Annuler ma demande →
+                </Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.pendingPrimaryBtn,
+                  pressed && { opacity: 0.9 },
+                ]}
+                onPress={() => router.push("/(tabs)" as Href)}
+                accessibilityRole="button"
+                accessibilityLabel="Découvrir les sorties"
+                testID="club-pending-discover-cta"
+              >
+                <Text style={styles.pendingPrimaryBtnText}>
+                  Découvrir les sorties
+                </Text>
+              </Pressable>
+            </View>
           </>
         ) : (
           <>
@@ -402,10 +643,20 @@ export default function ClubScreen() {
                   Plus d&apos;options → Accès club
                 </Text>
               </Pressable>
+              <Pressable
+                testID="club-create-entry"
+                accessibilityRole="button"
+                accessibilityLabel="Créer un club"
+                onPress={() => router.push("/(tabs)/club/create" as Href)}
+                style={styles.moreLinkWrap}
+              >
+                <Text style={styles.moreLink}>Créer un club →</Text>
+              </Pressable>
             </View>
           </>
         )}
       </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
@@ -435,6 +686,119 @@ const styles = StyleSheet.create({
     paddingHorizontal: redesignTheme.screen.horizontalPadding,
     marginBottom: 8,
   },
+  clubOutingsBlock: {
+    paddingHorizontal: 24,
+    marginTop: 18,
+    marginBottom: 8,
+    gap: 12,
+  },
+  clubOutingsHeading: {
+    color: redesignTheme.text.primary,
+    fontSize: 20,
+    fontWeight: "700",
+    letterSpacing: -0.3,
+  },
+  clubOutingsHint: {
+    color: redesignTheme.text.dim,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  clubOutingsEmpty: {
+    backgroundColor: colors.background.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    padding: 18,
+    gap: 8,
+  },
+  clubOutingsEmptyTitle: {
+    color: redesignTheme.text.primary,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  clubOutingCard: {
+    backgroundColor: colors.background.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    padding: 18,
+    gap: 6,
+  },
+  clubOutingTag: {
+    color: colors.accent.sage,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+  clubOutingTitle: {
+    color: redesignTheme.text.primary,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  clubOutingMeta: {
+    color: redesignTheme.text.dim,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  clubOutingAttendance: {
+    color: redesignTheme.text.dim,
+    fontSize: 13,
+    marginTop: 4,
+  },
+  clubOutingLink: {
+    color: colors.accent.sage,
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: 6,
+  },
+  organiseBtn: {
+    backgroundColor: colors.accent.sage,
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  organiseBtnText: {
+    color: colors.accent.charcoal,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  clubSwitcher: {
+    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    marginBottom: 12,
+    gap: 8,
+  },
+  clubSwitcherLabel: {
+    color: colors.text.secondary,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+  },
+  clubSwitcherRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  clubSwitcherChip: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.card,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    maxWidth: "100%",
+  },
+  clubSwitcherChipOn: {
+    backgroundColor: colors.accent.sage,
+    borderColor: colors.accent.sage,
+  },
+  clubSwitcherChipText: {
+    color: colors.text.primary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  clubSwitcherChipTextOn: {
+    color: colors.accent.charcoal,
+  },
   quitZone: {
     paddingVertical: 32,
     paddingHorizontal: redesignTheme.screen.horizontalPadding,
@@ -452,6 +816,77 @@ const styles = StyleSheet.create({
   loadingWrap: {
     paddingVertical: 48,
     alignItems: "center",
+  },
+  /** M07 — match heading/toprow gutters (24px); content must not flush to viewport edges. */
+  pendingPanel: {
+    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    paddingTop: 8,
+    paddingBottom: 16,
+    width: "100%",
+    maxWidth: "100%",
+    alignSelf: "stretch",
+  },
+  pendingTitle: {
+    color: colors.text.primary,
+    fontSize: 30,
+    fontWeight: "700",
+    letterSpacing: -0.6,
+    lineHeight: 36,
+    marginBottom: 8,
+  },
+  pendingClubName: {
+    color: colors.text.secondary,
+    fontSize: typography.sizes.md,
+    marginBottom: 12,
+  },
+  pendingTag: {
+    color: colors.accent.sage,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    marginBottom: 12,
+  },
+  pendingDivider: {
+    height: hairline,
+    backgroundColor: colors.border.default,
+    marginVertical: 18,
+  },
+  pendingSection: {
+    color: colors.text.primary,
+    fontSize: typography.sizes.lg,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  pendingSmall: {
+    color: colors.text.tertiary,
+    fontSize: typography.sizes.sm,
+    lineHeight: 18,
+    marginTop: 8,
+  },
+  pendingCancelField: {
+    marginTop: 16,
+    backgroundColor: colors.background.card,
+    borderWidth: hairline,
+    borderColor: colors.border.default,
+    borderRadius: borderRadius.md,
+    padding: 16,
+  },
+  pendingCancelText: {
+    color: colors.text.primary,
+    fontSize: typography.sizes.md,
+    fontWeight: "600",
+  },
+  pendingPrimaryBtn: {
+    marginTop: 20,
+    backgroundColor: colors.accent.sage,
+    borderRadius: 18,
+    paddingVertical: 17,
+    alignItems: "center",
+  },
+  pendingPrimaryBtnText: {
+    color: colors.accent.charcoal,
+    fontSize: typography.sizes.md,
+    fontWeight: "700",
   },
   pendingHint: {
     color: colors.text.secondary,

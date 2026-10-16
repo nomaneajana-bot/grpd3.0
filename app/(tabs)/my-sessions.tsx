@@ -24,8 +24,10 @@ import { Tag } from "../../components/redesign/Tag";
 import { Card } from "../../components/ui/Card";
 import { Chip } from "../../components/ui/Chip";
 import { LoadingState } from "../../components/ui/LoadingState";
+import { ScreenContainer } from "../../components/ui/ScreenContainer";
 import { CoachWeeklyPlan } from "../../components/coach/CoachWeeklyPlan";
 import { borderRadius, colors, hairline, typography } from "../../constants/ui";
+
 import { createApiClient, getMySessions } from "../../lib/api";
 import {
     getJoinedSessions,
@@ -399,6 +401,7 @@ export default function MySessionsScreen() {
 
   return (
     <View style={styles.container}>
+      <ScreenContainer>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -409,6 +412,7 @@ export default function MySessionsScreen() {
           },
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -424,7 +428,9 @@ export default function MySessionsScreen() {
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <View style={styles.headerTextContainer}>
-              <Text style={styles.headerTitle}>Mes séances</Text>
+              <Text style={styles.headerTitle} accessibilityRole="header">
+                Mes sorties
+              </Text>
               <Text style={styles.headerSubtitle}>
                 Ton agenda de séances.
               </Text>
@@ -434,6 +440,9 @@ export default function MySessionsScreen() {
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={styles.createPill}
               activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Créer une sortie"
+              testID="create-outing-btn"
             >
               <Text style={styles.createPillText}>Créer</Text>
             </TouchableOpacity>
@@ -569,7 +578,6 @@ export default function MySessionsScreen() {
           joinedRuns.length === 0 &&
           pastRuns.length === 0 && (
           <View style={styles.emptyStateContainer}>
-            <Text style={styles.emptyStateEmoji}>😕</Text>
             <Text style={styles.emptyStateTitle}>
               Rien de prévu — rejoins une séance ou crée-en une.
             </Text>
@@ -789,6 +797,7 @@ export default function MySessionsScreen() {
           </View>
         )}
       </ScrollView>
+      </ScreenContainer>
     </View>
   );
 }
@@ -1141,38 +1150,35 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
     marginTop: 40,
   },
-  emptyStateEmoji: {
-    fontSize: 40,
-    marginBottom: 12,
-  },
   emptyStateTitle: {
-    color: "#FFFFFF",
+    color: colors.text.primary,
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 8,
     textAlign: "center",
   },
   emptyStateSubtitle: {
-    color: "#BFBFBF",
+    color: colors.text.secondary,
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 24,
   },
   emptyStateSecondaryButton: {
-    borderRadius: 999,
-    paddingVertical: 12,
+    borderRadius: 16,
+    paddingVertical: 14,
     paddingHorizontal: 32,
     alignItems: "center",
     alignSelf: "stretch",
     marginHorizontal: 20,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.card,
   },
   emptyStateSecondaryButtonText: {
-    color: "#BFBFBF",
-    fontSize: 14,
-    fontWeight: "500",
+    color: colors.accent.sage,
+    fontSize: 15,
+    fontWeight: "700",
     textAlign: "center",
   },
 });

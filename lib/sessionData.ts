@@ -32,6 +32,13 @@ export type LegacySessionGroupOverride = {
   paceSecondsPerKm?: number | null;
 };
 
+/** Optional D03 community outing metadata (green home filters). */
+export type SessionExperience = {
+  kind?: "community" | "training";
+  format?: "language" | "community" | string;
+  activity?: "walk" | "run";
+};
+
 export type SessionData = {
   id: string;
   title: string;
@@ -40,6 +47,7 @@ export type SessionData = {
   dateISO?: string; // NEW: ISO date string (YYYY-MM-DD) for proper date handling
   timeMinutes?: number; // NEW: Minutes since midnight (0-1439) for time handling
   typeLabel: string;
+  experience?: SessionExperience;
   volume: string;
   targetPace: string;
   paceGroups: PaceGroup[]; // Legacy: kept for backward compatibility and display (computed from paceGroupsOverride when available)
@@ -69,6 +77,8 @@ export type SessionData = {
   genderRestriction?: "women_only" | null; // Optional gender restriction (e.g., girls-only runs)
   /** Set when session is from API (club-linked). Used for matching membership. */
   clubId?: string | null;
+  /** Organizer identity when known (API). Used to gate modify/delete vs join/leave. */
+  hostUserId?: string | null;
   attendanceStatus?:
     | "joined"
     | "suggested"
@@ -105,6 +115,7 @@ export function apiSessionToSessionData(api: {
   coachName?: string | null;
   workoutId?: string | null;
   isCustom?: boolean;
+  hostUserId?: string | null;
   paceGroups?: { id: string; label: string; paceRange: string; runnersCount?: number; avgPaceSecondsPerKm?: number }[];
   attendanceStatus?:
     | "joined"
@@ -118,6 +129,7 @@ export function apiSessionToSessionData(api: {
 }): SessionData {
   const apiPaceGroups = api.paceGroups ?? null;
   const hasPaceGroupsField = Array.isArray(apiPaceGroups);
+  // Empty array must stay empty (walk/language without pace groups) — never invent a group.
   const paceGroups = hasPaceGroupsField
     ? apiPaceGroups.map((g) => ({
         id: g.id,
@@ -126,15 +138,22 @@ export function apiSessionToSessionData(api: {
         runnersCount: g.runnersCount ?? 0,
         avgPaceSecondsPerKm: g.avgPaceSecondsPerKm ?? 300,
       }))
-    : [
-        {
-          id: api.recommendedGroupId || "C",
-          label: `Groupe ${api.recommendedGroupId || "C"}`,
-          paceRange: api.targetPace,
-          runnersCount: 0,
-          avgPaceSecondsPerKm: 300,
-        },
-      ];
+    : api.recommendedGroupId
+      ? [
+          {
+            id: api.recommendedGroupId || "C",
+            label: `Groupe ${api.recommendedGroupId || "C"}`,
+            paceRange: api.targetPace,
+            runnersCount: 0,
+            avgPaceSecondsPerKm: 300,
+          },
+        ]
+      : [];
+  const typeUpper = (api.typeLabel || "").toUpperCase();
+  const isWalkLike =
+    typeUpper.includes("MARCHE") ||
+    typeUpper.includes("WALKING") ||
+    typeUpper.startsWith("LANGUES");
   return {
     id: api.id,
     title: api.title,
@@ -146,10 +165,20 @@ export function apiSessionToSessionData(api: {
     volume: api.volume,
     targetPace: api.targetPace,
     paceGroups,
-    recommendedGroupId: api.recommendedGroupId,
+    recommendedGroupId: api.recommendedGroupId || "",
+    experience: isWalkLike
+      ? {
+          kind: "community" as const,
+          activity: "walk" as const,
+          format: typeUpper.startsWith("LANGUES")
+            ? ("language" as const)
+            : ("community" as const),
+        }
+      : undefined,
     estimatedDistanceKm: api.estimatedDistanceKm,
     workoutId: api.workoutId ?? undefined,
-    isCustom: api.isCustom ?? true,
+    // API/club sessions are joinable by default; only explicit true means user-owned draft
+    isCustom: api.isCustom ?? false,
     visibility: (api.visibility as SessionVisibility) ?? "public",
     hostGroupName: api.hostGroupName ?? null,
     meetingPoint: api.meetingPoint ?? undefined,
@@ -157,6 +186,7 @@ export function apiSessionToSessionData(api: {
     coachPhone: api.coachPhone ?? undefined,
     coachName: api.coachName ?? undefined,
     clubId: api.clubId ?? null,
+    hostUserId: api.hostUserId ?? null,
     genderRestriction:
       api.genderRestriction === "women" || api.genderRestriction === "women_only"
         ? "women_only"

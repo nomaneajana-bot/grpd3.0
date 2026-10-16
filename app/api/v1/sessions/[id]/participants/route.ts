@@ -8,11 +8,14 @@ import { requireClubPermission } from "@/lib/server/role-checks";
 import { sessionIdParamSchema } from "@/lib/server/validators";
 
 const VALID_GROUP_IDS = ["A", "B", "C", "D"] as const;
-type GroupId = (typeof VALID_GROUP_IDS)[number] | null;
+type PaceGroupId = (typeof VALID_GROUP_IDS)[number];
+type GroupId = PaceGroupId | null;
 
 function normalizeGroupId(value: string | null): GroupId {
   if (value == null) return null;
-  return VALID_GROUP_IDS.includes(value as GroupId) ? (value as GroupId) : null;
+  return (VALID_GROUP_IDS as readonly string[]).includes(value)
+    ? (value as PaceGroupId)
+    : null;
 }
 
 export async function GET(
@@ -37,7 +40,7 @@ export async function GET(
     if (!session) return jsonError("Session not found", "NOT_FOUND", 404);
 
     if (session.visibility === "members") {
-      const userId = requireAuth(req);
+      const userId = await requireAuth(req);
       if (!session.clubId) {
         return jsonError("Forbidden", "FORBIDDEN", 403);
       }

@@ -26,6 +26,12 @@ import {
 } from "../../components/session/SessionRunnersPanel";
 import { InterGroupJoinPanel } from "../../components/session/InterGroupJoinPanel";
 import { borderRadius, colors, hairline, typography } from "../../constants/ui";
+import {
+  formatSessionDistanceKm,
+  formatSessionDistanceLabel,
+  formatSessionPaceLabel,
+} from "../../lib/sessionDisplay";
+
 import { buildCoachContext, type CoachContext } from "../../lib/coach";
 import {
     getJoinedSession,
@@ -36,7 +42,6 @@ import {
 import { LoadingState } from "../../components/ui/LoadingState";
 import { Toast } from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
-import { confirmAction } from "../../lib/confirmAction";
 import {
   getClubAdminSettings,
   memberGroupFromSettings,
@@ -67,7 +72,6 @@ import {
 import {
   getAllSessionsIncludingStored,
   getSessionById,
-  SESSION_MAP,
   apiSessionToSessionData,
   type SessionData,
 } from "../../lib/sessionData";
@@ -84,13 +88,9 @@ import type { WorkoutBlock, WorkoutStep } from "../../lib/workoutTypes";
 
 function formatSessionDetailSubtitle(s: import("../../lib/sessionData").SessionData): string {
   const spot = (s.spot || "").trim();
-  const datePart = s.dateLabel || "";
-  const tm = s.timeMinutes;
-  const timeStr =
-    tm != null && Number.isFinite(tm)
-      ? `${Math.floor(tm / 60)}:${String(tm % 60).padStart(2, "0")}`
-      : "";
-  const parts = [datePart, timeStr, spot].filter(Boolean);
+  // dateLabel already includes HH:MM when built via formatDateLabel — do not append time again
+  const datePart = (s.dateLabel || "").trim();
+  const parts = [datePart, spot].filter(Boolean);
   return parts.join(" · ");
 }
 
@@ -150,6 +150,7 @@ export default function SessionScreen() {
   const [session, setSession] = useState<SessionData | undefined>(undefined);
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
   // Load session: API first, then SESSION_MAP, then stored sessions
@@ -172,13 +173,20 @@ export default function SessionScreen() {
           return;
         }
       } catch (err) {
+        // Intentional API 403/404 (e.g. members-only privacy) must not be
+        // resurrected from a local cache copy — that would leak logistics.
+        const status =
+          err && typeof err === "object" && "status" in err
+            ? Number((err as { status?: number }).status)
+            : null;
+        if (status === 404 || status === 403) {
+          setSession(undefined);
+          setSessionLoadState("not_found");
+          return;
+        }
         console.warn("API get session failed, trying local:", err);
       }
-      if (SESSION_MAP[id]) {
-        setSession(SESSION_MAP[id]);
-        setSessionLoadState("ready");
-        return;
-      }
+      // Offline / seed fallback only when the API did not deliberately hide it.
       try {
         const storedSession = await getSessionById(id);
         if (storedSession) {
@@ -201,8 +209,12 @@ export default function SessionScreen() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const runner = await getRunnerProfile();
+        const [runner, auth] = await Promise.all([
+          getRunnerProfile(),
+          getAuthUser(),
+        ]);
         setProfile(runner);
+        setAuthUserId(auth?.id ?? null);
       } catch (error) {
         console.warn("Failed to load profile for session:", error);
       }
@@ -269,18 +281,19 @@ export default function SessionScreen() {
         })
       : null;
   const membershipStatus = matchingMembership?.status ?? null;
-  const profileClubMatch =
-    normalizedHost &&
-    profile?.clubName?.toLowerCase().trim() === normalizedHost;
-  const isApprovedMember =
-    membershipStatus === "approved" ||
-    (membershipStatus === null && Boolean(profileClubMatch));
+  // Membership status is authoritative — profile.clubName must not silently grant access
+  const isApprovedMember = membershipStatus === "approved";
   const isPendingMember = membershipStatus === "pending";
   const isCoachOrAdmin =
     membershipStatus === "approved" &&
     (matchingMembership?.role === "coach" ||
       matchingMembership?.role === "admin");
   const clubId = matchingMembership?.clubId ?? null;
+  // Organizer controls require host identity — isCustom alone is not ownership
+  const isOrganizer =
+    Boolean(authUserId) &&
+    Boolean(session?.hostUserId) &&
+    session!.hostUserId === authUserId;
 
   useEffect(() => {
     const loadRoster = async () => {
@@ -321,6 +334,10 @@ export default function SessionScreen() {
   const pulseAnim = useRef(new Animated.Value(0)).current;
   // Delete confirmation modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  /** M06 — cancel participation confirm (≠ leave club). */
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [isLeavingOuting, setIsLeavingOuting] = useState(false);
+  const [isJoiningOuting, setIsJoiningOuting] = useState(false);
   const canJoin = session
     ? session.visibility !== "members" || Boolean(isApprovedMember)
     : false;
@@ -377,26 +394,51 @@ export default function SessionScreen() {
   }, [session, joinedGroupId, selectedGroupId, linkedWorkout]);
 
   useEffect(() => {
-    if (session) {
-      // Load saved group from async store
-      const loadJoinedSession = async () => {
-        const savedJoined = await getJoinedSession(session.id);
-        if (savedJoined) {
-          // Use saved group
-          setSelectedGroupId(savedJoined.groupId);
-          setJoinedGroupId(savedJoined.groupId);
-          setHasStoredJoin(true);
-        } else {
-          // Otherwise use recommended group, or first group if no recommended
-          const defaultId =
-            session.recommendedGroupId || session.paceGroups[0]?.id || null;
-          setSelectedGroupId(defaultId);
-          setJoinedGroupId(null);
-          setHasStoredJoin(false);
-        }
-      };
-      loadJoinedSession();
-    }
+    if (!session) return;
+    let cancelled = false;
+    // Load saved group from async store
+    const loadJoinedSession = async () => {
+      const savedJoined = await getJoinedSession(session.id);
+      if (cancelled) return;
+      const apiStatus = session.attendanceStatus ?? null;
+      const defaultId =
+        session.recommendedGroupId || session.paceGroups[0]?.id || null;
+      // Per-user API/mock attendance wins over device-global joinedSessions
+      // (local store is not keyed by userId — must not show host join to participant).
+      if (apiStatus === "joined") {
+        const gid = session.attendanceGroupId ?? savedJoined?.groupId ?? null;
+        const uiGid = gid === "open" ? null : gid;
+        setSelectedGroupId(uiGid);
+        setJoinedGroupId(uiGid);
+        setHasStoredJoin(true);
+        return;
+      }
+      if (
+        apiStatus === "left" ||
+        apiStatus === "declined" ||
+        (apiStatus == null && session.hostUserId)
+      ) {
+        setSelectedGroupId(defaultId || null);
+        setJoinedGroupId(null);
+        setHasStoredJoin(false);
+        return;
+      }
+      if (savedJoined) {
+        const gid =
+          savedJoined.groupId === "open" ? null : savedJoined.groupId;
+        setSelectedGroupId(gid);
+        setJoinedGroupId(gid);
+        setHasStoredJoin(true);
+        return;
+      }
+      setSelectedGroupId(defaultId || null);
+      setJoinedGroupId(null);
+      setHasStoredJoin(false);
+    };
+    void loadJoinedSession();
+    return () => {
+      cancelled = true;
+    };
   }, [session]);
 
   // Load linked workout if session has workoutId
@@ -521,22 +563,60 @@ export default function SessionScreen() {
   }
 
   if (sessionLoadState === "not_found" || !session) {
+    // M08 inaccessible — never reveal club name, spot, date, or private logistics.
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} testID="session-inaccessible">
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backRow}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Retour"
           >
             <Text style={styles.backIcon}>←</Text>
             <Text style={styles.backLabel}>Retour</Text>
           </TouchableOpacity>
-          <Text style={styles.screenTitle}>Séance introuvable</Text>
-          <Text style={styles.notFoundHint}>
-            Cette séance n&apos;existe plus ou n&apos;est pas accessible.
+        </View>
+        <View style={styles.inaccessibleBody}>
+          <Text style={styles.inaccessibleTitle} testID="session-inaccessible-title">
+            Cette sortie n&apos;est pas accessible.
           </Text>
+          <Text style={styles.notFoundHint}>
+            Elle est introuvable ou ton compte n&apos;y a pas accès.
+          </Text>
+          <View style={styles.inaccessibleCard}>
+            <Text style={styles.inaccessibleCardTitle}>Retrouvons ton chemin</Text>
+            <Text style={styles.inaccessibleCardBody}>
+              Vérifie que tu utilises le bon compte ou retourne à tes clubs.
+            </Text>
+          </View>
+          <Pressable
+            testID="session-inaccessible-clubs-cta"
+            accessibilityRole="button"
+            accessibilityLabel="Retour à mes clubs"
+            style={({ pressed }) => [
+              styles.inaccessiblePrimaryBtn,
+              pressed && { opacity: 0.9 },
+            ]}
+            onPress={() => router.replace("/(tabs)/club")}
+          >
+            <Text style={styles.inaccessiblePrimaryBtnText}>
+              Retour à mes clubs
+            </Text>
+          </Pressable>
+          <Pressable
+            testID="session-inaccessible-discover-cta"
+            accessibilityRole="button"
+            accessibilityLabel="Découvrir les sorties"
+            style={styles.secondaryLinkButton}
+            onPress={() => router.replace("/(tabs)")}
+          >
+            <Text style={styles.secondaryLinkButtonText}>
+              Découvrir les sorties
+            </Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -554,39 +634,85 @@ export default function SessionScreen() {
     sessionAnchorGroupId) as ClubPaceGroupId | null;
 
   const handleSave = async () => {
-    const currentGroupId =
-      selectedGroupId ||
-      session.recommendedGroupId ||
-      session.paceGroups[0]?.id;
-    if (!currentGroupId) {
+    if (isJoiningOuting || hasStoredJoin) return;
+    const hasPaceGroups = (session.paceGroups?.length ?? 0) > 0;
+    const currentGroupId = hasPaceGroups
+      ? selectedGroupId ||
+        session.recommendedGroupId ||
+        session.paceGroups[0]?.id ||
+        null
+      : "open";
+    if (hasPaceGroups && !currentGroupId) {
       showToast("Choisis un groupe.", "error");
       return;
     }
-    const joinState = resolveCrossGroupJoinState({
-      memberGroupId: memberHomeGroupId,
-      sessionTargetGroupId: currentGroupId as ClubPaceGroupId,
-      settings: clubAdminSettings,
-    });
-    if (joinState === "locked") {
-      showToast(
-        "Cette séance n'est pas disponible pour ton groupe.",
-        "error",
-      );
-      return;
+    if (hasPaceGroups) {
+      const joinState = resolveCrossGroupJoinState({
+        memberGroupId: memberHomeGroupId,
+        sessionTargetGroupId: currentGroupId as ClubPaceGroupId,
+        settings: clubAdminSettings,
+      });
+      if (joinState === "locked") {
+        showToast(
+          "Cette séance n'est pas disponible pour ton groupe.",
+          "error",
+        );
+        return;
+      }
     }
+    setIsJoiningOuting(true);
     try {
       const client = createApiClient();
+      let apiJoined = false;
       try {
-        await joinSessionApi(client, session.id, { groupId: currentGroupId });
+        await joinSessionApi(client, session.id, {
+          groupId: currentGroupId || "open",
+        });
+        apiJoined = true;
       } catch (apiErr) {
+        const status =
+          apiErr && typeof apiErr === "object" && "status" in apiErr
+            ? Number((apiErr as { status?: number }).status)
+            : null;
+        // Members-only / auth failures must not fake success via local join.
+        if (
+          session.visibility === "members" ||
+          status === 401 ||
+          status === 403 ||
+          status === 404
+        ) {
+          console.warn("API join denied:", apiErr);
+          showToast(
+            status === 403 || session.visibility === "members"
+              ? "Réservé aux membres du club."
+              : "Impossible de t'inscrire pour le moment.",
+            "error",
+          );
+          return;
+        }
+        // Transient failures (e.g. demo fail-next flag / 5xx): keep join CTA for retry.
+        if (status === 503 || status === 500 || status === 502) {
+          console.warn("API join temporary failure:", apiErr);
+          showToast("Inscription temporairement impossible. Réessaie.", "error");
+          return;
+        }
         console.warn("API join failed, saving locally:", apiErr);
       }
-      await upsertJoinedSession(session.id, currentGroupId);
-      setJoinedGroupId(currentGroupId);
-      showToast("Tu es inscrit à cette séance.", "success");
+      const storedGroupId = currentGroupId || "open";
+      await upsertJoinedSession(session.id, storedGroupId);
+      setJoinedGroupId(hasPaceGroups ? storedGroupId : null);
+      setHasStoredJoin(true);
+      showToast(
+        apiJoined
+          ? "Tu es inscrit à cette séance."
+          : "Inscription enregistrée sur cet appareil.",
+        "success",
+      );
     } catch (error) {
       console.warn("Failed to save joined session:", error);
       showToast("Impossible d'enregistrer le groupe.", "error");
+    } finally {
+      setIsJoiningOuting(false);
     }
   };
 
@@ -684,17 +810,15 @@ export default function SessionScreen() {
     }
   };
 
-  const handleLeave = async () => {
-    const ok = await confirmAction({
-      title: "Quitter la séance",
-      message: "Tu ne seras plus inscrit à cette séance. Continuer ?",
-      confirmLabel: "Quitter",
-      destructive: true,
-    });
-    if (!ok) return;
+  const openLeaveConfirm = () => {
+    setShowLeaveModal(true);
+  };
 
+  const handleLeaveConfirm = async () => {
+    if (isLeavingOuting) return;
+    setIsLeavingOuting(true);
     const sessionId = session.id;
-    const isServerSession = !session.isCustom && sessionId;
+    const isServerSession = Boolean(sessionId);
     let apiSucceeded = false;
     try {
       if (isServerSession) {
@@ -712,15 +836,18 @@ export default function SessionScreen() {
       const defaultId =
         session.recommendedGroupId || session.paceGroups[0]?.id || null;
       setSelectedGroupId(defaultId);
+      setShowLeaveModal(false);
       showToast(
         isServerSession && !apiSucceeded
-          ? "Séance quittée localement."
-          : "Tu as quitté la séance.",
+          ? "Participation annulée sur cet appareil."
+          : "Participation annulée. Tu restes membre du club.",
         "success",
       );
     } catch (error) {
       console.warn("Failed to leave session:", error);
-      showToast("Impossible de quitter la séance.", "error");
+      showToast("Impossible d'annuler la participation.", "error");
+    } finally {
+      setIsLeavingOuting(false);
     }
   };
 
@@ -749,8 +876,9 @@ export default function SessionScreen() {
           <Text style={styles.headerLocation} numberOfLines={1}>
             {session.spot || "Séance"}
           </Text>
-          {session.isCustom === true ? (
+          {isOrganizer ? (
             <TouchableOpacity
+              testID="session-header-modify"
               onPress={() => {
                 router.push({
                   pathname: "/session/create",
@@ -809,10 +937,18 @@ export default function SessionScreen() {
           ) : null}
         </View>
 
-        <Text style={styles.sessionTitleDisplay}>
-          {(linkedWorkout?.name ?? session.title).toUpperCase()}
+        <Text style={styles.sessionTitleDisplay} testID="session-detail-title">
+          {(() => {
+            const raw = linkedWorkout?.name ?? session.title;
+            const t = (session.typeLabel || "").toUpperCase();
+            const isWalkLike =
+              t.includes("MARCHE") ||
+              t.includes("WALKING") ||
+              t.startsWith("LANGUES");
+            return isWalkLike ? raw : raw.toUpperCase();
+          })()}
         </Text>
-        <Text style={styles.sessionSubtitle}>
+        <Text style={styles.sessionSubtitle} testID="session-detail-date-label">
           {formatSessionDetailSubtitle(session)}
         </Text>
 
@@ -827,7 +963,7 @@ export default function SessionScreen() {
                 sessionDetailTab === "info" && styles.tabLabelActive,
               ]}
             >
-              Info
+              Infos
             </Text>
             {sessionDetailTab === "info" ? (
               <View style={styles.tabUnderline} />
@@ -846,7 +982,7 @@ export default function SessionScreen() {
                   sessionDetailTab === "runners" && styles.tabLabelActive,
                 ]}
               >
-                Runners
+                Coureurs
               </Text>
               {sessionDetailTab === "runners" ? (
                 <View style={styles.tabUnderline} />
@@ -882,27 +1018,41 @@ export default function SessionScreen() {
           />
         ) : (
           <>
-        <StatGrid3
-          cells={[
-            {
-              value: String(session.estimatedDistanceKm),
-              sub: "km",
-              label: "Distance",
-            },
-            {
-              value: session.targetPace.replace(/\s*\/km\s*/i, "").trim(),
-              label: "/km",
-              valueColor: colors.text.accent,
-            },
-            {
-              value: String(
-                session.paceGroups.reduce((a, g) => a + g.runnersCount, 0) ||
-                  "—",
-              ),
-              label: "Runners",
-            },
-          ]}
-        />
+        {(() => {
+          const typeUpper = (session.typeLabel || "").toUpperCase();
+          const isCasualWalk =
+            typeUpper.includes("MARCHE") || typeUpper.includes("WALKING");
+          const dist = formatSessionDistanceKm(session.estimatedDistanceKm);
+          const pace = formatSessionPaceLabel(session.targetPace);
+          // No invented pace/distance for walk/casual — hide empty metric chrome.
+          if (isCasualWalk && dist === "—" && (pace === "—" || /allure\s+libre/i.test(pace))) {
+            return null;
+          }
+          return (
+            <StatGrid3
+              cells={[
+                {
+                  value: dist,
+                  sub: "km",
+                  label: "Distance",
+                },
+                {
+                  value: pace,
+                  label: "/km",
+                  valueColor: colors.text.accent,
+                },
+                {
+                  value: String(
+                    session.paceGroups.reduce((a, g) => a + g.runnersCount, 0) ||
+                      "—",
+                  ),
+                  label: isCasualWalk ? "Participants" : "Coureurs",
+                },
+              ]}
+            />
+          );
+        })()}
+
 
         {/* Session Details Card - on top (Type de course first) */}
         <View style={styles.card}>
@@ -910,29 +1060,28 @@ export default function SessionScreen() {
             <Text style={styles.cardLabel}>INFORMATIONS</Text>
           </View>
 
-          {/* Type de course — first row */}
+          {/* Type — first row (stored label; no M04 fixture fallback) */}
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Type de course</Text>
+            <Text style={styles.infoLabel}>Type</Text>
             <Text style={styles.infoValue}>{session.typeLabel} ›</Text>
           </View>
 
           <View style={styles.divider} />
 
-          {/* Compact info rows */}
+          {/* Compact info rows — omit empty distance for casual/walk */}
+          {formatSessionDistanceKm(session.estimatedDistanceKm) !== "—" ? (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Distance</Text>
             <Text style={styles.infoValue}>
-              {session.estimatedDistanceKm} km
+              {formatSessionDistanceLabel(session.estimatedDistanceKm)}
             </Text>
           </View>
+          ) : null}
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Rendez-vous</Text>
             <Text style={styles.infoValue}>
-              {session.meetingPoint ||
-                (session.spot === "Spot 1"
-                  ? "Marina Casablanca"
-                  : session.spot)}
+              {session.meetingPoint?.trim() || session.spot?.trim() || "—"}
             </Text>
           </View>
 
@@ -952,41 +1101,40 @@ export default function SessionScreen() {
 
           <View style={styles.divider} />
 
-          {/* Description - more compact */}
+          {/* Purpose — prefer user-entered coachAdvice; never invent language defaults. */}
           <Text style={[styles.infoLabelSmall, { marginBottom: 8 }]}>
-            À propos de cette séance
+            À quoi s&apos;attendre
           </Text>
-          <Text style={styles.descriptionText}>
-            {session.typeLabel === "FARTLEK" &&
-              "Intervalles avec variations de rythme pour développer l'endurance et la vitesse."}
-            {session.typeLabel === "SÉRIES" &&
-              "Intervalles structurés sur piste ou route. Travail de vitesse et résistance."}
-            {session.typeLabel === "FOOTING" &&
-              "Sortie d'endurance à allure confortable pour développer la base aérobie."}
-            {session.typeLabel === "PROGRESSIF" &&
-              "Sortie progressive avec accélération graduelle pour améliorer l'endurance."}
-            {(session.typeLabel === "COURSE LIBRE" ||
-              session.typeLabel === "LIBRE") &&
-              "Course libre et conviviale. Pas de structure imposée, juste courir ensemble à votre rythme."}
-            {(session.typeLabel === "DÉCOUVERTE" ||
-              session.typeLabel === "DÉCOUVERTE") &&
-              "Sortie découverte pour explorer de nouveaux parcours en groupe. Allure libre et conviviale."}
-            {(session.typeLabel === "MARCHE" ||
-              session.typeLabel === "WALKING") &&
-              "Marche en groupe. Accessible à tous, parfait pour débuter ou se remettre en mouvement."}
-            {![
-              "FARTLEK",
-              "SÉRIES",
-              "FOOTING",
-              "PROGRESSIF",
-              "COURSE LIBRE",
-              "LIBRE",
-              "DÉCOUVERTE",
-              "MARCHE",
-              "WALKING",
-            ].includes(session.typeLabel) &&
-              "Séance d'entraînement structurée pour améliorer la performance."}
+          <Text style={styles.descriptionText} testID="session-purpose-text">
+            {session.coachAdvice?.trim()
+              ? session.coachAdvice.trim()
+              : session.typeLabel === "FARTLEK"
+                ? "Intervalles avec variations de rythme pour développer l'endurance et la vitesse."
+                : session.typeLabel === "SÉRIES"
+                  ? "Intervalles structurés sur piste ou route. Travail de vitesse et résistance."
+                  : session.typeLabel === "FOOTING"
+                    ? "Sortie d'endurance à allure confortable pour développer la base aérobie."
+                    : session.typeLabel === "PROGRESSIF"
+                      ? "Sortie progressive avec accélération graduelle pour améliorer l'endurance."
+                      : session.typeLabel === "COURSE LIBRE" ||
+                          session.typeLabel === "LIBRE"
+                        ? "Course libre et conviviale. Pas de structure imposée, juste courir ensemble à votre rythme."
+                        : session.typeLabel === "DÉCOUVERTE"
+                          ? "Sortie découverte pour explorer de nouveaux parcours en groupe. Allure libre et conviviale."
+                          : session.typeLabel === "MARCHE" ||
+                              session.typeLabel === "WALKING" ||
+                              (session.typeLabel || "")
+                                .toUpperCase()
+                                .startsWith("LANGUES")
+                            ? "Marche en groupe. Accessible à tous — aucun rythme de course imposé."
+                            : "Séance d'entraînement structurée pour améliorer la performance."}
           </Text>
+          {(session.typeLabel || "").toUpperCase().startsWith("LANGUES") &&
+          session.volume?.trim() ? (
+            <Text style={styles.languageMeta} testID="session-language-label">
+              Langue · {session.volume.trim()}
+            </Text>
+          ) : null}
         </View>
 
         {/* Workout Summary Card */}
@@ -1190,6 +1338,9 @@ export default function SessionScreen() {
                               ]}
                               activeOpacity={0.8}
                               onPress={() => setSelectedGroupId(group.id)}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Groupe ${group.label}`}
+                              testID={`session-group-${group.id}`}
                             >
                               <View style={styles.groupLeft}>
                                 <View style={styles.groupLabelRow}>
@@ -1246,7 +1397,7 @@ export default function SessionScreen() {
           </View>
         ) : null}
 
-        {!session.isCustom ? (
+        {!isOrganizer ? (
           <View style={styles.actionButtonContainer}>
             <InterGroupJoinPanel
               memberGroupId={memberHomeGroupId}
@@ -1256,14 +1407,26 @@ export default function SessionScreen() {
                 session.paceGroups.find((g) => g.id === sessionAnchorGroupId)
                   ?.paceRange ?? session.targetPace
               }
+              joinedSummaryLine={[
+                session.dateLabel,
+                session.meetingPoint || session.spot,
+              ]
+                .map((p) => (p || "").trim())
+                .filter(Boolean)
+                .join(" · ")}
               settings={clubAdminSettings}
               hasStoredJoin={hasStoredJoin}
               canJoin={canJoin}
               isPendingMember={isPendingMember}
+              isPublishing={isJoiningOuting}
               onJoin={handleSave}
               onRequestJoin={handleRequestJoin}
-              onLeave={handleLeave}
+              onLeave={openLeaveConfirm}
               onGoToClub={() => router.push("/(tabs)/club")}
+              onGoToMySessions={() => router.push("/(tabs)/my-sessions")}
+              onCancelWarn={() =>
+                setSelectedGroupId(memberHomeGroupId ?? sessionAnchorGroupId)
+              }
             />
           </View>
         ) : null}
@@ -1382,8 +1545,8 @@ export default function SessionScreen() {
           </View>
         )}
 
-        {/* Footer with buttons */}
-        {session.isCustom ? (
+        {/* Footer: organizer-only modify/delete (hostUserId), not merely isCustom */}
+        {isOrganizer ? (
           <View style={styles.footer}>
             <TouchableOpacity
               style={styles.modifyButton}
@@ -1394,6 +1557,7 @@ export default function SessionScreen() {
                   params: { sessionId: session.id },
                 });
               }}
+              testID="session-modify-btn"
             >
               <Text style={styles.modifyButtonText}>Modifier</Text>
             </TouchableOpacity>
@@ -1402,23 +1566,10 @@ export default function SessionScreen() {
               activeOpacity={0.8}
               onPress={() => setShowDeleteModal(true)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              testID="session-delete-btn"
             >
               <Text style={styles.deleteButtonText}>Supprimer la séance</Text>
             </TouchableOpacity>
-          </View>
-        ) : hasStoredJoin ? (
-          <View style={styles.footer}>
-            <View style={styles.footerButtonGroup}>
-              <TouchableOpacity
-                style={styles.leaveButton}
-                activeOpacity={0.8}
-                onPress={handleLeave}
-              >
-                <Text style={styles.leaveButtonText}>
-                  Quitter cette séance
-                </Text>
-              </TouchableOpacity>
-            </View>
           </View>
         ) : null}
         </>
@@ -1530,6 +1681,71 @@ export default function SessionScreen() {
                 <Text style={styles.modalConfirmText}>Supprimer</Text>
               </TouchableOpacity>
             </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* M06 — cancel participation (not leave club) */}
+      <Modal
+        visible={showLeaveModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLeaveModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowLeaveModal(false)}
+          testID="session-leave-modal-dismiss"
+        >
+          <Pressable
+            style={styles.leaveModalContent}
+            onPress={(e) => e.stopPropagation()}
+            testID="session-leave-confirm-modal"
+            accessibilityViewIsModal
+          >
+            <Text style={styles.leaveModalTitle} testID="session-leave-modal-title">
+              Tu ne viens plus ?
+            </Text>
+            <Text style={styles.leaveModalSubtitle}>
+              {session.title}
+              {session.dateLabel ? ` · ${session.dateLabel}` : ""}
+            </Text>
+            <View style={styles.leaveModalCard}>
+              <Text style={styles.leaveModalCardTitle}>
+                Annuler ta participation
+              </Text>
+              <Text style={styles.leaveModalCardBody}>
+                Tu ne figureras plus parmi les participants à cette sortie.
+              </Text>
+              <Text style={styles.leaveModalCardBody}>
+                Ton adhésion au club reste inchangée. Cette action ne quitte
+                pas le club et ne supprime pas la sortie pour les autres.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.leaveModalConfirmBtn,
+                isLeavingOuting && { opacity: 0.6 },
+              ]}
+              onPress={() => void handleLeaveConfirm()}
+              disabled={isLeavingOuting}
+              accessibilityRole="button"
+              accessibilityLabel="Confirmer l'annulation"
+              testID="session-leave-confirm-btn"
+            >
+              <Text style={styles.leaveModalConfirmText}>
+                {isLeavingOuting ? "Annulation…" : "Confirmer l'annulation"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.leaveModalKeepBtn}
+              onPress={() => setShowLeaveModal(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Garder ma place"
+              testID="session-leave-keep-btn"
+            >
+              <Text style={styles.leaveModalKeepText}>Garder ma place</Text>
+            </TouchableOpacity>
           </Pressable>
         </Pressable>
       </Modal>
@@ -1700,18 +1916,64 @@ const styles = StyleSheet.create({
   },
   notFoundHint: {
     color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.md,
     marginTop: 8,
-    lineHeight: 20,
+    lineHeight: 22,
+  },
+  inaccessibleBody: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 32,
+  },
+  inaccessibleTitle: {
+    color: colors.text.primary,
+    fontSize: 30,
+    fontWeight: "700",
+    letterSpacing: -0.6,
+    lineHeight: 36,
+    marginBottom: 8,
+  },
+  inaccessibleCard: {
+    marginTop: 22,
+    marginBottom: 28,
+    backgroundColor: colors.background.card,
+    borderWidth: hairline,
+    borderColor: colors.border.default,
+    borderRadius: borderRadius.lg,
+    padding: 18,
+  },
+  inaccessibleCardTitle: {
+    color: colors.text.primary,
+    fontSize: typography.sizes.lg,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  inaccessibleCardBody: {
+    color: colors.text.secondary,
+    fontSize: typography.sizes.md,
+    lineHeight: 22,
+  },
+  inaccessiblePrimaryBtn: {
+    backgroundColor: colors.accent.sage,
+    borderRadius: 18,
+    paddingVertical: 17,
+    alignItems: "center",
+  },
+  inaccessiblePrimaryBtnText: {
+    color: colors.accent.charcoal,
+    fontSize: typography.sizes.md,
+    fontWeight: "700",
   },
   secondaryLinkButton: {
-    marginTop: 10,
-    alignSelf: "flex-start",
+    marginTop: 18,
+    alignSelf: "center",
   },
   secondaryLinkButtonText: {
-    color: colors.accent.primary,
+    color: colors.accent.sage,
     fontSize: typography.sizes.sm,
     fontWeight: "700",
+    textAlign: "center",
   },
   inlineErrorBanner: {
     backgroundColor: colors.accent.orangeDim,
@@ -2091,27 +2353,32 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   modifyButton: {
-    backgroundColor: colors.accent.primary,
+    backgroundColor: colors.accent.sage,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 26,
+    paddingVertical: 17,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
   },
   modifyButtonText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.accent.charcoal,
+    fontSize: 15,
+    fontWeight: "700",
   },
   deleteButton: {
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.card,
   },
   deleteButtonText: {
-    color: "#FF3B30",
+    color: colors.text.error,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   workoutSummaryText: {
     color: colors.text.primary,
@@ -2240,6 +2507,80 @@ const styles = StyleSheet.create({
   modalConfirmText: {
     color: colors.text.primary,
     fontSize: 15,
+    fontWeight: "600",
+  },
+  leaveModalContent: {
+    backgroundColor: colors.background.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.06)",
+    padding: 24,
+    width: "100%",
+    maxWidth: 400,
+    gap: 12,
+  },
+  leaveModalTitle: {
+    color: colors.text.primary,
+    fontSize: 26,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+  },
+  leaveModalSubtitle: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  leaveModalCard: {
+    backgroundColor: colors.background.primary,
+    borderRadius: 16,
+    borderWidth: hairline,
+    borderColor: colors.border.default,
+    padding: 16,
+    gap: 8,
+  },
+  leaveModalCardTitle: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  leaveModalCardBody: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  leaveModalSmall: {
+    color: colors.text.tertiary,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  leaveModalConfirmBtn: {
+    marginTop: 4,
+    backgroundColor: colors.accent.sage,
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  leaveModalConfirmText: {
+    color: colors.accent.charcoal,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  leaveModalKeepBtn: {
+    paddingVertical: 14,
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  leaveModalKeepText: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  languageMeta: {
+    marginTop: 10,
+    color: colors.accent.sage,
+    fontSize: 13,
     fontWeight: "600",
   },
   coachConfirmButton: {

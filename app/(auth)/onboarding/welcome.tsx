@@ -40,7 +40,7 @@ export default function OnboardingWelcomeFinalScreen() {
       ? formatPaceMinPerKm(state.pace)
       : state.discoveryMode
         ? "Découverte"
-        : "5'00 – 5'30 /km";
+        : "Allure libre";
 
   const typeLabel =
     state.goal === "marche" || state.discoveryMode

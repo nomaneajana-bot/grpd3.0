@@ -1,0 +1,24 @@
+{
+  "artifact": "/workspace/dist-connected",
+  "mode": "connected",
+  "fileCount": 4,
+  "secretPatternHits": 0,
+  "findings": [],
+  "demoModeBaked": false,
+  "apiUrlEmbedded": true,
+  "expectedTestUrl": "http://127.0.0.1:3999",
+  "mockEnvReturnsFalse": true
+}
+PASS connected static artifact: no secret assignments; DEMO_MODE=false; test API URL embedded
+{
+  "artifact": "/workspace/dist-demo",
+  "mode": "demo",
+  "fileCount": 4,
+  "secretPatternHits": 0,
+  "findings": [],
+  "demoModeBaked": true,
+  "apiUrlEmbedded": false,
+  "expectedTestUrl": "http://127.0.0.1:3999",
+  "mockEnvReturnsFalse": true
+}
+PASS demo static artifact: DEMO_MODE=true; no secret assignments

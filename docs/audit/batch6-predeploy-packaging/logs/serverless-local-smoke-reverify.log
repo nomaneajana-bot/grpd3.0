@@ -1,0 +1,40 @@
+{
+  "results": [
+    {
+      "check": "health_json_ready",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "check": "bad_login_401",
+      "ok": true,
+      "status": 401
+    },
+    {
+      "check": "pin_login_token",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "check": "protected_leave_requires_bearer",
+      "ok": true,
+      "status": 401
+    },
+    {
+      "check": "login_token_protected_leave",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "check": "membership_removed",
+      "ok": true
+    },
+    {
+      "check": "http_runtime_import_health",
+      "ok": true,
+      "status": 200
+    }
+  ],
+  "failed": 0
+}
+PASS serverless local smoke: health + auth + protected leave

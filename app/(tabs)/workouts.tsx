@@ -448,7 +448,7 @@ export default function WorkoutsScreen() {
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <View style={styles.headerText}>
-              <Text style={styles.headerTitle}>Workouts</Text>
+              <Text style={styles.headerTitle}>Entraînement avancé</Text>
               <Text style={styles.headerSubtitle}>
                 Crée et réutilise tes structures.
               </Text>

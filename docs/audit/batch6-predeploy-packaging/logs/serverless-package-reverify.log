@@ -1,0 +1,16 @@
+
+  .packaging/serverless/api-v1.cjs      554.9kb
+  .packaging/serverless/api-v1.cjs.map  970.3kb
+
+⚡ Done in 41ms
+PASS serverless package: {
+  "outfile": "/workspace/.packaging/serverless/api-v1.cjs",
+  "bytes": 568247,
+  "inputCount": 158,
+  "includes": {
+    "jose": true,
+    "next": true,
+    "vercelDispatch": true,
+    "appJwt": true
+  }
+}

@@ -3,7 +3,10 @@ import { StyleSheet, Switch, Text, View } from "react-native";
 
 import { colors, typography } from "@/constants/ui";
 
-const TOGGLE_TRACK = { false: "#3A3A3C", true: "#2F7BFF" };
+const TOGGLE_TRACK = {
+  false: colors.surface.s4,
+  true: colors.accent.sage,
+};
 
 type SettingsToggleRowProps = {
   title: string;
@@ -29,7 +32,7 @@ export function SettingsToggleRow({
         onValueChange={onValueChange}
         trackColor={TOGGLE_TRACK}
         thumbColor="#FFFFFF"
-        ios_backgroundColor="#3A3A3C"
+        ios_backgroundColor={colors.surface.s4}
       />
     </View>
   );

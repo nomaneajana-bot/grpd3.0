@@ -1,16 +1,17 @@
 # How to test the app
 
-## 1. Local Expo (mock API – no backend)
+## 1. Local Expo (explicit demo / mock – no backend)
 
 Good for UI and flows without a real database.
 
 ```bash
 cd /Users/noa/Desktop/grpd3.0
-npx expo start -c
+EXPO_PUBLIC_DEMO_MODE=true npx expo start -c
 ```
 
-- Do **not** set `EXPO_PUBLIC_API_URL` (or leave it empty).
-- The app uses the **mock API** (in-memory / AsyncStorage). You can use the app and roster/club screens; data won’t persist to Neon.
+- Set **`EXPO_PUBLIC_DEMO_MODE=true`** (Casablanca seed, OTP `000000`) **or** `EXPO_PUBLIC_USE_MOCK_API=true`.
+- Do **not** rely on an empty `EXPO_PUBLIC_API_URL` alone — that used to silently mock and now errors in connected mode (`MISSING_API_URL`).
+- Mock data is in-memory / AsyncStorage; it will not persist to Neon.
 
 ---
 
@@ -56,10 +57,13 @@ Use your Vercel URL and, for protected routes, add an `Authorization: Bearer <to
 
 ## Quick reference
 
-| Goal                    | EXPO_PUBLIC_API_URL | Command              |
-|-------------------------|---------------------|----------------------|
-| UI only, no backend     | unset / empty       | `npx expo start -c`  |
-| Full stack (Vercel+Neon)| Vercel URL          | `npx expo start -c`  |
+| Goal                    | Flags | Command              |
+|-------------------------|-------|----------------------|
+| Demo / jury offline     | `EXPO_PUBLIC_DEMO_MODE=true` | `npx expo start -c` |
+| Explicit mock           | `EXPO_PUBLIC_USE_MOCK_API=true` | `npx expo start -c` |
+| Full stack (Vercel+Neon)| `EXPO_PUBLIC_DEMO_MODE` unset/false + `EXPO_PUBLIC_API_URL=…` | `npx expo start -c` |
+
+UI E2E (no auth seeding): `node scripts/mvp-e2e-ui.mjs` with Expo web on `:8081`.
 
 After changing `.env`, restart Expo (`npx expo start -c`) so the new values are used.
 

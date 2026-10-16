@@ -214,6 +214,10 @@ export type ClubMembershipsResult = {
 export type ClubCreateInput = {
   name: string;
   city?: string | null;
+  /** Free-form purpose / description (unrestricted). */
+  purpose?: string | null;
+  /** Public = discoverable; members = private club. Default public. */
+  visibility?: ClubVisibility;
 };
 
 export type ClubUpdateInput = {
@@ -386,7 +390,8 @@ export type SessionCreateInput = {
 
 export type SessionCreateResult = ApiSession;
 
-export type SessionJoinInput = { groupId: string };
+/** groupId may be empty/"open" for walk/language outings without pace groups. */
+export type SessionJoinInput = { groupId?: string | null };
 
 export type SessionJoinResult = {
   id: string;

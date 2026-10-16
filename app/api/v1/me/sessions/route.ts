@@ -65,7 +65,7 @@ function serializeSession(session: {
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const attendance = await prisma.sessionAttendance.findMany({
       where: {
         userId,
