@@ -27,4 +27,10 @@ describe("truthful welcome copy guards", () => {
       ]),
     );
   });
+
+  it("welcome rows do not invent cadence volume", () => {
+    const rows = ["Parcours", "Intention", "Club"];
+    expect(rows).not.toContain("Rythme");
+    expect(rows).not.toContain("Cadence");
+  });
 });

@@ -137,6 +137,11 @@ async function runCreatePath(page, { firstName, clubName, city }) {
       !/Allure de course \(optionnel\)|Continuer avec cette allure/i.test(goalBody),
     goalBody.slice(0, 280),
   );
+  check(
+    `${firstName}_no_cadence_slider`,
+    !/Cadence visée|séances\s*\/\s*semaine/i.test(goalBody),
+    goalBody.slice(0, 280),
+  );
 
   await clickText(page, /Marche & bien-être|Marche/i);
   await clickText(page, /^Continuer$/);
@@ -178,6 +183,13 @@ async function runCreatePath(page, { firstName, clubName, city }) {
     `${firstName}_welcome_no_youssef`,
     !/Coach Youssef|12 participants|GROUPE D/i.test(welcome),
     welcome.slice(0, 200),
+  );
+  check(
+    `${firstName}_welcome_no_cadence_row`,
+    !/RYTHME|sorties\s*\/\s*semaine|séances\s*\/\s*semaine|Cadence visée/i.test(
+      welcome,
+    ),
+    welcome.slice(0, 280),
   );
 
   await clickText(page, /Voir l'accueil|Voir l’accueil/i);
