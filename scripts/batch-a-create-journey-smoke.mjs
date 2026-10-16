@@ -1,6 +1,6 @@
 /**
  * Full fresh-state CREATE onboarding journey:
- * Commencer → mock phone → profile → Créer un club → skip pace → Marche
+ * Commencer → mock phone → profile → Créer un club → goal (no allure step)
  * → create club → welcome → home → Clubs focused on new club → reload checks.
  * Then a second differently themed club; preserve the first.
  *
@@ -129,15 +129,14 @@ async function runCreatePath(page, { firstName, clubName, city }) {
   await clickText(page, /^Continuer$/);
   await page.waitForTimeout(800);
 
-  await shot(page, `create-j-${firstName}-04-pace.png`);
-  const paceBody = await page.locator("body").innerText();
+  await shot(page, `create-j-${firstName}-04-goal.png`);
+  const goalBody = await page.locator("body").innerText();
   check(
-    `${firstName}_pace_no_group_letters`,
-    !/Groupe [A-D]/i.test(paceBody),
-    paceBody.slice(0, 200),
+    `${firstName}_no_allure_step`,
+    /Ton intention|Marche & bien-être/i.test(goalBody) &&
+      !/Allure de course \(optionnel\)|Continuer avec cette allure/i.test(goalBody),
+    goalBody.slice(0, 280),
   );
-  await clickText(page, /Passer/i);
-  await page.waitForTimeout(800);
 
   await clickText(page, /Marche & bien-être|Marche/i);
   await clickText(page, /^Continuer$/);
@@ -230,7 +229,7 @@ async function runCreatePath(page, { firstName, clubName, city }) {
     clubsBody.slice(0, 400),
   );
   check(
-    `${firstName}_no_toi_groupe_d_on_skip`,
+    `${firstName}_no_toi_groupe_d_without_allure`,
     onClubHub && !(/Groupe D/i.test(clubsBody) && /\bTOI\b/i.test(clubsBody)),
     clubsBody.slice(0, 400),
   );

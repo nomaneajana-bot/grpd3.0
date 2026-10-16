@@ -59,9 +59,9 @@ Legend — **Reachability:** Primary · Secondary · Orphan · Deprecated redire
 | UI-02 | `/onboarding/phone` | `onboarding/phone.tsx` | New-user phone | Onboarding | verify | Guest | Recevoir le code | OTP | Secondary | NOT CHECKED |
 | UI-03 | `/onboarding/verify` | `onboarding/verify.tsx` | New-user OTP | Phone | profile | Guest | Vérifier | OTP | Secondary | NOT CHECKED |
 | UI-04 | `/onboarding/profile` | `onboarding/profile.tsx` | Name / basics | Verify | role | New user | Continuer | Profile store | Secondary | NOT CHECKED |
-| UI-05 | `/onboarding/role` | `onboarding/role.tsx` | Role choice | Profile | pace | New user | Select role | Local | Secondary | NOT CHECKED |
-| UI-06 | `/onboarding/pace` | `onboarding/pace.tsx` | Pace prefs | Role | goal | New user | Continuer / skip | Paces | Secondary | NOT CHECKED |
-| UI-07 | `/onboarding/goal` | `onboarding/goal.tsx` | Goal | Pace | club / create-club / permissions | New user | Continuer | Local | Secondary | NOT CHECKED |
+| UI-05 | `/onboarding/role` | `onboarding/role.tsx` | Role choice | Profile | goal | New user | Select role | Local | Secondary | NOT CHECKED |
+| UI-06 | `/onboarding/pace` | `onboarding/pace.tsx` | **Removed** — redirect to goal | Deep link only | goal | — | Auto-redirect | — | Dead / redirect | REMOVED |
+| UI-07 | `/onboarding/goal` | `onboarding/goal.tsx` | Goal | Role | club / create-club / permissions | New user | Continuer | Local | Secondary | NOT CHECKED |
 | UI-08 | `/onboarding/club` | `onboarding/club.tsx` | Join club in onboarding | Goal | permissions | New user | Join/request | Clubs API/mock | Secondary | NOT CHECKED |
 | UI-09 | `/onboarding/create-club` | `onboarding/create-club.tsx` | Create club in onboarding | Goal | permissions | New user | Créer | Clubs API/mock | Secondary | NOT CHECKED |
 | UI-10 | `/onboarding/permissions` | `onboarding/permissions.tsx` | Permissions copy | Club paths / solo | welcome | New user | Continuer | Local | Secondary | NOT CHECKED |

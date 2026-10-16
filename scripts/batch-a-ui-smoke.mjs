@@ -176,27 +176,26 @@ function check(id, ok, detail) {
     await clickText(page, /Découvrir à mon rythme/i);
     await clickText(page, /Continuer/i);
     await page.waitForTimeout(900);
-    await shot(page, "batch-a-06-pace.png");
-    const paceText = await page.locator("body").innerText();
+    await shot(page, "batch-a-06-goal.png");
+    const goalText = await page.locator("body").innerText();
     check(
-      "pace_no_invented_group",
-      !/Groupe [A-D]/i.test(paceText) &&
-        /optionnel|Passer|allure/i.test(paceText),
-      paceText.slice(0, 280),
+      "no_allure_step_after_role",
+      /Ton intention|Marche & bien-être/i.test(goalText) &&
+        !/Allure de course \(optionnel\)|Continuer avec cette allure|Passer — je n/i.test(
+          goalText,
+        ),
+      goalText.slice(0, 280),
     );
 
-    await clickText(page, /Passer/i);
-    await page.waitForTimeout(900);
-    await shot(page, "batch-a-07-goal.png");
     await clickText(page, /Marche & bien-être|Marche/i);
     await clickText(page, /Continuer/i);
     await page.waitForTimeout(900);
-    await shot(page, "batch-a-08-permissions.png");
+    await shot(page, "batch-a-07-permissions.png");
     if (await page.getByText(/Continuer/i).count()) {
       await clickText(page, /Continuer/i);
       await page.waitForTimeout(1000);
     }
-    await shot(page, "batch-a-09-welcome.png");
+    await shot(page, "batch-a-08-welcome.png");
     const welcome = await page.locator("body").innerText();
     check(
       "welcome_no_youssef",
@@ -218,7 +217,7 @@ function check(id, ok, detail) {
 
     await clickText(page, /Voir l'accueil|Voir l’accueil/i);
     await page.waitForTimeout(1500);
-    await shot(page, "batch-a-10-home.png");
+    await shot(page, "batch-a-09-home.png");
     const home = await page.locator("body").innerText();
     check(
       "home_not_onboarding_start",
@@ -229,7 +228,7 @@ function check(id, ok, detail) {
 
     await page.reload({ waitUntil: "networkidle", timeout: 60000 });
     await page.waitForTimeout(1200);
-    await shot(page, "batch-a-11-reload-home.png");
+    await shot(page, "batch-a-10-reload-home.png");
     const afterReload = await page.locator("body").innerText();
     check(
       "reload_stays_authed",
@@ -240,7 +239,7 @@ function check(id, ok, detail) {
 
     // Mobile viewport role (navigate fresh to role if still authed — skip if hard)
     await page.setViewportSize({ width: 390, height: 844 });
-    await shot(page, "batch-a-12-mobile-home.png");
+    await shot(page, "batch-a-11-mobile-home.png");
 
     // PATH 2 — create club screen (direct route after auth from path 1 still in page)
     try {

@@ -4,7 +4,6 @@ import { StyleSheet, Text, View } from "react-native";
 import { onboardingColors } from "@/components/onboarding/onboardingTheme";
 import { borderRadius, colors, hairline, typography } from "@/constants/ui";
 import type { OnboardingState } from "@/lib/onboardingStore";
-import { formatPaceMinPerKm } from "@/lib/paceFormat";
 
 export function WelcomeHero({ firstName }: { firstName: string }) {
   return (
@@ -58,10 +57,6 @@ function goalLine(goal?: OnboardingState["goal"]): string | null {
  */
 export function OnboardingSummaryCard({ state }: { state: OnboardingState }) {
   const goal = goalLine(state.goal);
-  const pace =
-    state.pace != null && !state.discoveryMode
-      ? formatPaceMinPerKm(state.pace)
-      : null;
   const cadence =
     typeof state.cadence === "number" ? state.cadence : null;
   const clubName = state.clubName?.trim() || null;
@@ -74,14 +69,6 @@ export function OnboardingSummaryCard({ state }: { state: OnboardingState }) {
     rows.push({
       label: "Rythme",
       value: `${cadence} sortie${cadence === 1 ? "" : "s"} / semaine (souhait)`,
-    });
-  }
-  if (pace) {
-    rows.push({ label: "Allure", value: pace });
-  } else {
-    rows.push({
-      label: "Allure",
-      value: "Non renseignée",
     });
   }
   if (clubName) {

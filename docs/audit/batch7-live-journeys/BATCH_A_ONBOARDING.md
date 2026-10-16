@@ -12,7 +12,7 @@
 
 1. **Profile persist** — entered first name (e.g. Revue) kept on membership `displayName` (not Coureur)
 2. **Club focus** — newly created club selected in Clubs hub after finish + reload
-3. **Pace skip** — no automatic Groupe A–D / TOI membership when allure skipped
+3. **Allure step removed** — role → goal; no automatic Groupe A–D / TOI from onboarding
 4. **Walk / language clubs** — walk defaults; no auto-created running Élite A–D groups
 5. **Copy** — natural welcome/verify; no inventé; mock verify does not claim “Code reçu automatiquement”
 6. **Smoke** — full create journey (not only create-club screen after solo auth)
@@ -24,7 +24,7 @@
 - **log:** `logs/batch-a-create-journey-smoke.log`
 - **unit:** `logs/create-continuity-unit.log` — 5 suites / 20 tests PASS
 - **screenshots:** `screenshots/create-j-*.png` (13)
-- Path: Commencer → mock phone → profile Revue → Créer un club → skip pace → Marche & bien-être → club « Marche revue A » / Casablanca → welcome with club → home → Clubs focused on Marche revue A (admin, 1 member, Revue in feed, no Élite A–D, no Groupe D TOI) → reload keeps focus+name → second club « English Walk B » (Rabat) → first club preserved
+- Path: Commencer → mock phone → profile Revue → Créer un club → (no allure) → Marche & bien-être → club « Marche revue A » / Casablanca → welcome with club → home → Clubs focused on Marche revue A (admin, 1 member, Revue in feed, no Élite A–D, no Groupe D TOI) → reload keeps focus+name → second club « English Walk B » (Rabat) → first club preserved
 - Invite / Rejoindre: **blocker recorded — no fabricated PASS**
 
 ## Prior UI smoke (13/13 · packaging tip)
