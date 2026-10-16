@@ -2,11 +2,14 @@
 
 import type { SessionVisibility } from "@/lib/sessionData";
 
-export type SessionAudience =
-  | "public"
-  | "club"
-  | "women"
-  | "team";
+/**
+ * Access gate only (v1 simplify).
+ * Legacy "women" / "team" chips map in via fieldsToSessionAudience.
+ */
+export type SessionAudience = "public" | "club";
+
+/** @deprecated Kept for edit/migration of old drafts — do not show in UI. */
+export type LegacySessionAudience = SessionAudience | "women" | "team";
 
 export const SESSION_AUDIENCE_OPTIONS: Array<{
   id: SessionAudience;
@@ -15,23 +18,13 @@ export const SESSION_AUDIENCE_OPTIONS: Array<{
 }> = [
   {
     id: "public",
-    label: "Publique",
-    hint: "Visible par tous les coureurs.",
+    label: "Ouverte à tous",
+    hint: "Visible sur Découvrir — n’importe qui peut rejoindre.",
   },
   {
     id: "club",
-    label: "Club uniquement",
-    hint: "Réservée aux membres du club.",
-  },
-  {
-    id: "women",
-    label: "Femmes",
-    hint: "Séance 100 % femmes.",
-  },
-  {
-    id: "team",
-    label: "Équipe",
-    hint: "Groupe / équipe du club uniquement.",
+    label: "Réservée au club",
+    hint: "Seuls les membres confirmés du club voient et rejoignent.",
   },
 ];
 
@@ -43,11 +36,13 @@ export type SessionAudienceFields = {
 };
 
 export function sessionAudienceToFields(
-  audience: SessionAudience,
-  clubName?: string | null,
+  audience: LegacySessionAudience,
+  _clubName?: string | null,
 ): SessionAudienceFields {
   switch (audience) {
     case "club":
+    case "team":
+      // Équipe was never a real subgroup gate — same as club members.
       return {
         visibility: "members",
         genderRestriction: "mixed",
@@ -55,18 +50,12 @@ export function sessionAudienceToFields(
         hostGroupName: null,
       };
     case "women":
+      // Femmes was a public label, not an enforceable gate — stay open.
       return {
         visibility: "public",
-        genderRestriction: "women",
-        genderRestrictionUi: "women_only",
-        hostGroupName: null,
-      };
-    case "team":
-      return {
-        visibility: "members",
         genderRestriction: "mixed",
         genderRestrictionUi: null,
-        hostGroupName: clubName?.trim() ? clubName.trim() : "Équipe",
+        hostGroupName: null,
       };
     default:
       return {
@@ -78,19 +67,25 @@ export function sessionAudienceToFields(
   }
 }
 
+/**
+ * Map stored session fields → UI audience.
+ * Old Femmes → open; old Équipe → club members.
+ */
 export function fieldsToSessionAudience(
   visibility: SessionVisibility | undefined,
-  genderRestriction: string | undefined | null,
-  hostGroupName: string | null | undefined,
+  _genderRestriction?: string | null,
+  _hostGroupName?: string | null,
 ): SessionAudience {
-  if (genderRestriction === "women" || genderRestriction === "women_only") {
-    return "women";
-  }
-  if (visibility === "members" && hostGroupName?.trim()) {
-    return "team";
-  }
   if (visibility === "members") {
     return "club";
   }
+  return "public";
+}
+
+/** Normalize any legacy chip id to the two-mode control. */
+export function normalizeSessionAudience(
+  raw: string | null | undefined,
+): SessionAudience {
+  if (raw === "club" || raw === "team") return "club";
   return "public";
 }

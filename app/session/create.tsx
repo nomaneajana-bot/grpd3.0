@@ -43,10 +43,12 @@ import {
 import { getSessionById } from "../../lib/sessionData";
 import {
   fieldsToSessionAudience,
+  normalizeSessionAudience,
   SESSION_AUDIENCE_OPTIONS,
   sessionAudienceToFields,
   type SessionAudience,
 } from "../../lib/sessionAudience";
+import { confirmAction } from "../../lib/confirmAction";
 import {
   getClubAdminSettings,
   type ClubAdminGroupOverride,
@@ -1452,12 +1454,16 @@ export default function CreateSessionScreen() {
           // Explicit organise-from-club binds members audience.
           // Standalone create defaults to public so a stale focused club
           // cannot silently attach a later outing.
-          if (explicitClubId || explicitAudience === "club" || explicitAudience === "team") {
-            setSessionAudience(explicitAudience === "team" ? "team" : "club");
-          } else if (explicitAudience === "public") {
-            setSessionAudience("public");
+          if (
+            explicitClubId ||
+            explicitAudience === "club" ||
+            explicitAudience === "team"
+          ) {
+            setSessionAudience("club");
           } else {
-            setSessionAudience("public");
+            setSessionAudience(
+              normalizeSessionAudience(explicitAudience ?? "public"),
+            );
           }
           setHasInitializedAudience(true);
         }
@@ -2526,9 +2532,9 @@ export default function CreateSessionScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>VISIBILITÉ</Text>
+          <Text style={styles.cardLabel}>CETTE SORTIE EST…</Text>
           <Text style={styles.cardSubtitle}>
-            Qui peut voir et rejoindre cette séance ?
+            Qui peut voir et rejoindre — accès réel, pas un label.
           </Text>
           <View style={styles.audienceChips} testID="session-audience-chips">
             {SESSION_AUDIENCE_OPTIONS.map((opt) => {
@@ -2543,16 +2549,39 @@ export default function CreateSessionScreen() {
                   accessibilityLabel={opt.label}
                   labelStyle={styles.audienceChipLabel}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setSessionAudience(opt.id);
-                    if (opt.id === "public") {
-                      // Standalone public must not keep a stale club target.
-                      if (!explicitClubId) setPrimaryClubId(null);
-                    } else if (explicitClubId) {
-                      setPrimaryClubId(explicitClubId);
-                    } else if (!primaryClubId && approvedClubs.length === 1) {
-                      setPrimaryClubId(approvedClubs[0].clubId);
-                    }
+                    void (async () => {
+                      if (
+                        opt.id === "public" &&
+                        sessionAudience === "club" &&
+                        (explicitClubId || primaryClubId)
+                      ) {
+                        const clubLabel =
+                          approvedClubs.find(
+                            (m) =>
+                              m.clubId === (explicitClubId || primaryClubId),
+                          )?.club?.name ?? "ce club";
+                        const ok = await confirmAction({
+                          title: "Quitter le contexte club ?",
+                          message: `La sortie ne sera plus réservée à ${clubLabel}. Elle devient ouverte à tous.`,
+                          confirmLabel: "Rendre ouverte",
+                        });
+                        if (!ok) return;
+                      }
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSessionAudience(opt.id);
+                      if (opt.id === "public") {
+                        setPrimaryClubId(null);
+                      } else if (explicitClubId) {
+                        setPrimaryClubId(explicitClubId);
+                      } else if (!primaryClubId && approvedClubs.length === 1) {
+                        setPrimaryClubId(approvedClubs[0]!.clubId);
+                      } else if (
+                        !primaryClubId &&
+                        approvedClubs.length > 1
+                      ) {
+                        // Multi-club: wait for explicit pick.
+                      }
+                    })();
                   }}
                 />
               );
@@ -2564,49 +2593,51 @@ export default function CreateSessionScreen() {
                 ?.hint
             }
           </Text>
-          {(sessionAudience === "club" || sessionAudience === "team") &&
-          approvedClubs.length > 0 ? (
+          {sessionAudience === "club" && approvedClubs.length > 0 ? (
             <View style={styles.clubPickBlock} testID="create-club-picker">
-              <Text style={styles.clubPickLabel}>CLUB CIBLE</Text>
-              {explicitClubId ? (
+              {explicitClubId || approvedClubs.length === 1 ? (
                 <Text style={styles.audienceNote} testID="create-club-bound">
-                  Sortie associée à{" "}
-                  {approvedClubs.find((m) => m.clubId === primaryClubId)?.club
-                    ?.name ?? primaryClubId}
-                  . Association explicite depuis le club.
+                  Seuls les membres confirmés de{" "}
+                  {approvedClubs.find(
+                    (m) =>
+                      m.clubId ===
+                      (explicitClubId || primaryClubId || approvedClubs[0]?.clubId),
+                  )?.club?.name ?? "ton club"}{" "}
+                  voient et rejoignent.
                 </Text>
-              ) : null}
-              <View style={styles.audienceChips}>
-                {approvedClubs.map((m) => {
-                  const on = m.clubId === primaryClubId;
-                  const label = m.club?.name ?? m.clubId;
-                  return (
-                    <View key={m.clubId} testID={`create-club-${m.clubId}`}>
-                      <SelectableChip
-                        label={label}
-                        selected={on}
-                        showCheckmark
-                        accessibilityLabel={`Club ${label}`}
-                        labelStyle={styles.audienceChipLabel}
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          setPrimaryClubId(m.clubId);
-                        }}
-                      />
-                    </View>
-                  );
-                })}
-              </View>
-              <Text style={styles.audienceNote}>
-                La séance membres cible uniquement ce club — pas les autres. Une
-                sortie publique n’hérite pas de ce club.
-              </Text>
+              ) : (
+                <>
+                  <Text style={styles.clubPickLabel}>QUEL CLUB ?</Text>
+                  <View style={styles.audienceChips}>
+                    {approvedClubs.map((m) => {
+                      const on = m.clubId === primaryClubId;
+                      const label = m.club?.name ?? m.clubId;
+                      return (
+                        <View key={m.clubId} testID={`create-club-${m.clubId}`}>
+                          <SelectableChip
+                            label={label}
+                            selected={on}
+                            showCheckmark
+                            accessibilityLabel={`Club ${label}`}
+                            labelStyle={styles.audienceChipLabel}
+                            onPress={() => {
+                              Haptics.impactAsync(
+                                Haptics.ImpactFeedbackStyle.Light,
+                              );
+                              setPrimaryClubId(m.clubId);
+                            }}
+                          />
+                        </View>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
             </View>
           ) : null}
           {sessionAudience === "public" ? (
             <Text style={styles.audienceNote} testID="create-public-no-club">
-              Sortie autonome : aucun club ne sera associé (règle actuelle
-              préservée).
+              Visible sur Découvrir — aucun club ne sera associé.
             </Text>
           ) : null}
         </View>
