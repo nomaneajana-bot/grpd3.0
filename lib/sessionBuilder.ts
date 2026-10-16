@@ -85,6 +85,8 @@ export function buildSessionFromForm(params: {
    * Never invent a default language (no mandatory English).
    */
   language?: string | null;
+  /** Real organizer display name — never invent “Coach Youssef”. */
+  organizerName?: string | null;
 }): { id: string; session: SessionData; defaultGroupId: string } {
   const { spot, timeLabel, sessionType, groupConfigs, workoutId } = params;
   const visibility = params.visibility ?? "public";
@@ -96,6 +98,7 @@ export function buildSessionFromForm(params: {
   const purpose = params.purpose?.trim() || "";
   const userTitle = params.title?.trim() || "";
   const title = userTitle || sessionType.toUpperCase();
+  const organizerName = params.organizerName?.trim() || "";
 
   const timeMatch = timeLabel.match(/(\d{2}):(\d{2})/);
   const hour = timeMatch ? parseInt(timeMatch[1], 10) : 6;
@@ -271,6 +274,7 @@ export function buildSessionFromForm(params: {
     hostGroupName,
     genderRestriction,
     coachAdvice: purpose || undefined,
+    coachName: organizerName || undefined,
     meetingPoint: spot,
     experience: isWalk
       ? {

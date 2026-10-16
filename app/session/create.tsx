@@ -2169,6 +2169,10 @@ export default function CreateSessionScreen() {
         walkSkipsPace || !usePaceGroups ? [] : effectiveGroups;
       const walkTitle = outingTitle.trim() || null;
       const walkPurpose = outingPurpose.trim() || null;
+      const organizerName =
+        profile?.firstName?.trim() ||
+        profile?.name?.trim() ||
+        null;
 
       if (isEditMode && editSessionId) {
         // Update existing session
@@ -2185,6 +2189,7 @@ export default function CreateSessionScreen() {
           title: walkTitle,
           purpose: walkPurpose,
           structureNotes: structureTrimmed,
+          organizerName,
         });
         const sessionWithAudience = {
           ...session,
@@ -2215,6 +2220,7 @@ export default function CreateSessionScreen() {
           title: walkTitle,
           purpose: walkPurpose,
           structureNotes: structureTrimmed,
+          organizerName,
         });
 
         const apiPayload: SessionCreateInput = {
@@ -2275,7 +2281,8 @@ export default function CreateSessionScreen() {
         }
 
         markLeaving();
-        router.push(`/session/${createdId}`);
+        // Confirmation first — not the full detail dump with leftover coach chrome.
+        router.replace(`/session/published?id=${encodeURIComponent(createdId)}`);
       }
     } catch (error) {
       console.error("Failed to publish session:", error);
