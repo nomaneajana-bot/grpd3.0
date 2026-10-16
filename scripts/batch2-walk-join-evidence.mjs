@@ -416,18 +416,22 @@ try {
   );
   record("walk_hides_pace_groups_card", paceAbsent, paceAbsent ? "absent" : "VISIBLE");
 
-  await clickTestId(page, "session-language-toggle");
-  await new Promise((r) => setTimeout(r, 300));
-  const langEmpty = await page.evaluate(() => {
-    const el = document.querySelector('[data-testid="session-language-input"]');
-    return { ph: el?.getAttribute("placeholder") || "", val: (el?.value || "").trim() };
-  });
+  // Organise language toggle removed — purpose/title/structure only.
+  const langUiGone = await page.evaluate(
+    () =>
+      !document.querySelector('[data-testid="session-language-toggle"]') &&
+      !document.querySelector('[data-testid="session-language-input"]'),
+  );
+  record(
+    "language_organise_ui_removed",
+    langUiGone,
+    langUiGone ? "toggle+input absent" : "language UI still present",
+  );
   record(
     "language_no_english_default",
-    !/english/i.test(langEmpty.ph) && !langEmpty.val,
-    JSON.stringify(langEmpty),
+    true,
+    "N/A — organise language field removed; no English default path",
   );
-  await typeTestId(page, "session-language-input", LANGUAGE);
 
   try {
     await clickTestId(page, "session-audience-public");
@@ -469,8 +473,8 @@ try {
   );
   record(
     "detail_language_optional_shown",
-    detailText.includes(LANGUAGE),
-    LANGUAGE,
+    true,
+    `N/A — language not collected on organise (token ${LANGUAGE} unused)`,
   );
 
   const hostAtt = await readAttendance(page, pub.id);

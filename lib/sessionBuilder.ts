@@ -71,9 +71,9 @@ export function buildSessionFromForm(params: {
   estimatedDistanceKm?: number | null;
   /** Optional explicit target pace label — never invent for walks */
   targetPace?: string | null;
-  /** User-entered outing title (required for walk/language journeys) */
+  /** User-entered outing title (all session types) */
   title?: string | null;
-  /** User-entered purpose / “à quoi s’attendre” — stored as coachAdvice */
+  /** User-entered purpose / “à quoi s’attendre” — stored as coachAdvice (all types) */
   purpose?: string | null;
   /**
    * Free-text structure / déroulé for any session type (replaces FARTLEK

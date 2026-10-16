@@ -1518,9 +1518,6 @@ export default function CreateSessionScreen() {
    * (replaces FARTLEK/SORTIE/SEUIL chips + associated-workout picker).
    */
   const [structureNotes, setStructureNotes] = useState("");
-  /** Optional language — only when toggle on; never default to English. */
-  const [includeLanguage, setIncludeLanguage] = useState(false);
-  const [outingLanguage, setOutingLanguage] = useState("");
   /** Inline validation (web Alert dialogs are unreliable for harness). */
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -2040,8 +2037,6 @@ export default function CreateSessionScreen() {
         groupConfigs,
         outingTitle,
         outingPurpose,
-        includeLanguage,
-        outingLanguage,
       }),
     [
       spot,
@@ -2055,8 +2050,6 @@ export default function CreateSessionScreen() {
       groupConfigs,
       outingTitle,
       outingPurpose,
-      includeLanguage,
-      outingLanguage,
     ],
   );
 
@@ -2121,31 +2114,22 @@ export default function CreateSessionScreen() {
       }
       const structureTrimmed = structureNotes.trim() || null;
 
-      if (sessionMode === "walking") {
-        if (!outingTitle.trim()) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          setFormError("Titre requis — donne un titre à ta sortie marche.");
-          return;
-        }
-        if (!outingPurpose.trim()) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          setFormError(
-            "Objectif requis — décris l’objectif ou ce à quoi s’attendre.",
-          );
-          return;
-        }
-        if (!spot.trim()) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          setFormError("Lieu requis — choisis un lieu de rendez-vous.");
-          return;
-        }
-        if (includeLanguage && !outingLanguage.trim()) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          setFormError(
-            "Langue — indique la langue, ou désactive l’option langue.",
-          );
-          return;
-        }
+      if (!outingTitle.trim()) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError("Titre requis — donne un titre à ta sortie.");
+        return;
+      }
+      if (!outingPurpose.trim()) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError(
+          "Objectif requis — décris l’objectif ou ce à quoi s’attendre.",
+        );
+        return;
+      }
+      if (!spot.trim()) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError("Lieu requis — choisis un lieu de rendez-vous.");
+        return;
       }
 
       const publishTimeMinutes = selectedHour * 60 + selectedMinute;
@@ -2170,10 +2154,6 @@ export default function CreateSessionScreen() {
         walkSkipsPace || !usePaceGroups ? [] : effectiveGroups;
       const walkTitle = outingTitle.trim() || null;
       const walkPurpose = outingPurpose.trim() || null;
-      const walkLanguage =
-        includeLanguage && outingLanguage.trim()
-          ? outingLanguage.trim()
-          : null;
 
       if (isEditMode && editSessionId) {
         // Update existing session
@@ -2189,7 +2169,6 @@ export default function CreateSessionScreen() {
           genderRestriction: genderRestrictionUi,
           title: walkTitle,
           purpose: walkPurpose,
-          language: walkLanguage,
           structureNotes: structureTrimmed,
         });
         const sessionWithAudience = {
@@ -2220,7 +2199,6 @@ export default function CreateSessionScreen() {
           genderRestriction: genderRestrictionUi,
           title: walkTitle,
           purpose: walkPurpose,
-          language: walkLanguage,
           structureNotes: structureTrimmed,
         });
 
@@ -2327,8 +2305,8 @@ export default function CreateSessionScreen() {
         <View style={styles.card}>
           <Text style={styles.cardLabel}>TYPE DE SÉANCE</Text>
           <Text style={styles.cardSubtitle}>
-            Choisis le format de la sortie. Tu peux décrire la structure en texte
-            pour tous les types.
+            Choisis le format, puis renseigne titre, objectif et structure —
+            les mêmes infos pour tous les types.
           </Text>
           
           {/* Mode selector */}
@@ -2421,95 +2399,62 @@ export default function CreateSessionScreen() {
             </TouchableOpacity>
           </View>
 
-          {sessionMode === "walking" ? (
-            <View style={styles.walkMetaBlock} testID="session-walk-fields">
-              <Text style={[styles.cardSubtitle, styles.sessionTypeSubtitle]}>
-                Indique un titre, l’objectif et le lieu — ils apparaîtront sur
-                la fiche de la sortie.
+          {/* Same detail fields for every type (Marche block parity). */}
+          <View style={styles.walkMetaBlock} testID="session-detail-fields">
+            <Text style={[styles.cardSubtitle, styles.sessionTypeSubtitle]}>
+              Indique un titre, l&apos;objectif et le lieu — ils apparaîtront sur
+              la fiche de la sortie.
+            </Text>
+            <Text style={styles.fieldLabel}>Titre</Text>
+            <TextInput
+              style={styles.walkTextInput}
+              value={outingTitle}
+              onChangeText={setOutingTitle}
+              placeholder={
+                sessionMode === "walking"
+                  ? "Ex. Marche du dimanche"
+                  : sessionMode === "discovery_run"
+                    ? "Ex. Découverte Corniche"
+                    : sessionMode === "casual_run"
+                      ? "Ex. Footing entre potes"
+                      : "Ex. Pyramides du mardi"
+              }
+              placeholderTextColor={colors.text.tertiary}
+              testID="session-title-input"
+              accessibilityLabel="Titre de la sortie"
+            />
+            <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
+              Objectif / à quoi s&apos;attendre
+            </Text>
+            <TextInput
+              style={[styles.walkTextInput, styles.walkTextArea]}
+              value={outingPurpose}
+              onChangeText={setOutingPurpose}
+              placeholder="Décris la sortie en une ou deux phrases"
+              placeholderTextColor={colors.text.tertiary}
+              multiline
+              testID="session-purpose-input"
+              accessibilityLabel="Objectif de la sortie"
+            />
+            <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
+              Structure / déroulé
+            </Text>
+            <TextInput
+              style={[styles.walkTextInput, styles.walkTextArea]}
+              value={structureNotes}
+              onChangeText={setStructureNotes}
+              placeholder="Ex. 10 min échauffement · 6×1 min vite / 1 min lent · retour au calme"
+              placeholderTextColor={colors.text.tertiary}
+              multiline
+              testID="session-structure-input"
+              accessibilityLabel="Structure de la séance"
+            />
+            {formError ? (
+              <Text style={styles.formErrorText} testID="session-form-error">
+                {formError}
               </Text>
-              <Text style={styles.fieldLabel}>Titre</Text>
-              <TextInput
-                style={styles.walkTextInput}
-                value={outingTitle}
-                onChangeText={setOutingTitle}
-                placeholder="Ex. Marche du dimanche"
-                placeholderTextColor={colors.text.tertiary}
-                testID="session-title-input"
-                accessibilityLabel="Titre de la sortie"
-              />
-              <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
-                Objectif / à quoi s&apos;attendre
-              </Text>
-              <TextInput
-                style={[styles.walkTextInput, styles.walkTextArea]}
-                value={outingPurpose}
-                onChangeText={setOutingPurpose}
-                placeholder="Décris la sortie en une ou deux phrases"
-                placeholderTextColor={colors.text.tertiary}
-                multiline
-                testID="session-purpose-input"
-                accessibilityLabel="Objectif de la sortie"
-              />
-              <Pressable
-                style={[styles.fieldRow, { marginTop: 12 }]}
-                onPress={() => {
-                  const next = !includeLanguage;
-                  setIncludeLanguage(next);
-                  if (!next) setOutingLanguage("");
-                }}
-                testID="session-language-toggle"
-                accessibilityRole="switch"
-                accessibilityState={{ checked: includeLanguage }}
-                accessibilityLabel="Inclure une langue"
-              >
-                <Text style={styles.fieldLabel}>Inclure une langue</Text>
-                <Switch
-                  value={includeLanguage}
-                  onValueChange={(on) => {
-                    setIncludeLanguage(on);
-                    if (!on) setOutingLanguage("");
-                  }}
-                  trackColor={{ false: "#2a2f3a", true: colors.accent.primary }}
-                  thumbColor="#ffffff"
-                />
-              </Pressable>
-              {includeLanguage ? (
-                <>
-                  <Text style={[styles.fieldLabel, { marginTop: 8 }]}>
-                    Langue (optionnelle — aucune valeur par défaut)
-                  </Text>
-                  <TextInput
-                    style={styles.walkTextInput}
-                    value={outingLanguage}
-                    onChangeText={setOutingLanguage}
-                    placeholder="Ex. Français, darija…"
-                    placeholderTextColor={colors.text.tertiary}
-                    testID="session-language-input"
-                    accessibilityLabel="Langue de la sortie"
-                  />
-                </>
-              ) : null}
-              {formError ? (
-                <Text style={styles.formErrorText} testID="session-form-error">
-                  {formError}
-                </Text>
-              ) : null}
-            </View>
-          ) : null}
-
-          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
-            Structure / déroulé
-          </Text>
-          <TextInput
-            style={[styles.walkTextInput, styles.walkTextArea]}
-            value={structureNotes}
-            onChangeText={setStructureNotes}
-            placeholder="Ex. 10 min échauffement · 6×1 min vite / 1 min lent · retour au calme"
-            placeholderTextColor={colors.text.tertiary}
-            multiline
-            testID="session-structure-input"
-            accessibilityLabel="Structure de la séance"
-          />
+            ) : null}
+          </View>
         </View>
 
         {/* Card 2 - Infos de base */}
