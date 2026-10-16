@@ -1,7 +1,6 @@
 import { type Href, router } from "expo-router";
 import React, { useState } from "react";
 
-import { CadenceSlider } from "@/components/onboarding/CadenceSlider";
 import { GoalOptionCard } from "@/components/onboarding/GoalOptionCard";
 import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
 import { OnboardingTitle } from "@/components/onboarding/OnboardingTitle";
@@ -50,7 +49,6 @@ const GOALS: {
 export default function OnboardingGoalScreen() {
   const { state, setState } = useOnboarding();
   const [goal, setGoal] = useState<OnboardingGoal | undefined>(state.goal);
-  const [cadence, setCadence] = useState(state.cadence ?? 3);
 
   const branch = () => {
     const role = state.role;
@@ -62,7 +60,8 @@ export default function OnboardingGoalScreen() {
 
   const handleContinue = async () => {
     if (!goal) return;
-    await setState({ goal, cadence });
+    // No cadence slider — never invent a weekly volume from onboarding.
+    await setState({ goal, cadence: undefined });
     branch();
   };
 
@@ -86,7 +85,6 @@ export default function OnboardingGoalScreen() {
           onPress={() => setGoal(g.id)}
         />
       ))}
-      <CadenceSlider value={cadence} onChange={setCadence} />
     </OnboardingScreen>
   );
 }

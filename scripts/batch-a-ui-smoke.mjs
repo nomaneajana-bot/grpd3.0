@@ -186,6 +186,11 @@ function check(id, ok, detail) {
         ),
       goalText.slice(0, 280),
     );
+    check(
+      "no_cadence_slider",
+      !/Cadence visée|séances\s*\/\s*semaine/i.test(goalText),
+      goalText.slice(0, 280),
+    );
 
     await clickText(page, /Marche & bien-être|Marche/i);
     await clickText(page, /Continuer/i);

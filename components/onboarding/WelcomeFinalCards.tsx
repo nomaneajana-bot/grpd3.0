@@ -57,20 +57,12 @@ function goalLine(goal?: OnboardingState["goal"]): string | null {
  */
 export function OnboardingSummaryCard({ state }: { state: OnboardingState }) {
   const goal = goalLine(state.goal);
-  const cadence =
-    typeof state.cadence === "number" ? state.cadence : null;
   const clubName = state.clubName?.trim() || null;
 
   const rows: { label: string; value: string }[] = [
     { label: "Parcours", value: roleLine(state.role) },
   ];
   if (goal) rows.push({ label: "Intention", value: goal });
-  if (cadence != null) {
-    rows.push({
-      label: "Rythme",
-      value: `${cadence} sortie${cadence === 1 ? "" : "s"} / semaine (souhait)`,
-    });
-  }
   if (clubName) {
     rows.push({ label: "Club", value: clubName });
   }
