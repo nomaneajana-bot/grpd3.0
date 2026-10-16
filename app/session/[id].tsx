@@ -1106,6 +1106,34 @@ export default function SessionScreen() {
             </Text>
           </View>
 
+          {session.clubId &&
+          (session.visibility == null || session.visibility === "public") ? (
+            <View style={styles.infoRow} testID="session-soft-club-row">
+              <Text style={styles.infoLabel}>Organisé avec</Text>
+              <Text
+                style={styles.infoValue}
+                testID="session-soft-club-name"
+              >
+                {matchingMembership?.club?.name?.trim() ||
+                  session.hostGroupName?.trim() ||
+                  "Club"}
+              </Text>
+            </View>
+          ) : null}
+
+          {session.visibility === "members" &&
+          session.hostGroupName?.trim() ? (
+            <View style={styles.infoRow} testID="session-target-group-row">
+              <Text style={styles.infoLabel}>Groupe</Text>
+              <Text
+                style={styles.infoValue}
+                testID="session-target-group-name"
+              >
+                {session.hostGroupName.trim()}
+              </Text>
+            </View>
+          ) : null}
+
           <View style={styles.divider} />
 
           {/* Purpose — prefer user-entered coachAdvice; never invent language defaults. */}

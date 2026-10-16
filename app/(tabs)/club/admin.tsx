@@ -177,6 +177,9 @@ export default function ClubAdminScreen() {
                       </Text>
                     </View>
                     <Pressable
+                      testID={`club-approve-member-${member.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Approuver ${member.displayName ?? member.userId}`}
                       style={({ pressed }) => [
                         styles.approveButton,
                         (pressed || isSubmitting) &&

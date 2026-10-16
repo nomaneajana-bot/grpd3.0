@@ -170,18 +170,18 @@
 | Next action | Hosted later — not cleared by demo |
 | Status | **VERIFIED** (**demo** only) |
 
-### ISSUE-012 — P2 — OPEN (keyboard / a11y closeout note)
+### ISSUE-012 — P2 — VERIFIED (demo keyboard Tab order only)
 | Field | Value |
 |-------|-------|
 | Route / journey | `/club/create` desktop Tab focus-order |
-| Expected meaning | Keyboard Tab moves through name → city → purpose → actions with visible focus |
-| Observed behavior | Batch3 harness marked BLOCKED after programmatic-focus attempt. Closeout diagnosis with **real Tab keys** (no `element.focus()`) reached name → city → purpose → visibility → submit/cancel in order. Classification: **harness_limitation**, not RN-web product defect. |
-| Capability | PARTIAL (works under real Tab; prior harness check BLOCKED) |
+| Expected meaning | Keyboard Tab moves through name → city → purpose (then visibility / actions) with accessible labels |
+| Observed behavior | Real Tab smoke (`scripts/issue-012-tab-focus-smoke.mjs`) — no `element.focus()`. Labels + hints on fields. |
+| Capability | Demo keyboard order **PASS**; **full a11y / UAT not claimed** |
 | Owner | Cursor |
-| Candidate SHA / env | Diagnosis at tip after `7535609` · **demo** |
-| Evidence | `docs/audit/batch3-club-idea/tab-focus/diagnosis.json` + sequence screenshots |
-| Next action | Keep keyboard **open** — do not claim full acceptance from harness PASS alone; optional harness rewrite later |
-| Status | **OPEN** (not a Batch3 DEMO gate failure; not claimed VERIFIED) |
+| Candidate SHA / env | `cursor/close-open-backlog-3184` · **demo** |
+| Evidence | `/opt/cursor/artifacts/issue-012-tab-focus-smoke.json` + prior `docs/audit/batch3-club-idea/tab-focus/` |
+| Next action | None for demo Tab order; full a11y remains separate |
+| Status | **VERIFIED** (demo Tab only — not full a11y) |
 
 ---
 

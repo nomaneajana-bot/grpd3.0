@@ -52,7 +52,13 @@ import { confirmAction } from "../../lib/confirmAction";
 import {
   getClubAdminSettings,
   type ClubAdminGroupOverride,
+  type ClubAdminSettings,
 } from "../../lib/clubAdminStore";
+import {
+  isMemberOrgEnabled,
+  sortedActiveColorGroups,
+} from "../../lib/clubMemberGroups";
+import { resolvePublishClubId } from "../../lib/sessionClubAssociation";
 import { getFocusedClubId } from "../../lib/focusedClubStore";
 import { createSession as createSessionLocal, updateSession } from "../../lib/sessionStore";
 import type { ClubMembership, SessionCreateInput } from "../../types/api";
@@ -1629,12 +1635,19 @@ export default function CreateSessionScreen() {
   const [clubAdminGroups, setClubAdminGroups] = useState<
     ClubAdminGroupOverride[] | null
   >(null);
+  const [clubAdminSettings, setClubAdminSettings] =
+    useState<ClubAdminSettings | null>(null);
+  const [targetColorGroupId, setTargetColorGroupId] = useState<string | null>(
+    null,
+  );
   const [sessionAudience, setSessionAudience] =
     useState<SessionAudience>("public");
 
   useEffect(() => {
     if (!primaryClubId) {
       setClubAdminGroups(null);
+      setClubAdminSettings(null);
+      setTargetColorGroupId(null);
       return;
     }
     let cancelled = false;
@@ -1642,6 +1655,7 @@ export default function CreateSessionScreen() {
       try {
         const settings = await getClubAdminSettings(primaryClubId);
         if (cancelled) return;
+        setClubAdminSettings(settings);
         setClubAdminGroups(settings.groups);
         setGroupConfigs((prev) =>
           prev.map((g) => {
@@ -1651,7 +1665,10 @@ export default function CreateSessionScreen() {
           }),
         );
       } catch {
-        if (!cancelled) setClubAdminGroups(null);
+        if (!cancelled) {
+          setClubAdminGroups(null);
+          setClubAdminSettings(null);
+        }
       }
     })();
     return () => {
@@ -2108,8 +2125,25 @@ export default function CreateSessionScreen() {
         profile?.clubName ?? primaryClubId,
       );
       const sessionVisibility = audienceFields.visibility;
-      const hostGroupName = audienceFields.hostGroupName;
       const genderRestrictionUi = audienceFields.genderRestrictionUi;
+      const publishClubId = resolvePublishClubId({
+        visibility: sessionVisibility,
+        primaryClubId,
+      });
+      const boundClubName =
+        approvedClubs.find((m) => m.clubId === publishClubId)?.club?.name ??
+        null;
+      const targetGroupName =
+        targetColorGroupId && clubAdminSettings
+          ? sortedActiveColorGroups(clubAdminSettings).find(
+              (g) => g.id === targetColorGroupId,
+            )?.name ?? null
+          : null;
+      // Soft public branding uses club name; members-only may target a color group.
+      const hostGroupName =
+        sessionVisibility === "public" && publishClubId
+          ? boundClubName
+          : targetGroupName ?? audienceFields.hostGroupName;
 
       if (sessionVisibility === "members" && !primaryClubId) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -2199,7 +2233,8 @@ export default function CreateSessionScreen() {
         });
         const sessionWithAudience = {
           ...session,
-          clubId: sessionVisibility === "members" ? primaryClubId : null,
+          clubId: publishClubId,
+          hostGroupName,
           genderRestriction: genderRestrictionUi,
         };
 
@@ -2241,12 +2276,12 @@ export default function CreateSessionScreen() {
           estimatedDistanceKm: session.estimatedDistanceKm,
           recommendedGroupId: session.recommendedGroupId || "open",
           paceGroups: walkSkipsPace || !usePaceGroups ? [] : session.paceGroups,
-          clubId: sessionVisibility === "members" ? primaryClubId : null,
+          clubId: publishClubId,
           visibility: sessionVisibility,
           genderRestriction: audienceFields.genderRestriction,
           workoutId: session.workoutId ?? null,
           isCustom: true,
-          hostGroupName: session.hostGroupName ?? null,
+          hostGroupName,
           meetingPoint: session.meetingPoint ?? session.spot ?? null,
           coachAdvice: session.coachAdvice ?? null,
           coachPhone: session.coachPhone ?? null,
@@ -2278,7 +2313,12 @@ export default function CreateSessionScreen() {
             return;
           }
           console.warn("API session create failed, saving locally:", apiErr);
-          await createSessionLocal(session);
+          await createSessionLocal({
+            ...session,
+            clubId: publishClubId,
+            hostGroupName,
+            visibility: sessionVisibility,
+          });
           try {
             await upsertJoinedSession(id, defaultGroupId);
           } catch (joinErr) {
@@ -2561,8 +2601,8 @@ export default function CreateSessionScreen() {
                               m.clubId === (explicitClubId || primaryClubId),
                           )?.club?.name ?? "ce club";
                         const ok = await confirmAction({
-                          title: "Quitter le contexte club ?",
-                          message: `La sortie ne sera plus réservée à ${clubLabel}. Elle devient ouverte à tous.`,
+                          title: "Rendre ouverte à tous ?",
+                          message: `Tout le monde pourra voir et rejoindre. La sortie restera associée à ${clubLabel} (Organisé avec…).`,
                           confirmLabel: "Rendre ouverte",
                         });
                         if (!ok) return;
@@ -2570,7 +2610,13 @@ export default function CreateSessionScreen() {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setSessionAudience(opt.id);
                       if (opt.id === "public") {
-                        setPrimaryClubId(null);
+                        // Soft association: keep club bind when organising from a club.
+                        if (!explicitClubId && !primaryClubId) {
+                          setPrimaryClubId(null);
+                        } else if (explicitClubId) {
+                          setPrimaryClubId(explicitClubId);
+                        }
+                        setTargetColorGroupId(null);
                       } else if (explicitClubId) {
                         setPrimaryClubId(explicitClubId);
                       } else if (!primaryClubId && approvedClubs.length === 1) {
@@ -2635,10 +2681,59 @@ export default function CreateSessionScreen() {
               )}
             </View>
           ) : null}
-          {sessionAudience === "public" ? (
+          {sessionAudience === "public" && primaryClubId ? (
+            <Text style={styles.audienceNote} testID="create-public-soft-club">
+              Visible sur Découvrir — associée à{" "}
+              {approvedClubs.find((m) => m.clubId === primaryClubId)?.club
+                ?.name ?? "ton club"}{" "}
+              (Organisé avec…), sans réserver l’accès.
+            </Text>
+          ) : null}
+          {sessionAudience === "public" && !primaryClubId ? (
             <Text style={styles.audienceNote} testID="create-public-no-club">
               Visible sur Découvrir — aucun club ne sera associé.
             </Text>
+          ) : null}
+          {sessionAudience === "club" &&
+          primaryClubId &&
+          isMemberOrgEnabled(clubAdminSettings) &&
+          sortedActiveColorGroups(clubAdminSettings).length > 0 ? (
+            <View style={styles.clubPickBlock} testID="create-target-group">
+              <Text style={styles.clubPickLabel}>POUR QUEL GROUPE ?</Text>
+              <Text style={styles.audienceNote}>
+                Optionnel — tout le club reste concerné ; le groupe est un
+                repère.
+              </Text>
+              <View style={styles.audienceChips}>
+                <SelectableChip
+                  testID="create-target-group-all"
+                  label="Tout le club"
+                  selected={targetColorGroupId == null}
+                  showCheckmark
+                  accessibilityLabel="Tout le club"
+                  labelStyle={styles.audienceChipLabel}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTargetColorGroupId(null);
+                  }}
+                />
+                {sortedActiveColorGroups(clubAdminSettings).map((g) => (
+                  <SelectableChip
+                    key={g.id}
+                    testID={`create-target-group-${g.id}`}
+                    label={g.name}
+                    selected={targetColorGroupId === g.id}
+                    showCheckmark
+                    accessibilityLabel={`Groupe ${g.name}`}
+                    labelStyle={styles.audienceChipLabel}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setTargetColorGroupId(g.id);
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
           ) : null}
         </View>
 

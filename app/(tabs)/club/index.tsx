@@ -48,6 +48,7 @@ import {
 import {
   getClubAdminSettings,
   memberGroupFromSettings,
+  saveClubAdminSettings,
   type ClubAdminSettings,
 } from "@/lib/clubAdminStore";
 import {
@@ -61,6 +62,7 @@ import {
   memberAssignedGroupId,
   sortedActiveColorGroups,
 } from "@/lib/clubMemberGroups";
+import { AssignMemberGroupSheet } from "@/components/club/AssignMemberGroupSheet";
 import { MemberGroupRow } from "@/components/club/MemberGroupRow";
 import { apiSessionToSessionData, type SessionData } from "@/lib/sessionData";
 import { getJoinedSessions } from "@/lib/joinedSessionsStore";
@@ -76,6 +78,8 @@ export default function ClubScreen() {
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
   const [roster, setRoster] = useState<ClubRosterMember[]>([]);
   const [userGroupId, setUserGroupId] = useState<string | null>(null);
+  const [selfAssignOpen, setSelfAssignOpen] = useState(false);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
@@ -144,6 +148,7 @@ export default function ClubScreen() {
         // TOI: explicit color-group assignment only when member org is on.
         // Never invent Élite / Groupe D for walk or opted-out clubs.
         const authUser = await getAuthUser();
+        setAuthUserId(authUser?.id ?? null);
         if (isMemberOrgEnabled(adminCfg) && authUser) {
           setUserGroupId(memberAssignedGroupId(authUser.id, adminCfg));
         } else if (
@@ -212,6 +217,33 @@ export default function ClubScreen() {
   const club = primaryMembership?.club;
   const memberCount = roster.length > 0 ? roster.length : undefined;
   const foundedYear = formatFoundedYear(club?.createdAt);
+
+  const handleSelfAssignGroup = async (groupId: string | null) => {
+    if (!primaryMembership?.clubId || !authUserId || !adminSettings) return;
+    try {
+      const memberGroups = { ...adminSettings.memberGroups };
+      if (groupId) {
+        memberGroups[authUserId] = groupId;
+      } else {
+        delete memberGroups[authUserId];
+      }
+      const next = { ...adminSettings, memberGroups };
+      await saveClubAdminSettings(primaryMembership.clubId, next);
+      setAdminSettings(next);
+      setUserGroupId(groupId);
+      const label = groupId
+        ? sortedActiveColorGroups(next).find((g) => g.id === groupId)?.name ??
+          "groupe"
+        : "Sans groupe";
+      showToast(`Ton groupe · ${label}`, "success");
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      console.warn("Self-assign group failed:", error);
+      showToast("Impossible d'enregistrer ton groupe.", "error");
+    } finally {
+      setSelfAssignOpen(false);
+    }
+  };
 
   const handleLeaveClub = async () => {
     if (!primaryMembership?.clubId) return;
@@ -497,6 +529,26 @@ export default function ClubScreen() {
             sortedActiveColorGroups(adminSettings).length > 0 ? (
               <>
                 <SectionHeader label="GROUPES" />
+                <Pressable
+                  testID="club-self-assign-group"
+                  accessibilityRole="button"
+                  accessibilityLabel="Choisir mon groupe"
+                  onPress={() => setSelfAssignOpen(true)}
+                  style={styles.enableGroupsCard}
+                >
+                  <Text style={styles.enableGroupsTitle}>
+                    {userGroupId
+                      ? `Mon groupe · ${
+                          sortedActiveColorGroups(adminSettings).find(
+                            (g) => g.id === userGroupId,
+                          )?.name ?? "choisi"
+                        }`
+                      : "Choisir mon groupe"}
+                  </Text>
+                  <Text style={styles.enableGroupsSub}>
+                    Tu peux te placer toi-même — un seul groupe, ou aucun.
+                  </Text>
+                </Pressable>
                 {sortedActiveColorGroups(adminSettings).map((group) => {
                   const colorBuckets = adminSettings
                     ? bucketRosterByColorGroup(roster, adminSettings)
@@ -585,6 +637,17 @@ export default function ClubScreen() {
             >
               <Text style={styles.quitText}>Quitter le club</Text>
             </Pressable>
+
+            {adminSettings && isMemberOrgEnabled(adminSettings) ? (
+              <AssignMemberGroupSheet
+                visible={selfAssignOpen}
+                memberName="Moi"
+                settings={adminSettings}
+                currentGroupId={userGroupId}
+                onSelect={(gid) => void handleSelfAssignGroup(gid)}
+                onClose={() => setSelfAssignOpen(false)}
+              />
+            ) : null}
           </>
         ) : isPendingMember && club ? (
           <>
