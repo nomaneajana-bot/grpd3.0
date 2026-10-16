@@ -33,11 +33,16 @@ import {
   saveClubAdminSettings,
   type ClubAdminSettings,
 } from "@/lib/clubAdminStore";
+import { AssignMemberGroupSheet } from "@/components/club/AssignMemberGroupSheet";
 import {
-  assignMemberToClubGroup,
-  CLUB_PACE_GROUP_DEFS,
-  getClubPaceGroupDef,
-} from "@/lib/clubPaceGroups";
+  isMemberOrgEnabled,
+  memberAssignedGroupId,
+  memberGroupColor,
+  MEMBER_GROUP_SOFT_CAP,
+  newMemberGroupId,
+  sortedActiveColorGroups,
+  starterTemplates,
+} from "@/lib/clubMemberGroups";
 import type { Club, ClubRosterMember, ClubVisibility } from "@/types/api";
 
 export default function ClubSettingsScreen() {
@@ -55,6 +60,9 @@ export default function ClubSettingsScreen() {
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<ClubVisibility>("members");
   const [accessCode, setAccessCode] = useState("");
+  const [assignMember, setAssignMember] = useState<ClubRosterMember | null>(
+    null,
+  );
 
   const { toast, showToast, hideToast } = useToast();
 
@@ -163,24 +171,97 @@ export default function ClubSettingsScreen() {
     }
   };
 
-  const handleMemberGroup = async (
-    userId: string,
-    groupId: "A" | "B" | "C" | "D",
-  ) => {
+  const persistSettings = async (next: ClubAdminSettings) => {
     if (!clubId) return;
+    await saveClubAdminSettings(clubId, next);
+    setAdminSettings(next);
+  };
+
+  const handleToggleMemberOrg = async (enabled: boolean) => {
+    if (!clubId) return;
+    let next: ClubAdminSettings = {
+      ...adminSettings,
+      memberOrgEnabled: enabled,
+    };
+    if (enabled && (next.colorGroups?.length ?? 0) === 0) {
+      const kind =
+        next.activityStructure === "walk" || next.activityStructure === "neutral"
+          ? "walk3"
+          : "run4";
+      next = { ...next, colorGroups: starterTemplates(kind) };
+    }
+    await persistSettings(next);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    showToast(
+      enabled ? "Groupes membres activés." : "Groupes membres désactivés.",
+      "success",
+    );
+  };
+
+  const handleAddGroup = async () => {
+    if (!clubId) return;
+    const current = sortedActiveColorGroups(adminSettings);
+    if (current.length >= MEMBER_GROUP_SOFT_CAP) {
+      showToast(`Maximum ${MEMBER_GROUP_SOFT_CAP} groupes.`, "error");
+      return;
+    }
+    const paletteOrder = [
+      "red",
+      "blue",
+      "green",
+      "grey",
+      "amber",
+      "teal",
+      "purple",
+      "pink",
+    ] as const;
+    const used = new Set(current.map((g) => g.colorKey));
+    const colorKey =
+      paletteOrder.find((k) => !used.has(k)) ??
+      paletteOrder[current.length % paletteOrder.length]!;
+    const nextGroup = {
+      id: newMemberGroupId(),
+      name: `Groupe ${current.length + 1}`,
+      colorKey,
+      sortOrder: current.length,
+      active: true,
+    };
+    await persistSettings({
+      ...adminSettings,
+      memberOrgEnabled: true,
+      colorGroups: [...(adminSettings.colorGroups ?? []), nextGroup],
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleAssignMember = async (groupId: string | null) => {
+    if (!clubId || !assignMember) return;
+    const userId = assignMember.userId;
+    const name = assignMember.displayName ?? userId;
     try {
-      const client = createApiClient();
-      await setClubMemberGroup(client, clubId, { userId, groupId });
-      const next = {
-        ...adminSettings,
-        memberGroups: { ...adminSettings.memberGroups, [userId]: groupId },
-      };
-      await saveClubAdminSettings(clubId, next);
-      setAdminSettings(next);
+      const memberGroups = { ...adminSettings.memberGroups };
+      if (groupId) {
+        memberGroups[userId] = groupId;
+        // Best-effort API for legacy A–D ids only.
+        if (groupId === "A" || groupId === "B" || groupId === "C" || groupId === "D") {
+          const client = createApiClient();
+          await setClubMemberGroup(client, clubId, { userId, groupId });
+        }
+      } else {
+        delete memberGroups[userId];
+      }
+      await persistSettings({ ...adminSettings, memberGroups });
+      const groupName = groupId
+        ? adminSettings.colorGroups?.find((g) => g.id === groupId)?.name ??
+          "groupe"
+        : "Sans groupe";
+      showToast(`${name} → ${groupName}`, "success");
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (error) {
       console.warn("Member group assign failed:", error);
       showToast("Impossible d'affecter le membre.", "error");
+    } finally {
+      setAssignMember(null);
     }
   };
 
@@ -271,83 +352,117 @@ export default function ClubSettingsScreen() {
             </Pressable>
           </View>
 
-          <SectionLabel>GÉRER LES GROUPES</SectionLabel>
-          {CLUB_PACE_GROUP_DEFS.map((def) => {
-            const override = adminSettings.groups.find((g) => g.id === def.id);
-            const paceLabel = override?.paceLabel ?? def.paceLabel;
-            const active = override?.active ?? true;
-            return (
-              <NavRow
-                key={def.id}
-                title={def.label}
-                subtitle={`${paceLabel}${!active ? " · Inactif" : ""}`}
-                left={
-                  <View
-                    style={[styles.dot, { backgroundColor: def.dotColor }]}
-                  />
-                }
-                onPress={() =>
-                  router.push({
-                    pathname: "/(tabs)/club/group-detail",
-                    params: { clubId: clubId ?? "", groupId: def.id },
-                  } as Href)
-                }
+          <SectionLabel>ORGANISER LES MEMBRES</SectionLabel>
+          <View style={styles.card} testID="member-org-settings">
+            <View style={styles.switchRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>Groupes couleur</Text>
+                <Text style={styles.fieldHint}>
+                  Optionnel — nom + couleur, sans imposer l’allure. Off =
+                  aucune section GROUPES sur le hub.
+                </Text>
+              </View>
+              <Switch
+                testID="member-org-toggle"
+                value={isMemberOrgEnabled(adminSettings)}
+                onValueChange={(v) => void handleToggleMemberOrg(v)}
+                trackColor={{
+                  false: colors.surface.s4,
+                  true: colors.accent.primary,
+                }}
+                thumbColor="#fff"
               />
-            );
-          })}
+            </View>
 
-          <SectionLabel>AFFECTER LES MEMBRES</SectionLabel>
-          <View style={styles.card}>
-            {roster.length === 0 ? (
-              <Text style={styles.hint}>Aucun membre approuvé.</Text>
-            ) : (
-              roster.map((member) => {
-                const assigned =
-                  adminSettings.memberGroups[member.userId] ??
-                  assignMemberToClubGroup(member, adminSettings);
-                return (
-                  <View key={member.userId} style={styles.memberRow}>
-                    <Text style={styles.memberName} numberOfLines={1}>
-                      {member.displayName ?? member.userId}
-                    </Text>
-                    <View style={styles.groupPicker}>
-                      {(["A", "B", "C", "D"] as const).map((gid) => {
-                        const def = getClubPaceGroupDef(gid);
-                        const on = assigned === gid;
-                        return (
-                          <Pressable
-                            key={gid}
-                            accessibilityRole="button"
-                            accessibilityState={{ selected: on }}
-                            onPress={() =>
-                              handleMemberGroup(member.userId, gid)
-                            }
-                            style={({ pressed }) => [
-                              styles.groupChip,
-                              on && {
-                                borderColor: def.dotColor,
-                                backgroundColor: colors.accent.primaryDim,
-                              },
-                              pressed && styles.groupChipPressed,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.groupChipTxt,
-                                on && { color: colors.text.primary },
-                              ]}
-                            >
-                              {gid}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  </View>
-                );
-              })
-            )}
+            {isMemberOrgEnabled(adminSettings) ? (
+              <>
+                {sortedActiveColorGroups(adminSettings).map((g) => (
+                  <NavRow
+                    key={g.id}
+                    title={g.name}
+                    subtitle={g.note?.trim() || "Groupe membres"}
+                    left={
+                      <View
+                        style={[
+                          styles.dot,
+                          { backgroundColor: memberGroupColor(g.colorKey) },
+                        ]}
+                      />
+                    }
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(tabs)/club/group-detail",
+                        params: { clubId: clubId ?? "", groupId: g.id },
+                      } as Href)
+                    }
+                  />
+                ))}
+                <Pressable
+                  testID="member-org-add-group"
+                  style={styles.addGroupBtn}
+                  onPress={() => void handleAddGroup()}
+                >
+                  <Text style={styles.addGroupBtnTxt}>+ Créer un groupe</Text>
+                </Pressable>
+              </>
+            ) : null}
           </View>
+
+          {isMemberOrgEnabled(adminSettings) ? (
+            <>
+              <SectionLabel>AFFECTER LES MEMBRES</SectionLabel>
+              <View style={styles.card}>
+                {roster.length === 0 ? (
+                  <Text style={styles.hint}>Aucun membre approuvé.</Text>
+                ) : (
+                  roster.map((member) => {
+                    const assigned = memberAssignedGroupId(
+                      member.userId,
+                      adminSettings,
+                    );
+                    const group = adminSettings.colorGroups?.find(
+                      (g) => g.id === assigned,
+                    );
+                    return (
+                      <Pressable
+                        key={member.userId}
+                        testID={`assign-member-${member.userId}`}
+                        onPress={() => setAssignMember(member)}
+                        style={({ pressed }) => [
+                          styles.memberRow,
+                          pressed && { opacity: 0.85 },
+                        ]}
+                      >
+                        <Text style={styles.memberName} numberOfLines={1}>
+                          {member.displayName ?? member.userId}
+                        </Text>
+                        <Text style={styles.memberGroupHint}>
+                          {group ? group.name : "Sans groupe"} →
+                        </Text>
+                      </Pressable>
+                    );
+                  })
+                )}
+              </View>
+            </>
+          ) : null}
+
+          <AssignMemberGroupSheet
+            visible={Boolean(assignMember)}
+            memberName={
+              assignMember?.displayName?.trim() ||
+              assignMember?.userId ||
+              "Membre"
+            }
+            settings={adminSettings}
+            currentGroupId={
+              assignMember
+                ? memberAssignedGroupId(assignMember.userId, adminSettings)
+                : null
+            }
+            onSelect={(gid) => void handleAssignMember(gid)}
+            onClose={() => setAssignMember(null)}
+          />
         </ScrollView>
       )}
     </SafeAreaView>
@@ -447,4 +562,22 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }],
   },
   groupChipTxt: { color: colors.text.secondary, fontSize: 12, fontWeight: "700" },
+  addGroupBtn: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.border.active,
+    borderRadius: borderRadius.md,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  addGroupBtnTxt: {
+    color: colors.text.accent,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  memberGroupHint: {
+    color: colors.text.secondary,
+    fontSize: 13,
+  },
 });

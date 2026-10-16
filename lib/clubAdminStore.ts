@@ -7,6 +7,11 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import {
+  emptyColorGroupsSettingsPatch,
+  migrateLegacyPaceGroupsToColorGroups,
+  type ClubColorGroup,
+} from "@/lib/clubMemberGroups";
 import { getClubPaceGroupDef, type ClubPaceGroupId } from "@/lib/clubPaceGroups";
 import type { ClubVisibility } from "@/types/api";
 
@@ -66,8 +71,16 @@ export type ClubAdminSettings = {
    * “Élite / Sub 4:30” labels. Set at create from explicit idea activity.
    */
   activityStructure?: "run" | "walk" | "neutral";
+  /** Legacy A–D overrides (kept for session/policy compat). */
   groups: ClubAdminGroupOverride[];
-  memberGroups: Record<string, ClubPaceGroupId>;
+  /**
+   * Member → color-group id (uuid or legacy A–D).
+   * Only meaningful when memberOrgEnabled.
+   */
+  memberGroups: Record<string, string>;
+  /** Opt-in club member color groups (v1). */
+  memberOrgEnabled?: boolean;
+  colorGroups?: ClubColorGroup[];
 };
 
 function storageKey(clubId: string): string {
@@ -153,12 +166,12 @@ const DEFAULT_WALK_GROUPS: ClubAdminGroupOverride[] = [
 ];
 
 export function defaultClubAdminSettings(): ClubAdminSettings {
+  // New clubs: no invented A–D membership chrome until admin opts in.
   return {
     interGroupAccessEnabled: true,
     defaultInterGroupPolicy: "warn",
     activityStructure: "run",
-    groups: DEFAULT_RUN_GROUPS.map((g) => ({ ...g })),
-    memberGroups: {},
+    ...emptyColorGroupsSettingsPatch("run"),
   };
 }
 
@@ -168,8 +181,7 @@ export function defaultWalkClubAdminSettings(): ClubAdminSettings {
     interGroupAccessEnabled: true,
     defaultInterGroupPolicy: "free",
     activityStructure: "walk",
-    groups: DEFAULT_WALK_GROUPS.map((g) => ({ ...g })),
-    memberGroups: {},
+    ...emptyColorGroupsSettingsPatch("walk"),
   };
 }
 
@@ -223,7 +235,7 @@ export function mergeClubAdminSettings(
   const defaults = defaultClubAdminSettings();
   if (!parsed) return defaults;
   const normalized = normalizeSettingsPolicies(parsed);
-  return {
+  const merged: ClubAdminSettings = {
     ...defaults,
     ...normalized,
     interGroupAccessEnabled:
@@ -234,7 +246,10 @@ export function mergeClubAdminSettings(
       parsed.activityStructure ?? defaults.activityStructure ?? "run",
     groups: normalizeGroups(normalized.groups ?? parsed.groups),
     memberGroups: parsed.memberGroups ?? {},
+    memberOrgEnabled: parsed.memberOrgEnabled,
+    colorGroups: parsed.colorGroups ?? [],
   };
+  return migrateLegacyPaceGroupsToColorGroups(merged);
 }
 
 export function getGroupDisplayName(
@@ -297,6 +312,20 @@ export function memberGroupFromSettings(
   const g = settings.memberGroups[userId];
   if (g === "A" || g === "B" || g === "C" || g === "D") return g;
   return null;
+}
+
+/** Color-group assignment id (uuid or legacy letter), or null. */
+export function memberColorGroupIdFromSettings(
+  userId: string,
+  settings: ClubAdminSettings,
+): string | null {
+  if (!settings.memberOrgEnabled) return null;
+  const g = settings.memberGroups[userId];
+  if (!g) return null;
+  const ok = (settings.colorGroups ?? []).some(
+    (cg) => cg.id === g && cg.active !== false,
+  );
+  return ok ? g : null;
 }
 
 export function getClubPaceGroupDefWithAdmin(

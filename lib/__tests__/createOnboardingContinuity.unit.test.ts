@@ -149,7 +149,52 @@ describe("create onboarding continuity", () => {
         },
       }),
     );
-    await saveClubAdminSettings(oldId, defaultClubAdminSettings());
+    // Legacy run club (pre–member-org): active A–D with Élite label.
+    await saveClubAdminSettings(oldId, {
+      ...defaultClubAdminSettings(),
+      memberOrgEnabled: true,
+      activityStructure: "run",
+      groups: [
+        {
+          id: "A",
+          paceLabel: "Sub 4:30/km",
+          active: true,
+          displayName: "Groupe A — Élite",
+          accessPolicy: "inherit",
+        },
+        {
+          id: "B",
+          paceLabel: "4:30–5:30/km",
+          active: true,
+          displayName: "Groupe B — Intermédiaire",
+          accessPolicy: "inherit",
+        },
+        {
+          id: "C",
+          paceLabel: "5:30–7:00/km",
+          active: true,
+          displayName: "Groupe C — Découverte",
+          accessPolicy: "inherit",
+        },
+        {
+          id: "D",
+          paceLabel: "7:00+/km",
+          active: true,
+          displayName: "Groupe D — Social",
+          accessPolicy: "inherit",
+        },
+      ],
+      colorGroups: [
+        {
+          id: "A",
+          name: "Groupe A — Élite",
+          colorKey: "red",
+          note: "Sub 4:30/km",
+          sortOrder: 0,
+          active: true,
+        },
+      ],
+    });
     await setFocusedClubId(oldId);
 
     await patchOnboardingState({
