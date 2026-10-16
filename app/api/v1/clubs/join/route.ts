@@ -9,7 +9,7 @@ import { joinByCodeBodySchema } from "@/lib/server/validators";
 
 export async function POST(req: NextRequest) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const body = await req.json();
     const parsed = joinByCodeBodySchema.safeParse(body);
     if (!parsed.success) {

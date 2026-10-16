@@ -8,7 +8,7 @@ import { jsonOk, jsonError } from "@/lib/server/api-response";
 
 export async function POST(req: NextRequest) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const body = await req.json();
     const { name, slug, city, description, visibility } = body;
 

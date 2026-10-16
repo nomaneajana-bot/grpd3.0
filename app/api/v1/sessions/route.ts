@@ -2,6 +2,7 @@
 // GET  /api/v1/sessions – list sessions
 
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/server/prisma";
 import { getAuthUserId, requireAuth } from "@/lib/server/auth-helpers";
@@ -96,7 +97,7 @@ function serializeSession(session: {
 
 export async function POST(req: NextRequest) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const body = await req.json().catch(() => null);
     const parsed = createSchema.safeParse(body ?? {});
     if (!parsed.success) {
@@ -152,7 +153,7 @@ export async function POST(req: NextRequest) {
         coachName: data.coachName ?? null,
         workoutId: data.workoutId ?? null,
         isCustom: data.isCustom ?? true,
-        paceGroups: data.paceGroups ?? null,
+        paceGroups: data.paceGroups ?? Prisma.JsonNull,
       },
     });
 
@@ -171,7 +172,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const clubId = searchParams.get("clubId") ?? null;
     const from = searchParams.get("from") ?? null;
-    const userId = getAuthUserId(req);
+    const userId = await getAuthUserId(req);
 
     const where: Record<string, unknown> = {};
     if (clubId) where.clubId = clubId;

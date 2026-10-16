@@ -7,7 +7,7 @@ import { jsonOk, jsonError } from "@/lib/server/api-response";
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
 
     const memberships = await prisma.clubMembership.findMany({
       where: { userId },

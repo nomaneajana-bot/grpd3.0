@@ -1,15 +1,8 @@
 /**
- * Batch 5 — ISSUE-004 hosted leave / cancel-request
- * Isolated PostgreSQL integration (not mock).
+ * Batch 5 — ISSUE-004 leave / cancel-request (lifecycle + route POST).
+ * Auth uses verified Bearer app JWT (Batch6 auth-helpers); no req.auth fallback.
  *
- * Auth coverage invokes the **actual** exported POST handlers from
- * `app/api/v1/clubs/[id]/leave/route.ts` and `…/cancel-request/route.ts`
- * with Request-compatible NextRequest inputs using the Auth.js v5 contract
- * (`req.auth?.user?.id` via `requireAuth` in lib/server/auth-helpers.ts).
- * Production auth helpers are unchanged.
- *
- * Requires: DATABASE_URL pointing at a disposable Postgres DB with migrations applied.
- * Skip when unset: `SKIP_PG_INTEGRATION=1` or missing DATABASE_URL.
+ * Requires: DATABASE_URL disposable Postgres + AUTH_JWT_SECRET (synthetic in tests).
  */
 
 import {
@@ -31,6 +24,10 @@ const SKIP =
   !DATABASE_URL ||
   /mock|memory/i.test(DATABASE_URL);
 
+process.env.AUTH_JWT_SECRET =
+  process.env.AUTH_JWT_SECRET?.trim() ||
+  "batch5-local-test-jwt-secret-not-for-prod";
+
 /** Shared Prisma for routes + assertions (same DB as route singleton). */
 jest.mock("@/lib/server/prisma", () => {
   const { PrismaClient: PC } = require("@prisma/client");
@@ -41,66 +38,36 @@ jest.mock("@/lib/server/prisma", () => {
 });
 
 import { prisma } from "@/lib/server/prisma";
+import { signAppAccessToken } from "@/lib/server/app-jwt";
 import { POST as leavePOST } from "@/app/api/v1/clubs/[id]/leave/route";
 import { POST as cancelPOST } from "@/app/api/v1/clubs/[id]/cancel-request/route";
 
 const describePg = SKIP ? describe.skip : describe;
 
-type AuthFixture =
-  | { kind: "missing" }
-  | { kind: "null_auth" }
-  | { kind: "empty_id" }
-  | { kind: "non_string_id" }
-  | { kind: "user"; userId: string };
-
-function attachAuth(
-  req: NextRequest,
-  auth: AuthFixture,
-): NextRequest & { auth?: unknown } {
-  const r = req as NextRequest & { auth?: unknown };
-  switch (auth.kind) {
-    case "missing":
-      delete r.auth;
-      break;
-    case "null_auth":
-      r.auth = null;
-      break;
-    case "empty_id":
-      r.auth = { user: { id: "" } };
-      break;
-    case "non_string_id":
-      r.auth = { user: { id: 99 } };
-      break;
-    case "user":
-      r.auth = { user: { id: auth.userId } };
-      break;
-  }
-  return r;
-}
-
 function makeClubRequest(
   pathSuffix: "leave" | "cancel-request",
   clubId: string,
-  auth: AuthFixture,
+  token: string | null,
   body?: Record<string, unknown>,
 ): NextRequest {
-  const req = new NextRequest(
+  const headers = new Headers({ "content-type": "application/json" });
+  if (token) headers.set("authorization", `Bearer ${token}`);
+  return new NextRequest(
     `http://test.local/api/v1/clubs/${clubId}/${pathSuffix}`,
     {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers,
       body: JSON.stringify(body ?? {}),
     },
   );
-  return attachAuth(req, auth);
 }
 
 async function invokeLeave(
   clubId: string,
-  auth: AuthFixture,
+  token: string | null,
   body?: Record<string, unknown>,
 ): Promise<{ status: number; body: Record<string, unknown> }> {
-  const res = await leavePOST(makeClubRequest("leave", clubId, auth, body), {
+  const res = await leavePOST(makeClubRequest("leave", clubId, token, body), {
     params: Promise.resolve({ id: clubId }),
   });
   return { status: res.status, body: (await res.json()) as Record<string, unknown> };
@@ -108,11 +75,11 @@ async function invokeLeave(
 
 async function invokeCancel(
   clubId: string,
-  auth: AuthFixture,
+  token: string | null,
   body?: Record<string, unknown>,
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const res = await cancelPOST(
-    makeClubRequest("cancel-request", clubId, auth, body),
+    makeClubRequest("cancel-request", clubId, token, body),
     { params: Promise.resolve({ id: clubId }) },
   );
   return { status: res.status, body: (await res.json()) as Record<string, unknown> };
@@ -244,28 +211,21 @@ describePg("club leave + cancel-request (PostgreSQL)", () => {
     });
   });
 
-  it("actual leave/cancel POST: missing/invalid auth → Response 401, no DB mutation", async () => {
+  it("actual leave/cancel POST: missing/invalid Bearer → Response 401, no DB mutation", async () => {
     const { club } = await seedClub();
     const before = await prisma.clubMembership.count({
       where: { clubId: club.id },
     });
 
-    const invalids: AuthFixture[] = [
-      { kind: "missing" },
-      { kind: "null_auth" },
-      { kind: "empty_id" },
-      { kind: "non_string_id" },
-    ];
-
-    for (const auth of invalids) {
-      const leave = await invokeLeave(club.id, auth);
+    for (const token of [null, "", "not-a-jwt"] as const) {
+      const leave = await invokeLeave(club.id, token);
       expect(leave.status).toBe(401);
       expect(leave.body.ok).toBe(false);
       expect(
         (leave.body.error as { code?: string } | undefined)?.code,
       ).toBe("UNAUTHORIZED");
 
-      const cancel = await invokeCancel(club.id, auth);
+      const cancel = await invokeCancel(club.id, token);
       expect(cancel.status).toBe(401);
       expect(cancel.body.ok).toBe(false);
       expect(
@@ -280,11 +240,12 @@ describePg("club leave + cancel-request (PostgreSQL)", () => {
     expect(after).toBe(3);
   });
 
-  it("actual leave/cancel POST: actor from auth only — body userId ignored (isolation)", async () => {
+  it("actual leave/cancel POST: Bearer actor only — body userId ignored (isolation)", async () => {
     const { club, memberId, pendingId, outsiderId } = await seedClub();
+    const outsiderTok = await signAppAccessToken(outsiderId);
+    const memberTok = await signAppAccessToken(memberId);
 
-    // Outsider authenticated, body claims memberId — must not remove member
-    const leave = await invokeLeave(club.id, { kind: "user", userId: outsiderId }, {
+    const leave = await invokeLeave(club.id, outsiderTok, {
       userId: memberId,
     });
     expect(leave.status).toBe(200);
@@ -297,11 +258,9 @@ describePg("club leave + cancel-request (PostgreSQL)", () => {
     });
     expect(memberStill?.status).toBe(MembershipStatus.approved);
 
-    const cancel = await invokeCancel(
-      club.id,
-      { kind: "user", userId: outsiderId },
-      { userId: pendingId },
-    );
+    const cancel = await invokeCancel(club.id, outsiderTok, {
+      userId: pendingId,
+    });
     expect(cancel.status).toBe(404);
 
     const pendingStill = await prisma.clubMembership.findUnique({
@@ -309,23 +268,16 @@ describePg("club leave + cancel-request (PostgreSQL)", () => {
     });
     expect(pendingStill?.status).toBe(MembershipStatus.pending);
 
-    // Approved member cannot cancel via body pointing at pendingId
-    const approvedCancel = await invokeCancel(
-      club.id,
-      { kind: "user", userId: memberId },
-      { userId: pendingId },
-    );
+    const approvedCancel = await invokeCancel(club.id, memberTok, {
+      userId: pendingId,
+    });
     expect(approvedCancel.status).toBe(409);
     const pendingUnchanged = await prisma.clubMembership.findUnique({
       where: { userId_clubId: { userId: pendingId, clubId: club.id } },
     });
     expect(pendingUnchanged?.status).toBe(MembershipStatus.pending);
 
-    // Authenticated member leave removes only self
-    const selfLeave = await invokeLeave(club.id, {
-      kind: "user",
-      userId: memberId,
-    });
+    const selfLeave = await invokeLeave(club.id, memberTok);
     expect(selfLeave.status).toBe(200);
     const memberGone = await prisma.clubMembership.findUnique({
       where: { userId_clubId: { userId: memberId, clubId: club.id } },

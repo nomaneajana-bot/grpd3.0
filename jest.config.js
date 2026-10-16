@@ -23,7 +23,7 @@ module.exports = {
   },
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
-    // Real route handlers import next/server; package is not a workspace dep.
-    "^next/server$": "<rootDir>/test/shims/next-server.ts",
   },
+  // jose is ESM-only; allow Jest to transform it for dynamic import()
+  transformIgnorePatterns: ["/node_modules/(?!(jose)/)"],
 };

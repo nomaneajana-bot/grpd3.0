@@ -86,7 +86,7 @@ export async function GET(
     // Members-only: hide existence from non-members (direct-link privacy).
     // Host retains access even without current membership.
     if (session.visibility === "members") {
-      const userId = getAuthUserId(req);
+      const userId = await getAuthUserId(req);
       const isHost = Boolean(userId) && session.hostUserId === userId;
       if (!isHost) {
         if (!userId || !session.clubId) {

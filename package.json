@@ -17,7 +17,9 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "test:unit": "jest --testPathIgnorePatterns=integration",
-    "test:integration:pg": "jest --runInBand lib/server/__tests__/clubLeaveCancel.integration.test.ts"
+    "test:integration:pg": "jest --runInBand lib/server/__tests__/clubLeaveCancel.integration.test.ts lib/server/__tests__/vercelDispatch.integration.test.ts",
+    "test:integration:pg:batch5": "jest --runInBand lib/server/__tests__/clubLeaveCancel.integration.test.ts",
+    "test:integration:pg:batch6": "jest --runInBand lib/server/__tests__/vercelDispatch.integration.test.ts"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -30,6 +32,7 @@
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
+    "@vercel/node": "^5.8.2",
     "expo": "~54.0.33",
     "expo-clipboard": "~8.0.8",
     "expo-constants": "~18.0.10",
@@ -47,6 +50,8 @@
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
     "expo-web-browser": "~15.0.10",
+    "jose": "^6.2.3",
+    "next": "^15.5.18",
     "pg": "^8.11.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
