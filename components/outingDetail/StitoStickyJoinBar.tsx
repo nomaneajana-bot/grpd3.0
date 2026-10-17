@@ -14,6 +14,7 @@ type Props = {
   tabBarOffset?: number;
 };
 
+/** Deep-green join / leave — no neon leftover tokens. */
 export function StitoStickyJoinBar({
   joined,
   busy,
@@ -32,7 +33,7 @@ export function StitoStickyJoinBar({
       testID="stito-sticky-join"
     >
       {secondaryHint ? (
-        <Text style={styles.hint} numberOfLines={1}>
+        <Text style={styles.hint} numberOfLines={2}>
           {secondaryHint}
         </Text>
       ) : null}
@@ -74,9 +75,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(249,249,250,0.95)",
+    backgroundColor: "rgba(249,249,250,0.98)",
     borderTopWidth: 1,
-    borderTopColor: "rgba(232,232,233,0.85)",
+    borderTopColor: "rgba(190,202,190,0.85)",
     paddingHorizontal: 16,
     paddingTop: 12,
     gap: 8,
@@ -84,12 +85,13 @@ const styles = StyleSheet.create({
   hint: {
     fontFamily: t.font.hanken.regular,
     fontSize: 12,
+    lineHeight: 16,
     color: t.textSecondary,
     textAlign: "center",
   },
   cta: {
     minHeight: 48,
-    borderRadius: t.radiusChip,
+    borderRadius: 14,
     backgroundColor: t.primary,
     flexDirection: "row",
     alignItems: "center",
@@ -98,7 +100,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   ctaJoined: {
-    backgroundColor: t.secondaryContainer,
+    backgroundColor: "#EAF2EC",
+    borderWidth: 1.5,
+    borderColor: t.primary,
   },
   ctaText: {
     fontFamily: t.font.space.bold,
@@ -106,6 +110,6 @@ const styles = StyleSheet.create({
     color: t.onPrimary,
   },
   ctaTextJoined: {
-    color: t.onSecondaryContainer,
+    color: t.primary,
   },
 });
