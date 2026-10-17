@@ -870,6 +870,8 @@ export default function SessionScreen() {
           message={toast.message}
           variant={toast.variant}
           onDismiss={hideToast}
+          tone="onLight"
+          placement="top"
         />
       )}
 
@@ -1059,8 +1061,15 @@ export default function SessionScreen() {
                 },
                 {
                   eyebrow: "Rythme",
-                  value: pace === "—" ? "—" : pace.replace(/\/km$/i, ""),
-                  unit: pace === "—" || /km\/h/i.test(pace) ? undefined : "/km",
+                  // Keep range + /km as one string so it never wraps as "5:30–" + detached "/km".
+                  value:
+                    pace === "—"
+                      ? "—"
+                      : /km\/h|allure\s+libre/i.test(pace)
+                        ? pace
+                        : /\/km$/i.test(pace)
+                          ? pace
+                          : `${pace}/km`,
                   caption: isCasualWalk ? "Allure douce" : "Cible",
                   valueColor: stitoTheme.primary,
                 },
@@ -1882,12 +1891,12 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.surface.s3,
+    backgroundColor: stitoTheme.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   headerBackChevron: {
-    color: colors.text.primary,
+    color: stitoTheme.onPrimary,
     fontSize: 22,
     fontWeight: "300",
     marginTop: -2,
@@ -1895,19 +1904,19 @@ const styles = StyleSheet.create({
   headerLocation: {
     flex: 1,
     marginHorizontal: 10,
-    color: colors.text.secondary,
+    color: stitoTheme.textSecondary,
     fontSize: 14,
     fontWeight: "600",
     textAlign: "center",
   },
   headerMenuDots: {
-    color: colors.text.primary,
+    color: stitoTheme.text,
     fontSize: 18,
     letterSpacing: 1,
     fontWeight: "700",
   },
   headerMenuAction: {
-    color: colors.text.accent,
+    color: stitoTheme.primary,
     fontSize: 14,
     fontWeight: "700",
   },
@@ -1933,7 +1942,7 @@ const styles = StyleSheet.create({
   tabRow: {
     flexDirection: "row",
     borderBottomWidth: hairline,
-    borderBottomColor: colors.border.default,
+    borderBottomColor: "rgba(190,202,190,0.85)",
     marginBottom: 4,
   },
   tabCell: {
@@ -1944,19 +1953,19 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 15,
     fontWeight: "600",
-    color: colors.text.secondary,
+    color: stitoTheme.textSecondary,
     marginBottom: 6,
     textAlign: "center",
   },
   tabLabelActive: {
-    color: colors.text.primary,
+    color: stitoTheme.text,
   },
   tabUnderline: {
     alignSelf: "stretch",
     height: 3,
     width: "100%",
     borderRadius: 2,
-    backgroundColor: colors.accent.primary,
+    backgroundColor: stitoTheme.primary,
   },
   tabUnderlineMuted: {
     alignSelf: "stretch",
@@ -2117,9 +2126,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   joinedStatus: {
-    color: colors.text.secondary,
+    color: stitoTheme.textSecondary,
     fontSize: 13,
-    marginBottom: 12,
+    lineHeight: 18,
+    marginTop: 8,
+    marginBottom: 4,
+    fontFamily: stitoTheme.font.hanken.regular,
   },
   infoBlock: {
     marginBottom: 0,

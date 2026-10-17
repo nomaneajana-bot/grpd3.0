@@ -1,0 +1,192 @@
+{
+  "batch": "outing-detail-light-fix",
+  "tested_sha": "6733219411bf96a666b9227403e0d2d7b87105d7",
+  "data_mode": "demo",
+  "hosted_claim": false,
+  "native_claim": false,
+  "uat_claim": false,
+  "viewport": "393x852",
+  "reference": {
+    "light_primary": "docs/design-reference/noa-stito/src/screens/OutingDetailScreen.tsx",
+    "light_tokens": "docs/design-reference/noa-stito/src/index.css",
+    "stitch_homepage_six_file_pack": "docs/design-reference/stitch-homepage-2026-10-17/",
+    "rejected_dark_mislabeled": "docs/design-reference/renders/11-outing-detail-phone.png (was incorrectly copied as reference-stitch-outing-detail-phone.png)",
+    "light_capture": "reference-stitch-light-outing-detail.png"
+  },
+  "checks": [
+    {
+      "id": "homepage_on_sort",
+      "ok": true,
+      "detail": "On sort ?"
+    },
+    {
+      "id": "discovery_row",
+      "ok": true,
+      "detail": "has discovery"
+    },
+    {
+      "id": "detail_url",
+      "ok": true,
+      "detail": "http://127.0.0.1:8090/session/demo_sess_footing_corniche"
+    },
+    {
+      "id": "detail_title",
+      "ok": true,
+      "detail": "FOOTING CORNICHE"
+    },
+    {
+      "id": "stito_hero",
+      "ok": true,
+      "detail": "hero"
+    },
+    {
+      "id": "stito_logistics",
+      "ok": true,
+      "detail": "logistics"
+    },
+    {
+      "id": "stito_host",
+      "ok": true,
+      "detail": "host"
+    },
+    {
+      "id": "stito_purpose",
+      "ok": true,
+      "detail": "purpose"
+    },
+    {
+      "id": "stito_participants",
+      "ok": true,
+      "detail": "participants"
+    },
+    {
+      "id": "stito_sticky",
+      "ok": true,
+      "detail": "sticky"
+    },
+    {
+      "id": "infos_accessible_contrast",
+      "ok": true,
+      "detail": "{\"color\":\"rgb(26, 28, 29)\",\"r\":26,\"g\":28,\"b\":29,\"luminance\":0.10841960784313726,\"ok\":true}"
+    },
+    {
+      "id": "hero_compact",
+      "ok": true,
+      "detail": "h=132 w=365"
+    },
+    {
+      "id": "public_label_not_truncated",
+      "ok": true,
+      "detail": "SESSION PUBLIQUE · CORNICHE AIN DIAB\n\nSAMEDI 17 OCTOBRE · 19:00 · CORNICHE AIN DIAB\nFOOTING CORNICHE"
+    },
+    {
+      "id": "pace_not_detached_unit",
+      "ok": true,
+      "detail": "coherent"
+    },
+    {
+      "id": "no_fake_map_modal_chrome",
+      "ok": true,
+      "detail": "no fake map UI"
+    },
+    {
+      "id": "no_vip_verified_badge",
+      "ok": true,
+      "detail": "no invented badges"
+    },
+    {
+      "id": "joined_on_detail",
+      "ok": true,
+      "detail": "joined UI"
+    },
+    {
+      "id": "infos_accessible_contrast",
+      "ok": true,
+      "detail": "{\"color\":\"rgb(26, 28, 29)\",\"r\":26,\"g\":28,\"b\":29,\"luminance\":0.10841960784313726,\"ok\":true}"
+    },
+    {
+      "id": "toast_clear_of_cta_content",
+      "ok": true,
+      "detail": "{\"toastBox\":{\"x\":24,\"y\":48,\"width\":345,\"height\":37},\"logisticsY\":441,\"stickyY\":755}"
+    },
+    {
+      "id": "mes_sorties_screen",
+      "ok": true,
+      "detail": "mes"
+    },
+    {
+      "id": "mes_sorties_same_outing",
+      "ok": true,
+      "detail": "confirmed-demo_sess_footing_corniche"
+    },
+    {
+      "id": "cancel_modal",
+      "ok": true,
+      "detail": "modal"
+    },
+    {
+      "id": "cancelled_removed_from_confirmed",
+      "ok": true,
+      "detail": "gone from confirmed"
+    },
+    {
+      "id": "reload_same_title",
+      "ok": true,
+      "detail": "FOOTING CORNICHE === FOOTING CORNICHE"
+    },
+    {
+      "id": "reload_same_url",
+      "ok": true,
+      "detail": "http://127.0.0.1:8090/session/demo_sess_footing_corniche"
+    },
+    {
+      "id": "reload_not_joined",
+      "ok": true,
+      "detail": "joinAgain=true"
+    },
+    {
+      "id": "infos_accessible_contrast",
+      "ok": true,
+      "detail": "{\"color\":\"rgb(26, 28, 29)\",\"r\":26,\"g\":28,\"b\":29,\"luminance\":0.10841960784313726,\"ok\":true}"
+    },
+    {
+      "id": "hero_compact",
+      "ok": true,
+      "detail": "h=149 w=292"
+    },
+    {
+      "id": "public_label_not_truncated",
+      "ok": true,
+      "detail": "SESSION PUBLIQUE · CORNICHE AIN DIAB\n\nSAMEDI 17 OCTOBRE · 19:00 · CORNICHE AIN DIAB\nFOOTING CORNICHE"
+    },
+    {
+      "id": "pace_not_detached_unit",
+      "ok": true,
+      "detail": "coherent"
+    },
+    {
+      "id": "narrow_320_hero",
+      "ok": true,
+      "detail": "320"
+    },
+    {
+      "id": "large_text_title",
+      "ok": true,
+      "detail": "large text"
+    },
+    {
+      "id": "reference_light_identified",
+      "ok": true,
+      "detail": "Noa-Stito OutingDetail + Stitch homepage six-file pack"
+    }
+  ],
+  "journey": {
+    "sessionId": "demo_sess_footing_corniche",
+    "title": "FOOTING CORNICHE",
+    "joinedOnDetail": true
+  },
+  "summary": {
+    "pass": 33,
+    "fail": 0
+  }
+}

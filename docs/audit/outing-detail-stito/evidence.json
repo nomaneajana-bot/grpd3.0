@@ -1,11 +1,18 @@
 {
-  "batch": "outing-detail-stito-journey",
-  "tested_sha": "2c1b981895a2e0f3bc5d1d4e028b5171e63cd855",
+  "batch": "outing-detail-light-fix",
+  "tested_sha": "6733219411bf96a666b9227403e0d2d7b87105d7",
   "data_mode": "demo",
   "hosted_claim": false,
   "native_claim": false,
   "uat_claim": false,
   "viewport": "393x852",
+  "reference": {
+    "light_primary": "docs/design-reference/noa-stito/src/screens/OutingDetailScreen.tsx",
+    "light_tokens": "docs/design-reference/noa-stito/src/index.css",
+    "stitch_homepage_six_file_pack": "docs/design-reference/stitch-homepage-2026-10-17/",
+    "rejected_dark_mislabeled": "docs/design-reference/renders/11-outing-detail-phone.png (was incorrectly copied as reference-stitch-outing-detail-phone.png)",
+    "light_capture": "reference-stitch-light-outing-detail.png"
+  },
   "checks": [
     {
       "id": "homepage_on_sort",
@@ -20,7 +27,7 @@
     {
       "id": "detail_url",
       "ok": true,
-      "detail": "http://127.0.0.1:8082/session/demo_sess_footing_corniche"
+      "detail": "http://127.0.0.1:8090/session/demo_sess_footing_corniche"
     },
     {
       "id": "detail_title",
@@ -58,6 +65,26 @@
       "detail": "sticky"
     },
     {
+      "id": "infos_accessible_contrast",
+      "ok": true,
+      "detail": "{\"color\":\"rgb(26, 28, 29)\",\"r\":26,\"g\":28,\"b\":29,\"luminance\":0.10841960784313726,\"ok\":true}"
+    },
+    {
+      "id": "hero_compact",
+      "ok": true,
+      "detail": "h=132 w=365"
+    },
+    {
+      "id": "public_label_not_truncated",
+      "ok": true,
+      "detail": "SESSION PUBLIQUE \u00b7 CORNICHE AIN DIAB\n\uf5ea\nSAMEDI 17 OCTOBRE \u00b7 19:00 \u00b7 CORNICHE AIN DIAB\nFOOTING CORNICHE"
+    },
+    {
+      "id": "pace_not_detached_unit",
+      "ok": true,
+      "detail": "coherent"
+    },
+    {
       "id": "no_fake_map_modal_chrome",
       "ok": true,
       "detail": "no fake map UI"
@@ -71,6 +98,16 @@
       "id": "joined_on_detail",
       "ok": true,
       "detail": "joined UI"
+    },
+    {
+      "id": "infos_accessible_contrast",
+      "ok": true,
+      "detail": "{\"color\":\"rgb(26, 28, 29)\",\"r\":26,\"g\":28,\"b\":29,\"luminance\":0.10841960784313726,\"ok\":true}"
+    },
+    {
+      "id": "toast_clear_of_cta_content",
+      "ok": true,
+      "detail": "{\"toastBox\":{\"x\":24,\"y\":48,\"width\":345,\"height\":37},\"logisticsY\":441,\"stickyY\":755}"
     },
     {
       "id": "mes_sorties_screen",
@@ -100,12 +137,32 @@
     {
       "id": "reload_same_url",
       "ok": true,
-      "detail": "http://127.0.0.1:8082/session/demo_sess_footing_corniche"
+      "detail": "http://127.0.0.1:8090/session/demo_sess_footing_corniche"
     },
     {
       "id": "reload_not_joined",
       "ok": true,
       "detail": "joinAgain=true"
+    },
+    {
+      "id": "infos_accessible_contrast",
+      "ok": true,
+      "detail": "{\"color\":\"rgb(26, 28, 29)\",\"r\":26,\"g\":28,\"b\":29,\"luminance\":0.10841960784313726,\"ok\":true}"
+    },
+    {
+      "id": "hero_compact",
+      "ok": true,
+      "detail": "h=149 w=292"
+    },
+    {
+      "id": "public_label_not_truncated",
+      "ok": true,
+      "detail": "SESSION PUBLIQUE \u00b7 CORNICHE AIN DIAB\n\uf5ea\nSAMEDI 17 OCTOBRE \u00b7 19:00 \u00b7 CORNICHE AIN DIAB\nFOOTING CORNICHE"
+    },
+    {
+      "id": "pace_not_detached_unit",
+      "ok": true,
+      "detail": "coherent"
     },
     {
       "id": "narrow_320_hero",
@@ -118,9 +175,9 @@
       "detail": "large text"
     },
     {
-      "id": "reference_stitch_present",
+      "id": "reference_light_identified",
       "ok": true,
-      "detail": "stitch ref"
+      "detail": "Noa-Stito OutingDetail + Stitch homepage six-file pack"
     }
   ],
   "journey": {
@@ -129,7 +186,9 @@
     "joinedOnDetail": true
   },
   "summary": {
-    "pass": 23,
+    "pass": 33,
     "fail": 0
-  }
+  },
+  "reference_note": "docs/audit/outing-detail-stito/REFERENCE_NOTE.md",
+  "light_reference": "reference-stitch-light-outing-detail.png"
 }

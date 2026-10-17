@@ -1,40 +1,32 @@
 # GRPD Project Checkpoint
 
 **Updated:** 2026-10-17  
-**Working branch:** `cursor/stito-mes-sorties-3184` (PR #19)  
-**Outing-detail tip (this stop):** `2c1b981895a2e0f3bc5d1d4e028b5171e63cd855`  
-**Resume from:** `d9b90d4` · **homepage preserved tip:** `3f24c9c` / Accueil `98558bf` (PR #18)  
-**Base tip (PR17 stack):** `cursor/close-open-backlog-3184` @ `52cf26d`  
-**Stitch refs source:** `codex/stitch-homepage-reference-20261017` @ `9d22f5c` (copied only) + Stitch outing / Mes Sorties phone refs in evidence pack  
-**AI Studio visual source:** `nomaneajana-bot/Noa-Stito` (Accueil → Mes Sorties → outing detail; not Organise/Clubs/etc.)  
+**Working branch:** `cursor/outing-detail-light-fix-3184` (PR #20)  
+**Outing-detail light-fix tip:** `6733219411bf96a666b9227403e0d2d7b87105d7` (code) · docs tip follows  
+**Base stack:** `cursor/stito-mes-sorties-3184` @ `e75122a` (preserves homepage `3f24c9c` / Accueil `98558bf` + Mes Sorties)  
+**Prior rejected visual tip:** `2c1b981` — ISSUE-015 **NOT accepted** (dark-token leak / empty hero / pace / toast)  
+**Light refs:** Noa-Stito `OutingDetailScreen` + Stitch homepage six-file pack `docs/design-reference/stitch-homepage-2026-10-17/` — **not** dark `renders/11-outing-detail-phone.png`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
 
-**OUTING DETAIL (Stito / Stitch) — STOP for Codex independent visual + journey review.**
+**OUTING DETAIL LIGHT FIX (ISSUE-015) — STOP for Codex independent visual + journey re-review.**
 
-Outing detail story sections: host, purpose/déroulé, logistics, participants, access note; sticky join/leave; pace-group + private-access logic preserved.  
-No fake photos, maps, verified/VIP badges, or invented stats. French headings; real date/day from session data.  
-Journey smoke **23/23** at tip `2c1b981`: detail → join → Mes sorties → cancel → reload exact identity/state.  
+Compact no-photo hero; accessible Infos/header/joined ink; coherent pace+/km; deep-green CTAs; top light toast clear of content/CTA.  
+Join/cancel/pace-group/private-access semantics unchanged. Homepage + Mes Sorties preserved.  
 Demo/web evidence only — not native / hosted / UAT.
-
-Homepage Accueil + Mes Sorties on this stack are preserved (do not revert to `eaff50a` guidance).
 
 ### Exact next action
 
-1. **STOP — Codex** visual + journey review of outing detail tip `2c1b981` (PR #19). Evidence: `docs/audit/outing-detail-stito/`.  
-2. No Organise / Clubs / Create / Invitations / Profile until Codex clears this stop.  
-3. No production / env / security / merge / billing changes from this tip.
+1. **STOP — Codex** re-review tip on PR #20 against **light** reference (`docs/audit/outing-detail-stito/EVIDENCE.md`).  
+2. No Organise / Clubs / Create / Invitations / Profile until Codex clears.  
+3. No production / env / security / merge / billing changes.
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
-| Demo Accueil web | **FIXED AWAITING RETEST** (Codex) — preserved tip `3f24c9c` / `98558bf` |
-| Demo Mes Sorties web | **FIXED AWAITING RETEST** (Codex) — on PR #19 |
-| Demo outing detail web | **FIXED AWAITING RETEST** (Codex) — tip `2c1b981` · smoke 23/23 |
+| Demo Accueil web | **FIXED AWAITING RETEST** — preserved |
+| Demo Mes Sorties web | **FIXED AWAITING RETEST** — preserved |
+| Demo outing detail web | **FIXED AWAITING RETEST** (Codex) — light-fix smoke 33/33 |
 | Hosted / native / UAT | Not claimed |
-
-## Prior stack (unchanged)
-
-Batch A create continuity + UX stack through visibility simplify + open-backlog (B/D/soft club/groups+/ISSUE-012) remains on `cursor/close-open-backlog-3184`.
