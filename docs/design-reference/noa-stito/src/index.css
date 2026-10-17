@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #0B3B24;
+  --color-brand-light: #EAF2EC;
+  --color-brand-dark: #072617;
+  
+  --color-ink: #111311;
+  --color-ink-muted: #686D67;
+  --color-ink-subtle: #989E97;
+  
+  --color-sand: #FAF9F6;
+  --color-sand-card: #FFFFFF;
+  --color-sand-divider: #E6E4DD;
+  --color-sand-muted: #F2EFE9;
+  
+  --color-primary: #0B3B24;
+  --color-primary-container: #143d28;
+  --color-primary-dark: #072617;
+  --color-on-primary: #ffffff;
+  
+  --color-surface: #FAF9F6;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #F7F6F2;
+  --color-surface-container: #F2F0EB;
+  --color-surface-container-high: #EAE8E2;
+  --color-surface-container-highest: #E3E2DF;
+  
+  --color-on-surface: #111311;
+  --color-on-surface-variant: #686D67;
+  --color-outline: #989E97;
+  --color-outline-hairline: #E6E4DD;
+  --color-outline-variant: #E6E4DD;
+  
+  --color-secondary-container: #EAF2EC;
+  --color-on-secondary-container: #0B3B24;
+  --color-secondary-fixed: #EAF2EC;
+  
+  --color-error: #BA1A1A;
+  --color-error-container: #FFDAD6;
+  
+  --font-sans: "Manrope", sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+}
+
+body {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #FAF9F6;
+  color: #111311;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+.font-display {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.font-sans {
+  font-family: 'Manrope', sans-serif;
+}
+
+/* Typography Harmony Helpers */
+.font-headline-xl {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.font-headline-md {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.font-body-md {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 400;
+}
+
+.font-body-sm {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 400;
+}
+
+.font-label-md {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.font-label-sm {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.font-stat-metric {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.hairline-border {
+  border-color: #E6E4DD;
+}
+
+.border-hairline {
+  border-width: 0.5px;
+  border-color: #E6E4DD;
+}
+
+.touch-interactive {
+  transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.touch-interactive:active {
+  opacity: 0.75;
+  transform: scale(0.99);
+}
+
+@keyframes subtlePulse {
+  0% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.65); opacity: 0; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+.status-dot-pulse {
+  animation: subtlePulse 2.4s cubic-bezier(0.2, 0, 0.4, 1) infinite;
+}
+
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+}
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 0px);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}

@@ -43,6 +43,7 @@ export default function TabLayout() {
           shadowOpacity: 0,
         },
         tabBarLabelStyle: {
+          fontFamily: homeTheme.type.tab.fontFamily,
           fontSize: homeTheme.type.tab.fontSize,
           lineHeight: homeTheme.type.tab.lineHeight,
           fontWeight: homeTheme.type.tab.fontWeight,
