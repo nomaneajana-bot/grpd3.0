@@ -17,8 +17,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Linking from "expo-linking";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 
-import { StatGrid3 } from "../../components/redesign/StatGrid3";
 import { Tag } from "../../components/redesign/Tag";
+import { StitoOutingHero } from "../../components/outingDetail/StitoOutingHero";
+import { StitoMetricsStrip } from "../../components/outingDetail/StitoMetricsStrip";
+import { StitoStickyJoinBar } from "../../components/outingDetail/StitoStickyJoinBar";
+import { stitoTheme } from "../../constants/stitoTheme";
 import { SessionCoachAdviceCard } from "../../components/session/SessionCoachAdviceCard";
 import {
   SessionRunnersPanel,
@@ -941,20 +944,26 @@ export default function SessionScreen() {
           ) : null}
         </View>
 
-        <Text style={styles.sessionTitleDisplay} testID="session-detail-title">
-          {(() => {
-            const raw = linkedWorkout?.name ?? session.title;
-            const t = (session.typeLabel || "").toUpperCase();
-            const isWalkLike =
-              t.includes("MARCHE") ||
-              t.includes("WALKING") ||
-              t.startsWith("LANGUES");
-            return isWalkLike ? raw : raw.toUpperCase();
-          })()}
-        </Text>
-        <Text style={styles.sessionSubtitle} testID="session-detail-date-label">
-          {formatSessionDetailSubtitle(session)}
-        </Text>
+        <View style={styles.stitoHeroWrap}>
+          <StitoOutingHero
+            title={(() => {
+              const raw = linkedWorkout?.name ?? session.title;
+              const t = (session.typeLabel || "").toUpperCase();
+              const isWalkLike =
+                t.includes("MARCHE") ||
+                t.includes("WALKING") ||
+                t.startsWith("LANGUES");
+              return isWalkLike ? raw : raw.toUpperCase();
+            })()}
+            contextLabel={
+              session.visibility === "members"
+                ? `Session membres · ${session.spot || "Club"}`
+                : `Session publique · ${session.spot || "Découverte"}`
+            }
+            placesLabel={null}
+            editionLabel={formatSessionDetailSubtitle(session)}
+          />
+        </View>
 
         <View style={styles.tabRow}>
           <Pressable
@@ -1033,24 +1042,33 @@ export default function SessionScreen() {
             return null;
           }
           return (
-            <StatGrid3
+            <StitoMetricsStrip
               cells={[
                 {
-                  value: dist,
-                  sub: "km",
-                  label: "Distance",
+                  eyebrow: "Distance",
+                  value: dist === "—" ? "—" : dist.replace(/\s*km$/i, ""),
+                  unit: dist === "—" ? undefined : "km",
+                  caption: isCasualWalk ? "Parcours" : "Volume",
                 },
                 {
-                  value: pace,
-                  label: "/km",
-                  valueColor: colors.text.accent,
+                  eyebrow: "Rythme",
+                  value: pace === "—" ? "—" : pace.replace(/\/km$/i, ""),
+                  unit: pace === "—" || /km\/h/i.test(pace) ? undefined : "/km",
+                  caption: isCasualWalk ? "Allure douce" : "Cible",
+                  valueColor: stitoTheme.primary,
                 },
                 {
-                  value: String(
-                    session.paceGroups.reduce((a, g) => a + g.runnersCount, 0) ||
-                      "—",
-                  ),
-                  label: isCasualWalk ? "Participants" : "Coureurs",
+                  eyebrow: isCasualWalk ? "Intensité" : "Coureurs",
+                  value: isCasualWalk
+                    ? "Libre"
+                    : String(
+                        session.paceGroups.reduce(
+                          (a, g) => a + g.runnersCount,
+                          0,
+                        ) || "—",
+                      ),
+                  caption: isCasualWalk ? "Tous niveaux" : "Confirmés",
+                  valueColor: isCasualWalk ? stitoTheme.primary : undefined,
                 },
               ]}
             />
@@ -1762,6 +1780,24 @@ export default function SessionScreen() {
         </Pressable>
       </Modal>
 
+      {!isOrganizer ? (
+        <StitoStickyJoinBar
+          joined={hasStoredJoin}
+          busy={isJoiningOuting}
+          primaryLabel={
+            hasStoredJoin
+              ? "Se désister"
+              : "M'inscrire à cette sortie"
+          }
+          secondaryHint={
+            hasStoredJoin
+              ? "Place réservée · tu peux te désister à tout moment"
+              : formatSessionDetailSubtitle(session)
+          }
+          onPrimary={hasStoredJoin ? openLeaveConfirm : () => void handleSave()}
+        />
+      ) : null}
+
       {/* M06 — cancel participation (not leave club) */}
       <Modal
         visible={showLeaveModal}
@@ -1833,13 +1869,16 @@ export default function SessionScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: stitoTheme.canvas,
   },
   header: {
     paddingHorizontal: 14,
     paddingTop: 8,
     paddingBottom: 12,
-    backgroundColor: colors.background.primary,
+    backgroundColor: stitoTheme.canvas,
+  },
+  stitoHeroWrap: {
+    marginBottom: 12,
   },
   headerNavRow: {
     flexDirection: "row",
@@ -1965,7 +2004,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 14,
     paddingTop: 8,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   backRow: {
     flexDirection: "row",
