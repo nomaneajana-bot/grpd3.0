@@ -8,6 +8,7 @@ type ActivitySummaryProps = {
   stats: HomeStat[];
 };
 
+/** Quiet unboxed activity bar — Noa-Stito / Stitch active-member composition. */
 export function ActivitySummary({ stats }: ActivitySummaryProps) {
   if (!stats.length) return null;
   return (
@@ -34,28 +35,30 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "stretch",
-    backgroundColor: h.card,
-    borderRadius: h.radiusDiscovery,
+    backgroundColor: "rgba(243,243,244,0.85)",
+    borderRadius: h.radiusMain,
     borderWidth: 1,
-    borderColor: h.outline,
-    paddingVertical: h.space.lg,
+    borderColor: "rgba(232,232,233,0.7)",
+    paddingVertical: 10,
     paddingHorizontal: h.space.sm,
   },
   cell: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    gap: 2,
     minHeight: h.touchMin,
+    minWidth: 70,
   },
   divider: {
     width: StyleSheet.hairlineWidth,
-    backgroundColor: h.outline,
-    marginVertical: 4,
+    backgroundColor: h.outlineStrong,
+    marginVertical: 6,
   },
   value: { ...h.type.stat, color: h.text },
   label: {
-    ...h.type.meta,
+    fontSize: 11,
+    lineHeight: 14,
     color: h.textSecondary,
     textAlign: "center",
     paddingHorizontal: 4,

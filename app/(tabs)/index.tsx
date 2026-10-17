@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -17,7 +17,10 @@ import { ActivitySummary } from "@/components/home/ActivitySummary";
 import { DiscoveryFilters } from "@/components/home/DiscoveryFilters";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { NewMemberIntro } from "@/components/home/NewMemberIntro";
-import { NextOutingCard } from "@/components/home/NextOutingCard";
+import {
+  NextOutingCard,
+  NextOutingSectionHeader,
+} from "@/components/home/NextOutingCard";
 import { OrganiseAction } from "@/components/home/OrganiseAction";
 import { OutingRow } from "@/components/home/OutingRow";
 import { homeTheme as h } from "@/constants/homeTheme";
@@ -36,6 +39,7 @@ import {
   type HomeActivityFilter,
 } from "@/lib/homeViewModel";
 import { getJoinedSessions } from "@/lib/joinedSessionsStore";
+import { setMesSortiesBadgeCount } from "@/lib/mesSortiesBadge";
 import {
   apiSessionToSessionData,
   getAllSessionsIncludingStored,
@@ -45,8 +49,8 @@ import { getUserSessions } from "@/lib/sessionStore";
 import type { ClubMembership } from "@/types/api";
 
 /**
- * Authenticated Accueil — Stitch refinement (active / new-member hierarchy).
- * Tokens: constants/homeTheme.ts (export config). Dark green-home theme unchanged elsewhere.
+ * Authenticated Accueil — Stitch / Noa-Stito refinement.
+ * Tokens: constants/homeTheme.ts. Dark green-home theme unchanged elsewhere.
  */
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -170,19 +174,22 @@ export default function HomeScreen() {
     [nextOuting?.dateISO],
   );
 
+  useEffect(() => {
+    setMesSortiesBadgeCount(upcomingJoinedCount);
+  }, [upcomingJoinedCount]);
+
   const openSession = (id: string) => {
     router.push(`/session/${id}` as Href);
   };
 
   const scrollToDiscovery = () => {
     discoveryAnchorRef.current?.measureInWindow((_x, y) => {
-      // Approximate: scroll so discovery section is near top under header.
       const target = Math.max(0, y - 72);
       scrollRef.current?.scrollTo({ y: target, animated: true });
     });
   };
 
-  const tabBarReserve = 56 + Math.max(insets.bottom, 10) + 18;
+  const tabBarReserve = 54 + Math.max(insets.bottom, 10) + 18;
 
   return (
     <SafeAreaView
@@ -219,14 +226,24 @@ export default function HomeScreen() {
           <NewMemberIntro onSeeOutings={scrollToDiscovery} />
         ) : null}
 
+        {/* Stito: quiet stats under greeting (not after next outing) */}
+        {mode !== "new_member" ? <ActivitySummary stats={stats} /> : null}
+
         {mode === "active_with_next" && nextOuting ? (
-          <NextOutingCard
-            session={nextOuting}
-            onPress={() => openSession(nextOuting.id)}
-          />
+          <View style={styles.nextBlock}>
+            <NextOutingSectionHeader
+              reserved={nextOuting.attendanceStatus === "joined"}
+            />
+            <NextOutingCard
+              session={nextOuting}
+              onPress={() => openSession(nextOuting.id)}
+            />
+          </View>
         ) : null}
 
-        {mode !== "new_member" ? <ActivitySummary stats={stats} /> : null}
+        <OrganiseAction
+          onPress={() => router.push("/session/create" as Href)}
+        />
 
         <View ref={discoveryAnchorRef} collapsable={false} style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -284,10 +301,6 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
-
-        <OrganiseAction
-          onPress={() => router.push("/session/create" as Href)}
-        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -296,13 +309,14 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: h.canvas },
   content: {
-    paddingHorizontal: h.space.xl,
+    paddingHorizontal: h.space.lg,
     paddingTop: h.space.md,
     gap: h.space.xl,
     width: "100%",
     maxWidth: 960,
     alignSelf: "center",
   },
+  nextBlock: { gap: h.space.md },
   section: { gap: h.space.md },
   sectionHeader: {
     flexDirection: "row",

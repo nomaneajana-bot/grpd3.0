@@ -38,15 +38,19 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]}
       testID={`home-outing-row-${session.id}`}
     >
-      <View style={styles.iconWrap}>
-        <Ionicons
-          name={walk ? "walk-outline" : "fitness-outline"}
-          size={22}
-          color={h.primary}
-        />
-      </View>
       <View style={styles.mid}>
-        <Text style={styles.when}>{formatDiscoveryWhen(session)}</Text>
+        <View style={styles.whenRow}>
+          <Ionicons
+            name={walk ? "walk-outline" : "fitness-outline"}
+            size={14}
+            color={h.primary}
+          />
+          <Text style={styles.discipline}>{activityLabel(session)}</Text>
+          <Text style={styles.dotSep}>·</Text>
+          <Text style={styles.when} numberOfLines={1}>
+            {formatDiscoveryWhen(session)}
+          </Text>
+        </View>
         <Text style={styles.title} numberOfLines={2}>
           {session.title}
         </Text>
@@ -76,35 +80,53 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: h.space.md,
     backgroundColor: h.card,
-    borderRadius: h.radiusDiscovery,
+    borderRadius: h.radiusMain,
     borderWidth: 1,
-    borderColor: h.outline,
+    borderColor: "rgba(232,232,233,0.7)",
     padding: h.space.lg,
     minHeight: 72,
   },
-  iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#E8F2EC",
-    alignItems: "center",
-    justifyContent: "center",
-  },
   mid: { flex: 1, minWidth: 0, gap: 4 },
-  when: { ...h.type.meta, color: h.textSecondary },
-  title: { ...h.type.label, fontSize: 16, lineHeight: 22, color: h.text },
-  meta: { ...h.type.meta, color: h.textSecondary },
-  pills: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
+  whenRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 2,
+  },
+  discipline: {
+    ...h.type.meta,
+    color: h.primary,
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  dotSep: { ...h.type.meta, color: h.textSecondary, fontSize: 12 },
+  when: { ...h.type.meta, color: h.textSecondary, fontSize: 12, flexShrink: 1 },
+  title: {
+    ...h.type.label,
+    fontSize: 16,
+    lineHeight: 22,
+    color: h.text,
+    fontWeight: "700",
+  },
+  meta: { ...h.type.meta, color: h.textSecondary, fontSize: 12 },
+  pills: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 },
   pill: {
     backgroundColor: h.mutedSurface,
     borderRadius: h.radiusChip,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  pillText: { ...h.type.meta, color: h.text },
+  pillText: {
+    ...h.type.meta,
+    color: h.textSecondary,
+    fontSize: 11,
+    fontWeight: "600",
+  },
   chevron: {
-    width: h.touchMin,
-    height: h.touchMin,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: h.mutedSurface,
     alignItems: "center",
     justifyContent: "center",
   },

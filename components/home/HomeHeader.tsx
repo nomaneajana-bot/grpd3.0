@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   title: {
     ...h.type.pageTitle,
     color: h.text,
-    letterSpacing: -0.8,
+    letterSpacing: -0.6,
   },
   searchRow: {
     flexDirection: "row",

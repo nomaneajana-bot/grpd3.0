@@ -140,9 +140,9 @@ async function main() {
     );
     await shot(page, "homepage-narrow-320.png", { fullPage: false });
 
-    // Demo host phone — more likely active/existing with seed
+    // Canonical demo phone (Casa club seed) — active/existing with seed
     await page.setViewportSize({ width: 393, height: 852 });
-    await login(page, "0611111111");
+    await login(page, "0708060337");
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     await page.waitForTimeout(1500);
     check(
@@ -154,6 +154,21 @@ async function main() {
       "filters_present",
       Boolean(await page.getByTestId("home-discovery-filters").count()),
       "filters",
+    );
+    check(
+      "no_dynamic_walk_filter",
+      !(await page.getByTestId("home-filter-dynamic_walk").count()) &&
+        !/Dynamique/i.test(
+          (await page.getByTestId("home-discovery-filters").innerText().catch(() => "")) || "",
+        ),
+      "unsupported taxonomy omitted",
+    );
+    check(
+      "discovery_title_not_nearby_claim",
+      /découvrir/i.test(
+        (await page.getByTestId("home-discovery-title").innerText().catch(() => "")) || "",
+      ),
+      "Sorties à découvrir",
     );
     await page.getByTestId("home-filter-walk").click({ force: true });
     await page.waitForTimeout(400);

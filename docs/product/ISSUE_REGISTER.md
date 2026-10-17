@@ -171,6 +171,19 @@
 | Next action | Hosted later — not cleared by demo |
 | Status | **VERIFIED** (**demo** only) |
 
+### ISSUE-013 — P2 — FIXED AWAITING RETEST (homepage Accueil Stitch refinement)
+| Field | Value |
+|-------|-------|
+| Route / journey | `/` Accueil — active / new-member / existing-no-upcoming + tab bar |
+| Expected meaning | Composition from Stitch active-member; corrected new-member (no weather/checklist); real next confirmed outing; discovery filters; organise CTA |
+| Observed behavior | Implemented on tip `eaff50a` — unit 7/7 · smoke 12/12 · screenshots under `/opt/cursor/artifacts/walkthrough-homepage-*.png` |
+| Capability | IMPLEMENTED (demo web) |
+| Owner | Cursor |
+| Candidate SHA / env | `eaff50a` · **demo** |
+| Evidence | `homepage-refinement-smoke.json` · walkthrough PNGs · refs in `docs/design-reference/stitch-homepage-2026-10-17/` |
+| Next action | **STOP — Codex** visual + journey review |
+| Status | **FIXED AWAITING RETEST** |
+
 ### ISSUE-012 — P2 — VERIFIED (demo keyboard Tab order only)
 | Field | Value |
 |-------|-------|

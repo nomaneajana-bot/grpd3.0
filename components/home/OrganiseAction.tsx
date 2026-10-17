@@ -23,10 +23,13 @@ export function OrganiseAction({ onPress }: OrganiseActionProps) {
       <View style={styles.textCol}>
         <Text style={styles.title}>Organiser une sortie</Text>
         <Text style={styles.sub} numberOfLines={2}>
-          Propose un parcours et invite ton groupe
+          Propose un parcours pour ton club ou ouvert à tous
         </Text>
       </View>
-      <Text style={styles.link}>Créer →</Text>
+      <View style={styles.cta} testID="home-organise-cta">
+        <Text style={styles.ctaText}>Créer</Text>
+        <Ionicons name="arrow-forward" size={16} color={h.onPrimary} />
+      </View>
     </Pressable>
   );
 }
@@ -37,25 +40,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: h.space.md,
     backgroundColor: h.mutedSurface,
-    borderRadius: h.radiusDiscovery,
+    borderRadius: h.radiusMain,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.85)",
     padding: h.space.lg,
     minHeight: 72,
   },
   plus: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#DCEEE4",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: h.primaryFixed,
     alignItems: "center",
     justifyContent: "center",
   },
   textCol: { flex: 1, minWidth: 0, gap: 2 },
-  title: { ...h.type.label, fontSize: 16, color: h.text },
-  sub: { ...h.type.meta, color: h.textSecondary },
-  link: {
+  title: {
     ...h.type.label,
-    color: h.primary,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
+    fontSize: 14,
+    color: h.text,
+    fontWeight: "700",
+  },
+  sub: { ...h.type.meta, color: h.textSecondary, fontSize: 12 },
+  cta: {
+    minHeight: h.touchMin,
+    paddingHorizontal: 16,
+    borderRadius: h.radiusChip,
+    backgroundColor: h.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  ctaText: {
+    ...h.type.label,
+    color: h.onPrimary,
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

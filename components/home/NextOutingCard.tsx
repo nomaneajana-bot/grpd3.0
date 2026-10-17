@@ -1,6 +1,13 @@
-import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import {
+  Animated,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { homeTheme as h } from "@/constants/homeTheme";
 import {
@@ -15,6 +22,52 @@ type NextOutingCardProps = {
   session: SessionData;
   onPress: () => void;
 };
+
+function PulseDot({ color = h.primary }: { color?: string }) {
+  const opacity = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 0.35,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+  return (
+    <Animated.View
+      style={[styles.dot, { backgroundColor: color, opacity }]}
+      testID="home-next-pulse-dot"
+    />
+  );
+}
+
+export function NextOutingSectionHeader({ reserved }: { reserved?: boolean }) {
+  return (
+    <View style={styles.sectionHead} testID="home-next-section-header">
+      <View style={styles.sectionHeadLeft}>
+        <PulseDot />
+        <Text style={styles.sectionHeadTitle}>
+          Ta prochaine sortie confirmée
+        </Text>
+      </View>
+      {reserved ? (
+        <Text style={styles.reserved} testID="home-next-reserved">
+          Place réservée
+        </Text>
+      ) : null}
+    </View>
+  );
+}
 
 export function NextOutingCard({ session, onPress }: NextOutingCardProps) {
   const time = formatTimeLabel(session.timeMinutes);
@@ -35,6 +88,7 @@ export function NextOutingCard({ session, onPress }: NextOutingCardProps) {
     !/^0:00/i.test(session.targetPace)
       ? session.targetPace
       : null;
+  const joined = session.attendanceStatus === "joined";
 
   return (
     <View style={styles.card} testID="home-next-outing-card">
@@ -50,19 +104,27 @@ export function NextOutingCard({ session, onPress }: NextOutingCardProps) {
             color={h.primary}
           />
         </View>
-        {session.attendanceStatus === "joined" ? (
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.2)", "rgba(0,0,0,0.72)"]}
+          locations={[0, 0.45, 1]}
+          style={styles.mediaScrim}
+          pointerEvents="none"
+        />
+        {joined ? (
           <View style={styles.badgeInscrit} testID="home-next-inscrit">
-            <View style={styles.dot} />
+            <PulseDot />
             <Text style={styles.badgeInscritText}>Inscrit·e</Text>
           </View>
         ) : null}
         <View style={styles.mediaBottom}>
           {time ? (
-            <View style={styles.timePill}>
-              <Ionicons name="time-outline" size={14} color={h.text} />
+            <View style={styles.timeRow}>
+              <Ionicons name="time-outline" size={16} color="#fff" />
               <Text style={styles.timeText}>Départ {time}</Text>
             </View>
-          ) : null}
+          ) : (
+            <View />
+          )}
           <View style={styles.typePill}>
             <Text style={styles.typeText}>{activityLabel(session)}</Text>
           </View>
@@ -77,28 +139,29 @@ export function NextOutingCard({ session, onPress }: NextOutingCardProps) {
           {[clubOrHost, spot].filter(Boolean).join(" · ")}
         </Text>
 
-        {(participants != null || initial) && (
-          <View style={styles.peopleRow}>
-            {initial ? (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initial}</Text>
+        {(participants != null || initial || dist || pace) && (
+          <View style={styles.footerRow}>
+            <View style={styles.peopleRow}>
+              {initial ? (
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{initial}</Text>
+                </View>
+              ) : null}
+              {participants != null ? (
+                <Text style={styles.peopleText}>
+                  {participants} participant
+                  {participants > 1 ? "s" : ""} confirmé
+                  {participants > 1 ? "s" : ""}
+                </Text>
+              ) : null}
+            </View>
+            {(dist || pace) && (
+              <View style={styles.statPill}>
+                <Text style={styles.statPillText}>
+                  {[dist, pace].filter(Boolean).join(" · ")}
+                </Text>
               </View>
-            ) : null}
-            {participants != null ? (
-              <Text style={styles.peopleText}>
-                {participants} participant
-                {participants > 1 ? "s" : ""} confirmé
-                {participants > 1 ? "s" : ""}
-              </Text>
-            ) : null}
-          </View>
-        )}
-
-        {(dist || pace) && (
-          <View style={styles.statPill}>
-            <Text style={styles.statPillText}>
-              {[dist, pace].filter(Boolean).join(" · ")}
-            </Text>
+            )}
           </View>
         )}
 
@@ -121,15 +184,37 @@ export function NextOutingCard({ session, onPress }: NextOutingCardProps) {
 }
 
 const styles = StyleSheet.create({
+  sectionHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: h.space.sm,
+  },
+  sectionHeadLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexShrink: 1,
+  },
+  sectionHeadTitle: {
+    ...h.type.section,
+    color: h.text,
+    flexShrink: 1,
+  },
+  reserved: {
+    ...h.type.meta,
+    color: h.primary,
+    fontWeight: "700",
+  },
   card: {
     backgroundColor: h.card,
     borderRadius: h.radiusMain,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: h.outline,
+    borderColor: "rgba(232,232,233,0.9)",
   },
   media: {
-    height: 168,
+    height: 176,
     backgroundColor: h.mutedSurface,
     justifyContent: "flex-end",
   },
@@ -139,6 +224,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#E8F2EC",
   },
+  mediaScrim: {
+    ...StyleSheet.absoluteFillObject,
+  },
   badgeInscrit: {
     position: "absolute",
     top: 12,
@@ -146,8 +234,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: h.card,
-    paddingHorizontal: 10,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: h.radiusChip,
     minHeight: 32,
@@ -156,12 +244,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: h.primary,
   },
   badgeInscritText: {
     ...h.type.meta,
-    color: h.text,
-    fontWeight: "600",
+    color: h.primary,
+    fontWeight: "700",
   },
   mediaBottom: {
     flexDirection: "row",
@@ -169,50 +256,66 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 12,
     gap: 8,
+    zIndex: 1,
   },
-  timePill: {
+  timeRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "rgba(255,255,255,0.92)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: h.radiusChip,
   },
-  timeText: { ...h.type.meta, color: h.text, fontWeight: "600" },
+  timeText: {
+    ...h.type.meta,
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
   typePill: {
-    backgroundColor: "rgba(26,28,29,0.72)",
+    backgroundColor: "rgba(0,0,0,0.4)",
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: h.radiusChip,
+    borderRadius: 8,
   },
-  typeText: { ...h.type.meta, color: "#fff", fontWeight: "600" },
+  typeText: { ...h.type.meta, color: "#fff", fontWeight: "700" },
   body: { padding: h.space.lg, gap: 10 },
   title: { ...h.type.cardTitle, color: h.text },
   meta: { ...h.type.bodySm, color: h.textSecondary },
-  peopleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  footerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: h.outlineStrong,
+  },
+  peopleRow: { flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 },
   avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: h.mutedSurface,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: h.primaryFixed,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { ...h.type.meta, color: h.primary, fontWeight: "700" },
-  peopleText: { ...h.type.meta, color: h.textSecondary },
+  avatarText: {
+    fontSize: 10,
+    lineHeight: 12,
+    color: "#00210E",
+    fontWeight: "700",
+  },
+  peopleText: { ...h.type.meta, color: h.textSecondary, flexShrink: 1 },
   statPill: {
     alignSelf: "flex-start",
-    backgroundColor: h.mutedSurface,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: h.surfaceContainer,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: h.radiusChip,
   },
-  statPillText: { ...h.type.meta, color: h.text },
+  statPillText: { ...h.type.meta, color: h.textSecondary, fontWeight: "700" },
   cta: {
     marginTop: 4,
     minHeight: h.touchMin,
-    borderRadius: 14,
+    borderRadius: h.radiusChip,
     backgroundColor: h.primary,
     flexDirection: "row",
     alignItems: "center",
@@ -223,7 +326,7 @@ const styles = StyleSheet.create({
   ctaText: {
     ...h.type.label,
     color: h.onPrimary,
-    fontSize: 15,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
