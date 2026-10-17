@@ -1,6 +1,6 @@
 # Issue Register (canonical)
 
-**Homepage refinement tip (FIXED AWAITING RETEST):** `eaff50a5e2ae797ab11a27cc8df89c30955e03f0` · branch `cursor/homepage-refinement-3184` (PR #18) · Stitch refs from `9d22f5c`  
+**Homepage refinement tip (FIXED AWAITING RETEST):** `98558bf9969cd4e63d50f1b9a4089514059d0804` · branch `cursor/homepage-refinement-3184` (PR #18) · Stitch refs `9d22f5c` · Noa-Stito visual port (`nomaneajana-bot/Noa-Stito`)  
 **Active journey branch:** `cursor/mvp-live-journeys-3184` (PR #7)  
 **Batch A create-continuity tip (FIXED AWAITING RETEST):** `584c6efebcfb8ea7fd1cd6dcf8af7c9843d93005`  
 **Prior Batch A UX tip:** `dd658418297ede6f9c766395d11ccb413df4ee8d`  
@@ -171,16 +171,16 @@
 | Next action | Hosted later — not cleared by demo |
 | Status | **VERIFIED** (**demo** only) |
 
-### ISSUE-013 — P2 — FIXED AWAITING RETEST (homepage Accueil Stitch refinement)
+### ISSUE-013 — P2 — FIXED AWAITING RETEST (homepage Accueil Stitch + Noa-Stito)
 | Field | Value |
 |-------|-------|
 | Route / journey | `/` Accueil — active / new-member / existing-no-upcoming + tab bar |
-| Expected meaning | Composition from Stitch active-member; corrected new-member (no weather/checklist); real next confirmed outing; discovery filters; organise CTA |
-| Observed behavior | Implemented on tip `eaff50a` — unit 7/7 · smoke 12/12 · screenshots under `/opt/cursor/artifacts/walkthrough-homepage-*.png` |
+| Expected meaning | Stitch composition + Noa-Stito HomeScreen/BottomNav hierarchy (pulse next section, stats under greeting, explore tab, Mes sorties badge); corrected new-member; real next confirmed outing; no dynamic_walk / network fonts / fake photos |
+| Observed behavior | Tip `98558bf` — unit 7/7 · smoke 14/14 · next-card after join · explore Accueil + badge |
 | Capability | IMPLEMENTED (demo web) |
 | Owner | Cursor |
-| Candidate SHA / env | `eaff50a` · **demo** |
-| Evidence | `homepage-refinement-smoke.json` · walkthrough PNGs · refs in `docs/design-reference/stitch-homepage-2026-10-17/` |
+| Candidate SHA / env | `98558bf` · **demo** |
+| Evidence | `homepage-refinement-smoke.json` · `walkthrough-homepage-stito-*.png` · `homepage-stito-walkthrough.mp4` · refs `docs/design-reference/stitch-homepage-2026-10-17/` · source `nomaneajana-bot/Noa-Stito` |
 | Next action | **STOP — Codex** visual + journey review |
 | Status | **FIXED AWAITING RETEST** |
 
