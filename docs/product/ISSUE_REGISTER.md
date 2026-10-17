@@ -1,5 +1,6 @@
 # Issue Register (canonical)
 
+**Homepage refinement tip (FIXED AWAITING RETEST):** `eaff50a5e2ae797ab11a27cc8df89c30955e03f0` · branch `cursor/homepage-refinement-3184` (PR #18) · Stitch refs from `9d22f5c`  
 **Active journey branch:** `cursor/mvp-live-journeys-3184` (PR #7)  
 **Batch A create-continuity tip (FIXED AWAITING RETEST):** `584c6efebcfb8ea7fd1cd6dcf8af7c9843d93005`  
 **Prior Batch A UX tip:** `dd658418297ede6f9c766395d11ccb413df4ee8d`  
