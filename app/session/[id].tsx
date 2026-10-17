@@ -21,7 +21,14 @@ import { Tag } from "../../components/redesign/Tag";
 import { StitoOutingHero } from "../../components/outingDetail/StitoOutingHero";
 import { StitoMetricsStrip } from "../../components/outingDetail/StitoMetricsStrip";
 import { StitoStickyJoinBar } from "../../components/outingDetail/StitoStickyJoinBar";
+import { StitoHostCard } from "../../components/outingDetail/StitoHostCard";
+import { StitoPurposeSection } from "../../components/outingDetail/StitoPurposeSection";
+import { StitoLogisticsCard } from "../../components/outingDetail/StitoLogisticsCard";
+import { StitoParticipantsCard } from "../../components/outingDetail/StitoParticipantsCard";
+import { StitoAccessNote } from "../../components/outingDetail/StitoAccessNote";
 import { stitoTheme } from "../../constants/stitoTheme";
+import { formatTimeLabel } from "../../lib/homeViewModel";
+import { formatOutingDateTime } from "../../lib/mesSortiesViewModel";
 import { SessionCoachAdviceCard } from "../../components/session/SessionCoachAdviceCard";
 import {
   SessionRunnersPanel,
@@ -1076,147 +1083,128 @@ export default function SessionScreen() {
         })()}
 
 
-        {/* Session Details Card - on top (Type de course first) */}
-        <View style={styles.card}>
-          <View style={styles.groupsHeader}>
-            <Text style={styles.cardLabel}>INFORMATIONS</Text>
-          </View>
-
-          {/* Type — first row (stored label; no M04 fixture fallback) */}
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Type</Text>
-            <Text style={styles.infoValue}>{session.typeLabel} ›</Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Compact info rows — omit empty distance for casual/walk */}
-          {formatSessionDistanceKm(session.estimatedDistanceKm) !== "—" ? (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Distance</Text>
-            <Text style={styles.infoValue}>
-              {formatSessionDistanceLabel(session.estimatedDistanceKm)}
-            </Text>
-          </View>
-          ) : null}
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Rendez-vous</Text>
-            <Text style={styles.infoValue}>
-              {session.meetingPoint?.trim() || session.spot?.trim() || "—"}
-            </Text>
-          </View>
-
-          {session.meetingPointGPS && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>GPS</Text>
-              <Text style={styles.infoValue}>{session.meetingPointGPS}</Text>
+        {/* Stito composition: logistics → host → access → purpose → participants */}
+        {(() => {
+          const typeUpper = (session.typeLabel || "").toUpperCase();
+          const vol = session.volume?.trim() || "";
+          const isLangues = typeUpper.startsWith("LANGUES");
+          const languageOnly =
+            isLangues &&
+            vol.length <= 40 &&
+            !/[·•]/.test(vol) &&
+            !/\d+\s*(min|×|x)/i.test(vol);
+          const purposeText = session.coachAdvice?.trim()
+            ? session.coachAdvice.trim()
+            : session.typeLabel === "FARTLEK"
+              ? "Intervalles avec variations de rythme pour développer l'endurance et la vitesse."
+              : session.typeLabel === "SÉRIES"
+                ? "Intervalles structurés sur piste ou route. Travail de vitesse et résistance."
+                : session.typeLabel === "FOOTING"
+                  ? "Sortie d'endurance à allure confortable pour développer la base aérobie."
+                  : session.typeLabel === "PROGRESSIF"
+                    ? "Sortie progressive avec accélération graduelle pour améliorer l'endurance."
+                    : session.typeLabel === "COURSE LIBRE" ||
+                        session.typeLabel === "LIBRE"
+                      ? "Course libre et conviviale. Pas de structure imposée, juste courir ensemble à votre rythme."
+                      : session.typeLabel === "DÉCOUVERTE"
+                        ? "Sortie découverte pour explorer de nouveaux parcours en groupe. Allure libre et conviviale."
+                        : session.typeLabel === "MARCHE" ||
+                            session.typeLabel === "WALKING" ||
+                            typeUpper.startsWith("LANGUES")
+                          ? "Marche en groupe. Accessible à tous — aucun rythme de course imposé."
+                          : "Séance d'entraînement structurée pour améliorer la performance.";
+          const clubLabel =
+            matchingMembership?.club?.name?.trim() ||
+            session.hostGroupName?.trim() ||
+            null;
+          const hostName = session.coachName?.trim() || "Organisateur";
+          const placeTitle =
+            session.meetingPoint?.trim() || session.spot?.trim() || "—";
+          const placeDetail = [
+            session.typeLabel ? `Type · ${session.typeLabel}` : null,
+            formatSessionDistanceKm(session.estimatedDistanceKm) !== "—"
+              ? formatSessionDistanceLabel(session.estimatedDistanceKm)
+              : null,
+            session.visibility === "members" && session.hostGroupName?.trim()
+              ? `Groupe · ${session.hostGroupName.trim()}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          const joinedFromApi = participantsData?.counts?.joined ?? null;
+          const joinedFromGroups = (session.paceGroups ?? []).reduce(
+            (a, g) => a + (g.runnersCount ?? 0),
+            0,
+          );
+          const joinedCount =
+            joinedFromApi != null && joinedFromApi > 0
+              ? joinedFromApi
+              : joinedFromGroups > 0
+                ? joinedFromGroups
+                : hasStoredJoin
+                  ? 1
+                  : 0;
+          const participantNames = (participantsData?.groups ?? [])
+            .flatMap((g) => g.participants ?? [])
+            .map((p) => (p.displayName || "").trim())
+            .filter(Boolean);
+          const departure = formatTimeLabel(session.timeMinutes);
+          return (
+            <View style={styles.stitoStory} testID="stito-outing-story">
+              <StitoLogisticsCard
+                dateLine={formatOutingDateTime(session)}
+                departureTime={departure}
+                meetingTime={null}
+                placeTitle={placeTitle}
+                placeDetail={placeDetail || null}
+                isMembersOnly={session.visibility === "members"}
+                gpsAvailable={Boolean(session.meetingPointGPS)}
+              />
+              {session.clubId &&
+              (session.visibility == null || session.visibility === "public") ? (
+                <View testID="session-soft-club-row" collapsable={false}>
+                  <StitoHostCard
+                    hostName={hostName}
+                    hostRole="Organisateur"
+                    clubName={clubLabel}
+                    onClubPress={() => router.push("/(tabs)/club")}
+                  />
+                </View>
+              ) : (
+                <StitoHostCard
+                  hostName={hostName}
+                  hostRole={
+                    session.visibility === "members" ? "Organisateur club" : "Organisateur"
+                  }
+                  clubName={
+                    session.visibility === "members"
+                      ? session.hostGroupName?.trim() || clubLabel
+                      : clubLabel
+                  }
+                  onClubPress={
+                    clubLabel ? () => router.push("/(tabs)/club") : undefined
+                  }
+                />
+              )}
+              {session.visibility === "members" &&
+              session.hostGroupName?.trim() ? (
+                <View testID="session-target-group-row" style={{ height: 0 }} />
+              ) : null}
+              <StitoAccessNote visibility={session.visibility} />
+              <StitoPurposeSection
+                purposeText={purposeText}
+                structureText={languageOnly || !vol ? null : vol}
+                languageLabel={languageOnly ? vol : null}
+              />
+              <StitoParticipantsCard
+                joinedCount={joinedCount}
+                names={participantNames}
+                isJoined={hasStoredJoin}
+                statusLabel={hasStoredJoin ? "Confirmé" : null}
+              />
             </View>
-          )}
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Organisateur</Text>
-            <Text
-              style={[styles.infoValue, styles.organizerValue]}
-              testID="session-organizer-name"
-            >
-              {session.coachName?.trim() || "Organisateur"}
-            </Text>
-          </View>
-
-          {session.clubId &&
-          (session.visibility == null || session.visibility === "public") ? (
-            <View style={styles.infoRow} testID="session-soft-club-row">
-              <Text style={styles.infoLabel}>Organisé avec</Text>
-              <Text
-                style={styles.infoValue}
-                testID="session-soft-club-name"
-              >
-                {matchingMembership?.club?.name?.trim() ||
-                  session.hostGroupName?.trim() ||
-                  "Club"}
-              </Text>
-            </View>
-          ) : null}
-
-          {session.visibility === "members" &&
-          session.hostGroupName?.trim() ? (
-            <View style={styles.infoRow} testID="session-target-group-row">
-              <Text style={styles.infoLabel}>Groupe</Text>
-              <Text
-                style={styles.infoValue}
-                testID="session-target-group-name"
-              >
-                {session.hostGroupName.trim()}
-              </Text>
-            </View>
-          ) : null}
-
-          <View style={styles.divider} />
-
-          {/* Purpose — prefer user-entered coachAdvice; never invent language defaults. */}
-          <Text style={[styles.infoLabelSmall, { marginBottom: 8 }]}>
-            À quoi s&apos;attendre
-          </Text>
-          <Text style={styles.descriptionText} testID="session-purpose-text">
-            {session.coachAdvice?.trim()
-              ? session.coachAdvice.trim()
-              : session.typeLabel === "FARTLEK"
-                ? "Intervalles avec variations de rythme pour développer l'endurance et la vitesse."
-                : session.typeLabel === "SÉRIES"
-                  ? "Intervalles structurés sur piste ou route. Travail de vitesse et résistance."
-                  : session.typeLabel === "FOOTING"
-                    ? "Sortie d'endurance à allure confortable pour développer la base aérobie."
-                    : session.typeLabel === "PROGRESSIF"
-                      ? "Sortie progressive avec accélération graduelle pour améliorer l'endurance."
-                      : session.typeLabel === "COURSE LIBRE" ||
-                          session.typeLabel === "LIBRE"
-                        ? "Course libre et conviviale. Pas de structure imposée, juste courir ensemble à votre rythme."
-                        : session.typeLabel === "DÉCOUVERTE"
-                          ? "Sortie découverte pour explorer de nouveaux parcours en groupe. Allure libre et conviviale."
-                          : session.typeLabel === "MARCHE" ||
-                              session.typeLabel === "WALKING" ||
-                              (session.typeLabel || "")
-                                .toUpperCase()
-                                .startsWith("LANGUES")
-                            ? "Marche en groupe. Accessible à tous — aucun rythme de course imposé."
-                            : "Séance d'entraînement structurée pour améliorer la performance."}
-          </Text>
-          {(() => {
-            const typeUpper = (session.typeLabel || "").toUpperCase();
-            const vol = session.volume?.trim() || "";
-            if (!vol) return null;
-            const isLangues = typeUpper.startsWith("LANGUES");
-            // Legacy: language-only walks stored the language string in volume.
-            const languageOnly =
-              isLangues &&
-              vol.length <= 40 &&
-              !/[·•]/.test(vol) &&
-              !/\d+\s*(min|×|x)/i.test(vol);
-            if (languageOnly) {
-              return (
-                <Text style={styles.languageMeta} testID="session-language-label">
-                  Langue · {vol}
-                </Text>
-              );
-            }
-            return (
-              <>
-                <Text
-                  style={[styles.infoLabelSmall, { marginTop: 16, marginBottom: 8 }]}
-                >
-                  Structure / déroulé
-                </Text>
-                <Text
-                  style={styles.descriptionText}
-                  testID="session-structure-text"
-                >
-                  {vol}
-                </Text>
-              </>
-            );
-          })()}
-        </View>
+          );
+        })()}
 
         {/* Workout Summary Card */}
         {workoutLoadError && session.workoutId ? (
@@ -1880,6 +1868,10 @@ const styles = StyleSheet.create({
   stitoHeroWrap: {
     marginBottom: 12,
   },
+  stitoStory: {
+    gap: 12,
+    marginBottom: 12,
+  },
   headerNavRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -2204,12 +2196,16 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   cardLabel: {
-    color: colors.text.primary,
-    fontSize: 15,
+    color: stitoTheme.textSecondary,
+    fontFamily: stitoTheme.font.space.bold,
+    fontSize: 11,
     fontWeight: "700",
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
   },
   cardSubtitle: {
-    color: colors.text.tertiary,
+    color: stitoTheme.textSecondary,
+    fontFamily: stitoTheme.font.hanken.regular,
     fontSize: 12,
     marginTop: 6,
     marginBottom: 12,
