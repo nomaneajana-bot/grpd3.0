@@ -1,6 +1,8 @@
 # Issue Register (canonical)
 
-**Homepage refinement tip (FIXED AWAITING RETEST):** `98558bf9969cd4e63d50f1b9a4089514059d0804` · branch `cursor/homepage-refinement-3184` (PR #18) · Stitch refs `9d22f5c` · Noa-Stito visual port (`nomaneajana-bot/Noa-Stito`)  
+**Outing detail Stito tip (FIXED AWAITING RETEST — STOP Codex):** `2c1b981895a2e0f3bc5d1d4e028b5171e63cd855` · branch `cursor/stito-mes-sorties-3184` (PR #19) · evidence `docs/audit/outing-detail-stito/` · smoke 23/23 · **demo web only**  
+**Mes Sorties Stito tip (FIXED AWAITING RETEST):** same PR #19 (story commits through `cf933d8`+) · preserved with homepage `3f24c9c`  
+**Homepage refinement tip (FIXED AWAITING RETEST):** `98558bf9969cd4e63d50f1b9a4089514059d0804` · docs tip `3f24c9c` · branch `cursor/homepage-refinement-3184` (PR #18) · Stitch refs `9d22f5c` · Noa-Stito visual port (`nomaneajana-bot/Noa-Stito`)  
 **Active journey branch:** `cursor/mvp-live-journeys-3184` (PR #7)  
 **Batch A create-continuity tip (FIXED AWAITING RETEST):** `584c6efebcfb8ea7fd1cd6dcf8af7c9843d93005`  
 **Prior Batch A UX tip:** `dd658418297ede6f9c766395d11ccb413df4ee8d`  
@@ -176,12 +178,38 @@
 |-------|-------|
 | Route / journey | `/` Accueil — active / new-member / existing-no-upcoming + tab bar |
 | Expected meaning | Stitch composition + Noa-Stito HomeScreen/BottomNav hierarchy (pulse next section, stats under greeting, explore tab, Mes sorties badge); corrected new-member; real next confirmed outing; no dynamic_walk / network fonts / fake photos |
-| Observed behavior | Tip `98558bf` — unit 7/7 · smoke 14/14 · next-card after join · explore Accueil + badge |
+| Observed behavior | Tip `98558bf` / docs `3f24c9c` — unit 7/7 · smoke 14/14 · next-card after join · explore Accueil + badge; preserved under PR #19 stack (do not revert to `eaff50a`) |
 | Capability | IMPLEMENTED (demo web) |
 | Owner | Cursor |
-| Candidate SHA / env | `98558bf` · **demo** |
-| Evidence | `homepage-refinement-smoke.json` · `walkthrough-homepage-stito-*.png` · `homepage-stito-walkthrough.mp4` · refs `docs/design-reference/stitch-homepage-2026-10-17/` · source `nomaneajana-bot/Noa-Stito` |
-| Next action | **STOP — Codex** visual + journey review |
+| Candidate SHA / env | `98558bf` · `3f24c9c` · **demo** |
+| Evidence | `homepage-refinement-smoke.json` · `walkthrough-homepage-stito-*.png` · `homepage-stito-walkthrough.mp4` · side-by-side in `docs/audit/outing-detail-stito/side-by-side-homepage-393.png` · refs `docs/design-reference/stitch-homepage-2026-10-17/` · source `nomaneajana-bot/Noa-Stito` |
+| Next action | Codex visual + journey review (homepage can proceed in parallel with ISSUE-015 stop) |
+| Status | **FIXED AWAITING RETEST** |
+
+### ISSUE-014 — P2 — FIXED AWAITING RETEST (Mes Sorties Stito)
+| Field | Value |
+|-------|-------|
+| Route / journey | `/my-sessions` Mes Sorties — confirmed / past / empty |
+| Expected meaning | Noa-Stito Mes Sorties composition + OFL fonts; real confirmed joins; cancel attendance; no fake photos/stats |
+| Observed behavior | Port on `cursor/stito-mes-sorties-3184`; re-checked in outing-detail journey (same outing appears in confirmed after join, gone after cancel) |
+| Capability | IMPLEMENTED (demo web) |
+| Owner | Cursor |
+| Candidate SHA / env | PR #19 · tip stack through `2c1b981` · **demo** |
+| Evidence | `docs/audit/outing-detail-stito/side-by-side-mes-sorties-393.png` · `current-mes-sorties-confirmed-393.png` · smoke checks `mes_sorties_*` |
+| Next action | Codex visual review with ISSUE-015 |
+| Status | **FIXED AWAITING RETEST** |
+
+### ISSUE-015 — P2 — FIXED AWAITING RETEST (outing detail Stito — STOP)
+| Field | Value |
+|-------|-------|
+| Route / journey | `/session/[id]` outing detail — host · purpose/déroulé · logistics · participants · join/cancel · pace-group · private access |
+| Expected meaning | Stitch composition with real session data; French headings; real date/day; sticky join/leave; no fake photos/maps/VIP/verified/invented stats; preview annotations separate from UI |
+| Observed behavior | Tip `2c1b981` — story sections wired; journey smoke **23/23**: open `demo_sess_footing_corniche` / FOOTING CORNICHE → join → Mes Sorties confirmed → cancel → reload same URL/title not joined; 320pt + large-text OK |
+| Capability | IMPLEMENTED (demo web) |
+| Owner | Cursor |
+| Candidate SHA / env | `2c1b981895a2e0f3bc5d1d4e028b5171e63cd855` · **demo** |
+| Evidence | `docs/audit/outing-detail-stito/` (EVIDENCE.md · evidence.json · side-by-sides · current PNGs) |
+| Next action | **STOP — Codex** independent visual + journey review before Organise / Clubs / Create / Invitations / Profile |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-012 — P2 — VERIFIED (demo keyboard Tab order only)
@@ -296,6 +324,8 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 
 | Rank | Issue | Why next / not next |
 |------|-------|---------------------|
+| — | **ISSUE-015 outing detail** | **STOP — Codex review now** (blocks Organise/Clubs/Create/Invitations/Profile visual port) |
+| — | ISSUE-013 / 014 Accueil + Mes Sorties | FIXED AWAITING RETEST — Codex with or after 015 |
 | 1 | ISSUE-004 hosted VERIFIED | Code+PG done; needs authorized Preview/Test |
 | 2 | ISSUE-008 hosted multi-context | Needs hosted creds (SSO today) |
 | 3 | ISSUE-012 keyboard open note | Keep open; harness_limitation |
@@ -311,7 +341,7 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 | Status | Count |
 |--------|------:|
 | VERIFIED (demo) | 7 (001, 002, 003, 005, 010 privacy, 010 participation, 011) |
-| FIXED AWAITING RETEST | 1 (004 hosted) |
+| FIXED AWAITING RETEST | 5 (004 hosted; 013 Accueil; 014 Mes Sorties; 015 outing detail; Batch A create) |
 | FAILED | 0 |
 | NOT CHECKED | 3 (006, 007, 009) |
 | BLOCKED | 1 (008) |

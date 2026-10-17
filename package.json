@@ -28,7 +28,9 @@
     "test:integration:pg:batch6": "jest --runInBand lib/server/__tests__/vercelDispatch.integration.test.ts"
   },
   "dependencies": {
+    "@expo-google-fonts/hanken-grotesk": "^0.4.3",
     "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/space-grotesk": "^0.4.1",
     "@expo/vector-icons": "^15.0.3",
     "@prisma/client": "^5.19.0",
     "@react-native-async-storage/async-storage": "2.2.0",

@@ -1,0 +1,6 @@
+{
+  "name": "GRPD Maroc - Marche & Course Communautaire",
+  "description": "Application sociale et sportive pour la marche, la course et les sorties de groupe au Maroc.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

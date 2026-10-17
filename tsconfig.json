@@ -14,6 +14,7 @@
     "lib/api/prisma.ts",
     "lib/api/auth-helpers.ts",
     "lib/api/role-checks.ts",
+    "docs/design-reference/**/*",
     "node_modules"
   ]
 }

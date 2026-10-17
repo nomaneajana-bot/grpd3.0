@@ -1,8 +1,9 @@
 /**
- * Authenticated homepage tokens — Stitch / Noa-Stito export (17 Oct 2026).
- * Do not mix with DESIGN.md prose palette or dark experienceTheme.
- * System font only — no network font / Material Symbols deps.
+ * Authenticated homepage tokens — Noa-Stito / Stitch export.
+ * Fonts: Space Grotesk + Hanken Grotesk (SIL OFL, bundled).
  */
+import { stitoFont } from "@/lib/stitoFonts";
+
 export const homeTheme = {
   canvas: "#F9F9FA",
   card: "#FFFFFF",
@@ -22,17 +23,63 @@ export const homeTheme = {
   radiusDiscovery: 16,
   radiusChip: 999,
   space: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const,
-  /** Suggested type ramp — system font (no network font deps). */
+  font: stitoFont,
   type: {
-    pageTitle: { fontSize: 28, lineHeight: 32, fontWeight: "700" as const },
-    section: { fontSize: 20, lineHeight: 26, fontWeight: "700" as const },
-    cardTitle: { fontSize: 20, lineHeight: 26, fontWeight: "700" as const },
-    body: { fontSize: 16, lineHeight: 22, fontWeight: "400" as const },
-    bodySm: { fontSize: 15, lineHeight: 21, fontWeight: "400" as const },
-    meta: { fontSize: 13, lineHeight: 18, fontWeight: "500" as const },
-    label: { fontSize: 13, lineHeight: 18, fontWeight: "600" as const },
-    stat: { fontSize: 22, lineHeight: 26, fontWeight: "600" as const },
-    tab: { fontSize: 10, lineHeight: 14, fontWeight: "700" as const },
+    pageTitle: {
+      fontFamily: stitoFont.space.bold,
+      fontSize: 28,
+      lineHeight: 32,
+      fontWeight: "700" as const,
+      letterSpacing: -0.6,
+    },
+    section: {
+      fontFamily: stitoFont.space.bold,
+      fontSize: 20,
+      lineHeight: 26,
+      fontWeight: "700" as const,
+    },
+    cardTitle: {
+      fontFamily: stitoFont.space.bold,
+      fontSize: 20,
+      lineHeight: 26,
+      fontWeight: "700" as const,
+    },
+    body: {
+      fontFamily: stitoFont.hanken.regular,
+      fontSize: 16,
+      lineHeight: 22,
+      fontWeight: "400" as const,
+    },
+    bodySm: {
+      fontFamily: stitoFont.hanken.regular,
+      fontSize: 15,
+      lineHeight: 21,
+      fontWeight: "400" as const,
+    },
+    meta: {
+      fontFamily: stitoFont.hanken.medium,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "500" as const,
+    },
+    label: {
+      fontFamily: stitoFont.space.semibold,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "600" as const,
+    },
+    stat: {
+      fontFamily: stitoFont.space.bold,
+      fontSize: 22,
+      lineHeight: 26,
+      fontWeight: "700" as const,
+    },
+    tab: {
+      fontFamily: stitoFont.space.bold,
+      fontSize: 10,
+      lineHeight: 14,
+      fontWeight: "700" as const,
+    },
   },
   touchMin: 44,
 } as const;
