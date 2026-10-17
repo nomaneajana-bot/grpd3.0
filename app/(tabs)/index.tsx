@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -7,46 +7,59 @@ import {
   Text,
   TextInput,
   View,
+  StyleSheet,
 } from "react-native";
 import { router, useFocusEffect, type Href } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ActivitySummary } from "@/components/home/ActivitySummary";
+import { DiscoveryFilters } from "@/components/home/DiscoveryFilters";
+import { HomeHeader } from "@/components/home/HomeHeader";
+import { NewMemberIntro } from "@/components/home/NewMemberIntro";
+import { NextOutingCard } from "@/components/home/NextOutingCard";
+import { OrganiseAction } from "@/components/home/OrganiseAction";
+import { OutingRow } from "@/components/home/OutingRow";
+import { homeTheme as h } from "@/constants/homeTheme";
+import { createApiClient, getMyMemberships, listSessions } from "@/lib/api";
 import {
-  Action,
-  TrailArt,
-  experienceTheme as t,
-  ui,
-} from "@/components/experiences/ExperienceUI";
-import { createApiClient, listSessions } from "@/lib/api";
-import {
-  EXPERIENCE_CATEGORIES,
-  EXPERIENCE_PREVIEWS,
-  activityForSession,
-  categoryForSession,
-  isSocialOuting,
-  isUpcoming,
-  matchesSession,
-  type Activity,
-  type ExperienceCategory,
-} from "@/lib/experiences";
+  buildHomeStats,
+  countApprovedClubs,
+  countCompletedOutings,
+  countConfirmedUpcoming,
+  filterDiscoverySessions,
+  formatHomeDayEyebrow,
+  joinedIdSet,
+  resolveCityLabel,
+  resolveHomeMode,
+  selectNextOuting,
+  type HomeActivityFilter,
+} from "@/lib/homeViewModel";
+import { getJoinedSessions } from "@/lib/joinedSessionsStore";
 import {
   apiSessionToSessionData,
   getAllSessionsIncludingStored,
   type SessionData,
 } from "@/lib/sessionData";
 import { getUserSessions } from "@/lib/sessionStore";
+import type { ClubMembership } from "@/types/api";
 
 /**
- * Live Découvrir — NEW GREEN HOME visual language (D03 ExperienceUI).
- * Tokens: experienceTheme in components/experiences/ExperienceUI.tsx
- * Static reference twin: /reference/green-home
+ * Authenticated Accueil — Stitch refinement (active / new-member hierarchy).
+ * Tokens: constants/homeTheme.ts (export config). Dark green-home theme unchanged elsewhere.
  */
-export default function DiscoverScreen() {
-  const [category, setCategory] = useState<ExperienceCategory>("all");
-  const [activity, setActivity] = useState<Activity>("all");
+export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+  const searchRef = useRef<TextInput>(null);
+  const discoveryAnchorRef = useRef<View>(null);
+  const scrollRef = useRef<ScrollView>(null);
+
+  const [activityFilter, setActivityFilter] =
+    useState<HomeActivityFilter>("all");
   const [query, setQuery] = useState("");
   const [sessions, setSessions] = useState<SessionData[]>([]);
+  const [memberships, setMemberships] = useState<ClubMembership[]>([]);
+  const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -54,35 +67,46 @@ export default function DiscoverScreen() {
     setLoading(true);
     const now = new Date();
     const from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const client = createApiClient();
     const results = await Promise.allSettled([
-      listSessions(createApiClient(), { from }),
+      listSessions(client, { from }),
       getUserSessions().catch(async () => getAllSessionsIncludingStored()),
       getAllSessionsIncludingStored(),
+      getJoinedSessions(),
+      getMyMemberships(client),
     ]);
-    const api = results[0];
-    const local = results[1];
-    const allLocal = results[2];
+
     const merged = new Map<string, SessionData>();
-    if (allLocal.status === "fulfilled") {
-      allLocal.value.forEach((s) => merged.set(s.id, s));
-    }
-    if (local.status === "fulfilled") {
-      local.value.forEach((s) => merged.set(s.id, s));
-    }
-    if (api.status === "fulfilled") {
-      (api.value.sessions ?? [])
-        .map(apiSessionToSessionData)
-        .forEach((s) => merged.set(s.id, s));
-    }
-    const upcoming = [...merged.values()]
-      .filter((s) => s.visibility !== "members" && isUpcoming(s))
-      .sort((a, b) =>
-        `${a.dateISO} ${String(a.timeMinutes ?? 0).padStart(4, "0")}`.localeCompare(
-          `${b.dateISO} ${String(b.timeMinutes ?? 0).padStart(4, "0")}`,
-        ),
+    const absorb = (list: SessionData[]) => {
+      list.forEach((s) => merged.set(s.id, s));
+    };
+    if (results[2].status === "fulfilled") absorb(results[2].value);
+    if (results[1].status === "fulfilled") absorb(results[1].value);
+    if (results[0].status === "fulfilled") {
+      absorb(
+        (results[0].value.sessions ?? []).map(apiSessionToSessionData),
       );
-    setSessions(upcoming);
-    setError(api.status === "rejected");
+    }
+
+    // Annotate joined attendance from local join store when API left it unset
+    const joined =
+      results[3].status === "fulfilled" ? results[3].value : [];
+    const jids = joinedIdSet(joined);
+    for (const id of jids) {
+      const s = merged.get(id);
+      if (s && !s.attendanceStatus) {
+        merged.set(id, { ...s, attendanceStatus: "joined" });
+      }
+    }
+
+    setSessions([...merged.values()]);
+    setJoinedIds(jids);
+    if (results[4].status === "fulfilled") {
+      setMemberships(results[4].value.memberships ?? []);
+    } else {
+      setMemberships([]);
+    }
+    setError(results[0].status === "rejected");
     setLoading(false);
   }, []);
 
@@ -92,320 +116,227 @@ export default function DiscoverScreen() {
     }, [load]),
   );
 
-  const visible = useMemo(
-    () => sessions.filter((s) => matchesSession(s, category, activity, query)),
-    [sessions, category, activity, query],
+  const nextOuting = useMemo(
+    () => selectNextOuting(sessions, joinedIds),
+    [sessions, joinedIds],
   );
-  const previews = EXPERIENCE_PREVIEWS.filter(
-    (p) =>
-      (category === "all" || p.category === category) &&
-      (activity === "all" || p.activity === activity) &&
-      `${p.title} ${p.subtitle} ${p.description}`
-        .toLowerCase()
-        .includes(query.trim().toLowerCase()),
+  const upcomingJoinedCount = useMemo(
+    () => countConfirmedUpcoming(sessions, joinedIds),
+    [sessions, joinedIds],
+  );
+  const completedCount = useMemo(
+    () => countCompletedOutings(sessions, joinedIds),
+    [sessions, joinedIds],
+  );
+  const approvedClubCount = useMemo(
+    () => countApprovedClubs(memberships),
+    [memberships],
+  );
+  const mode = useMemo(
+    () =>
+      resolveHomeMode({
+        nextOuting,
+        approvedClubCount,
+        completedCount,
+        upcomingJoinedCount,
+      }),
+    [nextOuting, approvedClubCount, completedCount, upcomingJoinedCount],
+  );
+  const stats = useMemo(
+    () =>
+      buildHomeStats({
+        upcomingJoinedCount,
+        approvedClubCount,
+        completedCount,
+      }),
+    [upcomingJoinedCount, approvedClubCount, completedCount],
+  );
+  const discovery = useMemo(
+    () =>
+      filterDiscoverySessions(
+        sessions,
+        activityFilter,
+        query,
+        nextOuting?.id ?? null,
+      ),
+    [sessions, activityFilter, query, nextOuting?.id],
+  );
+  const cityLabel = useMemo(
+    () => resolveCityLabel({ memberships, query }),
+    [memberships, query],
+  );
+  const dayEyebrow = useMemo(
+    () => formatHomeDayEyebrow(nextOuting?.dateISO ?? null),
+    [nextOuting?.dateISO],
   );
 
+  const openSession = (id: string) => {
+    router.push(`/session/${id}` as Href);
+  };
+
+  const scrollToDiscovery = () => {
+    discoveryAnchorRef.current?.measureInWindow((_x, y) => {
+      // Approximate: scroll so discovery section is near top under header.
+      const target = Math.max(0, y - 72);
+      scrollRef.current?.scrollTo({ y: target, animated: true });
+    });
+  };
+
+  const tabBarReserve = 56 + Math.max(insets.bottom, 10) + 18;
+
   return (
-    <SafeAreaView style={ui.safe} edges={["top"]} testID="discover-green-home">
+    <SafeAreaView
+      style={styles.safe}
+      edges={["top"]}
+      testID="home-accueil"
+    >
       <ScrollView
-        contentContainerStyle={ui.content}
+        ref={scrollRef}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: tabBarReserve },
+        ]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         refreshControl={
           <RefreshControl
             refreshing={loading}
             onRefresh={() => void load()}
-            tintColor={t.accent}
+            tintColor={h.primary}
           />
         }
       >
-        <View style={ui.row}>
-          <Text style={ui.eyebrow}>G R P D / EN BONNE COMPAGNIE</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Mes messages"
-            onPress={() => router.push("/inbox" as Href)}
-            testID="discover-inbox"
-          >
-            <Ionicons
-              name="chatbubble-ellipses-outline"
-              color={t.text}
-              size={23}
-            />
-          </Pressable>
-        </View>
+        <HomeHeader
+          cityLabel={cityLabel}
+          dayEyebrow={dayEyebrow}
+          query={query}
+          onQueryChange={setQuery}
+          onCityPress={() => searchRef.current?.focus()}
+          searchInputRef={searchRef}
+        />
 
-        <View style={{ gap: 12, paddingVertical: 12 }}>
-          <Text style={ui.title} accessibilityRole="header">
-            Dehors. Ensemble.{"\n"}Pour quelque chose.
-          </Text>
-          <Text style={[ui.body, { maxWidth: 520 }]}>
-            Une marche pour se rencontrer. Un run pour pratiquer une langue. Un
-            club où revenir.
-          </Text>
-        </View>
+        {mode === "new_member" ? (
+          <NewMemberIntro onSeeOutings={scrollToDiscovery} />
+        ) : null}
 
-        <View
-          style={[
-            ui.input,
-            { flexDirection: "row", alignItems: "center", gap: 10 },
-          ]}
-        >
-          <Ionicons name="search" color={t.muted} size={20} />
-          <TextInput
-            accessibilityLabel="Rechercher une sortie, une ville ou une langue"
-            testID="discover-search"
-            placeholder="Une ville, une langue, une envie…"
-            placeholderTextColor={t.muted}
-            value={query}
-            onChangeText={setQuery}
-            style={{
-              color: t.text,
-              flex: 1,
-              fontSize: 15,
-              minWidth: 0,
-              paddingVertical: 2,
-            }}
+        {mode === "active_with_next" && nextOuting ? (
+          <NextOutingCard
+            session={nextOuting}
+            onPress={() => openSession(nextOuting.id)}
           />
-          {query ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Effacer la recherche"
-              onPress={() => setQuery("")}
-            >
-              <Ionicons name="close-circle" color={t.muted} size={20} />
-            </Pressable>
-          ) : null}
-        </View>
+        ) : null}
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8 }}
-        >
-          {EXPERIENCE_CATEGORIES.map((c) => (
-            <Pressable
-              key={c.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected: category === c.id }}
-              onPress={() => setCategory(c.id)}
-              style={[ui.chip, category === c.id && ui.chipOn]}
-              testID={`discover-cat-${c.id}`}
-            >
-              <Ionicons
-                name={c.icon as keyof typeof Ionicons.glyphMap}
-                size={17}
-                color={category === c.id ? t.bg : c.color}
-              />
-              <Text
-                style={[ui.chipText, category === c.id && { color: t.bg }]}
-              >
-                {c.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        {mode !== "new_member" ? <ActivitySummary stats={stats} /> : null}
 
-        <View style={{ flexDirection: "row", gap: 18 }}>
-          {(
-            [
-              { id: "all", label: "Marche & course" },
-              { id: "walk", label: "Marche" },
-              { id: "run", label: "Course" },
-            ] as const
-          ).map((a) => (
-            <Pressable
-              key={a.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected: activity === a.id }}
-              onPress={() => setActivity(a.id)}
-              style={{
-                paddingBottom: 9,
-                borderBottomWidth: 2,
-                borderBottomColor:
-                  activity === a.id ? t.accent : "transparent",
-              }}
-            >
-              <Text
-                style={[ui.chipText, activity === a.id && { color: t.text }]}
-              >
-                {a.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <View style={{ gap: 14 }}>
-          <View style={ui.row}>
-            <Text style={ui.heading}>Les prochaines sorties</Text>
-            <Ionicons name="arrow-down-outline" color={t.accent} size={20} />
+        <View ref={discoveryAnchorRef} collapsable={false} style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle} testID="home-discovery-title">
+              Sorties à découvrir
+            </Text>
           </View>
 
+          <DiscoveryFilters
+            value={activityFilter}
+            onChange={setActivityFilter}
+          />
+
           {error ? (
-            <View style={{ gap: 10 }}>
-              <Text style={ui.error}>
+            <View style={styles.errorBox} testID="home-error">
+              <Text style={styles.errorText}>
                 Les sorties en ligne ne sont pas disponibles pour le moment.
               </Text>
-              <Action
-                secondary
-                label="Réessayer"
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Réessayer"
                 onPress={() => void load()}
-              />
+                style={styles.retryBtn}
+                testID="home-retry"
+              >
+                <Text style={styles.retryText}>Réessayer</Text>
+              </Pressable>
             </View>
           ) : null}
 
           {loading && !sessions.length ? (
-            <ActivityIndicator color={t.accent} />
-          ) : visible.length ? (
-            visible.map((s) => (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={s.title}
-                key={s.id}
-                testID={`session-card-${s.id}`}
-                onPress={() =>
-                  router.push(
-                    (isSocialOuting(s)
-                      ? `/session/${s.id}`
-                      : `/session/${s.id}`) as Href,
-                  )
-                }
-                style={ui.card}
-              >
-                <Text style={ui.eyebrow}>
-                  {EXPERIENCE_CATEGORIES.find(
-                    (c) => c.id === categoryForSession(s),
-                  )?.label.toUpperCase()}{" "}
-                  ·{" "}
-                  {activityForSession(s) === "walk" ? "MARCHE" : "COURSE"}
-                </Text>
-                <Text style={ui.heading}>{s.title}</Text>
-                <Text style={ui.body}>
-                  {s.dateLabel} · {s.spot}
-                </Text>
-                <View style={ui.row}>
-                  <Text style={ui.body}>
-                    {s.coachName ? `Avec ${s.coachName}` : "Voir les détails"}
-                  </Text>
-                  <Text style={{ color: t.accent }}>
-                    {isSocialOuting(s) ? "Gratuit →" : "Découvrir →"}
-                  </Text>
-                </View>
-              </Pressable>
-            ))
+            <ActivityIndicator color={h.primary} style={{ marginVertical: 24 }} />
+          ) : discovery.length ? (
+            <View style={styles.list} testID="home-discovery-list">
+              {discovery.map((s) => (
+                <OutingRow
+                  key={s.id}
+                  session={s}
+                  onPress={() => openSession(s.id)}
+                />
+              ))}
+            </View>
           ) : (
-            <View style={ui.card} testID="discover-empty">
-              <Text style={[ui.heading, { fontSize: 18 }]}>
-                {query || category !== "all" || activity !== "all"
+            <View style={styles.empty} testID="home-discovery-empty">
+              <Text style={styles.emptyTitle}>
+                {query || activityFilter !== "all"
                   ? "Pas encore de sortie pour cette recherche."
-                  : "La prochaine rencontre commence avec vous."}
+                  : "Pas encore de sortie à découvrir."}
               </Text>
-              <Text style={ui.body}>
-                Propose une marche ou une course conviviale et invite les
-                premières personnes à te rejoindre.
+              <Text style={styles.emptyBody}>
+                {mode === "new_member"
+                  ? "Reviens bientôt, ou organise la première."
+                  : "Propose une marche ou une course et invite ton groupe."}
               </Text>
-              <Action
-                label="Proposer une sortie"
-                onPress={() => router.push("/session/create" as Href)}
-                testID="discover-propose-outing"
-              />
             </View>
           )}
         </View>
 
-        {previews.length > 0 ? (
-          <View style={{ gap: 14 }} testID="discover-idea-section">
-            <Text style={ui.heading}>Imagine ta prochaine rencontre</Text>
-            <Text style={ui.body} testID="discover-idea-disclaimer">
-              Concepts illustratifs pour imaginer un club — pas des sorties
-              réelles, ni des événements réservables.
-            </Text>
-            <View
-              style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}
-            >
-              {previews.map((p) => (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Idée illustrative : ${p.subtitle}. Pas une sortie réservable.`}
-                  key={p.id}
-                  testID={`discover-idea-${p.id}`}
-                  onPress={() =>
-                    router.push(`/idea/${encodeURIComponent(p.id)}` as Href)
-                  }
-                  style={[
-                    ui.card,
-                    {
-                      flexGrow: 1,
-                      flexBasis: 300,
-                      minHeight: 245,
-                      overflow: "hidden",
-                      borderColor: `${p.color}55`,
-                    },
-                  ]}
-                >
-                  <TrailArt color={p.color} />
-                  <View style={ui.row}>
-                    <Text
-                      style={[
-                        ui.eyebrow,
-                        { color: p.color, letterSpacing: 1, flex: 1 },
-                      ]}
-                    >
-                      {p.eyebrow}
-                    </Text>
-                    <Text
-                      style={[ui.chipText, { fontSize: 10 }]}
-                      testID={`discover-idea-badge-${p.id}`}
-                    >
-                      IDÉE ILLUSTRATIVE
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      ui.title,
-                      { fontSize: 27, lineHeight: 33, marginVertical: 10 },
-                    ]}
-                  >
-                    {p.title}
-                  </Text>
-                  <Text
-                    style={{
-                      color: p.color,
-                      fontSize: 14,
-                      fontWeight: "600",
-                    }}
-                  >
-                    {p.subtitle}
-                  </Text>
-                  <Text style={ui.body}>
-                    {p.activity === "walk" ? "Marche" : "Course facile"} · format
-                    d’exemple{" "}
-                    <Text style={{ color: p.color }}>↗</Text>
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        ) : null}
-
-        <View style={[ui.card, { backgroundColor: "#263624" }]}>
-          <Text style={ui.eyebrow}>LE RENDEZ-VOUS, C&apos;EST VOUS</Text>
-          <Text style={ui.heading}>Une envie à partager ?</Text>
-          <Text style={ui.body}>
-            Rassemble un club autour d&apos;une langue, d&apos;un quartier ou
-            d&apos;un rituel. La première sortie peut être toute simple.
-          </Text>
-          <Action
-            label="Créer mon club"
-            onPress={() => router.push("/(tabs)/club/create" as Href)}
-          />
-          <Action
-            secondary
-            label="Proposer une sortie"
-            onPress={() => router.push("/session/create" as Href)}
-            testID="discover-propose-outing-footer"
-          />
-        </View>
+        <OrganiseAction
+          onPress={() => router.push("/session/create" as Href)}
+        />
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: h.canvas },
+  content: {
+    paddingHorizontal: h.space.xl,
+    paddingTop: h.space.md,
+    gap: h.space.xl,
+    width: "100%",
+    maxWidth: 960,
+    alignSelf: "center",
+  },
+  section: { gap: h.space.md },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  sectionTitle: { ...h.type.section, color: h.text },
+  list: { gap: h.space.md },
+  errorBox: {
+    backgroundColor: "#FDECEA",
+    borderRadius: h.radiusDiscovery,
+    padding: h.space.lg,
+    gap: 12,
+  },
+  errorText: { ...h.type.bodySm, color: h.danger },
+  retryBtn: {
+    alignSelf: "flex-start",
+    minHeight: h.touchMin,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: h.danger,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  retryText: { ...h.type.label, color: h.danger },
+  empty: {
+    backgroundColor: h.card,
+    borderRadius: h.radiusDiscovery,
+    borderWidth: 1,
+    borderColor: h.outline,
+    padding: h.space.lg,
+    gap: 8,
+  },
+  emptyTitle: { ...h.type.label, fontSize: 16, color: h.text },
+  emptyBody: { ...h.type.bodySm, color: h.textSecondary },
+});

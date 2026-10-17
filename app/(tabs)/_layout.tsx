@@ -10,8 +10,8 @@ import {
   TabIconSessions,
 } from "@/components/navigation/tab-icons";
 import { HapticTab } from "@/components/haptic-tab";
-import { experienceTheme } from "@/components/experiences/ExperienceUI";
-import { colors, typography } from "@/constants/ui";
+import { homeTheme } from "@/constants/homeTheme";
+import { typography } from "@/constants/ui";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -24,15 +24,15 @@ export default function TabLayout() {
         sceneStyle: {
           flex: 1,
           minHeight: 0,
-          backgroundColor: colors.background.primary,
+          backgroundColor: homeTheme.canvas,
         },
         tabBarButton: HapticTab,
-        tabBarActiveTintColor: experienceTheme.accent,
-        tabBarInactiveTintColor: experienceTheme.muted,
+        tabBarActiveTintColor: homeTheme.primary,
+        tabBarInactiveTintColor: homeTheme.textSecondary,
         tabBarStyle: {
-          backgroundColor: experienceTheme.bg,
+          backgroundColor: homeTheme.card,
           borderTopWidth: 1,
-          borderTopColor: experienceTheme.line,
+          borderTopColor: homeTheme.outline,
           paddingTop: 10,
           paddingBottom: tabBarBottom,
           height: 56 + tabBarBottom + 10,
@@ -46,7 +46,7 @@ export default function TabLayout() {
         },
         tabBarActiveBackgroundColor: "transparent",
         tabBarIcon: ({ color }) => {
-          const c = color ?? colors.text.tertiary;
+          const c = color ?? homeTheme.textSecondary;
           if (route.name === "index") {
             return <TabIconHome color={c} />;
           }
@@ -64,7 +64,7 @@ export default function TabLayout() {
         tabBarIconStyle: { marginBottom: 0 },
       })}
     >
-      <Tabs.Screen name="index" options={{ title: "Découvrir" }} />
+      <Tabs.Screen name="index" options={{ title: "Accueil" }} />
       <Tabs.Screen name="my-sessions" options={{ title: "Mes sorties" }} />
       {/* workouts file kept as Redirect only — never shown in tab bar */}
       <Tabs.Screen name="workouts" options={{ href: null }} />
