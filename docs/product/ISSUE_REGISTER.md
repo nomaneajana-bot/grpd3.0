@@ -205,7 +205,7 @@
 |-------|-------|
 | Route / journey | `/session/[id]` outing detail — host · purpose/déroulé · logistics · participants · join/cancel · pace-group · private access |
 | Expected meaning | **Light** Stitch/Noa-Stito composition; accessible ink on canvas; compact no-photo hero; coherent pace+/km; deep-green CTAs; readable toast clear of content/CTA; real date/title; no fake photos/maps/VIP/invented stats |
-| Observed behavior | Tip `2c1b981` **rejected** (near-white Infos, empty dark hero, truncated label, split pace, pale toast, neon leave). Light-fix branch: smoke **33/33** — Infos luminance ~0.11; hero h≈132; full public label; `5:30–6:30/km` one string; toast top clear of logistics/CTA; journey identity preserved |
+| Observed behavior | Tip `2c1b981` **rejected**. Light-fix + Stitch-six refs: smoke **34/34** — Infos luminance ~0.11; hero h≈132 no-photo; French nav; full public label; coherent pace/km; toast top clear of CTA; journey identity preserved vs `grpd_d_tail_de_la_sortie_avant_inscription` |
 | Capability | IMPLEMENTED (demo web) |
 | Owner | Cursor |
 | Candidate SHA / env | PR #20 `cursor/outing-detail-light-fix-3184` · **demo** · Stitch six tip `64dc1d1` |
