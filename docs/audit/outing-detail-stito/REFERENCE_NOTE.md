@@ -1,12 +1,18 @@
-# Reference note — do not use the dark outing PNG for acceptance
+# Outing-detail visual reference (canonical)
 
-`reference-stitch-outing-detail-phone.png` in this folder was copied from  
-`docs/design-reference/renders/11-outing-detail-phone.png` (legacy **dark** green-home capture).  
-It is **not** a Stitch light export and must **not** be used for ISSUE-015 visual acceptance.
+**Source tip:** `64dc1d12a5742389a2bd1cdc22e8a83785a7f851` · branch `origin/codex/stitch-six-reference-20261019`  
+**Copied path:** `docs/design-reference/stitch-six-2026-10-17/` (copy-only; no merge/reset)
 
-## Use instead
+## Correct outing-detail files
 
-1. **Annotated light composition capture:** `reference-stitch-light-outing-detail.png`  
-2. **Source composition:** `docs/design-reference/noa-stito/src/screens/OutingDetailScreen.tsx`  
-3. **Stitch light six-file pack (homepage family tokens/composition):**  
-   `docs/design-reference/stitch-homepage-2026-10-17/` (CURSOR_HANDOFF + DESIGN + 2 HTML + 2 screen.png)
+- `docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_d_tail_de_la_sortie_avant_inscription/screen.png`
+- `.../grpd_d_tail_de_la_sortie_avant_inscription/code.html`
+- Handoff: `docs/design-reference/stitch-six-2026-10-17/REVIEW_AND_HANDOFF.md`
+
+Evidence copy: `reference-stitch-six-outing-detail-avant-inscription.png`
+
+## Do not use
+
+- Dark `docs/design-reference/renders/11-outing-detail-phone.png`
+- Older mislabeled `reference-stitch-outing-detail-phone.png`
+- Annotated HTML mock `reference-stitch-light-outing-detail.png` (superseded by real Stitch six pack)

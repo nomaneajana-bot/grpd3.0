@@ -1,17 +1,18 @@
 {
   "batch": "outing-detail-light-fix",
-  "tested_sha": "6733219411bf96a666b9227403e0d2d7b87105d7",
+  "tested_sha": "b2d323d6215f903cd4dab6ef2c17ddc39ee2a621",
   "data_mode": "demo",
   "hosted_claim": false,
   "native_claim": false,
   "uat_claim": false,
   "viewport": "393x852",
   "reference": {
-    "light_primary": "docs/design-reference/noa-stito/src/screens/OutingDetailScreen.tsx",
-    "light_tokens": "docs/design-reference/noa-stito/src/index.css",
-    "stitch_homepage_six_file_pack": "docs/design-reference/stitch-homepage-2026-10-17/",
-    "rejected_dark_mislabeled": "docs/design-reference/renders/11-outing-detail-phone.png (was incorrectly copied as reference-stitch-outing-detail-phone.png)",
-    "light_capture": "reference-stitch-light-outing-detail.png"
+    "stitch_six_source_tip": "64dc1d12a5742389a2bd1cdc22e8a83785a7f851",
+    "stitch_six_branch": "codex/stitch-six-reference-20261019",
+    "light_outing_detail_png": "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_d_tail_de_la_sortie_avant_inscription/screen.png",
+    "light_outing_detail_html": "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_d_tail_de_la_sortie_avant_inscription/code.html",
+    "handoff": "docs/design-reference/stitch-six-2026-10-17/REVIEW_AND_HANDOFF.md",
+    "rejected_dark": "docs/design-reference/renders/11-outing-detail-phone.png"
   },
   "checks": [
     {
@@ -27,12 +28,12 @@
     {
       "id": "detail_url",
       "ok": true,
-      "detail": "http://127.0.0.1:8090/session/demo_sess_footing_corniche"
+      "detail": "http://127.0.0.1:8090/session/marina-fartlek-long"
     },
     {
       "id": "detail_title",
       "ok": true,
-      "detail": "FOOTING CORNICHE"
+      "detail": "FARTLEK LONG"
     },
     {
       "id": "stito_hero",
@@ -77,7 +78,7 @@
     {
       "id": "public_label_not_truncated",
       "ok": true,
-      "detail": "SESSION PUBLIQUE · CORNICHE AIN DIAB\n\nSAMEDI 17 OCTOBRE · 19:00 · CORNICHE AIN DIAB\nFOOTING CORNICHE"
+      "detail": "SORTIE PUBLIQUE \u00b7 SPOT 1\n\uf5ea\nLUNDI 19 OCTOBRE 06:00 \u00b7 SPOT 1\nFARTLEK LONG"
     },
     {
       "id": "pace_not_detached_unit",
@@ -117,7 +118,7 @@
     {
       "id": "mes_sorties_same_outing",
       "ok": true,
-      "detail": "confirmed-demo_sess_footing_corniche"
+      "detail": "confirmed-marina-fartlek-long"
     },
     {
       "id": "cancel_modal",
@@ -132,12 +133,12 @@
     {
       "id": "reload_same_title",
       "ok": true,
-      "detail": "FOOTING CORNICHE === FOOTING CORNICHE"
+      "detail": "FARTLEK LONG === FARTLEK LONG"
     },
     {
       "id": "reload_same_url",
       "ok": true,
-      "detail": "http://127.0.0.1:8090/session/demo_sess_footing_corniche"
+      "detail": "http://127.0.0.1:8090/session/marina-fartlek-long"
     },
     {
       "id": "reload_not_joined",
@@ -152,12 +153,12 @@
     {
       "id": "hero_compact",
       "ok": true,
-      "detail": "h=149 w=292"
+      "detail": "h=132 w=292"
     },
     {
       "id": "public_label_not_truncated",
       "ok": true,
-      "detail": "SESSION PUBLIQUE · CORNICHE AIN DIAB\n\nSAMEDI 17 OCTOBRE · 19:00 · CORNICHE AIN DIAB\nFOOTING CORNICHE"
+      "detail": "SORTIE PUBLIQUE \u00b7 SPOT 1\n\uf5ea\nLUNDI 19 OCTOBRE 06:00 \u00b7 SPOT 1\nFARTLEK LONG"
     },
     {
       "id": "pace_not_detached_unit",
@@ -177,16 +178,21 @@
     {
       "id": "reference_light_identified",
       "ok": true,
-      "detail": "Noa-Stito OutingDetail + Stitch homepage six-file pack"
+      "detail": "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_d_tail_de_la_sortie_avant_inscription/screen.png"
+    },
+    {
+      "id": "nav_title_french",
+      "ok": true,
+      "detail": "D\u00e9tail de la sortie"
     }
   ],
   "journey": {
-    "sessionId": "demo_sess_footing_corniche",
-    "title": "FOOTING CORNICHE",
+    "sessionId": "marina-fartlek-long",
+    "title": "FARTLEK LONG",
     "joinedOnDetail": true
   },
   "summary": {
-    "pass": 33,
+    "pass": 34,
     "fail": 0
   }
 }

@@ -1,54 +1,42 @@
-# Outing detail Stito — light visual fix (ISSUE-015)
+# Outing detail — Stitch six light reference + bounded correction
 
-- **branch:** `cursor/outing-detail-light-fix-3184` (PR #20 · base `cursor/stito-mes-sorties-3184`)
-- **tested_sha:** see `evidence.json` / `outing-detail-light-fix-smoke.json`
-- **prior rejected tip:** `2c1b981` / docs `e75122a` — Codex **NOT accepted visually**
-- **environment:** Expo web DEMO (`EXPO_PUBLIC_DEMO_MODE=true`, phone `0708060337`, OTP `000000`) · port 8090
+- **branch:** `cursor/outing-detail-light-fix-3184` (PR #20)
+- **tested_sha:** see `outing-detail-light-fix-smoke.json` / `evidence.json`
+- **environment:** Expo web DEMO · port 8090 · phone `0708060337` · OTP `000000`
 - **hosted_claim / native_claim / uat_claim:** **false**
-- **smoke:** `outing-detail-light-fix-smoke.json` · **33 PASS / 0 FAIL**
-- **STOP:** Codex re-review of outing detail light fix only — do **not** start Organise / Clubs / Create / Invitations / Profile
+- **smoke:** **34 PASS / 0 FAIL**
+- **STOP:** Codex re-review of outing detail only — no Organise / Clubs / Create / Invitations / Profile
 
-## Reference identification (critical)
+## Canonical light reference (this stop)
 
-| Role | Path | Notes |
-|------|------|-------|
-| **Primary light composition source** | `docs/design-reference/noa-stito/src/screens/OutingDetailScreen.tsx` | Noa-Stito light outing detail (AI Studio) |
-| **Light tokens** | `docs/design-reference/noa-stito/src/index.css` + Stitch homepage `#005F34` / `#F9F9FA` | Deep green actions, ink text |
-| **Stitch light six-file pack (homepage family)** | `docs/design-reference/stitch-homepage-2026-10-17/` | Supplied 2026-10-17 — six reviewed files (Handoff + DESIGN + 2× HTML + 2× screen.png) |
-| **Annotated light outing composition capture** | `reference-stitch-light-outing-detail.png` | Same-viewport light composition ref used for side-by-sides; yellow badge = preview annotation, not product UI |
-| **REJECTED dark mislabel** | `docs/design-reference/renders/11-outing-detail-phone.png` | Was wrongly copied as `reference-stitch-outing-detail-phone.png` — **do not use** for visual acceptance |
-
-## Defects fixed vs prior tip
-
-| Defect | Fix |
-|--------|-----|
-| Near-white Infos / header / joined on white | `stitoTheme` ink (`#1A1C1D` / `#3F4941`) — contrast check luminance &lt; 0.55 |
-| Huge empty dark 4:3 hero | Compact deep-green no-photo hero (~132pt); exact date/title kept |
-| Truncated public label | Full `Session publique · …` wrap — no `numberOfLines={1}` clip |
-| Pace split + detached `/km` | Single string `5:30–6:30/km` |
-| Pale toast over logistics | `Toast tone="onLight"` + `placement="top"`; ink on solid card; clear of sticky CTA |
-| Neon leave CTA | Deep-green border + `#EAF2EC` fill |
-
-## Journey (exact identity)
-
-`demo_sess_footing_corniche` / **FOOTING CORNICHE** → join → Mes Sorties confirmed → cancel → reload same URL/title, join again.
-
-## Artifacts
+Copied **only** from `origin/codex/stitch-six-reference-20261019` @ `64dc1d12a5742389a2bd1cdc22e8a83785a7f851`  
+→ `docs/design-reference/stitch-six-2026-10-17/` (no merge/reset).
 
 | File | Role |
 |------|------|
-| `side-by-side-outing-detail-light-393.png` | Light ref ‖ default 393×852 |
-| `side-by-side-outing-detail-joined-light-393.png` | Light ref ‖ joined |
-| `side-by-side-homepage-light-393.png` | Stitch homepage light ‖ Accueil preserved |
-| `current-outing-detail-393.png` / `-joined-` / `-after-cancel-` | Same-state viewports |
-| `current-outing-detail-*-full.png` | Full-scroll captures |
-| `current-outing-detail-320.png` / `-large-text.png` | Narrow + large text |
-| `current-homepage-393.png` / `current-mes-sorties-confirmed-393.png` | Preserved surfaces |
+| `.../grpd_d_tail_de_la_sortie_avant_inscription/screen.png` | **Correct** outing-detail Stitch light PNG |
+| `.../grpd_d_tail_de_la_sortie_avant_inscription/code.html` | Editable HTML source |
+| `REVIEW_AND_HANDOFF.md` | Codex review + screen-specific corrections |
+| Evidence copy | `reference-stitch-six-outing-detail-avant-inscription.png` |
 
-## Honest surface claims
+**Do not use:** dark `renders/11-outing-detail-phone.png` / older mislabeled `reference-stitch-outing-detail-phone.png`.
 
-Demo / Expo web only. Hosted Preview · Native · UAT **not claimed**.
+## Handoff-aligned product corrections applied
 
-## Out of scope
+- Nav title **Détail de la sortie** (not OUTING DETAIL)
+- Compact **no-photo** hero (deliberate; no fake park photo / map)
+- Accessible Infos/header ink; coherent `pace/km`; top light toast clear of CTA
+- Deep-green **Rejoindre la sortie** / outline **Se désister**
+- Confirmé only when joined; no verified/VIP badges
+- Short public access note; private logistics gated by real membership rules
+- Join/cancel/pace-group semantics preserved; Accueil + Mes Sorties preserved
 
-Organise · Clubs · Create · Invitations · Profile · merge · production · env/security · billing · join/cancel semantics changes
+## Journey (demo)
+
+Exact outing identity through detail → join → Mes sorties → cancel → reload (same id/title/URL, join again). Latest run: `marina-fartlek-long` / FARTLEK LONG.
+
+## Artifacts
+
+- `side-by-side-stitch-six-outing-detail-393.png` (+ joined / after-cancel)
+- `current-outing-detail-393.png` · `-joined-` · `-after-cancel-` · `-320` · `-large-text`
+- `outing-detail-light-fix-smoke.json`

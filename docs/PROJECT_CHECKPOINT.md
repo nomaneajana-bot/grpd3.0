@@ -1,32 +1,31 @@
 # GRPD Project Checkpoint
 
-**Updated:** 2026-10-17  
+**Updated:** 2026-10-19  
 **Working branch:** `cursor/outing-detail-light-fix-3184` (PR #20)  
-**Outing-detail light-fix tip:** `6733219411bf96a666b9227403e0d2d7b87105d7` (code) · docs tip follows  
-**Base stack:** `cursor/stito-mes-sorties-3184` @ `e75122a` (preserves homepage `3f24c9c` / Accueil `98558bf` + Mes Sorties)  
-**Prior rejected visual tip:** `2c1b981` — ISSUE-015 **NOT accepted** (dark-token leak / empty hero / pace / toast)  
-**Light refs:** Noa-Stito `OutingDetailScreen` + Stitch homepage six-file pack `docs/design-reference/stitch-homepage-2026-10-17/` — **not** dark `renders/11-outing-detail-phone.png`  
+**Outing-detail tip:** `b2d323d6215f903cd4dab6ef2c17ddc39ee2a621`  
+**Stitch six light refs:** copy-only from `origin/codex/stitch-six-reference-20261019` @ `64dc1d12a5742389a2bd1cdc22e8a83785a7f851` → `docs/design-reference/stitch-six-2026-10-17/`  
+**Outing-detail canonical PNG:** `.../grpd_d_tail_de_la_sortie_avant_inscription/screen.png`  
+**Handoff:** `docs/design-reference/stitch-six-2026-10-17/REVIEW_AND_HANDOFF.md`  
+**Base stack:** preserves Mes Sorties + homepage Accueil · **not** dark `renders/11`  
 **Method:** Adopted — see `docs/PROJECT_METHOD.md`
 
 ## Current phase
 
-**OUTING DETAIL LIGHT FIX (ISSUE-015) — STOP for Codex independent visual + journey re-review.**
+**OUTING DETAIL vs Stitch six light — STOP for Codex re-review.**
 
-Compact no-photo hero; accessible Infos/header/joined ink; coherent pace+/km; deep-green CTAs; top light toast clear of content/CTA.  
-Join/cancel/pace-group/private-access semantics unchanged. Homepage + Mes Sorties preserved.  
-Demo/web evidence only — not native / hosted / UAT.
+Bounded outing-detail correction only (contrast, compact no-photo hero, pace wrap, toast, French nav, Rejoindre CTA).  
+Join/cancel semantics unchanged. Homepage + Mes Sorties preserved. Demo/web only.
 
 ### Exact next action
 
-1. **STOP — Codex** re-review tip on PR #20 against **light** reference (`docs/audit/outing-detail-stito/EVIDENCE.md`).  
-2. No Organise / Clubs / Create / Invitations / Profile until Codex clears.  
-3. No production / env / security / merge / billing changes.
+1. **STOP — Codex** visual re-review against `grpd_d_tail_de_la_sortie_avant_inscription/screen.png` (+ handoff corrections).  
+2. No other screens (Organise / Clubs / Create / Invitations / Profile).  
+3. No merge / production / env / security / billing.
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
-| Demo Accueil web | **FIXED AWAITING RETEST** — preserved |
-| Demo Mes Sorties web | **FIXED AWAITING RETEST** — preserved |
-| Demo outing detail web | **FIXED AWAITING RETEST** (Codex) — light-fix smoke 33/33 |
+| Demo outing detail | **FIXED AWAITING RETEST** — smoke 34/34 · tip in evidence.json |
+| Demo Accueil / Mes Sorties | Preserved · FIXED AWAITING RETEST |
 | Hosted / native / UAT | Not claimed |
