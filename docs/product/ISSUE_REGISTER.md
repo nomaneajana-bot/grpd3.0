@@ -1,7 +1,8 @@
 # Issue Register (canonical)
 
-**Outing detail Stito tip (FIXED AWAITING RETEST — STOP Codex):** `2c1b981895a2e0f3bc5d1d4e028b5171e63cd855` · branch `cursor/stito-mes-sorties-3184` (PR #19) · evidence `docs/audit/outing-detail-stito/` · smoke 23/23 · **demo web only**  
-**Mes Sorties Stito tip (FIXED AWAITING RETEST):** same PR #19 (story commits through `cf933d8`+) · preserved with homepage `3f24c9c`  
+**Outing detail light-fix tip (FIXED AWAITING RETEST — STOP Codex):** branch `cursor/outing-detail-light-fix-3184` (PR #20) · evidence `docs/audit/outing-detail-stito/` · smoke **34/34** · **demo web only** · canonical ref `docs/design-reference/stitch-six-2026-10-17/.../grpd_d_tail_de_la_sortie_avant_inscription/screen.png` from `64dc1d1` — **not** dark `renders/11`  
+**Prior rejected outing tip:** `2c1b981` / `e75122a` (PR #19) — ISSUE-015 **NOT accepted visually** (white-on-white / empty hero / pace / toast)  
+**Mes Sorties Stito tip (FIXED AWAITING RETEST):** PR #19 stack · preserved under PR #20  
 **Homepage refinement tip (FIXED AWAITING RETEST):** `98558bf9969cd4e63d50f1b9a4089514059d0804` · docs tip `3f24c9c` · branch `cursor/homepage-refinement-3184` (PR #18) · Stitch refs `9d22f5c` · Noa-Stito visual port (`nomaneajana-bot/Noa-Stito`)  
 **Active journey branch:** `cursor/mvp-live-journeys-3184` (PR #7)  
 **Batch A create-continuity tip (FIXED AWAITING RETEST):** `584c6efebcfb8ea7fd1cd6dcf8af7c9843d93005`  
@@ -199,17 +200,17 @@
 | Next action | Codex visual review with ISSUE-015 |
 | Status | **FIXED AWAITING RETEST** |
 
-### ISSUE-015 — P2 — FIXED AWAITING RETEST (outing detail Stito — STOP)
+### ISSUE-015 — P2 — FIXED AWAITING RETEST (outing detail light fix — STOP)
 | Field | Value |
 |-------|-------|
 | Route / journey | `/session/[id]` outing detail — host · purpose/déroulé · logistics · participants · join/cancel · pace-group · private access |
-| Expected meaning | Stitch composition with real session data; French headings; real date/day; sticky join/leave; no fake photos/maps/VIP/verified/invented stats; preview annotations separate from UI |
-| Observed behavior | Tip `2c1b981` — story sections wired; journey smoke **23/23**: open `demo_sess_footing_corniche` / FOOTING CORNICHE → join → Mes Sorties confirmed → cancel → reload same URL/title not joined; 320pt + large-text OK |
+| Expected meaning | **Light** Stitch/Noa-Stito composition; accessible ink on canvas; compact no-photo hero; coherent pace+/km; deep-green CTAs; readable toast clear of content/CTA; real date/title; no fake photos/maps/VIP/invented stats |
+| Observed behavior | Tip `2c1b981` **rejected**. Light-fix + Stitch-six refs: smoke **34/34** — Infos luminance ~0.11; hero h≈132 no-photo; French nav; full public label; coherent pace/km; toast top clear of CTA; journey identity preserved vs `grpd_d_tail_de_la_sortie_avant_inscription` |
 | Capability | IMPLEMENTED (demo web) |
 | Owner | Cursor |
-| Candidate SHA / env | `2c1b981895a2e0f3bc5d1d4e028b5171e63cd855` · **demo** |
-| Evidence | `docs/audit/outing-detail-stito/` (EVIDENCE.md · evidence.json · side-by-sides · current PNGs) |
-| Next action | **STOP — Codex** independent visual + journey review before Organise / Clubs / Create / Invitations / Profile |
+| Candidate SHA / env | PR #20 `cursor/outing-detail-light-fix-3184` · **demo** · Stitch six tip `64dc1d1` |
+| Evidence | `docs/audit/outing-detail-stito/` — `REFERENCE_NOTE.md` · `outing-detail-light-fix-smoke.json` (34/34) · side-by-sides vs `reference-stitch-six-outing-detail-avant-inscription.png` |
+| Next action | **STOP — Codex** visual re-review against Stitch six `grpd_d_tail_de_la_sortie_avant_inscription` before other screens |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-012 — P2 — VERIFIED (demo keyboard Tab order only)

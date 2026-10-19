@@ -1,0 +1,198 @@
+{
+  "batch": "outing-detail-light-fix",
+  "tested_sha": "b2d323d6215f903cd4dab6ef2c17ddc39ee2a621",
+  "data_mode": "demo",
+  "hosted_claim": false,
+  "native_claim": false,
+  "uat_claim": false,
+  "viewport": "393x852",
+  "reference": {
+    "stitch_six_source_tip": "64dc1d12a5742389a2bd1cdc22e8a83785a7f851",
+    "stitch_six_branch": "codex/stitch-six-reference-20261019",
+    "light_outing_detail_png": "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_d_tail_de_la_sortie_avant_inscription/screen.png",
+    "light_outing_detail_html": "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_d_tail_de_la_sortie_avant_inscription/code.html",
+    "handoff": "docs/design-reference/stitch-six-2026-10-17/REVIEW_AND_HANDOFF.md",
+    "rejected_dark": "docs/design-reference/renders/11-outing-detail-phone.png"
+  },
+  "checks": [
+    {
+      "id": "homepage_on_sort",
+      "ok": true,
+      "detail": "On sort ?"
+    },
+    {
+      "id": "discovery_row",
+      "ok": true,
+      "detail": "has discovery"
+    },
+    {
+      "id": "detail_url",
+      "ok": true,
+      "detail": "http://127.0.0.1:8090/session/marina-fartlek-long"
+    },
+    {
+      "id": "detail_title",
+      "ok": true,
+      "detail": "FARTLEK LONG"
+    },
+    {
+      "id": "stito_hero",
+      "ok": true,
+      "detail": "hero"
+    },
+    {
+      "id": "stito_logistics",
+      "ok": true,
+      "detail": "logistics"
+    },
+    {
+      "id": "stito_host",
+      "ok": true,
+      "detail": "host"
+    },
+    {
+      "id": "stito_purpose",
+      "ok": true,
+      "detail": "purpose"
+    },
+    {
+      "id": "stito_participants",
+      "ok": true,
+      "detail": "participants"
+    },
+    {
+      "id": "stito_sticky",
+      "ok": true,
+      "detail": "sticky"
+    },
+    {
+      "id": "infos_accessible_contrast",
+      "ok": true,
+      "detail": "{\"color\":\"rgb(26, 28, 29)\",\"r\":26,\"g\":28,\"b\":29,\"luminance\":0.10841960784313726,\"ok\":true}"
+    },
+    {
+      "id": "hero_compact",
+      "ok": true,
+      "detail": "h=132 w=365"
+    },
+    {
+      "id": "public_label_not_truncated",
+      "ok": true,
+      "detail": "SORTIE PUBLIQUE \u00b7 SPOT 1\n\uf5ea\nLUNDI 19 OCTOBRE 06:00 \u00b7 SPOT 1\nFARTLEK LONG"
+    },
+    {
+      "id": "pace_not_detached_unit",
+      "ok": true,
+      "detail": "coherent"
+    },
+    {
+      "id": "no_fake_map_modal_chrome",
+      "ok": true,
+      "detail": "no fake map UI"
+    },
+    {
+      "id": "no_vip_verified_badge",
+      "ok": true,
+      "detail": "no invented badges"
+    },
+    {
+      "id": "joined_on_detail",
+      "ok": true,
+      "detail": "joined UI"
+    },
+    {
+      "id": "infos_accessible_contrast",
+      "ok": true,
+      "detail": "{\"color\":\"rgb(26, 28, 29)\",\"r\":26,\"g\":28,\"b\":29,\"luminance\":0.10841960784313726,\"ok\":true}"
+    },
+    {
+      "id": "toast_clear_of_cta_content",
+      "ok": true,
+      "detail": "{\"toastBox\":{\"x\":24,\"y\":48,\"width\":345,\"height\":37},\"logisticsY\":441,\"stickyY\":755}"
+    },
+    {
+      "id": "mes_sorties_screen",
+      "ok": true,
+      "detail": "mes"
+    },
+    {
+      "id": "mes_sorties_same_outing",
+      "ok": true,
+      "detail": "confirmed-marina-fartlek-long"
+    },
+    {
+      "id": "cancel_modal",
+      "ok": true,
+      "detail": "modal"
+    },
+    {
+      "id": "cancelled_removed_from_confirmed",
+      "ok": true,
+      "detail": "gone from confirmed"
+    },
+    {
+      "id": "reload_same_title",
+      "ok": true,
+      "detail": "FARTLEK LONG === FARTLEK LONG"
+    },
+    {
+      "id": "reload_same_url",
+      "ok": true,
+      "detail": "http://127.0.0.1:8090/session/marina-fartlek-long"
+    },
+    {
+      "id": "reload_not_joined",
+      "ok": true,
+      "detail": "joinAgain=true"
+    },
+    {
+      "id": "infos_accessible_contrast",
+      "ok": true,
+      "detail": "{\"color\":\"rgb(26, 28, 29)\",\"r\":26,\"g\":28,\"b\":29,\"luminance\":0.10841960784313726,\"ok\":true}"
+    },
+    {
+      "id": "hero_compact",
+      "ok": true,
+      "detail": "h=132 w=292"
+    },
+    {
+      "id": "public_label_not_truncated",
+      "ok": true,
+      "detail": "SORTIE PUBLIQUE \u00b7 SPOT 1\n\uf5ea\nLUNDI 19 OCTOBRE 06:00 \u00b7 SPOT 1\nFARTLEK LONG"
+    },
+    {
+      "id": "pace_not_detached_unit",
+      "ok": true,
+      "detail": "coherent"
+    },
+    {
+      "id": "narrow_320_hero",
+      "ok": true,
+      "detail": "320"
+    },
+    {
+      "id": "large_text_title",
+      "ok": true,
+      "detail": "large text"
+    },
+    {
+      "id": "reference_light_identified",
+      "ok": true,
+      "detail": "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_d_tail_de_la_sortie_avant_inscription/screen.png"
+    },
+    {
+      "id": "nav_title_french",
+      "ok": true,
+      "detail": "D\u00e9tail de la sortie"
+    }
+  ],
+  "journey": {
+    "sessionId": "marina-fartlek-long",
+    "title": "FARTLEK LONG",
+    "joinedOnDetail": true
+  },
+  "summary": {
+    "pass": 34,
+    "fail": 0
+  }
+}

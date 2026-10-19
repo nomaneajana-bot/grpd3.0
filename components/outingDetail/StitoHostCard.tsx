@@ -54,7 +54,7 @@ export function StitoHostCard({
           style={({ pressed }) => [styles.clubBtn, pressed && { opacity: 0.85 }]}
           testID="stito-host-club-btn"
         >
-          <Text style={styles.clubBtnText}>Profil club</Text>
+          <Text style={styles.clubBtnText}>Voir club</Text>
         </Pressable>
       ) : null}
     </View>
@@ -78,14 +78,16 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: t.primaryFixed,
+    backgroundColor: "#EAF2EC",
+    borderWidth: 1,
+    borderColor: "rgba(0,95,52,0.18)",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
     fontFamily: t.font.space.bold,
     fontSize: 14,
-    color: "#00210E",
+    color: t.primary,
   },
   textCol: { flex: 1, minWidth: 0, gap: 2 },
   nameRow: { flexDirection: "row", alignItems: "baseline", gap: 8 },
