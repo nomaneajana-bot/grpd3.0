@@ -885,8 +885,12 @@ export default function SessionScreen() {
           >
             <Text style={styles.headerBackChevron}>‹</Text>
           </TouchableOpacity>
-          <Text style={styles.headerLocation} numberOfLines={1}>
-            {session.spot || "Séance"}
+          <Text
+            style={styles.headerLocation}
+            numberOfLines={1}
+            testID="session-detail-nav-title"
+          >
+            Détail de la sortie
           </Text>
           {isOrganizer ? (
             <TouchableOpacity
@@ -966,8 +970,8 @@ export default function SessionScreen() {
             })()}
             contextLabel={
               session.visibility === "members"
-                ? `Session membres · ${session.spot || "Club"}`
-                : `Session publique · ${session.spot || "Découverte"}`
+                ? `Sortie membres · ${session.spot || "Club"}`
+                : `Sortie publique · ${session.spot || "Ouverte à tous"}`
             }
             placesLabel={null}
             editionLabel={formatSessionDetailSubtitle(session)}

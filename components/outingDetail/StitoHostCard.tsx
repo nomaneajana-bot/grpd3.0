@@ -54,7 +54,7 @@ export function StitoHostCard({
           style={({ pressed }) => [styles.clubBtn, pressed && { opacity: 0.85 }]}
           testID="stito-host-club-btn"
         >
-          <Text style={styles.clubBtnText}>Profil club</Text>
+          <Text style={styles.clubBtnText}>Voir club</Text>
         </Pressable>
       ) : null}
     </View>
