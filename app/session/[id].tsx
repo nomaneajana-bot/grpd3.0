@@ -1788,7 +1788,7 @@ export default function SessionScreen() {
           primaryLabel={
             hasStoredJoin
               ? "Se désister"
-              : "M'inscrire à cette sortie"
+              : "Rejoindre la sortie"
           }
           secondaryHint={
             hasStoredJoin

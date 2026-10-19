@@ -32,14 +32,16 @@ const report = {
   uat_claim: false,
   viewport: "393x852",
   reference: {
-    light_primary:
-      "docs/design-reference/noa-stito/src/screens/OutingDetailScreen.tsx",
-    light_tokens: "docs/design-reference/noa-stito/src/index.css",
-    stitch_homepage_six_file_pack:
-      "docs/design-reference/stitch-homepage-2026-10-17/",
+    stitch_six_source_tip: "64dc1d12a5742389a2bd1cdc22e8a83785a7f851",
+    stitch_six_branch: "codex/stitch-six-reference-20261019",
+    light_outing_detail_png:
+      "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_d_tail_de_la_sortie_avant_inscription/screen.png",
+    light_outing_detail_html:
+      "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_d_tail_de_la_sortie_avant_inscription/code.html",
+    handoff:
+      "docs/design-reference/stitch-six-2026-10-17/REVIEW_AND_HANDOFF.md",
     rejected_dark_mislabeled:
-      "docs/design-reference/renders/11-outing-detail-phone.png (was incorrectly copied as reference-stitch-outing-detail-phone.png)",
-    light_capture: "reference-stitch-light-outing-detail.png",
+      "docs/design-reference/renders/11-outing-detail-phone.png",
   },
   checks: [],
   journey: {},
@@ -140,7 +142,8 @@ async function assertHeroCompact(page) {
   const ctx = await page.getByTestId("stito-outing-hero").innerText();
   check(
     "public_label_not_truncated",
-    /Session publique/i.test(ctx) && !/SESSION PUBLIQUE\s*·\s*CORNIC\.\.\./i.test(ctx),
+    /Sortie publique|Session publique/i.test(ctx) &&
+      !/PUBLIQUE\s*·\s*CORNIC\.\.\./i.test(ctx),
     ctx.slice(0, 120),
   );
 }
@@ -209,7 +212,7 @@ async function main() {
     await joinCta.click({ force: true });
     await page.waitForTimeout(1800);
     if (!(await page.getByText(/inscrit|Place réservée|Se désister/i).count())) {
-      const alt = page.getByText(/M'inscrire à cette sortie|Rejoindre/i);
+      const alt = page.getByText(/Rejoindre la sortie|M'inscrire à cette sortie|Rejoindre/i);
       if (await alt.count()) {
         await alt.last().click({ force: true });
         await page.waitForTimeout(1500);
@@ -288,8 +291,8 @@ async function main() {
     const bodyReload = await page.locator("body").innerText();
     const stillJoined =
       /Se désister|Place réservée · tu peux/i.test(bodyReload) &&
-      !/M'inscrire à cette sortie|Rejoindre la sortie/i.test(bodyReload);
-    const joinAgain = /M'inscrire à cette sortie/i.test(bodyReload);
+      !/Rejoindre la sortie|M'inscrire à cette sortie/i.test(bodyReload);
+    const joinAgain = /Rejoindre la sortie|M'inscrire à cette sortie/i.test(bodyReload);
     check("reload_not_joined", joinAgain || !stillJoined, `joinAgain=${joinAgain}`);
     await assertAccessibleInfos(page);
     await shot(page, "current-outing-detail-after-cancel-393.png");
@@ -315,13 +318,23 @@ async function main() {
       "large text",
     );
 
+    const stitchRef =
+      "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_d_tail_de_la_sortie_avant_inscription/screen.png";
     check(
       "reference_light_identified",
-      fs.existsSync("docs/design-reference/noa-stito/src/screens/OutingDetailScreen.tsx") &&
+      fs.existsSync(stitchRef) &&
         fs.existsSync(
-          "docs/design-reference/stitch-homepage-2026-10-17/references/grpd_accueil_membre_actif_version_peaufin_e/screen.png",
+          "docs/design-reference/stitch-six-2026-10-17/REVIEW_AND_HANDOFF.md",
         ),
-      "Noa-Stito OutingDetail + Stitch homepage six-file pack",
+      stitchRef,
+    );
+    check(
+      "nav_title_french",
+      Boolean(await page.getByTestId("session-detail-nav-title").count()) &&
+        /Détail de la sortie/i.test(
+          await page.getByTestId("session-detail-nav-title").innerText(),
+        ),
+      "Détail de la sortie",
     );
   } catch (e) {
     check("uncaught", false, String(e));
