@@ -208,9 +208,9 @@
 | Observed behavior | Tip `2c1b981` **rejected** (near-white Infos, empty dark hero, truncated label, split pace, pale toast, neon leave). Light-fix branch: smoke **33/33** — Infos luminance ~0.11; hero h≈132; full public label; `5:30–6:30/km` one string; toast top clear of logistics/CTA; journey identity preserved |
 | Capability | IMPLEMENTED (demo web) |
 | Owner | Cursor |
-| Candidate SHA / env | PR #20 `cursor/outing-detail-light-fix-3184` · **demo** |
-| Evidence | `docs/audit/outing-detail-stito/` — `EVIDENCE.md` identifies light refs; `outing-detail-light-fix-smoke.json`; side-by-sides vs `reference-stitch-light-outing-detail.png` |
-| Next action | **STOP — Codex** visual re-review against **light** refs before Organise / Clubs / Create / Invitations / Profile |
+| Candidate SHA / env | PR #20 `cursor/outing-detail-light-fix-3184` · **demo** · Stitch six tip `64dc1d1` |
+| Evidence | `docs/audit/outing-detail-stito/` — `REFERENCE_NOTE.md` · `outing-detail-light-fix-smoke.json` (34/34) · side-by-sides vs `reference-stitch-six-outing-detail-avant-inscription.png` |
+| Next action | **STOP — Codex** visual re-review against Stitch six `grpd_d_tail_de_la_sortie_avant_inscription` before other screens |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-012 — P2 — VERIFIED (demo keyboard Tab order only)

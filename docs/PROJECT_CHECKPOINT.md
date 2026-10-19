@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-19  
 **Working branch:** `cursor/outing-detail-light-fix-3184` (PR #20)  
-**Outing-detail tip:** `b2d323d6215f903cd4dab6ef2c17ddc39ee2a621`  
+**Outing-detail tested SHA:** `b2d323d6215f903cd4dab6ef2c17ddc39ee2a621` · **docs tip:** `6d5838d223e2b3b08d11cf8be5daa61b08dbd62a`  
 **Stitch six light refs:** copy-only from `origin/codex/stitch-six-reference-20261019` @ `64dc1d12a5742389a2bd1cdc22e8a83785a7f851` → `docs/design-reference/stitch-six-2026-10-17/`  
 **Outing-detail canonical PNG:** `.../grpd_d_tail_de_la_sortie_avant_inscription/screen.png`  
 **Handoff:** `docs/design-reference/stitch-six-2026-10-17/REVIEW_AND_HANDOFF.md`  
