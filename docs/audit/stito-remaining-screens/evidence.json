@@ -1,0 +1,8 @@
+{
+  "batch": "stito-remaining-screens",
+  "branch": "cursor/stito-remaining-screens-3184",
+  "pr": 21,
+  "data_mode": "demo",
+  "smoke": "docs/audit/stito-remaining-screens/stito-remaining-screens-smoke.json",
+  "walkthrough": "/opt/cursor/artifacts/stito-remaining-screens-walkthrough.mp4"
+}

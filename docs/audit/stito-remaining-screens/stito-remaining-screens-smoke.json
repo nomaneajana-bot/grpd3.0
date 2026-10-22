@@ -1,0 +1,131 @@
+{
+  "batch": "stito-remaining-screens",
+  "tested_sha": "637dcc4e561669a81760841fba3d44909373e3a6",
+  "data_mode": "demo",
+  "base": "http://127.0.0.1:8083",
+  "checks": [
+    {
+      "id": "clubs_title",
+      "ok": true,
+      "detail": "header"
+    },
+    {
+      "id": "clubs_no_actif_aujourdhui",
+      "ok": true,
+      "detail": "handoff exclusion"
+    },
+    {
+      "id": "clubs_light_canvas",
+      "ok": true,
+      "detail": "{\"ok\":true,\"light\":4,\"samples\":[{\"x\":40,\"y\":40,\"r\":249,\"g\":249,\"b\":250,\"luminance\":0.9769176470588234},{\"x\":196,\"y\":80,\"r\":255,\"g\":255,\"b\":255,\"luminance\":1},{\"x\":196,\"y\":284,\"r\":249,\"g\":249,\"b\":250,\"luminance\":0.9769176470588234},{\"x\":20,\"y\":426,\"r\":255,\"g\":255,\"b\":255,\"luminance\":1}]}"
+    },
+    {
+      "id": "create_heading",
+      "ok": true,
+      "detail": "create title"
+    },
+    {
+      "id": "create_no_valide_badge",
+      "ok": true,
+      "detail": "handoff exclusion"
+    },
+    {
+      "id": "create_visibility_two_only",
+      "ok": true,
+      "detail": "supported enums only"
+    },
+    {
+      "id": "create_membership_note",
+      "ok": true,
+      "detail": "membership ≠ outing"
+    },
+    {
+      "id": "create_light_canvas",
+      "ok": true,
+      "detail": "{\"ok\":true,\"light\":4,\"samples\":[{\"x\":40,\"y\":40,\"r\":255,\"g\":255,\"b\":255,\"luminance\":1},{\"x\":196,\"y\":80,\"r\":249,\"g\":249,\"b\":250,\"luminance\":0.9769176470588234},{\"x\":196,\"y\":284,\"r\":255,\"g\":255,\"b\":255,\"luminance\":1},{\"x\":20,\"y\":426,\"r\":249,\"g\":249,\"b\":250,\"luminance\":0.9769176470588234}]}"
+    },
+    {
+      "id": "organise_title",
+      "ok": true,
+      "detail": "FR title"
+    },
+    {
+      "id": "organise_no_club_officiel",
+      "ok": true,
+      "detail": "handoff exclusion"
+    },
+    {
+      "id": "organise_no_gps_valide",
+      "ok": true,
+      "detail": "handoff exclusion"
+    },
+    {
+      "id": "organise_light_canvas",
+      "ok": true,
+      "detail": "{\"ok\":true,\"light\":4,\"samples\":[{\"x\":40,\"y\":40,\"r\":249,\"g\":249,\"b\":250,\"luminance\":0.9769176470588234},{\"x\":196,\"y\":80,\"r\":249,\"g\":249,\"b\":250,\"luminance\":0.9769176470588234},{\"x\":196,\"y\":284,\"r\":255,\"g\":255,\"b\":255,\"luminance\":1},{\"x\":20,\"y\":426,\"r\":234,\"g\":234,\"b\":235,\"luminance\":0.9180941176470588}]}"
+    },
+    {
+      "id": "invitations_title",
+      "ok": true,
+      "detail": "title"
+    },
+    {
+      "id": "invitations_no_vip",
+      "ok": true,
+      "detail": "handoff exclusion"
+    },
+    {
+      "id": "invitations_membership_note",
+      "ok": true,
+      "detail": "membership ≠ outing"
+    },
+    {
+      "id": "invitations_light_canvas",
+      "ok": true,
+      "detail": "{\"ok\":true,\"light\":3,\"samples\":[{\"x\":40,\"y\":40,\"r\":249,\"g\":249,\"b\":250,\"luminance\":0.9769176470588234},{\"x\":196,\"y\":80,\"r\":249,\"g\":249,\"b\":250,\"luminance\":0.9769176470588234},{\"x\":196,\"y\":284,\"r\":95,\"g\":115,\"b\":58,\"luminance\":0.40204705882352937},{\"x\":20,\"y\":426,\"r\":255,\"g\":255,\"b\":255,\"luminance\":1}]}"
+    },
+    {
+      "id": "inbox_title",
+      "ok": true,
+      "detail": "inbox title"
+    },
+    {
+      "id": "inbox_light_canvas",
+      "ok": true,
+      "detail": "{\"ok\":true,\"light\":4,\"samples\":[{\"x\":40,\"y\":40,\"r\":249,\"g\":249,\"b\":250,\"luminance\":0.9769176470588234},{\"x\":196,\"y\":80,\"r\":249,\"g\":249,\"b\":250,\"luminance\":0.9769176470588234},{\"x\":196,\"y\":284,\"r\":249,\"g\":249,\"b\":250,\"luminance\":0.9769176470588234},{\"x\":20,\"y\":426,\"r\":249,\"g\":249,\"b\":250,\"luminance\":0.9769176470588234}]"
+    },
+    {
+      "id": "profile_title",
+      "ok": true,
+      "detail": "title"
+    },
+    {
+      "id": "profile_no_fake_km_strip",
+      "ok": true,
+      "detail": "no prototype telemetry"
+    },
+    {
+      "id": "profile_prefs_or_clubs",
+      "ok": true,
+      "detail": "sections"
+    },
+    {
+      "id": "profile_light_canvas",
+      "ok": true,
+      "detail": "{\"ok\":true,\"light\":4,\"samples\":[{\"x\":40,\"y\":40,\"r\":249,\"g\":249,\"b\":250,\"luminance\":0.9769176470588234},{\"x\":196,\"y\":80,\"r\":255,\"g\":255,\"b\":255,\"luminance\":1},{\"x\":196,\"y\":284,\"r\":255,\"g\":255,\"b\":255,\"luminance\":1},{\"x\":20,\"y\":426,\"r\":255,\"g\":255,\"b\":255,\"luminance\":1}]}"
+    }
+  ],
+  "screenshots": [
+    "docs/audit/stito-remaining-screens/screenshots/stito-clubs-393.png",
+    "docs/audit/stito-remaining-screens/screenshots/stito-create-club-393.png",
+    "docs/audit/stito-remaining-screens/screenshots/stito-organise-393.png",
+    "docs/audit/stito-remaining-screens/screenshots/stito-invitations-393.png",
+    "docs/audit/stito-remaining-screens/screenshots/stito-inbox-393.png",
+    "docs/audit/stito-remaining-screens/screenshots/stito-profile-393.png"
+  ],
+  "summary": {
+    "pass": 22,
+    "fail": 0,
+    "total": 22
+  }
+}
