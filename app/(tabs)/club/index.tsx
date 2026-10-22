@@ -19,11 +19,9 @@ import { ClubNavCard } from "@/components/club/ClubNavCard";
 import { ClubOverviewCard } from "@/components/club/ClubOverviewCard";
 import { GroupedList } from "@/components/redesign/GroupedList";
 import { SectionHeader } from "@/components/redesign/SectionHeader";
-import { SectionLabel } from "@/components/redesign/SectionLabel";
-import { redesignTheme } from "@/constants/redesignTheme";
 import { ScreenContainer } from "@/components/ui/ScreenContainer";
 import { Toast } from "@/components/ui/Toast";
-import { borderRadius, colors, hairline, spacing, typography } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 
 import { useToast } from "@/hooks/useToast";
 import {
@@ -339,12 +337,14 @@ export default function ClubScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <ScreenContainer>
+      <ScreenContainer style={{ backgroundColor: t.canvas }}>
       {toast && (
         <Toast
           message={toast.message}
           variant={toast.variant}
           onDismiss={hideToast}
+          tone="onLight"
+          placement="top"
         />
       )}
 
@@ -363,13 +363,13 @@ export default function ClubScreen() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={() => loadData(true)}
-            tintColor={colors.text.accent}
+            tintColor={t.primary}
           />
         }
       >
         {isLoading ? (
           <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color={colors.accent.primary} />
+            <ActivityIndicator size="large" color={t.primary} />
           </View>
         ) : isApprovedMember && club ? (
           <>
@@ -703,7 +703,7 @@ export default function ClubScreen() {
           </>
         ) : (
           <>
-            <SectionLabel>REJOINDRE UN CLUB</SectionLabel>
+            <Text style={styles.joinSectionLabel}>Rejoindre un club</Text>
             <View style={styles.shortJoinCard}>
               <Text style={styles.shortJoinLabel}>Code d&apos;invitation</Text>
               <TextInput
@@ -711,7 +711,7 @@ export default function ClubScreen() {
                 value={inviteCode}
                 onChangeText={setInviteCode}
                 placeholder="Ex: JAIME123"
-                placeholderTextColor={colors.text.tertiary}
+                placeholderTextColor={t.outline}
                 autoCapitalize="characters"
               />
               <Pressable
@@ -753,133 +753,131 @@ export default function ClubScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.canvas,
   },
   toprow: {
-    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 4,
   },
   pg: {
-    fontSize: redesignTheme.type.h1.fontSize,
-    fontWeight: "700",
-    color: redesignTheme.text.primary,
-    letterSpacing: -0.7,
+    ...t.type.pageTitle,
+    color: t.text,
   },
   roleSub: {
-    fontSize: 13,
-    color: redesignTheme.text.dim,
+    ...t.type.bodySm,
+    color: t.textSecondary,
     marginTop: 4,
   },
   feedBlock: {
-    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    paddingHorizontal: 16,
     marginBottom: 8,
   },
   clubOutingsBlock: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     marginTop: 18,
     marginBottom: 8,
     gap: 12,
   },
   clubOutingsHeading: {
-    color: redesignTheme.text.primary,
-    fontSize: 20,
-    fontWeight: "700",
-    letterSpacing: -0.3,
+    ...t.type.section,
+    color: t.text,
   },
   clubOutingsHint: {
-    color: redesignTheme.text.dim,
+    fontFamily: t.font.hanken.regular,
+    color: t.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },
   clubOutingsEmpty: {
-    backgroundColor: colors.background.card,
-    borderRadius: 18,
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: "rgba(232,232,233,0.9)",
     padding: 18,
     gap: 8,
   },
   clubOutingsEmptyTitle: {
-    color: redesignTheme.text.primary,
+    fontFamily: t.font.space.semibold,
+    color: t.text,
     fontSize: 16,
-    fontWeight: "600",
   },
   clubOutingCard: {
-    backgroundColor: colors.background.card,
-    borderRadius: 18,
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: "rgba(232,232,233,0.9)",
     padding: 18,
     gap: 6,
   },
   clubOutingTag: {
-    color: colors.accent.sage,
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
+    ...t.type.labelSm,
+    color: t.primary,
+    textTransform: "uppercase",
   },
   clubOutingTitle: {
-    color: redesignTheme.text.primary,
-    fontSize: 18,
-    fontWeight: "700",
+    ...t.type.cardTitle,
+    color: t.text,
   },
   clubOutingMeta: {
-    color: redesignTheme.text.dim,
+    fontFamily: t.font.hanken.regular,
+    color: t.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },
   clubOutingAttendance: {
-    color: redesignTheme.text.dim,
+    fontFamily: t.font.hanken.regular,
+    color: t.textSecondary,
     fontSize: 13,
     marginTop: 4,
   },
   clubOutingLink: {
-    color: colors.accent.sage,
+    fontFamily: t.font.space.semibold,
+    color: t.primary,
     fontSize: 14,
-    fontWeight: "600",
     marginTop: 6,
   },
   organiseBtn: {
-    backgroundColor: colors.accent.sage,
+    backgroundColor: t.primary,
     borderRadius: 16,
     paddingVertical: 15,
     alignItems: "center",
   },
   organiseBtnText: {
-    color: colors.accent.charcoal,
+    color: t.onPrimary,
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: t.font.space.bold,
   },
   enableGroupsCard: {
-    backgroundColor: colors.surface.s2,
-    borderRadius: 16,
-    borderWidth: hairline,
-    borderColor: colors.border.default,
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
     padding: 16,
+    marginHorizontal: 16,
     marginBottom: 8,
   },
   enableGroupsTitle: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.base,
-    fontWeight: "700",
+    color: t.text,
+    fontSize: 15,
+    fontFamily: t.font.space.bold,
   },
   enableGroupsSub: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
+    color: t.textSecondary,
+    fontSize: 13,
     lineHeight: 20,
     marginTop: 6,
+    fontFamily: t.font.hanken.regular,
   },
   clubSwitcher: {
-    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    paddingHorizontal: 16,
     marginBottom: 12,
     gap: 8,
   },
   clubSwitcherLabel: {
-    color: colors.text.secondary,
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.2,
+    ...t.type.labelSm,
+    color: t.textSecondary,
+    textTransform: "uppercase",
   },
   clubSwitcherRow: {
     flexDirection: "row",
@@ -887,47 +885,46 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   clubSwitcherChip: {
-    borderRadius: 16,
+    borderRadius: t.radiusChip,
     borderWidth: 1,
-    borderColor: colors.border.default,
-    backgroundColor: colors.background.card,
+    borderColor: t.outlineVariant,
+    backgroundColor: t.card,
     paddingHorizontal: 14,
     paddingVertical: 10,
     maxWidth: "100%",
   },
   clubSwitcherChipOn: {
-    backgroundColor: colors.accent.sage,
-    borderColor: colors.accent.sage,
+    backgroundColor: t.primary,
+    borderColor: t.primary,
   },
   clubSwitcherChipText: {
-    color: colors.text.primary,
+    color: t.text,
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: t.font.space.semibold,
   },
   clubSwitcherChipTextOn: {
-    color: colors.accent.charcoal,
+    color: t.onPrimary,
   },
   quitZone: {
     paddingVertical: 32,
-    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    paddingHorizontal: 16,
     alignItems: "center",
   },
   quitText: {
     fontSize: 13,
-    fontWeight: "500",
-    color: redesignTheme.accent.red,
-    opacity: 0.7,
+    fontFamily: t.font.space.semibold,
+    color: t.error,
+    opacity: 0.85,
   },
   content: {
-    paddingBottom: spacing.xl,
+    paddingBottom: 40,
   },
   loadingWrap: {
     paddingVertical: 48,
     alignItems: "center",
   },
-  /** M07 — match heading/toprow gutters (24px); content must not flush to viewport edges. */
   pendingPanel: {
-    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 16,
     width: "100%",
@@ -935,115 +932,127 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
   pendingTitle: {
-    color: colors.text.primary,
-    fontSize: 30,
-    fontWeight: "700",
-    letterSpacing: -0.6,
-    lineHeight: 36,
+    ...t.type.pageTitle,
+    color: t.text,
     marginBottom: 8,
   },
   pendingClubName: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.md,
+    color: t.textSecondary,
+    fontSize: 15,
+    fontFamily: t.font.hanken.regular,
     marginBottom: 12,
   },
   pendingTag: {
-    color: colors.accent.sage,
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.2,
+    ...t.type.labelSm,
+    color: t.primary,
+    textTransform: "uppercase",
     marginBottom: 12,
   },
   pendingDivider: {
-    height: hairline,
-    backgroundColor: colors.border.default,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: t.outlineVariant,
     marginVertical: 18,
   },
   pendingSection: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.lg,
-    fontWeight: "700",
+    ...t.type.section,
+    color: t.text,
     marginBottom: 8,
   },
   pendingSmall: {
-    color: colors.text.tertiary,
-    fontSize: typography.sizes.sm,
+    color: t.outline,
+    fontSize: 13,
     lineHeight: 18,
     marginTop: 8,
+    fontFamily: t.font.hanken.regular,
   },
   pendingCancelField: {
     marginTop: 16,
-    backgroundColor: colors.background.card,
-    borderWidth: hairline,
-    borderColor: colors.border.default,
-    borderRadius: borderRadius.md,
+    backgroundColor: t.card,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
+    borderRadius: 14,
     padding: 16,
   },
   pendingCancelText: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.md,
-    fontWeight: "600",
+    color: t.text,
+    fontSize: 15,
+    fontFamily: t.font.space.semibold,
   },
   pendingPrimaryBtn: {
     marginTop: 20,
-    backgroundColor: colors.accent.sage,
+    backgroundColor: t.primary,
     borderRadius: 18,
     paddingVertical: 17,
     alignItems: "center",
   },
   pendingPrimaryBtnText: {
-    color: colors.accent.charcoal,
-    fontSize: typography.sizes.md,
-    fontWeight: "700",
+    color: t.onPrimary,
+    fontSize: 15,
+    fontFamily: t.font.space.bold,
   },
   pendingHint: {
-    color: colors.text.secondary,
+    color: t.textSecondary,
     fontSize: 13,
     lineHeight: 18,
     marginBottom: 8,
+    fontFamily: t.font.hanken.regular,
+  },
+  joinSectionLabel: {
+    ...t.type.labelSm,
+    color: t.textSecondary,
+    textTransform: "uppercase",
+    marginHorizontal: 16,
+    marginTop: 14,
+    marginBottom: 8,
   },
   shortJoinCard: {
-    backgroundColor: colors.surface.s3,
-    borderRadius: 14,
-    padding: 14,
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
+    padding: 16,
+    marginHorizontal: 16,
     marginBottom: 8,
   },
   shortJoinLabel: {
-    color: colors.text.secondary,
+    color: t.textSecondary,
     fontSize: 13,
     marginBottom: 8,
+    fontFamily: t.font.hanken.regular,
   },
   textInput: {
-    backgroundColor: colors.background.input,
+    backgroundColor: t.surfaceContainerLow,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: colors.text.primary,
+    color: t.text,
     fontSize: 14,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: t.outlineVariant,
   },
   primaryButton: {
-    backgroundColor: colors.accent.primary,
+    backgroundColor: t.primary,
     paddingVertical: 12,
-    borderRadius: 999,
+    borderRadius: t.radiusChip,
     alignItems: "center",
   },
   primaryButtonPressed: {
     opacity: 0.85,
   },
   primaryButtonText: {
-    color: colors.text.primary,
+    color: t.onPrimary,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: t.font.space.bold,
   },
   moreLinkWrap: {
     marginTop: 12,
     alignItems: "center",
   },
   moreLink: {
-    color: colors.text.accent,
+    color: t.primary,
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: t.font.space.semibold,
   },
   createGroupBtn: {
     flexDirection: "row",
@@ -1052,28 +1061,27 @@ const styles = StyleSheet.create({
     gap: 8,
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: colors.border.active,
-    backgroundColor: colors.accent.primaryDim,
-    borderRadius: 999,
+    borderColor: t.primary,
+    backgroundColor: "rgba(0,95,52,0.08)",
+    borderRadius: t.radiusChip,
     paddingVertical: 13,
     marginBottom: 16,
   },
   createGroupBtnPressed: {
-    backgroundColor: colors.accent.primaryMid,
     opacity: 0.95,
   },
   createGroupIcon: {
-    color: colors.text.accent,
+    color: t.primary,
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: t.font.space.bold,
   },
   createGroupText: {
-    color: colors.text.accent,
-    fontWeight: "700",
+    color: t.primary,
+    fontFamily: t.font.space.bold,
     fontSize: 14,
   },
   policyCard: {
-    backgroundColor: colors.surface.s3,
+    backgroundColor: t.surfaceContainerLow,
     borderRadius: 14,
     padding: 14,
     marginBottom: 16,
@@ -1085,12 +1093,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   policyTitle: {
-    color: colors.text.primary,
+    color: t.text,
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: t.font.space.semibold,
   },
   policyHint: {
-    color: colors.text.secondary,
+    color: t.textSecondary,
     fontSize: 12,
     marginTop: 4,
   },

@@ -1,10 +1,10 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
-import { Tag } from "@/components/redesign/Tag";
-import { Card } from "@/components/ui/Card";
-import { colors, typography } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
+import { clubInitialsFromName } from "@/lib/clubPaceGroups";
 import type { ClubMembership } from "@/types/api";
 
 type ProfileClubsCardProps = {
@@ -12,7 +12,8 @@ type ProfileClubsCardProps = {
 };
 
 /**
- * Community clubs on primary profile — no pace-group identity (invariant c).
+ * Community clubs on primary profile — no pace-group identity.
+ * Stito light cards; real membership data only.
  */
 export function ProfileClubsCard({ memberships }: ProfileClubsCardProps) {
   const approved = memberships.filter((m) => m.status === "approved");
@@ -25,117 +26,151 @@ export function ProfileClubsCard({ memberships }: ProfileClubsCardProps) {
         accessibilityRole="button"
         accessibilityLabel="Rejoindre un club"
         testID="profile-join-club"
+        style={styles.card}
       >
-        <Card style={styles.card}>
-          <Text style={styles.emptyTitle}>Aucun club</Text>
-          <Text style={styles.emptySub}>
-            Rejoins ou crée une communauté pour voir les sorties membres.
-          </Text>
-          <Text style={styles.cta}>Rejoindre un club ›</Text>
-        </Card>
+        <Text style={styles.emptyTitle}>Aucun club</Text>
+        <Text style={styles.emptySub}>
+          Rejoins ou crée une communauté pour voir les sorties membres.
+        </Text>
+        <Text style={styles.cta}>Rejoindre un club ›</Text>
       </Pressable>
     );
   }
 
   return (
-    <Card style={styles.card}>
-      {approved.map((m, index) => (
-        <View key={m.id}>
-          {index > 0 ? <View style={styles.divider} /> : null}
+    <View style={styles.stack}>
+      {approved.map((m) => {
+        const name = m.club?.name ?? "Club";
+        const role =
+          m.role === "admin" || m.role === "coach"
+            ? "Administrateur"
+            : "Membre";
+        return (
           <Pressable
+            key={m.id}
             onPress={() => router.push("/(tabs)/club")}
-            style={styles.row}
+            style={styles.card}
             accessibilityRole="button"
             testID={`profile-club-${m.clubId}`}
           >
+            <View style={styles.mark}>
+              <Text style={styles.markText}>{clubInitialsFromName(name)}</Text>
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.clubName} numberOfLines={1}>
-                {m.club?.name ?? "Club"}
+                {name}
               </Text>
-              {m.club?.city ? (
-                <Text style={styles.city} numberOfLines={1}>
-                  {m.club.city}
-                </Text>
-              ) : null}
+              <Text style={styles.city} numberOfLines={1}>
+                {role}
+                {m.club?.city ? ` · ${m.club.city}` : ""}
+              </Text>
             </View>
-            <Tag label="MEMBRE" variant="tg" />
+            <Ionicons name="chevron-forward" size={18} color={t.outline} />
           </Pressable>
-        </View>
-      ))}
+        );
+      })}
       {pending.map((m) => (
-        <View key={m.id}>
-          <View style={styles.divider} />
-          <View style={styles.row}>
-            <View style={styles.rowText}>
-              <Text style={styles.clubName} numberOfLines={1}>
-                {m.club?.name ?? "Club"}
-              </Text>
-              <Text style={styles.city}>Demande en attente</Text>
-            </View>
-            <Tag label="EN ATTENTE" variant="to" />
+        <View key={m.id} style={styles.card} testID={`profile-club-pending-${m.clubId}`}>
+          <View style={[styles.mark, styles.markPending]}>
+            <Text style={[styles.markText, styles.markTextPending]}>
+              {clubInitialsFromName(m.club?.name ?? "Club")}
+            </Text>
+          </View>
+          <View style={styles.rowText}>
+            <Text style={styles.clubName} numberOfLines={1}>
+              {m.club?.name ?? "Club"}
+            </Text>
+            <Text style={styles.city}>Demande en attente</Text>
           </View>
         </View>
       ))}
-      <View style={styles.divider} />
       <Pressable
         onPress={() => router.push("/(tabs)/club/access")}
-        style={styles.moreRow}
+        style={styles.exploreBtn}
         accessibilityRole="button"
         testID="profile-manage-clubs"
       >
-        <Text style={styles.cta}>Gérer mes clubs ›</Text>
+        <Ionicons name="add-circle-outline" size={18} color={t.primary} />
+        <Text style={styles.cta}>Explorer d’autres clubs</Text>
       </Pressable>
-    </Card>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  stack: { gap: 8, marginBottom: 9 },
   card: {
-    marginBottom: 9,
-  },
-  row: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 6,
-    gap: 10,
+    gap: 12,
+    backgroundColor: t.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
+    padding: 14,
+  },
+  mark: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: t.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  markPending: {
+    backgroundColor: t.surfaceContainerHigh,
+  },
+  markText: {
+    color: t.onPrimary,
+    fontFamily: t.font.space.bold,
+    fontSize: 12,
+  },
+  markTextPending: {
+    color: t.textSecondary,
   },
   rowText: {
     flex: 1,
     gap: 2,
+    minWidth: 0,
   },
   clubName: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.base,
-    fontWeight: "600",
+    color: t.text,
+    fontSize: 15,
+    fontFamily: t.font.space.bold,
   },
   city: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.default,
-    marginVertical: 4,
+    color: t.textSecondary,
+    fontSize: 12,
+    fontFamily: t.font.hanken.regular,
   },
   emptyTitle: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.base,
-    fontWeight: "600",
+    color: t.text,
+    fontSize: 15,
+    fontFamily: t.font.space.bold,
     marginBottom: 4,
   },
   emptySub: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
+    color: t.textSecondary,
+    fontSize: 13,
     lineHeight: 20,
     marginBottom: 10,
+    fontFamily: t.font.hanken.regular,
   },
-  moreRow: {
-    paddingTop: 4,
+  exploreBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: t.card,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
   },
   cta: {
-    color: colors.text.accent,
-    fontSize: typography.sizes.sm,
-    fontWeight: "600",
+    color: t.primary,
+    fontSize: 13,
+    fontFamily: t.font.space.bold,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
   },
 });

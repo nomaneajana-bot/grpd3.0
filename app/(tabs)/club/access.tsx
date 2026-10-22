@@ -13,9 +13,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 
-import { Card } from "@/components/ui/Card";
 import { Toast } from "@/components/ui/Toast";
-import { colors, spacing } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 import { useToast } from "@/hooks/useToast";
 import {
   createApiClient,
@@ -164,6 +163,8 @@ export default function ClubAccessScreen() {
           message={toast.message}
           variant={toast.variant}
           onDismiss={hideToast}
+          tone="onLight"
+          placement="top"
         />
       )}
 
@@ -176,15 +177,15 @@ export default function ClubAccessScreen() {
           <Text style={styles.backIcon}>‹</Text>
           <Text style={styles.backLabel}>Club</Text>
         </Pressable>
-        <Text style={styles.title}>Accès club</Text>
+        <Text style={styles.title}>Invitations</Text>
         <Text style={styles.subtitle}>
-          Invitations, demandes et administration.
+          Codes, demandes et administration — sans inscription automatique aux sorties.
         </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         {isCoachOrAdmin && (
-          <Card style={styles.card}>
+          <View style={styles.card}>
             <Text style={styles.cardLabel}>RESPONSABLE</Text>
             {adminMemberships.length > 1 ? (
               <View style={styles.clubPickRow} testID="invite-club-picker">
@@ -237,11 +238,11 @@ export default function ClubAccessScreen() {
               onPress={handleGenerateInvite}
               disabled={isGeneratingInvite}
               accessibilityRole="button"
-              accessibilityLabel="Générer un code d'invitation"
+              accessibilityLabel="Inviter quelqu’un"
               testID="club-generate-invite"
             >
               <Text style={styles.secondaryButtonText}>
-                Générer un code d&apos;invitation
+                Inviter quelqu’un
                 {primaryMembership?.club?.name
                   ? ` · ${primaryMembership.club.name}`
                   : ""}
@@ -270,10 +271,10 @@ export default function ClubAccessScreen() {
                 </Pressable>
               </View>
             )}
-          </Card>
+          </View>
         )}
 
-        <Card style={styles.card}>
+        <View style={styles.card}>
           <Text style={styles.cardLabel}>REJOINDRE AVEC CODE</Text>
           <View style={styles.fieldRow}>
             <Text style={styles.fieldLabel}>Code d&apos;invitation</Text>
@@ -282,7 +283,7 @@ export default function ClubAccessScreen() {
               value={inviteCode}
               onChangeText={setInviteCode}
               placeholder="Ex: CRC2026"
-              placeholderTextColor={colors.text.tertiary}
+              placeholderTextColor={t.outline}
               autoCapitalize="characters"
               editable={!isSubmitting}
               accessibilityLabel="Code d'invitation"
@@ -302,15 +303,18 @@ export default function ClubAccessScreen() {
           >
             <Text style={styles.primaryButtonText}>Rejoindre</Text>
           </Pressable>
+          <Text style={styles.helperText}>
+            Rejoindre un club ne t’inscrit à aucune sortie.
+          </Text>
           {isApprovedMember && (
             <Text style={styles.helperText}>
               Tu peux rejoindre plusieurs clubs. Ce code ajoutera un club
               supplémentaire.
             </Text>
           )}
-        </Card>
+        </View>
 
-        <Card style={styles.card}>
+        <View style={styles.card}>
           <Text style={styles.cardLabel}>DEMANDER À REJOINDRE</Text>
           <View style={styles.fieldRow}>
             <Text style={styles.fieldLabel}>Nom du club</Text>
@@ -319,7 +323,7 @@ export default function ClubAccessScreen() {
               value={clubSlug}
               onChangeText={setClubSlug}
               placeholder="Ex: Casablanca Running Club"
-              placeholderTextColor={colors.text.secondary}
+              placeholderTextColor={t.outline}
               autoCapitalize="none"
               editable={!isSubmitting}
               accessibilityLabel="Nom du club"
@@ -336,7 +340,7 @@ export default function ClubAccessScreen() {
               value={requestMessage}
               onChangeText={setRequestMessage}
               placeholder="Pourquoi tu veux rejoindre ?"
-              placeholderTextColor={colors.text.secondary}
+              placeholderTextColor={t.outline}
               autoCapitalize="sentences"
               editable={!isSubmitting}
               testID="club-request-message-input"
@@ -362,9 +366,9 @@ export default function ClubAccessScreen() {
               Un responsable du club doit valider ta demande.
             </Text>
           )}
-        </Card>
+        </View>
 
-        <Card style={styles.card}>
+        <View style={styles.card}>
           <Text style={styles.cardLabel}>CRÉER UN CLUB</Text>
           <Pressable
             style={({ pressed }) => [
@@ -381,7 +385,7 @@ export default function ClubAccessScreen() {
           >
             <Text style={styles.createButtonText}>Créer un club</Text>
           </Pressable>
-        </Card>
+        </View>
 
         {isLoading ? (
           <Text style={styles.helperText}>Chargement…</Text>
@@ -394,7 +398,7 @@ export default function ClubAccessScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.canvas,
   },
   clubPickRow: {
     flexDirection: "row",
@@ -403,27 +407,27 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   clubPickChip: {
-    borderRadius: 16,
+    borderRadius: t.radiusChip,
     borderWidth: 1,
-    borderColor: colors.border.default,
-    backgroundColor: colors.background.elevated,
+    borderColor: t.outlineVariant,
+    backgroundColor: t.card,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   clubPickChipOn: {
-    backgroundColor: colors.accent.sage,
-    borderColor: colors.accent.sage,
+    backgroundColor: t.primary,
+    borderColor: t.primary,
   },
   clubPickText: {
-    color: colors.text.primary,
+    color: t.text,
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: t.font.space.semibold,
   },
   clubPickTextOn: {
-    color: colors.accent.charcoal,
+    color: t.onPrimary,
   },
   header: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingTop: 6,
     paddingBottom: 10,
   },
@@ -433,141 +437,155 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   backIcon: {
-    color: colors.text.primary,
+    color: t.text,
     fontSize: 28,
     fontWeight: "300",
     marginRight: 4,
   },
   backLabel: {
-    color: colors.text.secondary,
+    color: t.textSecondary,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: t.font.space.semibold,
   },
   title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: colors.text.primary,
-    letterSpacing: -0.3,
+    ...t.type.pageTitle,
+    fontSize: 24,
+    lineHeight: 28,
+    color: t.text,
   },
   subtitle: {
-    fontSize: 12,
-    color: colors.text.secondary,
+    fontFamily: t.font.hanken.regular,
+    fontSize: 13,
+    color: t.textSecondary,
     marginTop: 4,
+    lineHeight: 18,
   },
   content: {
-    paddingHorizontal: 14,
-    paddingBottom: spacing.xl,
+    paddingHorizontal: 16,
+    paddingBottom: 40,
   },
   card: {
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    marginBottom: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
+    gap: 4,
   },
   cardLabel: {
-    color: colors.text.tertiary,
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.5,
+    ...t.type.labelSm,
+    color: t.textSecondary,
     marginBottom: 8,
     textTransform: "uppercase",
   },
   fieldRow: {
-    marginBottom: spacing.sm,
+    marginBottom: 10,
   },
   fieldLabel: {
-    color: colors.text.secondary,
+    color: t.textSecondary,
     fontSize: 13,
     marginBottom: 6,
+    fontFamily: t.font.hanken.regular,
   },
   textInput: {
-    backgroundColor: colors.background.input,
+    backgroundColor: t.surfaceContainerLow,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: colors.text.primary,
+    color: t.text,
     fontSize: 14,
+    borderWidth: 1,
+    borderColor: t.outlineVariant,
+    fontFamily: t.font.hanken.regular,
   },
   primaryButton: {
-    marginTop: spacing.sm,
-    backgroundColor: colors.accent.primary,
+    marginTop: 8,
+    backgroundColor: t.primary,
     paddingVertical: 12,
-    borderRadius: 999,
+    borderRadius: t.radiusChip,
     alignItems: "center",
   },
   primaryButtonPressed: {
     opacity: 0.8,
   },
   primaryButtonText: {
-    color: colors.text.primary,
+    color: t.onPrimary,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: t.font.space.bold,
   },
   secondaryButton: {
-    marginTop: spacing.sm,
-    borderColor: colors.border.medium,
+    marginTop: 8,
+    borderColor: t.outlineVariant,
     borderWidth: 1,
+    backgroundColor: t.surfaceContainerLow,
     paddingVertical: 12,
-    borderRadius: 999,
+    borderRadius: t.radiusChip,
     alignItems: "center",
   },
   secondaryButtonPressed: {
     opacity: 0.8,
   },
   secondaryButtonText: {
-    color: colors.text.primary,
+    color: t.text,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: t.font.space.semibold,
   },
   createButton: {
-    marginTop: spacing.sm,
-    borderColor: colors.border.medium,
+    marginTop: 8,
+    borderColor: t.primary,
     borderWidth: 1,
-    paddingVertical: 10,
-    borderRadius: 999,
+    backgroundColor: "rgba(0,95,52,0.08)",
+    paddingVertical: 12,
+    borderRadius: t.radiusChip,
     alignItems: "center",
   },
   createButtonPressed: {
     opacity: 0.8,
   },
   createButtonText: {
-    color: colors.text.primary,
+    color: t.primary,
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: t.font.space.bold,
   },
   inviteRow: {
-    marginTop: spacing.sm,
+    marginTop: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 12,
-    backgroundColor: colors.background.input,
+    backgroundColor: t.surfaceContainerLow,
   },
   inviteCode: {
-    color: colors.text.primary,
+    color: t.text,
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: t.font.space.bold,
     letterSpacing: 1,
   },
   copyButton: {
     borderWidth: 1,
-    borderColor: colors.border.medium,
+    borderColor: t.outlineVariant,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 999,
+    borderRadius: t.radiusChip,
+    backgroundColor: t.card,
   },
   copyButtonPressed: {
     opacity: 0.8,
   },
   copyButtonText: {
-    color: colors.text.primary,
+    color: t.text,
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: t.font.space.semibold,
   },
   helperText: {
-    color: colors.text.tertiary,
+    color: t.outline,
     fontSize: 12,
     marginTop: 8,
+    fontFamily: t.font.hanken.regular,
+    lineHeight: 17,
   },
 });

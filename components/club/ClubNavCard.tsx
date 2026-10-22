@@ -2,8 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { redesignTheme } from "@/constants/redesignTheme";
-import { welcomeFontFamily } from "@/lib/welcomeFonts";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 
 type ClubNavCardProps = {
   title: string;
@@ -26,7 +25,7 @@ export function ClubNavCard({
       onPress={onPress}
     >
       <View style={styles.iconWrap}>
-        <Ionicons name={icon} size={18} color={redesignTheme.accent.blue} />
+        <Ionicons name={icon} size={18} color={t.primary} />
       </View>
       <View style={styles.body}>
         <Text style={styles.title}>{title}</Text>
@@ -37,11 +36,7 @@ export function ClubNavCard({
           <Text style={styles.badgeText}>{badge > 99 ? "99+" : badge}</Text>
         </View>
       ) : null}
-      <Ionicons
-        name="chevron-forward"
-        size={18}
-        color={redesignTheme.text.faint}
-      />
+      <Ionicons name="chevron-forward" size={18} color={t.outline} />
     </Pressable>
   );
 }
@@ -62,7 +57,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: redesignTheme.accent.blueDim,
+    backgroundColor: "rgba(0,95,52,0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -71,29 +66,28 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   title: {
-    fontFamily: welcomeFontFamily.semibold,
+    fontFamily: t.font.space.semibold,
     fontSize: 15,
-    fontWeight: "600",
-    color: redesignTheme.text.primary,
+    color: t.text,
   },
   subtitle: {
-    fontFamily: welcomeFontFamily.regular,
-    fontSize: redesignTheme.type.caption.fontSize,
-    color: redesignTheme.text.dim,
+    fontFamily: t.font.hanken.regular,
+    fontSize: 12,
+    color: t.textSecondary,
     marginTop: 2,
   },
   badge: {
     minWidth: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: redesignTheme.accent.blue,
+    backgroundColor: t.primary,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 6,
   },
   badgeText: {
     fontSize: 11,
-    fontWeight: "700",
-    color: "#FFFFFF",
+    fontFamily: t.font.space.bold,
+    color: t.onPrimary,
   },
 });

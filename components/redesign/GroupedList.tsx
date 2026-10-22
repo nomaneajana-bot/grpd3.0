@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 
-import { redesignTheme } from "@/constants/redesignTheme";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 
 type GroupedListProps = {
   children: React.ReactNode;
@@ -23,16 +23,16 @@ export function GroupedList({ children }: GroupedListProps) {
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: redesignTheme.screen.horizontalPadding,
-    backgroundColor: redesignTheme.card.background,
-    borderRadius: redesignTheme.card.radiusMd,
+    marginHorizontal: 16,
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: redesignTheme.card.hairline,
+    borderColor: "rgba(232,232,233,0.9)",
     overflow: "hidden",
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: redesignTheme.card.hairline,
+    backgroundColor: t.outlineVariant,
     marginLeft: 16,
   },
 });

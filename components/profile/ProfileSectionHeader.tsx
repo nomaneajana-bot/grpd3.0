@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { colors, typography } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 
 type ProfileSectionHeaderProps = {
   title: string;
@@ -39,16 +39,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontSize: typography.sizes.xs,
-    fontWeight: "600",
-    color: colors.text.secondary,
-    letterSpacing: 0.6,
+    ...t.type.labelSm,
+    color: t.textSecondary,
     textTransform: "uppercase",
   },
   action: {
-    fontSize: typography.sizes.sm,
-    fontWeight: "600",
-    color: colors.accent.primary,
+    fontSize: 12,
+    fontFamily: t.font.space.bold,
+    color: t.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
   },
   pressed: {
     opacity: 0.7,

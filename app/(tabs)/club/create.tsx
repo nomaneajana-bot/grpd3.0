@@ -12,11 +12,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
 import {
-  Action,
-  Back,
-  experienceTheme as t,
-  ui,
-} from "@/components/experiences/ExperienceUI";
+  StitoAction,
+  StitoBack,
+  stitoUi as ui,
+  stitoChrome as t,
+} from "@/components/stito/StitoUI";
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { createApiClient, createClub } from "@/lib/api";
@@ -30,8 +30,9 @@ import { setFocusedClubId } from "@/lib/focusedClubStore";
 import type { ClubVisibility } from "@/types/api";
 
 /**
- * M02 — Purpose-led club create (green-home). Unrestricted purpose;
- * optional idea prefill is illustrative suggestion only.
+ * Créer un club — Stito light.
+ * Visibility maps only to supported enums: public | members.
+ * No premature "Valide" badges; no third curated policy.
  */
 export default function ClubCreateScreen() {
   const { idea } = useLocalSearchParams<{ idea?: string }>();
@@ -69,7 +70,6 @@ export default function ClubCreateScreen() {
         purpose: purpose.trim() || undefined,
         visibility,
       });
-      // Explicit idea activity only — do not invent running structure from free text.
       const adminDefaults =
         fromIdea?.activity === "walk"
           ? defaultWalkClubAdminSettings()
@@ -99,6 +99,8 @@ export default function ClubCreateScreen() {
           message={toast.message}
           variant={toast.variant}
           onDismiss={hideToast}
+          tone="onLight"
+          placement="top"
         />
       )}
 
@@ -108,29 +110,37 @@ export default function ClubCreateScreen() {
         keyboardDismissMode="on-drag"
         testID="club-create-scroll"
       >
-        <Back onPress={() => router.back()} />
-        <Text style={ui.title} testID="club-create-heading">
-          Une bonne raison{"\n"}de se retrouver.
-        </Text>
-        <Text style={ui.body}>
-          Le sujet est libre. La marche ou la course vous réunit — sans champ
-          obligatoire de langue ou de sport.
-        </Text>
+        <StitoBack onPress={() => router.back()} />
+
+        <View style={{ gap: 6 }}>
+          <Text style={ui.eyebrow}>Créer un club</Text>
+          <Text style={ui.title} testID="club-create-heading">
+            Fonder un club.
+          </Text>
+          <Text style={ui.body}>
+            Donne un cadre bienveillant à tes sorties régulières. Le sujet est
+            libre — marche, course ou autre.
+          </Text>
+        </View>
 
         {fromIdea ? (
-          <Text style={[ui.eyebrow, { color: fromIdea.color }]} testID="club-create-idea-hint">
+          <Text
+            style={[ui.eyebrow, { color: t.primary }]}
+            testID="club-create-idea-hint"
+          >
             À partir de l’idée « {fromIdea.subtitle} » — tu peux tout modifier.
           </Text>
         ) : null}
 
         <View style={ui.card}>
-          <Text style={ui.label}>Nom du club</Text>
+          <Text style={ui.label}>01 / Nom & localisation</Text>
+          <Text style={[ui.label, { marginTop: 4 }]}>Nom du club</Text>
           <TextInput
             style={ui.input}
             value={name}
             onChangeText={setName}
             placeholder="Ex. English, outside"
-            placeholderTextColor={t.muted}
+            placeholderTextColor={t.outline}
             autoCapitalize="words"
             editable={!isSubmitting}
             accessibilityLabel="Nom du club"
@@ -145,7 +155,7 @@ export default function ClubCreateScreen() {
             value={city}
             onChangeText={setCity}
             placeholder="Casablanca"
-            placeholderTextColor={t.muted}
+            placeholderTextColor={t.outline}
             autoCapitalize="words"
             editable={!isSubmitting}
             accessibilityLabel="Ville"
@@ -153,20 +163,19 @@ export default function ClubCreateScreen() {
             nativeID="club-create-field-city"
             testID="club-city-input"
           />
+        </View>
 
-          <Text style={[ui.label, { marginTop: 14 }]}>
-            Pourquoi vous retrouver ?
-          </Text>
+        <View style={ui.card}>
+          <Text style={ui.label}>02 / Pourquoi vous retrouver</Text>
           <Text style={[ui.body, { marginBottom: 8 }]} testID="club-purpose-hint">
-            Langues, quartier, rencontres, spiritualité… À toi de choisir. Aucun
-            thème imposé.
+            Langues, quartier, rencontres… À toi de choisir. Aucun thème imposé.
           </Text>
           <TextInput
             style={[ui.input, { minHeight: 96, textAlignVertical: "top" }]}
             value={purpose}
             onChangeText={setPurpose}
             placeholder="Décris ce que vous voulez partager"
-            placeholderTextColor={t.muted}
+            placeholderTextColor={t.outline}
             multiline
             numberOfLines={4}
             editable={!isSubmitting}
@@ -175,8 +184,10 @@ export default function ClubCreateScreen() {
             nativeID="club-create-field-purpose"
             testID="club-purpose-input"
           />
+        </View>
 
-          <Text style={[ui.label, { marginTop: 14 }]}>Accès au club</Text>
+        <View style={ui.card}>
+          <Text style={ui.label}>03 / Accès au club</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             <Pressable
               testID="club-visibility-members"
@@ -191,7 +202,7 @@ export default function ClubCreateScreen() {
               <Text
                 style={[
                   ui.chipText,
-                  visibility === "members" && { color: t.bg },
+                  visibility === "members" && ui.chipTextOn,
                 ]}
               >
                 Sur invitation
@@ -209,7 +220,7 @@ export default function ClubCreateScreen() {
               <Text
                 style={[
                   ui.chipText,
-                  visibility === "public" && { color: t.bg },
+                  visibility === "public" && ui.chipTextOn,
                 ]}
               >
                 Public
@@ -221,13 +232,13 @@ export default function ClubCreateScreen() {
           </Text>
         </View>
 
-        <Action
+        <StitoAction
           label={isSubmitting ? "Création…" : "Créer le club"}
           onPress={() => void handleSubmit()}
           disabled={isSubmitting}
           testID="club-create-submit"
         />
-        <Action
+        <StitoAction
           label="Annuler"
           secondary
           onPress={() => router.back()}

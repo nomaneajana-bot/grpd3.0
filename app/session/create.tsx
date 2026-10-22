@@ -23,7 +23,59 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useUnsavedChangesGuard } from "../../lib/useUnsavedChangesGuard";
 
 import { SelectableChip } from "../../components/ui/SelectableChip";
-import { colors } from "../../constants/ui";
+import { stitoTheme as _stito } from "../../constants/stitoTheme";
+
+/** Light Stito palette shim — keeps create.tsx color keys, maps to canvas. */
+const colors = {
+  background: {
+    primary: _stito.canvas,
+    frame: _stito.surfaceContainerLow,
+    card: _stito.card,
+    elevated: _stito.surfaceContainer,
+    elevated2: _stito.surfaceContainerHigh,
+    input: _stito.surfaceContainerLow,
+    inputDark: _stito.surfaceContainer,
+  },
+  surface: {
+    s1: _stito.card,
+    s2: _stito.surfaceContainerLow,
+    s3: _stito.surfaceContainer,
+    s4: _stito.surfaceContainerHigh,
+  },
+  text: {
+    primary: _stito.text,
+    secondary: _stito.textSecondary,
+    tertiary: _stito.outline,
+    faint: _stito.outlineVariant,
+    disabled: _stito.outlineVariant,
+    accent: _stito.primary,
+    warning: "#C45A1A",
+    success: _stito.primary,
+    error: _stito.error,
+  },
+  accent: {
+    primary: _stito.primary,
+    primaryDim: "rgba(0,95,52,0.1)",
+    primaryMid: "rgba(0,95,52,0.18)",
+    success: _stito.primary,
+    charcoal: _stito.onPrimary,
+    sage: _stito.primary,
+    sageDim: "rgba(0,95,52,0.12)",
+    orange: "#C45A1A",
+    orangeDim: "rgba(196,90,26,0.12)",
+    warning: "#C45A1A",
+    error: _stito.error,
+  },
+  border: {
+    default: _stito.outlineVariant,
+    medium: _stito.outline,
+    active: _stito.primary,
+    accent: _stito.primary,
+  },
+  pill: {
+    active: "rgba(0,95,52,0.12)",
+  },
+} as const;
 import {
     createSession as createSessionApi,
     createApiClient,
@@ -2357,7 +2409,7 @@ export default function CreateSessionScreen() {
             <Text style={styles.backLabel}>Retour</Text>
           </TouchableOpacity>
           <Text style={styles.screenTitle}>
-            {isEditMode ? "Modifier la séance" : "Créer une séance"}
+            {isEditMode ? "Modifier la sortie" : "Organiser une sortie"}
           </Text>
         </View>
       </View>
@@ -2748,7 +2800,7 @@ export default function CreateSessionScreen() {
               <Switch
                 value={usePaceGroups}
                 onValueChange={setUsePaceGroups}
-                trackColor={{ false: "#2a2f3a", true: colors.accent.primary }}
+                trackColor={{ false: _stito.outlineVariant, true: colors.accent.primary }}
                 thumbColor="#ffffff"
               />
             </View>
@@ -3107,7 +3159,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
+    borderColor: "rgba(232,232,233,0.9)",
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 14,
@@ -3122,7 +3174,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   cardSubtitle: {
-    color: "#8A8A8A",
+    color: _stito.outline,
     fontSize: 12,
     fontWeight: "400",
     marginBottom: 16,
@@ -3237,7 +3289,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: "rgba(232,232,233,0.85)",
     marginVertical: 8,
   },
   modeSelector: {
@@ -3252,14 +3304,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: "rgba(232,232,233,0.85)",
     alignItems: "center",
     justifyContent: "center",
   },
   modeButtonActive: {
-    backgroundColor: "rgba(32, 129, 255, 0.15)",
+    backgroundColor: "rgba(0,95,52,0.12)",
     borderColor: colors.accent.primary,
   },
   modeButtonText: {
@@ -3297,16 +3349,16 @@ const styles = StyleSheet.create({
   },
   groupRowDivider: {
     height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: "rgba(232,232,233,0.85)",
     marginLeft: 16,
   },
   groupToggle: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: _stito.outlineVariant,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -3339,7 +3391,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
-    backgroundColor: "#11131A",
+    backgroundColor: _stito.canvas,
     borderWidth: 1,
     borderColor: "#2081FF",
   },
@@ -3360,9 +3412,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderColor: "rgba(190,202,190,0.7)",
   },
   groupIntervalChipText: {
     color: colors.text.secondary,
@@ -3421,7 +3473,7 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    backgroundColor: "rgba(26,28,29,0.45)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -3429,7 +3481,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: "rgba(232,232,233,0.85)",
     paddingTop: 24,
     paddingHorizontal: 20,
     paddingBottom: 24,
@@ -3443,7 +3495,7 @@ const styles = StyleSheet.create({
   },
   pickerBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    backgroundColor: "rgba(26,28,29,0.35)",
     justifyContent: "flex-end",
     alignItems: "center",
   },
@@ -3471,7 +3523,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(0,95,52,0.12)",
   },
   pickerHeader: {
     flexDirection: "row",
@@ -3644,7 +3696,7 @@ const styles = StyleSheet.create({
     maxWidth: 100,
   },
   wheelPickerColumnLabel: {
-    color: "#8A8A8A",
+    color: _stito.outline,
     fontSize: 11,
     fontWeight: "600",
     marginBottom: 16,
@@ -3664,7 +3716,7 @@ const styles = StyleSheet.create({
     right: 0,
     height: 54,
     marginTop: -27,
-    backgroundColor: "rgba(32, 129, 255, 0.08)",
+    backgroundColor: "rgba(0,95,52,0.08)",
     borderRadius: 8,
     borderTopWidth: 1,
     borderBottomWidth: 1,
@@ -3709,7 +3761,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.08)",
+    borderTopColor: "rgba(232,232,233,0.85)",
   },
   wheelPickerConfirmButton: {
     paddingHorizontal: 28,
@@ -3730,7 +3782,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: "rgba(232,232,233,0.85)",
     maxWidth: 400,
     width: "90%",
     maxHeight: "80%",
@@ -3746,10 +3798,10 @@ const styles = StyleSheet.create({
   numberPickerItem: {
     width: "18%",
     aspectRatio: 1,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(190,202,190,0.55)",
     justifyContent: "center",
     alignItems: "center",
     minWidth: 50,
@@ -3776,15 +3828,15 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.08)",
+    borderTopColor: "rgba(232,232,233,0.85)",
   },
   numberPickerCancelButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(190,202,190,0.55)",
     alignItems: "center",
   },
   numberPickerCancelText: {
@@ -3821,12 +3873,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   textInput: {
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(190,202,190,0.55)",
     color: colors.text.primary,
     fontSize: 16,
   },
@@ -3842,9 +3894,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(190,202,190,0.55)",
     minWidth: 60,
     alignItems: "center",
   },
@@ -3866,7 +3918,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 26,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: _stito.outlineVariant,
     minWidth: 120,
     alignItems: "center",
   },
@@ -3901,13 +3953,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: "rgba(232,232,233,0.85)",
     backgroundColor: colors.background.card,
     marginBottom: 8,
   },
   optionRowSelected: {
     backgroundColor: "#1A2230",
-    borderColor: "rgba(255, 255, 255, 0.28)",
+    borderColor: _stito.outline,
   },
   optionRowPressed: {
     opacity: 0.7,
@@ -3954,7 +4006,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
+    borderColor: _stito.outlineVariant,
   },
   pickerSecondaryButtonText: {
     color: colors.text.secondary,

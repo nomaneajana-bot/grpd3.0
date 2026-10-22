@@ -2,12 +2,11 @@ import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AvatarStack } from "@/components/redesign/AvatarStack";
-import { welcomeFontFamily } from "@/lib/welcomeFonts";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 import {
   memberGroupColor,
   type ClubColorGroup,
 } from "@/lib/clubMemberGroups";
-import { borderRadius, colors, hairline, typography } from "@/constants/ui";
 
 type MemberGroupRowProps = {
   group: ClubColorGroup;
@@ -88,9 +87,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     paddingVertical: 14,
-    paddingHorizontal: 4,
-    borderBottomWidth: hairline,
-    borderBottomColor: colors.border.default,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
   },
   pressed: { opacity: 0.85 },
   dot: {
@@ -105,26 +108,26 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.base,
-    fontWeight: "700",
-    fontFamily: welcomeFontFamily.semibold,
+    color: t.text,
+    fontSize: 15,
+    fontFamily: t.font.space.bold,
     flexShrink: 1,
   },
   toi: {
-    color: colors.accent.charcoal,
-    backgroundColor: colors.accent.primary,
+    color: t.onPrimary,
+    backgroundColor: t.primary,
     overflow: "hidden",
     fontSize: 10,
-    fontWeight: "800",
+    fontFamily: t.font.space.bold,
     letterSpacing: 0.6,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: borderRadius.sm,
+    borderRadius: 6,
   },
   subtitle: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
+    color: t.textSecondary,
+    fontSize: 13,
+    fontFamily: t.font.hanken.regular,
     marginTop: 2,
   },
   chevronBadge: {
@@ -132,7 +135,7 @@ const styles = StyleSheet.create({
     ...(Platform.OS === "web" ? { cursor: "pointer" as const } : null),
   },
   chevron: {
-    color: colors.text.faint,
+    color: t.outline,
     fontSize: 22,
     fontWeight: "300",
   },

@@ -17,8 +17,7 @@ import { ProfileSectionHeader } from "../../components/profile/ProfileSectionHea
 import { ProfileUserCard } from "../../components/profile/ProfileUserCard";
 import { LoadingState } from "../../components/ui/LoadingState";
 import { ScreenContainer } from "../../components/ui/ScreenContainer";
-import { profileTheme } from "../../constants/profileTheme";
-import { colors, typography } from "../../constants/ui";
+import { stitoTheme as t } from "../../constants/stitoTheme";
 import { createApiClient, getMyMemberships } from "../../lib/api";
 import { getAuthUser } from "../../lib/authStore";
 import { formatPhoneDisplay } from "../../lib/phoneFormat";
@@ -43,8 +42,8 @@ const UNITS_LABELS: Record<SettingsPreferences["units"], string> = {
 };
 
 /**
- * Community profile — membership identity only.
- * Advanced training (PRs / streak / workouts) removed from product surface.
+ * Community profile — Stito light. Membership identity only.
+ * No fake verified badge, km totals, or invented cadence stats.
  */
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
@@ -126,7 +125,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <ScreenContainer>
+      <ScreenContainer style={{ backgroundColor: t.canvas }}>
         <View style={styles.toprow}>
           <Text style={styles.pg} accessibilityRole="header">
             Profil
@@ -139,7 +138,7 @@ export default function ProfileScreen() {
             accessibilityLabel="Paramètres"
             testID="profile-settings"
           >
-            <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
+            <Ionicons name="settings-outline" size={20} color={t.text} />
           </TouchableOpacity>
         </View>
 
@@ -152,7 +151,7 @@ export default function ProfileScreen() {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={() => loadProfile(true)}
-              tintColor={colors.text.accent}
+              tintColor={t.primary}
             />
           }
         >
@@ -163,10 +162,14 @@ export default function ProfileScreen() {
             onEditPress={handleSettings}
           />
 
-          <ProfileSectionHeader title="CLUBS" />
+          <ProfileSectionHeader title="02 / Équipes & collectifs" />
           <ProfileClubsCard memberships={memberships} />
 
-          <ProfileSectionHeader title="PRÉFÉRENCES" />
+          <ProfileSectionHeader
+            title="03 / Préférences"
+            actionLabel="Paramètres"
+            onAction={handleSettings}
+          />
           <View style={styles.prefsCard} testID="profile-preferences">
             <View style={styles.prefRow}>
               <Text style={styles.prefLabel}>Langue</Text>
@@ -216,27 +219,27 @@ type ProfileStyles = {
 const styles = StyleSheet.create<ProfileStyles>({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.canvas,
   },
   toprow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: profileTheme.screenPaddingHorizontal,
+    paddingHorizontal: 16,
     paddingTop: 6,
     paddingBottom: 10,
   },
   pg: {
-    fontSize: typography.sizes["3xl"],
-    fontWeight: "700",
-    color: "#FFFFFF",
-    letterSpacing: -0.3,
+    ...t.type.pageTitle,
+    color: t.text,
   },
   gearBtn: {
-    width: profileTheme.gearButtonSize,
-    height: profileTheme.gearButtonSize,
-    borderRadius: profileTheme.gearButtonSize / 2,
-    backgroundColor: profileTheme.gearButtonBg,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: t.card,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -244,15 +247,15 @@ const styles = StyleSheet.create<ProfileStyles>({
     flex: 1,
   },
   content: {
-    paddingHorizontal: profileTheme.screenPaddingHorizontal,
+    paddingHorizontal: 16,
     paddingTop: 4,
     paddingBottom: 40,
   },
   prefsCard: {
-    backgroundColor: colors.background.card,
+    backgroundColor: t.card,
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.default,
+    borderColor: "rgba(232,232,233,0.9)",
     paddingHorizontal: 16,
     paddingVertical: 4,
     marginBottom: 9,
@@ -264,21 +267,22 @@ const styles = StyleSheet.create<ProfileStyles>({
     paddingVertical: 12,
   },
   prefLabel: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
+    color: t.textSecondary,
+    fontSize: 13,
+    fontFamily: t.font.hanken.regular,
   },
   prefValue: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.sm,
-    fontWeight: "600",
+    color: t.text,
+    fontSize: 13,
+    fontFamily: t.font.space.semibold,
   },
   prefLink: {
-    color: colors.text.accent,
-    fontSize: typography.sizes.sm,
-    fontWeight: "600",
+    color: t.primary,
+    fontSize: 13,
+    fontFamily: t.font.space.semibold,
   },
   prefDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.default,
+    backgroundColor: t.outlineVariant,
   },
 });

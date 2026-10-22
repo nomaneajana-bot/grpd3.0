@@ -1,9 +1,9 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
-import { experienceTheme as t } from "@/components/experiences/ExperienceUI";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 import { clubInitialsFromName } from "@/lib/clubPaceGroups";
-import { welcomeFontFamily } from "@/lib/welcomeFonts";
 
 type ClubOverviewCardProps = {
   clubName: string;
@@ -15,6 +15,10 @@ type ClubOverviewCardProps = {
   status: "admin" | "member" | "pending";
 };
 
+/**
+ * Club identity card — Stito light, handoff-safe.
+ * No "Actif aujourd’hui", fake km, or verified decorations.
+ */
 export function ClubOverviewCard({
   clubName,
   memberCount,
@@ -27,43 +31,62 @@ export function ClubOverviewCard({
   const initials = clubInitialsFromName(clubName);
   const accessLabel =
     visibility === "members"
-      ? "Club sur invitation"
+      ? "Sur invitation"
       : visibility === "public"
-        ? "Club public"
+        ? "Public"
         : null;
-  const metaParts: string[] = [];
-  if (city?.trim()) metaParts.push(city.trim());
-  if (accessLabel) metaParts.push(accessLabel);
-  metaParts.push(
-    `${memberCount} membre${memberCount === 1 ? "" : "s"}`,
-  );
-  if (foundedYear && !city?.trim()) metaParts.push(`Fondé ${foundedYear}`);
+  const locationLine = [city?.trim(), accessLabel].filter(Boolean).join(" · ");
+  const memberLine = `${memberCount} membre${memberCount === 1 ? "" : "s"}`;
+  const metaLine = [
+    locationLine || null,
+    memberLine,
+    foundedYear && !city?.trim() ? `Fondé ${foundedYear}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const statusLabel =
     status === "admin"
-      ? "TU ES ADMIN"
+      ? "Tu es membre administrateur"
       : status === "member"
-        ? "TU ES MEMBRE"
-        : "EN ATTENTE D'APPROBATION";
+        ? "Tu es membre"
+        : "En attente d’approbation";
 
   return (
     <View style={styles.card} testID="club-overview-card">
-      <View style={styles.row}>
-        <View style={styles.logo}>
-          <Text style={styles.logoText}>{initials}</Text>
+      <View style={styles.heroBand}>
+        <View style={styles.heroMark}>
+          <Text style={styles.heroMarkText}>{initials}</Text>
         </View>
-        <View style={styles.body}>
+        <View style={styles.heroBody}>
+          {metaLine ? (
+            <View style={styles.metaRow}>
+              <Ionicons name="location-outline" size={14} color={t.primary} />
+              <Text style={styles.meta} testID="club-overview-meta" numberOfLines={2}>
+                {metaLine}
+              </Text>
+            </View>
+          ) : null}
           <Text style={styles.name} numberOfLines={2} testID="club-overview-name">
             {clubName}
           </Text>
-          <Text style={styles.meta} testID="club-overview-meta">
-            {metaParts.join(" · ")}
-          </Text>
         </View>
       </View>
-      <View style={styles.tag} testID="club-overview-status">
-        <Text style={styles.tagText}>{statusLabel}</Text>
+
+      <View style={styles.statusRow} testID="club-overview-status">
+        <View style={styles.statusIcon}>
+          <Ionicons
+            name={status === "admin" ? "shield-checkmark" : "person"}
+            size={14}
+            color={t.onPrimary}
+          />
+        </View>
+        <View style={styles.statusTextCol}>
+          <Text style={styles.statusEyebrow}>Ton statut</Text>
+          <Text style={styles.statusLabel}>{statusLabel}</Text>
+        </View>
       </View>
+
       {purpose?.trim() ? (
         <Text style={styles.purpose} testID="club-overview-purpose">
           {purpose.trim()}
@@ -80,72 +103,91 @@ export function ClubOverviewCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: t.card,
-    borderRadius: 22,
-    padding: 22,
-    gap: 12,
-    marginHorizontal: 24,
+    borderRadius: t.radiusMain,
+    padding: 18,
+    gap: 14,
+    marginHorizontal: 16,
     borderWidth: 1,
-    borderColor: t.line,
+    borderColor: "rgba(232,232,233,0.9)",
   },
-  row: {
+  heroBand: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
   },
-  logo: {
-    width: 50,
-    height: 50,
-    borderRadius: 14,
-    backgroundColor: t.accent,
+  heroMark: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: t.secondaryContainer,
     alignItems: "center",
     justifyContent: "center",
   },
-  logoText: {
-    color: t.bg,
+  heroMarkText: {
+    color: t.onSecondaryContainer,
     fontSize: 16,
-    fontWeight: "800",
-    letterSpacing: 0.5,
+    fontFamily: t.font.space.bold,
+    letterSpacing: 0.4,
   },
-  body: {
+  heroBody: {
     flex: 1,
     minWidth: 0,
+    gap: 4,
   },
-  name: {
-    fontFamily: welcomeFontFamily.bold,
-    fontSize: 22,
-    fontWeight: "700",
-    letterSpacing: -0.4,
-    color: t.text,
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   meta: {
-    fontFamily: welcomeFontFamily.regular,
+    ...t.type.labelMd,
+    color: t.textSecondary,
+    flex: 1,
+  },
+  name: {
+    ...t.type.cardTitleLg,
+    fontSize: 22,
+    lineHeight: 26,
+    color: t.text,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: t.surfaceContainerLow,
+    borderRadius: 12,
+    padding: 12,
+  },
+  statusIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: t.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusTextCol: { flex: 1, minWidth: 0 },
+  statusEyebrow: {
+    ...t.type.labelSm,
+    color: t.primary,
+    textTransform: "uppercase",
+  },
+  statusLabel: {
+    fontFamily: t.font.hanken.semibold,
     fontSize: 13,
-    color: t.muted,
-    marginTop: 3,
-  },
-  tag: {
-    alignSelf: "flex-start",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: `${t.accent}88`,
-    backgroundColor: `${t.accent}22`,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  tagText: {
-    color: t.accent,
-    fontWeight: "700",
-    fontSize: 11,
-    letterSpacing: 0.8,
+    color: t.text,
+    marginTop: 1,
   },
   purpose: {
-    color: t.text,
+    fontFamily: t.font.hanken.regular,
     fontSize: 15,
     lineHeight: 22,
+    color: t.textSecondary,
   },
   purposeMuted: {
-    color: t.muted,
+    fontFamily: t.font.hanken.regular,
     fontSize: 14,
     lineHeight: 20,
+    color: t.outline,
   },
 });
