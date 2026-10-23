@@ -30,13 +30,13 @@ async function shot(page, name) {
 }
 
 const STEPS = [
-  [/L'accroche|déteste courir|franchement/i, "01-accroche"],
-  [/Le problème|WhatsApp|annules/i, "02-probleme"],
-  [/La solution|on sort ensemble|chez-soi/i, "03-solution"],
-  [/La cible|vraie bande|Casa/i, "04-cible"],
-  [/proposition de valeur|excuse pour se retrouver|likes/i, "05-valeur"],
-  [/crédibilité|pas une idée|partenaires/i, "06-credibilite"],
-  [/appel à l'action|prochain tour|pilote/i, "07-cta"],
+  [/déteste courir|franchement/i, "01-accroche"],
+  [/WhatsApp|annules|survivre à une appli/i, "02-probleme"],
+  [/on sort ensemble|chez-soi/i, "03-solution"],
+  [/vraie bande|Casa/i, "04-cible"],
+  [/excuse pour se retrouver|likes/i, "05-valeur"],
+  [/pas une idée|partenaires/i, "06-credibilite"],
+  [/prochain tour|pilote/i, "07-cta"],
 ];
 
 (async () => {
