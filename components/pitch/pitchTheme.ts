@@ -17,10 +17,10 @@ export const pitchTheme = {
   step: {
     accroche: "#C9A227",
     probleme: "#C44B3C",
-    solution: "#E0B84A",
-    cible: "#5B4B8A",
+    solution: "#D4A017",
+    cible: "#2F6B8A",
     valeur: "#3D8EA8",
     credibilite: "#2F6B4F",
-    cta: "#6B4C9A",
+    cta: "#0F5C38",
   },
 } as const;

@@ -141,7 +141,6 @@ export function PitchDeck({ onOpenAvenir }: Props) {
           <Text style={styles.body}>{slide.body}</Text>
 
           <View style={[styles.tipRow, { borderLeftColor: accent }]}>
-            <Text style={styles.tipEyebrow}>Conseil structure</Text>
             <Text style={styles.tip}>{slide.tip}</Text>
           </View>
 
@@ -375,17 +374,10 @@ const styles = StyleSheet.create({
     gap: 4,
     maxWidth: 520,
   },
-  tipEyebrow: {
-    fontFamily: f.display.semibold,
-    fontSize: 11,
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-    color: t.inkSoft,
-  },
   tip: {
     fontFamily: f.body.medium,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 22,
     color: t.ink,
   },
   ctaRow: {
