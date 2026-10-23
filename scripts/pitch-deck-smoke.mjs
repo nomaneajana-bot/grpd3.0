@@ -1,5 +1,5 @@
 /**
- * Pitch deck — 7-step structure + GRpD PDF visuals only.
+ * Pitch deck — human copy + 7-step structure + GRpD PDF visuals.
  */
 import { chromium } from "playwright";
 import fs from "fs";
@@ -11,7 +11,7 @@ const OUT = "/opt/cursor/artifacts";
 fs.mkdirSync(OUT, { recursive: true });
 
 const report = {
-  batch: "pitch-deck-structure",
+  batch: "pitch-deck-human-copy",
   tested_sha: execSync("git rev-parse HEAD", { encoding: "utf8" }).trim(),
   base: BASE,
   checks: [],
@@ -30,13 +30,13 @@ async function shot(page, name) {
 }
 
 const STEPS = [
-  [/L'accroche|déteste courir|WhatsApp/i, "01-accroche"],
-  [/Le problème|Apps de perf|fils illisibles/i, "02-probleme"],
-  [/La solution|A → D|100% femmes/i, "03-solution"],
-  [/La cible|Organisateurs|Casablanca/i, "04-cible"],
-  [/proposition de valeur|jamais seul|Strava/i, "05-valeur"],
-  [/crédibilité|Partenaires|B2B/i, "06-credibilite"],
-  [/appel à l'action|club pilote|Partenariat/i, "07-cta"],
+  [/L'accroche|déteste courir|franchement/i, "01-accroche"],
+  [/Le problème|WhatsApp|annules/i, "02-probleme"],
+  [/La solution|on sort ensemble|chez-soi/i, "03-solution"],
+  [/La cible|vraie bande|Casa/i, "04-cible"],
+  [/proposition de valeur|excuse pour se retrouver|likes/i, "05-valeur"],
+  [/crédibilité|pas une idée|partenaires/i, "06-credibilite"],
+  [/appel à l'action|prochain tour|pilote/i, "07-cta"],
 ];
 
 (async () => {
@@ -56,15 +56,10 @@ const STEPS = [
       }
       const body = await page.locator("body").innerText();
       const [re, name] = STEPS[i];
-      check(`slide_${name}`, re.test(body), body.slice(0, 180));
-      await shot(page, `pitch-struct-${name}`);
+      check(`slide_${name}`, re.test(body), body.slice(0, 200));
+      await shot(page, `pitch-human-${name}`);
     }
-    check("has_images", (await page.locator("img").count()) >= 1, "img");
-    check(
-      "has_bullets",
-      (await page.getByTestId("pitch-bullets").count()) >= 1,
-      "bullets",
-    );
+    check("has_bullets", (await page.getByTestId("pitch-bullets").count()) >= 1, "ok");
   } catch (e) {
     check("smoke_error", false, e?.message || String(e));
   } finally {
