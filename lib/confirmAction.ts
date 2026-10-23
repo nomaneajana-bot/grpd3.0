@@ -1,6 +1,6 @@
-import { Alert, Platform } from "react-native";
+import { Alert } from "react-native";
 
-type ConfirmOptions = {
+export type ConfirmOptions = {
   title: string;
   message: string;
   confirmLabel?: string;
@@ -8,8 +8,24 @@ type ConfirmOptions = {
   destructive?: boolean;
 };
 
-/** Returns true if user confirmed. */
-export function confirmAction(options: ConfirmOptions): Promise<boolean> {
+type PendingConfirm = ConfirmOptions & {
+  resolve: (value: boolean) => void;
+};
+
+type Listener = (pending: PendingConfirm | null) => void;
+
+let listener: Listener | null = null;
+let pending: PendingConfirm | null = null;
+
+/** Mounted by ConfirmHost so imperative confirmAction can drive the Stito dialog. */
+export function bindConfirmHost(next: Listener | null): void {
+  listener = next;
+  if (next && pending) {
+    next(pending);
+  }
+}
+
+function nativeAlertFallback(options: ConfirmOptions): Promise<boolean> {
   const {
     title,
     message,
@@ -17,10 +33,6 @@ export function confirmAction(options: ConfirmOptions): Promise<boolean> {
     cancelLabel = "Annuler",
     destructive = false,
   } = options;
-
-  if (Platform.OS === "web" && typeof window !== "undefined") {
-    return Promise.resolve(window.confirm(`${title}\n\n${message}`));
-  }
 
   return new Promise((resolve) => {
     Alert.alert(title, message, [
@@ -32,4 +44,26 @@ export function confirmAction(options: ConfirmOptions): Promise<boolean> {
       },
     ]);
   });
+}
+
+/** Returns true if user confirmed. Uses Stito ConfirmHost when mounted. */
+export function confirmAction(options: ConfirmOptions): Promise<boolean> {
+  if (!listener) {
+    return nativeAlertFallback(options);
+  }
+
+  return new Promise((resolve) => {
+    if (pending) {
+      pending.resolve(false);
+    }
+    pending = { ...options, resolve };
+    listener?.(pending);
+  });
+}
+
+export function resolveConfirm(value: boolean): void {
+  const current = pending;
+  pending = null;
+  listener?.(null);
+  current?.resolve(value);
 }

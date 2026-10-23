@@ -10,6 +10,7 @@ import React, { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import "react-native-reanimated";
 
+import { ConfirmHost } from "@/components/stito/ConfirmHost";
 import { colors } from "@/constants/ui";
 import { useAuthGate } from "@/hooks/use-auth-gate";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -90,6 +91,7 @@ export default function RootLayout() {
           ) : (
             <Stack screenOptions={{ headerShown: false }} />
           )}
+          <ConfirmHost />
           <StatusBar style="auto" />
         </View>
       </ThemeProvider>
