@@ -1,5 +1,5 @@
 /**
- * Pitch deck smoke — PDF visuals, "déteste courir" hook, no structure titles.
+ * Pitch deck — 7-step structure + GRpD PDF visuals only.
  */
 import { chromium } from "playwright";
 import fs from "fs";
@@ -11,7 +11,7 @@ const OUT = "/opt/cursor/artifacts";
 fs.mkdirSync(OUT, { recursive: true });
 
 const report = {
-  batch: "pitch-deck-pdf-assets",
+  batch: "pitch-deck-structure",
   tested_sha: execSync("git rev-parse HEAD", { encoding: "utf8" }).trim(),
   base: BASE,
   checks: [],
@@ -29,6 +29,16 @@ async function shot(page, name) {
   report.screenshots.push(abs);
 }
 
+const STEPS = [
+  [/L'accroche|déteste courir/i, "01-accroche"],
+  [/Le problème|seul/i, "02-probleme"],
+  [/La solution|sorties et allures/i, "03-solution"],
+  [/La cible|Débutant|Casa/i, "04-cible"],
+  [/proposition de valeur|jamais seul/i, "05-valeur"],
+  [/crédibilité|terrain/i, "06-credibilite"],
+  [/appel à l'action|pilote/i, "07-cta"],
+];
+
 (async () => {
   const browser = await chromium.launch({
     headless: true,
@@ -38,16 +48,18 @@ async function shot(page, name) {
   try {
     await page.goto(`${BASE}/pitch`, { waitUntil: "networkidle", timeout: 90000 });
     await page.getByTestId("pitch-deck").waitFor({ state: "visible", timeout: 45000 });
-    let body = await page.locator("body").innerText();
-    check("hook_deteste", /déteste courir|DETESTE COURIR/i.test(body), body.slice(0, 200));
-    check("no_structure_labels", !/L'ACCROCHE|LE PROBLÈME|LA SOLUTION|LA CIBLE/i.test(body), "ok");
-    check("has_images", (await page.locator("img").count()) >= 1, "img");
-    await shot(page, "pitch-pdf-01-hook");
-    for (let i = 2; i <= 7; i++) {
-      await page.getByTestId("pitch-next").click({ force: true });
-      await page.waitForTimeout(400);
-      await shot(page, `pitch-pdf-0${i}`);
+
+    for (let i = 0; i < STEPS.length; i++) {
+      if (i > 0) {
+        await page.getByTestId("pitch-next").click({ force: true });
+        await page.waitForTimeout(400);
+      }
+      const body = await page.locator("body").innerText();
+      const [re, name] = STEPS[i];
+      check(`slide_${name}`, re.test(body), body.slice(0, 180));
+      await shot(page, `pitch-struct-${name}`);
     }
+    check("has_images", (await page.locator("img").count()) >= 1, "img");
   } catch (e) {
     check("smoke_error", false, e?.message || String(e));
   } finally {

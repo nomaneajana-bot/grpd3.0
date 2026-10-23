@@ -125,6 +125,9 @@ export function PitchDeck({ onOpenAvenir }: Props) {
           ]}
         >
           <View style={[styles.copy, isWide && { flex: 1, paddingRight: 28 }]}>
+            <Text style={[styles.sectionLabel, { color: accent }]}>
+              {slide.label}
+            </Text>
             {isHook ? <Text style={styles.brandHero}>GRpD</Text> : null}
             <Text
               style={[styles.headline, isHook && styles.headlineHook]}
@@ -319,6 +322,12 @@ const styles = StyleSheet.create({
     gap: 12,
     width: "100%",
     maxWidth: 480,
+  },
+  sectionLabel: {
+    fontFamily: f.display.bold,
+    fontSize: 12,
+    letterSpacing: 1.6,
+    textTransform: "uppercase",
   },
   brandHero: {
     fontFamily: f.display.bold,
