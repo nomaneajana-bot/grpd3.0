@@ -27,6 +27,7 @@ export function PitchDeck({ onOpenAvenir }: Props) {
   const accent = t.step[slide.accentKey];
   const isWide = width >= 820;
   const isLast = index === PITCH_SLIDES.length - 1;
+  const isHook = index === 0;
 
   const go = useCallback((delta: number) => {
     setIndex((i) => Math.max(0, Math.min(PITCH_SLIDES.length - 1, i + delta)));
@@ -48,8 +49,20 @@ export function PitchDeck({ onOpenAvenir }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [go]);
 
-  const phoneW = isWide ? Math.min(300, width * 0.28) : Math.min(220, width * 0.52);
-  const phoneH = phoneW * (844 / 390);
+  const mediaW =
+    slide.imageKind === "phone"
+      ? isWide
+        ? Math.min(280, width * 0.26)
+        : Math.min(200, width * 0.48)
+      : isWide
+        ? Math.min(520, width * 0.42)
+        : Math.min(width - 56, 420);
+  const mediaH =
+    slide.imageKind === "phone"
+      ? mediaW * (844 / 390)
+      : isWide
+        ? Math.min(height * 0.58, mediaW * 0.72)
+        : Math.min(height * 0.36, mediaW * 0.66);
 
   return (
     <View style={styles.root} testID="pitch-deck">
@@ -81,7 +94,7 @@ export function PitchDeck({ onOpenAvenir }: Props) {
       >
         <View style={styles.topBar}>
           <Text style={styles.brand} accessibilityRole="header">
-            G R P D
+            G R p D
           </Text>
           <Text style={styles.progressLabel}>
             {slide.step} / {String(PITCH_SLIDES.length).padStart(2, "0")}
@@ -112,13 +125,15 @@ export function PitchDeck({ onOpenAvenir }: Props) {
           ]}
         >
           <View style={[styles.copy, isWide && { flex: 1, paddingRight: 28 }]}>
-            {index === 0 ? <Text style={styles.brandHero}>GRPD</Text> : null}
+            {isHook ? <Text style={styles.brandHero}>GRpD</Text> : null}
             <Text
-              style={[styles.headline, index === 0 && styles.headlineOnBrand]}
+              style={[styles.headline, isHook && styles.headlineHook]}
             >
               {slide.headline}
             </Text>
-            <Text style={styles.body}>{slide.body}</Text>
+            <Text style={[styles.body, isHook && styles.bodyHook]}>
+              {slide.body}
+            </Text>
 
             {isLast ? (
               <Pressable
@@ -139,20 +154,20 @@ export function PitchDeck({ onOpenAvenir }: Props) {
 
           <View
             style={[
-              styles.phoneFrame,
+              slide.imageKind === "phone" ? styles.phoneFrame : styles.photoFrame,
               {
-                width: phoneW,
-                height: Math.min(phoneH, height * (isWide ? 0.62 : 0.42)),
+                width: mediaW,
+                height: Math.min(mediaH, height * (isWide ? 0.62 : 0.4)),
                 borderColor: accent,
               },
             ]}
           >
             <Image
               source={slide.image}
-              style={styles.phoneImage}
+              style={styles.mediaImage}
               contentFit="cover"
               transition={200}
-              accessibilityLabel={`Aperçu produit slide ${slide.step}`}
+              accessibilityLabel={`Visuel slide ${slide.step}`}
             />
           </View>
         </Animated.View>
@@ -266,7 +281,7 @@ const styles = StyleSheet.create({
   brand: {
     fontFamily: f.display.semibold,
     fontSize: 13,
-    letterSpacing: 5,
+    letterSpacing: 4,
     color: t.inkSoft,
   },
   progressLabel: {
@@ -301,15 +316,15 @@ const styles = StyleSheet.create({
     flexDirection: "column",
   },
   copy: {
-    gap: 14,
+    gap: 12,
     width: "100%",
     maxWidth: 480,
   },
   brandHero: {
     fontFamily: f.display.bold,
-    fontSize: 56,
-    lineHeight: 58,
-    letterSpacing: -2.2,
+    fontSize: 52,
+    lineHeight: 54,
+    letterSpacing: -2,
     color: t.primary,
   },
   headline: {
@@ -319,9 +334,10 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
     color: t.ink,
   },
-  headlineOnBrand: {
-    fontSize: 26,
-    lineHeight: 32,
+  headlineHook: {
+    fontSize: 34,
+    lineHeight: 40,
+    textTransform: "uppercase",
   },
   body: {
     fontFamily: f.body.regular,
@@ -330,18 +346,24 @@ const styles = StyleSheet.create({
     color: t.inkSoft,
     maxWidth: 420,
   },
+  bodyHook: {
+    fontFamily: f.display.semibold,
+    fontSize: 22,
+    color: t.step.accroche,
+  },
   phoneFrame: {
     borderRadius: 28,
     overflow: "hidden",
     borderWidth: 2,
     backgroundColor: t.white,
-    shadowColor: t.ink,
-    shadowOpacity: 0.14,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 8,
   },
-  phoneImage: {
+  photoFrame: {
+    borderRadius: 20,
+    overflow: "hidden",
+    borderWidth: 2,
+    backgroundColor: "#111",
+  },
+  mediaImage: {
     width: "100%",
     height: "100%",
   },

@@ -15,11 +15,12 @@ export const pitchTheme = {
   white: "#FFFFFF",
   shadow: "rgba(20, 36, 28, 0.12)",
   step: {
-    accroche: "#C9A227",
-    probleme: "#C44B3C",
+    // Orange accent from GRpD PDF hook
+    accroche: "#F5A623",
+    probleme: "#E0891A",
     solution: "#D4A017",
     cible: "#2F6B8A",
-    valeur: "#3D8EA8",
+    valeur: "#F5A623",
     credibilite: "#2F6B4F",
     cta: "#0F5C38",
   },
