@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -9,12 +10,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
-  FadeOut,
-} from "react-native-reanimated";
+import Animated, { FadeIn, FadeInUp, FadeOut } from "react-native-reanimated";
 
 import { PITCH_SLIDES } from "@/components/pitch/pitchSlides";
 import { pitchTheme as t } from "@/components/pitch/pitchTheme";
@@ -29,15 +25,12 @@ export function PitchDeck({ onOpenAvenir }: Props) {
   const [index, setIndex] = useState(0);
   const slide = PITCH_SLIDES[index]!;
   const accent = t.step[slide.accentKey];
-  const isWide = width >= 900;
+  const isWide = width >= 820;
   const isLast = index === PITCH_SLIDES.length - 1;
 
-  const go = useCallback(
-    (delta: number) => {
-      setIndex((i) => Math.max(0, Math.min(PITCH_SLIDES.length - 1, i + delta)));
-    },
-    [],
-  );
+  const go = useCallback((delta: number) => {
+    setIndex((i) => Math.max(0, Math.min(PITCH_SLIDES.length - 1, i + delta)));
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== "web" || typeof window === "undefined") return;
@@ -48,15 +41,15 @@ export function PitchDeck({ onOpenAvenir }: Props) {
       } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
         e.preventDefault();
         go(-1);
-      } else if (e.key === "Home") {
-        setIndex(0);
-      } else if (e.key === "End") {
-        setIndex(PITCH_SLIDES.length - 1);
-      }
+      } else if (e.key === "Home") setIndex(0);
+      else if (e.key === "End") setIndex(PITCH_SLIDES.length - 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [go]);
+
+  const phoneW = isWide ? Math.min(300, width * 0.28) : Math.min(220, width * 0.52);
+  const phoneH = phoneW * (844 / 390);
 
   return (
     <View style={styles.root} testID="pitch-deck">
@@ -80,9 +73,9 @@ export function PitchDeck({ onOpenAvenir }: Props) {
         style={[
           styles.stage,
           {
-            paddingTop: Math.max(28, height * 0.06),
-            paddingBottom: Math.max(24, height * 0.04),
-            maxWidth: isWide ? 920 : 560,
+            paddingTop: Math.max(20, height * 0.04),
+            paddingBottom: Math.max(16, height * 0.03),
+            maxWidth: isWide ? 1100 : 560,
           },
         ]}
       >
@@ -98,7 +91,7 @@ export function PitchDeck({ onOpenAvenir }: Props) {
         <View style={styles.progressTrack}>
           <Animated.View
             key={`bar-${index}`}
-            entering={FadeIn.duration(400)}
+            entering={FadeIn.duration(350)}
             style={[
               styles.progressFill,
               {
@@ -111,41 +104,23 @@ export function PitchDeck({ onOpenAvenir }: Props) {
 
         <Animated.View
           key={slide.id}
-          entering={FadeInUp.duration(480).springify().damping(18)}
-          exiting={FadeOut.duration(160)}
-          style={styles.slideBody}
+          entering={FadeInUp.duration(420).springify().damping(18)}
+          exiting={FadeOut.duration(140)}
+          style={[
+            styles.slideBody,
+            isWide ? styles.slideRow : styles.slideCol,
+          ]}
         >
-          <View style={styles.metaRow}>
-            <View style={[styles.stepPill, { borderColor: accent }]}>
-              <Text style={[styles.stepNum, { color: accent }]}>{slide.step}</Text>
-            </View>
-            <Text style={[styles.sectionLabel, { color: accent }]}>
-              {slide.label}
-            </Text>
-          </View>
-
-          <Text style={styles.question}>{slide.question}</Text>
-
-          {index === 0 ? (
-            <Animated.Text
-              entering={FadeInDown.delay(80).duration(500)}
-              style={styles.brandHero}
+          <View style={[styles.copy, isWide && { flex: 1, paddingRight: 28 }]}>
+            {index === 0 ? <Text style={styles.brandHero}>GRPD</Text> : null}
+            <Text
+              style={[styles.headline, index === 0 && styles.headlineOnBrand]}
             >
-              GRPD
-            </Animated.Text>
-          ) : null}
+              {slide.headline}
+            </Text>
+            <Text style={styles.body}>{slide.body}</Text>
 
-          <Text style={[styles.headline, index === 0 && styles.headlineOnBrand]}>
-            {slide.headline}
-          </Text>
-          <Text style={styles.body}>{slide.body}</Text>
-
-          <View style={[styles.tipRow, { borderLeftColor: accent }]}>
-            <Text style={styles.tip}>{slide.tip}</Text>
-          </View>
-
-          {isLast ? (
-            <View style={styles.ctaRow}>
+            {isLast ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Voir la vision L'avenir"
@@ -156,15 +131,30 @@ export function PitchDeck({ onOpenAvenir }: Props) {
                 ]}
                 testID="pitch-cta-avenir"
               >
-                <Text style={styles.ctaPrimaryText}>Voir L'avenir de GrpD</Text>
+                <Text style={styles.ctaPrimaryText}>Voir L'avenir</Text>
                 <Ionicons name="arrow-forward" size={18} color={t.white} />
               </Pressable>
-              <Text style={styles.closing}>
-                Un pitch bien structuré, c'est une histoire claire, pertinente
-                et mémorable.
-              </Text>
-            </View>
-          ) : null}
+            ) : null}
+          </View>
+
+          <View
+            style={[
+              styles.phoneFrame,
+              {
+                width: phoneW,
+                height: Math.min(phoneH, height * (isWide ? 0.62 : 0.42)),
+                borderColor: accent,
+              },
+            ]}
+          >
+            <Image
+              source={slide.image}
+              style={styles.phoneImage}
+              contentFit="cover"
+              transition={200}
+              accessibilityLabel={`Aperçu produit slide ${slide.step}`}
+            />
+          </View>
         </Animated.View>
 
         <View style={styles.nav}>
@@ -192,7 +182,7 @@ export function PitchDeck({ onOpenAvenir }: Props) {
               <Pressable
                 key={s.id}
                 accessibilityRole="button"
-                accessibilityLabel={`Aller à ${s.label}`}
+                accessibilityLabel={`Aller à la slide ${s.step}`}
                 onPress={() => setIndex(i)}
                 hitSlop={8}
                 style={[
@@ -225,10 +215,6 @@ export function PitchDeck({ onOpenAvenir }: Props) {
             />
           </Pressable>
         </View>
-
-        {Platform.OS === "web" ? (
-          <Text style={styles.kbdHint}>← → ou espace pour naviguer</Text>
-        ) : null}
       </View>
     </View>
   );
@@ -275,7 +261,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: 12,
   },
   brand: {
     fontFamily: f.display.semibold,
@@ -294,7 +280,7 @@ const styles = StyleSheet.create({
     backgroundColor: t.mist,
     borderRadius: 2,
     overflow: "hidden",
-    marginBottom: 28,
+    marginBottom: 20,
   },
   progressFill: {
     height: "100%",
@@ -302,97 +288,72 @@ const styles = StyleSheet.create({
   },
   slideBody: {
     flex: 1,
+    alignItems: "center",
     justifyContent: "center",
-    gap: 16,
-    paddingBottom: 12,
+    gap: 20,
+    minHeight: 0,
   },
-  metaRow: {
+  slideRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
   },
-  stepPill: {
-    minWidth: 44,
-    height: 32,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
-    backgroundColor: t.white,
+  slideCol: {
+    flexDirection: "column",
   },
-  stepNum: {
-    fontFamily: f.display.bold,
-    fontSize: 14,
-    letterSpacing: 0.5,
-  },
-  sectionLabel: {
-    fontFamily: f.display.bold,
-    fontSize: 12,
-    letterSpacing: 1.6,
-    textTransform: "uppercase",
-  },
-  question: {
-    fontFamily: f.body.regular,
-    fontSize: 15,
-    lineHeight: 22,
-    color: t.inkSoft,
-    maxWidth: 520,
+  copy: {
+    gap: 14,
+    width: "100%",
+    maxWidth: 480,
   },
   brandHero: {
     fontFamily: f.display.bold,
-    fontSize: 64,
-    lineHeight: 68,
-    letterSpacing: -2.4,
+    fontSize: 56,
+    lineHeight: 58,
+    letterSpacing: -2.2,
     color: t.primary,
-    marginTop: 4,
   },
   headline: {
     fontFamily: f.display.bold,
-    fontSize: 34,
-    lineHeight: 40,
-    letterSpacing: -1.1,
+    fontSize: 32,
+    lineHeight: 38,
+    letterSpacing: -1,
     color: t.ink,
-    maxWidth: 640,
   },
   headlineOnBrand: {
     fontSize: 26,
     lineHeight: 32,
-    marginTop: -4,
   },
   body: {
     fontFamily: f.body.regular,
-    fontSize: 17,
+    fontSize: 18,
     lineHeight: 26,
     color: t.inkSoft,
-    maxWidth: 560,
-  },
-  tipRow: {
-    marginTop: 8,
-    paddingLeft: 14,
-    borderLeftWidth: 3,
-    gap: 4,
-    maxWidth: 520,
-  },
-  tip: {
-    fontFamily: f.body.medium,
-    fontSize: 15,
-    lineHeight: 22,
-    color: t.ink,
-  },
-  ctaRow: {
-    marginTop: 12,
-    gap: 16,
     maxWidth: 420,
   },
+  phoneFrame: {
+    borderRadius: 28,
+    overflow: "hidden",
+    borderWidth: 2,
+    backgroundColor: t.white,
+    shadowColor: t.ink,
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
+  },
+  phoneImage: {
+    width: "100%",
+    height: "100%",
+  },
   ctaPrimary: {
-    minHeight: 52,
+    marginTop: 8,
+    alignSelf: "flex-start",
+    minHeight: 48,
     borderRadius: 999,
     backgroundColor: t.primary,
-    paddingHorizontal: 22,
+    paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 8,
   },
   ctaPrimaryText: {
@@ -400,18 +361,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: t.white,
   },
-  closing: {
-    fontFamily: f.body.regular,
-    fontSize: 14,
-    lineHeight: 21,
-    color: t.inkSoft,
-    fontStyle: "italic",
-  },
   nav: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 8,
+    marginTop: 12,
   },
   navBtn: {
     width: 48,
@@ -423,9 +377,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: t.mist,
   },
-  navBtnDisabled: {
-    opacity: 0.45,
-  },
+  navBtnDisabled: { opacity: 0.45 },
   dots: {
     flexDirection: "row",
     alignItems: "center",
@@ -440,13 +392,5 @@ const styles = StyleSheet.create({
   dotActive: {
     width: 22,
     borderRadius: 4,
-  },
-  kbdHint: {
-    marginTop: 10,
-    textAlign: "center",
-    fontFamily: f.body.regular,
-    fontSize: 12,
-    color: t.inkSoft,
-    opacity: 0.7,
   },
 });
