@@ -4,16 +4,22 @@ import { Platform } from "react-native";
 import { ONBOARDING_V2 } from "../lib/featureFlags";
 import { getAuthData } from "../lib/authStore";
 
+function isPublicPitchOrVisionPath(path: string): boolean {
+  return (
+    path === "/avenir" ||
+    path.endsWith("/avenir") ||
+    path === "/pitch" ||
+    path.endsWith("/pitch")
+  );
+}
+
 function isPublicVisionRoute(pathname: string | undefined): boolean {
-  if (pathname) {
-    if (pathname === "/avenir" || pathname.endsWith("/avenir")) {
-      return true;
-    }
+  if (pathname && isPublicPitchOrVisionPath(pathname)) {
+    return true;
   }
   // Cold load on web: pathname may be empty before the router hydrates
   if (Platform.OS === "web" && typeof window !== "undefined") {
-    const path = window.location.pathname;
-    return path === "/avenir" || path.endsWith("/avenir");
+    return isPublicPitchOrVisionPath(window.location.pathname);
   }
   return false;
 }
