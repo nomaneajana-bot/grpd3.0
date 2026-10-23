@@ -30,13 +30,13 @@ async function shot(page, name) {
 }
 
 const STEPS = [
-  [/L'accroche|déteste courir/i, "01-accroche"],
-  [/Le problème|seul/i, "02-probleme"],
-  [/La solution|sorties et allures/i, "03-solution"],
-  [/La cible|Débutant|Casa/i, "04-cible"],
-  [/proposition de valeur|jamais seul/i, "05-valeur"],
-  [/crédibilité|terrain/i, "06-credibilite"],
-  [/appel à l'action|pilote/i, "07-cta"],
+  [/L'accroche|déteste courir|WhatsApp/i, "01-accroche"],
+  [/Le problème|Apps de perf|fils illisibles/i, "02-probleme"],
+  [/La solution|A → D|100% femmes/i, "03-solution"],
+  [/La cible|Organisateurs|Casablanca/i, "04-cible"],
+  [/proposition de valeur|jamais seul|Strava/i, "05-valeur"],
+  [/crédibilité|Partenaires|B2B/i, "06-credibilite"],
+  [/appel à l'action|club pilote|Partenariat/i, "07-cta"],
 ];
 
 (async () => {
@@ -60,6 +60,11 @@ const STEPS = [
       await shot(page, `pitch-struct-${name}`);
     }
     check("has_images", (await page.locator("img").count()) >= 1, "img");
+    check(
+      "has_bullets",
+      (await page.getByTestId("pitch-bullets").count()) >= 1,
+      "bullets",
+    );
   } catch (e) {
     check("smoke_error", false, e?.message || String(e));
   } finally {

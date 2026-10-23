@@ -134,9 +134,28 @@ export function PitchDeck({ onOpenAvenir }: Props) {
             >
               {slide.headline}
             </Text>
-            <Text style={[styles.body, isHook && styles.bodyHook]}>
-              {slide.body}
-            </Text>
+
+            <View style={styles.bullets} testID="pitch-bullets">
+              {slide.bullets.map((line, i) => (
+                <View key={`${slide.id}-b-${i}`} style={styles.bulletRow}>
+                  <View
+                    style={[
+                      styles.bulletMark,
+                      { backgroundColor: accent },
+                      isHook && i === 0 && styles.bulletMarkHook,
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.bulletText,
+                      isHook && i === 0 && styles.bulletTextHook,
+                    ]}
+                  >
+                    {line}
+                  </Text>
+                </View>
+              ))}
+            </View>
 
             {isLast ? (
               <Pressable
@@ -344,20 +363,44 @@ const styles = StyleSheet.create({
     color: t.ink,
   },
   headlineHook: {
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 32,
+    lineHeight: 38,
     textTransform: "uppercase",
   },
-  body: {
-    fontFamily: f.body.regular,
-    fontSize: 18,
-    lineHeight: 26,
-    color: t.inkSoft,
-    maxWidth: 420,
+  bullets: {
+    gap: 10,
+    marginTop: 4,
+    maxWidth: 440,
   },
-  bodyHook: {
+  bulletRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  bulletMark: {
+    width: 8,
+    height: 8,
+    borderRadius: 2,
+    marginTop: 7,
+    flexShrink: 0,
+  },
+  bulletMarkHook: {
+    width: 10,
+    height: 10,
+    borderRadius: 3,
+    marginTop: 6,
+  },
+  bulletText: {
+    flex: 1,
+    fontFamily: f.body.regular,
+    fontSize: 16,
+    lineHeight: 24,
+    color: t.inkSoft,
+  },
+  bulletTextHook: {
     fontFamily: f.display.semibold,
-    fontSize: 22,
+    fontSize: 20,
+    lineHeight: 26,
     color: t.step.accroche,
   },
   phoneFrame: {

@@ -3,10 +3,9 @@ import type { ImageSourcePropType } from "react-native";
 export type PitchSlide = {
   id: string;
   step: string;
-  /** Original 7-step structure label (shown small). */
   label: string;
   headline: string;
-  body: string;
+  bullets: string[];
   image: ImageSourcePropType;
   imageKind: "photo" | "phone";
   accentKey: keyof typeof import("./pitchTheme").pitchTheme.step;
@@ -22,7 +21,11 @@ export const PITCH_SLIDES: PitchSlide[] = [
     step: "01",
     label: "L'accroche",
     headline: "Tout le monde déteste courir.",
-    body: "(et nous aussi)",
+    bullets: [
+      "(et nous aussi)",
+      "Réveil. Baskets. WhatsApp muet.",
+      "L'envie est là — le groupe, rarement.",
+    ],
     image: require("../../assets/pitch/01-deteste-courir.jpg"),
     imageKind: "photo",
     accentKey: "accroche",
@@ -31,8 +34,13 @@ export const PITCH_SLIDES: PitchSlide[] = [
     id: "probleme",
     step: "02",
     label: "Le problème",
-    headline: "Courir seul, c'est dur.",
-    body: "Pas de rythme. Pas de groupe. Pas d'envie.",
+    headline: "Bouger ensemble est encore trop dur.",
+    bullets: [
+      "Apps de perf qui jugent le rythme",
+      "Clubs coincés dans des fils illisibles",
+      "Networking froid, sorties solo par défaut",
+      "Aucun niveau clair → on reste chez soi",
+    ],
     image: require("../../assets/pitch/02-groupe.jpg"),
     imageKind: "photo",
     accentKey: "probleme",
@@ -41,8 +49,13 @@ export const PITCH_SLIDES: PitchSlide[] = [
     id: "solution",
     step: "03",
     label: "La solution",
-    headline: "GRpD réunit sorties et allures.",
-    body: "Femmes · marche · groupes A à D.",
+    headline: "GRpD : clubs, sorties, allures.",
+    bullets: [
+      "Découvrir une sortie en quelques secondes",
+      "Rejoindre à son niveau (A → D)",
+      "Sessions 100% femmes & clubs de marche",
+      "Organiser pour son club, public ou privé",
+    ],
     image: require("../../assets/pitch/03-sessions.jpg"),
     imageKind: "phone",
     accentKey: "solution",
@@ -51,8 +64,13 @@ export const PITCH_SLIDES: PitchSlide[] = [
     id: "cible",
     step: "04",
     label: "La cible",
-    headline: "Débutant ou marathonien.",
-    body: "Coureurs, marcheurs, organisateurs — d'abord à Casa.",
+    headline: "À qui s'adresse GRpD ?",
+    bullets: [
+      "Coureurs & marcheurs — débutant → marathonien",
+      "Organisateurs de clubs locaux",
+      "Nouveaux en ville qui cherchent leur groupe",
+      "D'abord Casablanca, puis d'autres villes",
+    ],
     image: require("../../assets/pitch/04-allures.jpg"),
     imageKind: "phone",
     accentKey: "cible",
@@ -62,7 +80,12 @@ export const PITCH_SLIDES: PitchSlide[] = [
     step: "05",
     label: "La proposition de valeur",
     headline: "Vous ne courrez plus jamais seul.",
-    body: "Votre rythme. Votre groupe. Ensemble.",
+    bullets: [
+      "Utile : une place claire, à ton allure",
+      "Unique : mouvement + communauté, pas un feed",
+      "Mieux que Strava (ego) ou Meetup (générique)",
+      "Zéro jugement. Zéro likes. Juste sortir.",
+    ],
     image: require("../../assets/pitch/05-ensemble.jpg"),
     imageKind: "photo",
     accentKey: "valeur",
@@ -72,7 +95,12 @@ export const PITCH_SLIDES: PitchSlide[] = [
     step: "06",
     label: "La crédibilité",
     headline: "Déjà sur le terrain.",
-    body: "Communautés locales. Partenaires. Impact réel.",
+    bullets: [
+      "Produit vivant : clubs, séances, allures",
+      "Communautés locales & partenaires terrain",
+      "Impact social gratuit + modèle B2B / IA",
+      "Roadmap claire : running → marche → cercles",
+    ],
     image: require("../../assets/pitch/06-depart.jpg"),
     imageKind: "photo",
     accentKey: "credibilite",
@@ -82,7 +110,12 @@ export const PITCH_SLIDES: PitchSlide[] = [
     step: "07",
     label: "L'appel à l'action",
     headline: "Rejoignez le pilote Casa.",
-    body: "Partenaires · clubs · soutiens.",
+    bullets: [
+      "Tester le produit avec votre club",
+      "Ouvrir un club pilote",
+      "Partenariat ou introduction réseau",
+      "Construire la suite avec nous",
+    ],
     image: require("../../assets/pitch/07-merci.jpg"),
     imageKind: "photo",
     accentKey: "cta",
