@@ -24,15 +24,16 @@ export function ProfileClubsCard({ memberships }: ProfileClubsCardProps) {
       <Pressable
         onPress={() => router.push("/(tabs)/club/access")}
         accessibilityRole="button"
-        accessibilityLabel="Rejoindre un club"
+        accessibilityLabel="J'ai une clé"
         testID="profile-join-club"
         style={styles.card}
       >
         <Text style={styles.emptyTitle}>Aucun club</Text>
         <Text style={styles.emptySub}>
-          Rejoins ou crée une communauté pour voir les sorties membres.
+          Pas d’annuaire — une clé (lien ou code) t’ouvre la porte. Tu peux
+          aussi créer le tien.
         </Text>
-        <Text style={styles.cta}>Rejoindre un club ›</Text>
+        <Text style={styles.cta}>J’ai une clé ›</Text>
       </Pressable>
     );
   }
@@ -88,10 +89,11 @@ export function ProfileClubsCard({ memberships }: ProfileClubsCardProps) {
         onPress={() => router.push("/(tabs)/club/access")}
         style={styles.exploreBtn}
         accessibilityRole="button"
+        accessibilityLabel="Ajouter un club avec une clé"
         testID="profile-manage-clubs"
       >
-        <Ionicons name="add-circle-outline" size={18} color={t.primary} />
-        <Text style={styles.cta}>Explorer d’autres clubs</Text>
+        <Ionicons name="key-outline" size={18} color={t.primary} />
+        <Text style={styles.cta}>Ajouter avec une clé</Text>
       </Pressable>
     </View>
   );

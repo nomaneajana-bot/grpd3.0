@@ -164,6 +164,30 @@ async function main() {
       check("empty_has_key_cta", true, "skipped — already in a club");
       check("empty_no_code_form", true, "skipped — already in a club");
     }
+
+    // Profile must not sell a club directory
+    await page.goto(`${BASE}/profile`, {
+      waitUntil: "networkidle",
+      timeout: 60000,
+    });
+    await page.waitForTimeout(800);
+    body = await page.locator("body").innerText();
+    await page.screenshot({
+      path: path.join(OUT, "club-key-profile-cta.png"),
+      fullPage: true,
+    });
+    check(
+      "profile_no_explore_directory",
+      !/Explorer d.?autres clubs/i.test(body),
+      body.slice(0, 180),
+    );
+    check(
+      "profile_key_cta",
+      /Ajouter avec une clé|J.?ai une clé/i.test(body) ||
+        (await page.getByTestId("profile-manage-clubs").count()) > 0 ||
+        (await page.getByTestId("profile-join-club").count()) > 0,
+      "key CTA",
+    );
   } finally {
     await browser.close();
   }
