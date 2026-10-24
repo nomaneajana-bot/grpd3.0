@@ -219,6 +219,7 @@ export default function HomeScreen() {
           query={query}
           onQueryChange={setQuery}
           onCityPress={() => searchRef.current?.focus()}
+          onCitySelect={(city) => setQuery(city)}
           searchInputRef={searchRef}
         />
 

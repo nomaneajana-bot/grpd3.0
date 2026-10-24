@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
 
+import { CitySlider } from "@/components/ui/CitySlider";
 import { homeTheme as h } from "@/constants/homeTheme";
 
 type HomeHeaderProps = {
@@ -11,6 +12,7 @@ type HomeHeaderProps = {
   query: string;
   onQueryChange: (q: string) => void;
   onCityPress: () => void;
+  onCitySelect?: (city: string) => void;
   searchFocused?: boolean;
   searchInputRef?: React.RefObject<TextInput | null>;
 };
@@ -21,6 +23,7 @@ export function HomeHeader({
   query,
   onQueryChange,
   onCityPress,
+  onCitySelect,
   searchInputRef,
 }: HomeHeaderProps) {
   return (
@@ -94,6 +97,15 @@ export function HomeHeader({
           </Pressable>
         ) : null}
       </View>
+
+      <CitySlider
+        value={cityLabel}
+        onChange={(city) => {
+          if (onCitySelect) onCitySelect(city);
+          else onQueryChange(city);
+        }}
+        testID="home-city-slider"
+      />
     </View>
   );
 }

@@ -22,6 +22,7 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import { useUnsavedChangesGuard } from "../../lib/useUnsavedChangesGuard";
 
+import { LocationSlider } from "../../components/ui/LocationSlider";
 import { SelectableChip } from "../../components/ui/SelectableChip";
 import { stitoTheme as _stito } from "../../constants/stitoTheme";
 
@@ -2593,6 +2594,12 @@ export default function CreateSessionScreen() {
               {spot}
             </Text>
           </TouchableOpacity>
+          <LocationSlider
+            value={spot}
+            onChange={setSpot}
+            options={spots}
+            testID="session-location-slider"
+          />
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.fieldRow}

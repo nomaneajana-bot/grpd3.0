@@ -17,6 +17,7 @@ import {
   stitoUi as ui,
   stitoChrome as t,
 } from "@/components/stito/StitoUI";
+import { CitySlider } from "@/components/ui/CitySlider";
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { createApiClient, createClub } from "@/lib/api";
@@ -162,6 +163,11 @@ export default function ClubCreateScreen() {
             accessibilityHint="Champ 2 sur 5 — ville"
             nativeID="club-create-field-city"
             testID="club-city-input"
+          />
+          <CitySlider
+            value={city}
+            onChange={setCity}
+            testID="club-city-slider"
           />
         </View>
 

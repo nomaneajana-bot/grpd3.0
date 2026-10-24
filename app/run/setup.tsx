@@ -17,6 +17,7 @@ import {
 import type { TextStyle, ViewStyle } from "react-native";
 
 import { Card } from "../../components/ui/Card";
+import { LocationSlider } from "../../components/ui/LocationSlider";
 import { borderRadius, colors, spacing, typography } from "../../constants/ui";
 import { ApiError, createApiClient, createOrMatchRun } from "../../lib/api";
 import { getReferencePaces } from "../../lib/profileStore";
@@ -429,22 +430,15 @@ export default function RunSetupScreen() {
               style={styles.input}
               value={locationName}
               onChangeText={setLocationName}
-              placeholder="Ex: Parc de la Villette"
+              placeholder="Ex: Corniche El Hank"
               placeholderTextColor={colors.text.disabled}
             />
-            {locationSuggestions.length > 0 && (
-              <View style={styles.locationSuggestions}>
-                {locationSuggestions.map((suggestion) => (
-                  <TouchableOpacity
-                    key={suggestion}
-                    style={styles.locationChip}
-                    onPress={() => setLocationName(suggestion)}
-                  >
-                    <Text style={styles.locationChipText}>{suggestion}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+            <LocationSlider
+              value={locationName}
+              onChange={setLocationName}
+              options={locationSuggestions}
+              testID="run-location-slider"
+            />
           </View>
 
           {/* Location */}

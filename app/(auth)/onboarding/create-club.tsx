@@ -5,6 +5,7 @@ import { StyleSheet, Text } from "react-native";
 import { OnboardingField } from "@/components/onboarding/OnboardingField";
 import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
 import { OnboardingTitle } from "@/components/onboarding/OnboardingTitle";
+import { CitySlider } from "@/components/ui/CitySlider";
 import { colors, typography } from "@/constants/ui";
 import { createApiClient, createClub } from "@/lib/api";
 import { getAuthUser } from "@/lib/authStore";
@@ -116,6 +117,7 @@ export default function OnboardingCreateClubScreen() {
         autoComplete="postal-address-locality"
         testID="onboarding-club-city"
       />
+      <CitySlider value={city} onChange={setCity} testID="onboarding-club-city-slider" />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </OnboardingScreen>
   );
