@@ -191,11 +191,15 @@ async function main() {
     check("organise_light_canvas", orgLight.ok, JSON.stringify(orgLight));
     await shot(page, "stito-organise-393");
 
-    // Invitations (access)
+    // Club key / access (invite-first, not a directory)
     await page.goto(`${BASE}/club/access`, { waitUntil: "networkidle", timeout: 60000 });
     await page.waitForTimeout(800);
     const invText = await page.locator("body").innerText();
-    check("invitations_title", /Invitations/i.test(invText), "title");
+    check(
+      "invitations_title",
+      /Une clé, pas un annuaire|Tu as reçu une clé/i.test(invText),
+      "title",
+    );
     check(
       "invitations_no_vip",
       !/\bVIP\b/i.test(invText),
