@@ -1161,7 +1161,6 @@ export default function SessionScreen() {
             .flatMap((g) => g.participants ?? [])
             .map((p) => (p.displayName || "").trim())
             .filter(Boolean);
-          const departure = formatTimeLabel(session.timeMinutes);
           return (
             <View style={styles.stitoStory} testID="stito-outing-story">
               <StitoLogisticsCard
