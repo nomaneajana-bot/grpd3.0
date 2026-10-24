@@ -5,10 +5,10 @@ import { chromium } from "playwright";
 import fs from "fs";
 import path from "path";
 
-const BASE = process.env.SMOKE_URL || "http://127.0.0.1:8082";
+const BASE = process.env.SMOKE_URL || "http://127.0.0.1:8081";
 const OUT = "/opt/cursor/artifacts";
 fs.mkdirSync(OUT, { recursive: true });
-const report = { checks: [] };
+const report = { checks: [], base: BASE };
 
 function check(id, ok, detail) {
   report.checks.push({ id, ok, detail: String(detail ?? "").slice(0, 240) });
@@ -102,7 +102,8 @@ async function main() {
 
     check(
       "lands_on_published",
-      /\/session\/published/i.test(url) || /C’EST PUBLIÉ|C'EST PUBLIÉ|Ta sortie est en ligne/i.test(body),
+      /\/session\/published/i.test(url) ||
+        /Récap de ta sortie|Recap de ta sortie/i.test(body),
       url + " · " + body.slice(0, 120),
     );
     check(
@@ -116,9 +117,21 @@ async function main() {
       "title",
     );
     check(
+      "has_share_cta",
+      (await page.getByTestId("session-published-share").count()) > 0 ||
+        /Partager/i.test(body),
+      "share",
+    );
+    check(
       "has_view_or_home_cta",
       /Voir la sortie|Retour à l’accueil|Retour a l'accueil/i.test(body),
       "ctas",
+    );
+    check(
+      "recap_block",
+      (await page.getByTestId("session-published-recap").count()) > 0 ||
+        /Visibilité|Quand|Lieu/i.test(body),
+      "recap rows",
     );
 
     // Open detail and ensure no Coach Youssef
