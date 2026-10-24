@@ -976,10 +976,9 @@ export default function SessionScreen() {
                 metaLine={metaBits.join(" · ")}
                 contextLabel={
                   session.visibility === "members"
-                    ? `Club · ${session.hostGroupName?.trim() || session.spot || "Membres"}`
-                    : `Publique · ${session.spot || "Tous"}`
+                    ? "Sortie réservée au club"
+                    : "Sortie ouverte à tous"
                 }
-                editionLabel={formatSessionDetailSubtitle(session)}
               />
             </View>
           );
