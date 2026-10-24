@@ -2,8 +2,10 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { DEFAULT_LOCATIONS } from '@/lib/moroccoPlaces';
+
 const STORAGE_KEY = 'spots:v1';
-const DEFAULT_SPOTS = ['Marina', 'Parc', 'Piste'];
+const DEFAULT_SPOTS = [...DEFAULT_LOCATIONS];
 
 async function loadSpotsFromStorage(): Promise<string[]> {
   try {
