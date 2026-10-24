@@ -1187,8 +1187,8 @@ export default function SessionScreen() {
 
         {/* Purpose section already surfaces coachAdvice — skip duplicate note card. */}
 
-        {/* Groups Section */}
-        {session.paceGroupsOverride && session.paceGroupsOverride.length > 0 ? (
+        {/* Stitch: pace-group picker / inter-group panel omitted — RSVP is the sticky dock. */}
+        {false && session.paceGroupsOverride && session.paceGroupsOverride.length > 0 ? (
           <View style={styles.card}>
             <Text style={styles.cardLabel}>GROUPES</Text>
             {session.paceGroupsOverride
@@ -1399,39 +1399,6 @@ export default function SessionScreen() {
           </View>
         ) : null}
 
-        {!isOrganizer ? (
-          <View style={styles.actionButtonContainer}>
-            <InterGroupJoinPanel
-              memberGroupId={memberHomeGroupId}
-              sessionAnchorGroupId={sessionAnchorGroupId}
-              selectedGroupId={selectedPaceGroupId}
-              sessionPaceLabel={
-                session.paceGroups.find((g) => g.id === sessionAnchorGroupId)
-                  ?.paceRange ?? session.targetPace
-              }
-              joinedSummaryLine={[
-                session.dateLabel,
-                session.meetingPoint || session.spot,
-              ]
-                .map((p) => (p || "").trim())
-                .filter(Boolean)
-                .join(" · ")}
-              settings={clubAdminSettings}
-              hasStoredJoin={hasStoredJoin}
-              canJoin={canJoin}
-              isPendingMember={isPendingMember}
-              isPublishing={isJoiningOuting}
-              onJoin={handleSave}
-              onRequestJoin={handleRequestJoin}
-              onLeave={openLeaveConfirm}
-              onGoToClub={() => router.push("/(tabs)/club")}
-              onGoToMySessions={() => router.push("/(tabs)/my-sessions")}
-              onCancelWarn={() =>
-                setSelectedGroupId(memberHomeGroupId ?? sessionAnchorGroupId)
-              }
-            />
-          </View>
-        ) : null}
 
         {isCoachOrAdmin &&
         ((session.paceGroupsOverride ?? []).some((g) => g.isActive) ||
