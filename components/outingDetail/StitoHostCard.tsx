@@ -27,9 +27,11 @@ export function StitoHostCard({
         <Text style={styles.name} numberOfLines={1} testID="session-organizer-name">
           {hostName}
         </Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {[hostRole, clubName].filter(Boolean).join(" · ")}
-        </Text>
+        {[hostRole, clubName].filter(Boolean).length > 0 ? (
+          <Text style={styles.meta} numberOfLines={1}>
+            {[hostRole, clubName].filter(Boolean).join(" · ")}
+          </Text>
+        ) : null}
       </View>
       {onClubPress && clubName ? (
         <Pressable

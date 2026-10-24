@@ -998,46 +998,7 @@ export default function SessionScreen() {
           );
         })()}
 
-        {!session.isCustom ? (
-          <View style={styles.tabRow}>
-            <Pressable
-              style={styles.tabCell}
-              onPress={() => setSessionDetailTab("info")}
-            >
-              <Text
-                style={[
-                  styles.tabLabel,
-                  sessionDetailTab === "info" && styles.tabLabelActive,
-                ]}
-              >
-                Infos
-              </Text>
-              {sessionDetailTab === "info" ? (
-                <View style={styles.tabUnderline} />
-              ) : (
-                <View style={styles.tabUnderlineMuted} />
-              )}
-            </Pressable>
-            <Pressable
-              style={styles.tabCell}
-              onPress={() => setSessionDetailTab("runners")}
-            >
-              <Text
-                style={[
-                  styles.tabLabel,
-                  sessionDetailTab === "runners" && styles.tabLabelActive,
-                ]}
-              >
-                Coureurs
-              </Text>
-              {sessionDetailTab === "runners" ? (
-                <View style={styles.tabUnderline} />
-              ) : (
-                <View style={styles.tabUnderlineMuted} />
-              )}
-            </Pressable>
-          </View>
-        ) : null}
+        {/* Stitch editorial: no Infos/Coureurs chrome — runners stay available via club. */}
 
         {joinedGroupId !== null && joinedGroup ? (
           <Text style={styles.joinedStatus}>
@@ -1045,74 +1006,8 @@ export default function SessionScreen() {
           </Text>
         ) : null}
 
-        {sessionDetailTab === "runners" && !session.isCustom ? (
-          <SessionRunnersPanel
-            variant="tab"
-            loading={participantsLoading}
-            error={participantsError}
-            data={participantsData}
-            filter={runnersFilter}
-            onFilter={setRunnersFilter}
-            noGroupOnly={runnersNoGroupOnly}
-            onToggleNoGroup={() => setRunnersNoGroupOnly((v) => !v)}
-            onGoToClub={() => router.push("/(tabs)/club")}
-            onRequestAccess={() => router.push("/(tabs)/club/access")}
-          />
-        ) : (
-          <>
-        {(() => {
-          const typeUpper = (session.typeLabel || "").toUpperCase();
-          const isCasualWalk =
-            typeUpper.includes("MARCHE") || typeUpper.includes("WALKING");
-          const dist = formatSessionDistanceKm(session.estimatedDistanceKm);
-          const pace = formatSessionPaceLabel(session.targetPace);
-          // No invented pace/distance for walk/casual — hide empty metric chrome.
-          if (isCasualWalk && dist === "—" && (pace === "—" || /allure\s+libre/i.test(pace))) {
-            return null;
-          }
-          return (
-            <StitoMetricsStrip
-              cells={[
-                {
-                  eyebrow: "Distance",
-                  value: dist === "—" ? "—" : dist.replace(/\s*km$/i, ""),
-                  unit: dist === "—" ? undefined : "km",
-                  caption: isCasualWalk ? "Parcours" : "Volume",
-                },
-                {
-                  eyebrow: "Rythme",
-                  // Keep range + /km as one string so it never wraps as "5:30–" + detached "/km".
-                  value:
-                    pace === "—"
-                      ? "—"
-                      : /km\/h|allure\s+libre/i.test(pace)
-                        ? pace
-                        : /\/km$/i.test(pace)
-                          ? pace
-                          : `${pace}/km`,
-                  caption: isCasualWalk ? "Allure douce" : "Cible",
-                  valueColor: stitoTheme.primary,
-                },
-                {
-                  eyebrow: isCasualWalk ? "Intensité" : "Coureurs",
-                  value: isCasualWalk
-                    ? "Libre"
-                    : String(
-                        session.paceGroups.reduce(
-                          (a, g) => a + g.runnersCount,
-                          0,
-                        ) || "—",
-                      ),
-                  caption: isCasualWalk ? "Tous niveaux" : "Confirmés",
-                  valueColor: isCasualWalk ? stitoTheme.primary : undefined,
-                },
-              ]}
-            />
-          );
-        })()}
-
-
-        {/* Stito composition: logistics → host → access → purpose → participants */}
+        <>
+        {/* Stitch composition: logistics → host → access → purpose → participants */}
         {(() => {
           const typeUpper = (session.typeLabel || "").toUpperCase();
           const vol = session.volume?.trim() || "";
@@ -1146,7 +1041,16 @@ export default function SessionScreen() {
             matchingMembership?.club?.name?.trim() ||
             session.hostGroupName?.trim() ||
             null;
-          const hostName = session.coachName?.trim() || "Organisateur";
+          const hostName =
+            session.coachName?.trim() ||
+            clubLabel ||
+            "Organisateur";
+          const hostRole =
+            session.coachName?.trim()
+              ? "Organisateur"
+              : clubLabel
+                ? "Club hôte"
+                : null;
           const placeTitle =
             session.meetingPoint?.trim() || session.spot?.trim() || "—";
           const placeDetail =
@@ -1191,8 +1095,10 @@ export default function SessionScreen() {
                 <View testID="session-soft-club-row" collapsable={false}>
                   <StitoHostCard
                     hostName={hostName}
-                    hostRole="Organisateur"
-                    clubName={clubLabel}
+                    hostRole={hostRole}
+                    clubName={
+                      hostName !== clubLabel ? clubLabel : null
+                    }
                     onClubPress={() => router.push("/(tabs)/club")}
                   />
                 </View>
@@ -1200,12 +1106,17 @@ export default function SessionScreen() {
                 <StitoHostCard
                   hostName={hostName}
                   hostRole={
-                    session.visibility === "members" ? "Organisateur club" : "Organisateur"
+                    session.visibility === "members"
+                      ? "Organisateur club"
+                      : hostRole
                   }
                   clubName={
                     session.visibility === "members"
-                      ? session.hostGroupName?.trim() || clubLabel
-                      : clubLabel
+                      ? session.hostGroupName?.trim() ||
+                        (hostName !== clubLabel ? clubLabel : null)
+                      : hostName !== clubLabel
+                        ? clubLabel
+                        : null
                   }
                   onClubPress={
                     clubLabel ? () => router.push("/(tabs)/club") : undefined
@@ -1589,7 +1500,6 @@ export default function SessionScreen() {
           </View>
         ) : null}
         </>
-        )}
       </ScrollView>
 
       {/* Coach assign modal */}
