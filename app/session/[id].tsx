@@ -967,17 +967,16 @@ export default function SessionScreen() {
           const metaBits = [
             typeLabelStr,
             session.genderRestriction === "women_only" ? "Femmes" : null,
-            session.visibility === "members" ? "Membres" : "Ouverte",
           ].filter(Boolean);
           return (
             <View style={styles.stitoHeroWrap}>
               <StitoOutingHero
                 title={title}
-                metaLine={metaBits.join(" · ")}
+                metaLine={metaBits.join(" · ") || null}
                 contextLabel={
                   session.visibility === "members"
-                    ? "Sortie réservée au club"
-                    : "Sortie ouverte à tous"
+                    ? "Réservée aux membres"
+                    : "Ouverte à tous"
                 }
               />
             </View>
@@ -1167,7 +1166,7 @@ export default function SessionScreen() {
             <View style={styles.stitoStory} testID="stito-outing-story">
               <StitoLogisticsCard
                 dateLine={formatOutingDateTime(session)}
-                departureTime={departure}
+                departureTime={null}
                 meetingTime={null}
                 placeTitle={placeTitle}
                 placeDetail={placeDetail || null}
