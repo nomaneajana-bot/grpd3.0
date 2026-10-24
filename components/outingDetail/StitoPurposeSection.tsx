@@ -34,6 +34,7 @@ export function StitoPurposeSection({
 
       {structureText || (timeline && timeline.length > 0) ? (
         <View style={styles.block}>
+          <View style={styles.rule} />
           <Text style={styles.eyebrow}>Au programme</Text>
           {structureText ? (
             <Text style={styles.body} testID="session-structure-text">
@@ -63,17 +64,23 @@ export function StitoPurposeSection({
 
 const styles = StyleSheet.create({
   wrap: { gap: 22 },
-  block: { gap: 8 },
+  block: { gap: 6 },
+  rule: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(190,202,190,0.45)",
+    marginBottom: 16,
+  },
   eyebrow: {
     fontFamily: t.font.space.bold,
-    fontSize: 11,
-    letterSpacing: 1.4,
+    fontSize: 10,
+    letterSpacing: 1.6,
     textTransform: "uppercase",
     color: t.outline,
+    marginBottom: 2,
   },
   body: {
     fontFamily: t.font.hanken.regular,
-    fontSize: 16,
+    fontSize: 17,
     lineHeight: 24,
     color: t.text,
   },

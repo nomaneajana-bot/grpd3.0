@@ -8,74 +8,70 @@ type OrganiseActionProps = {
   onPress: () => void;
 };
 
+/** Stitch quiet create row — no heavy card chrome. */
 export function OrganiseAction({ onPress }: OrganiseActionProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Organiser une sortie"
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]}
+      style={({ pressed }) => [
+        styles.row,
+        pressed && { backgroundColor: "rgba(243,243,244,0.55)" },
+      ]}
       testID="home-organise-action"
     >
       <View style={styles.plus}>
-        <Ionicons name="add" size={22} color={h.primary} />
+        <Ionicons name="add" size={20} color={h.primary} />
       </View>
       <View style={styles.textCol}>
         <Text style={styles.title}>Organiser une sortie</Text>
-        <Text style={styles.sub} numberOfLines={2}>
-          Propose un parcours pour ton club ou ouvert à tous
+        <Text style={styles.sub} numberOfLines={1}>
+          Pour ton club ou ouverte à tous
         </Text>
       </View>
-      <View style={styles.cta} testID="home-organise-cta">
-        <Text style={styles.ctaText}>Créer</Text>
-        <Ionicons name="arrow-forward" size={16} color={h.onPrimary} />
-      </View>
+      <Text style={styles.cta} testID="home-organise-cta">
+        Créer →
+      </Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: h.space.md,
-    backgroundColor: h.mutedSurface,
-    borderRadius: h.radiusMain,
-    borderWidth: 1,
-    borderColor: "rgba(232,232,233,0.85)",
-    padding: h.space.lg,
-    minHeight: 72,
+    gap: 14,
+    paddingVertical: h.space.sm,
+    paddingHorizontal: 4,
+    borderRadius: 12,
+    minHeight: 56,
   },
   plus: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: h.primaryFixed,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(216,227,216,0.65)",
     alignItems: "center",
     justifyContent: "center",
   },
   textCol: { flex: 1, minWidth: 0, gap: 2 },
   title: {
-    ...h.type.label,
+    fontFamily: h.font.hanken.semibold,
     fontSize: 14,
+    lineHeight: 18,
     color: h.text,
-    fontWeight: "700",
   },
-  sub: { ...h.type.meta, color: h.textSecondary, fontSize: 12 },
+  sub: {
+    ...h.type.meta,
+    color: h.outline,
+    fontSize: 13,
+  },
   cta: {
-    minHeight: h.touchMin,
-    paddingHorizontal: 16,
-    borderRadius: h.radiusChip,
-    backgroundColor: h.primary,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-  },
-  ctaText: {
-    ...h.type.label,
-    color: h.onPrimary,
+    fontFamily: h.font.hanken.medium,
     fontSize: 12,
-    fontWeight: "700",
+    lineHeight: 16,
+    color: h.primary,
+    marginLeft: 8,
   },
 });

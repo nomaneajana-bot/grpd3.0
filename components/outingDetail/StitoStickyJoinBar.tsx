@@ -14,7 +14,11 @@ type Props = {
   tabBarOffset?: number;
 };
 
-/** Deep-green join / leave — no neon leftover tokens. */
+/**
+ * Docked RSVP — Stitch states:
+ * joined → surface-container-high + check + “Inscrit·e (Se désister)”
+ * open → primary + add + “Rejoindre la sortie”
+ */
 export function StitoStickyJoinBar({
   joined,
   busy,
@@ -44,7 +48,7 @@ export function StitoStickyJoinBar({
         disabled={busy}
         style={({ pressed }) => [
           styles.cta,
-          joined && styles.ctaJoined,
+          joined ? styles.ctaJoined : styles.ctaOpen,
           pressed && { opacity: 0.92 },
           busy && { opacity: 0.7 },
         ]}
@@ -55,7 +59,7 @@ export function StitoStickyJoinBar({
         ) : (
           <>
             <Ionicons
-              name={joined ? "checkmark-circle" : "add-circle-outline"}
+              name={joined ? "checkmark-circle" : "add"}
               size={20}
               color={joined ? t.primary : t.onPrimary}
             />
@@ -75,10 +79,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(249,249,250,0.98)",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(190,202,190,0.85)",
-    paddingHorizontal: 16,
+    backgroundColor: "rgba(249,249,250,0.96)",
+    paddingHorizontal: 20,
     paddingTop: 12,
     gap: 8,
   },
@@ -91,25 +93,26 @@ const styles = StyleSheet.create({
   },
   cta: {
     minHeight: 48,
-    borderRadius: 14,
-    backgroundColor: t.primary,
+    borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     paddingHorizontal: 20,
   },
+  ctaOpen: {
+    backgroundColor: t.primary,
+  },
   ctaJoined: {
-    backgroundColor: "#EAF2EC",
-    borderWidth: 1.5,
-    borderColor: t.primary,
+    backgroundColor: t.surfaceContainerHigh,
   },
   ctaText: {
-    fontFamily: t.font.space.bold,
+    fontFamily: t.font.hanken.semibold,
     fontSize: 14,
+    lineHeight: 18,
     color: t.onPrimary,
   },
   ctaTextJoined: {
-    color: t.primary,
+    color: t.text,
   },
 });

@@ -16,7 +16,9 @@ export const homeTheme = {
   primaryFixed: "#9AF6B7",
   secondaryContainer: "#76FCA7",
   onSecondaryContainer: "#00743F",
-  outline: "#BECABE",
+  /** Stitch outline (labels / quiet chrome) */
+  outline: "#6F7A70",
+  outlineVariant: "#BECABE",
   outlineStrong: "#E8E8E9",
   danger: "#BA1A1A",
   radiusMain: 20,
