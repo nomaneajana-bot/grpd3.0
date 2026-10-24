@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -29,7 +28,6 @@ import {
   createApiClient,
   getClubRoster,
   getMyMemberships,
-  joinClubByCode,
   leaveClub,
   listSessions,
 } from "@/lib/api";
@@ -80,7 +78,6 @@ export default function ClubScreen() {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [inviteCode, setInviteCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [adminSettings, setAdminSettings] = useState<ClubAdminSettings | null>(
     null,
@@ -299,30 +296,6 @@ export default function ClubScreen() {
     }
   };
 
-  const handleJoinByCode = async () => {
-    if (!inviteCode.trim()) {
-      showToast("Ajoute un code d'invitation.", "error");
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      const client = createApiClient();
-      await joinClubByCode(client, { code: inviteCode.trim() });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToast("Bienvenue ! Tu as rejoint le club.", "success");
-      setInviteCode("");
-      await loadData(true);
-    } catch (error) {
-      console.warn("Join by code failed:", error);
-      showToast(
-        "Impossible de rejoindre ce club. Vérifie le code.",
-        "error",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const feedItems = buildClubActivityFeed({
     roster,
     sessions: clubSessions,
@@ -333,7 +306,9 @@ export default function ClubScreen() {
 
   const roleSubtitle = isApprovedMember
     ? `Membre confirmé${foundedYear ? ` · Fondé ${foundedYear}` : ""}`
-    : "Espace privé · validation admin.";
+    : isPendingMember
+      ? "Demande en attente"
+      : "Invitation · pas d’annuaire";
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -603,9 +578,9 @@ export default function ClubScreen() {
                 <SectionHeader label="ADMINISTRATION" />
                 <GroupedList>
                   <ClubNavCard
-                    title="Invitations et demandes"
-                    subtitle="Rejoindre, générer un lien/code"
-                    icon="mail-outline"
+                    title="Partager une clé"
+                    subtitle="Lien ou code — hors de l’annuaire"
+                    icon="key-outline"
                     onPress={() => router.push("/(tabs)/club/access" as Href)}
                   />
                   <ClubNavCard
@@ -702,47 +677,37 @@ export default function ClubScreen() {
             </View>
           </>
         ) : (
-          <>
-            <Text style={styles.joinSectionLabel}>Rejoindre un club</Text>
-            <View style={styles.shortJoinCard}>
-              <Text style={styles.shortJoinLabel}>Code d&apos;invitation</Text>
-              <TextInput
-                style={styles.textInput}
-                value={inviteCode}
-                onChangeText={setInviteCode}
-                placeholder="Ex: JAIME123"
-                placeholderTextColor={t.outline}
-                autoCapitalize="characters"
-              />
-              <Pressable
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  (pressed || isSubmitting) && styles.primaryButtonPressed,
-                ]}
-                onPress={handleJoinByCode}
-                disabled={isSubmitting}
-              >
-                <Text style={styles.primaryButtonText}>Rejoindre</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => router.push("/(tabs)/club/access" as Href)}
-                style={styles.moreLinkWrap}
-              >
-                <Text style={styles.moreLink}>
-                  Plus d&apos;options → Accès club
-                </Text>
-              </Pressable>
-              <Pressable
-                testID="club-create-entry"
-                accessibilityRole="button"
-                accessibilityLabel="Créer un club"
-                onPress={() => router.push("/(tabs)/club/create" as Href)}
-                style={styles.moreLinkWrap}
-              >
-                <Text style={styles.moreLink}>Créer un club →</Text>
-              </Pressable>
-            </View>
-          </>
+          <View style={styles.keyEmpty} testID="club-key-empty">
+            <Text style={styles.keyEmptyBrand}>GRpD</Text>
+            <Text style={styles.keyEmptyTitle}>
+              Tes clubs arrivent par invitation
+            </Text>
+            <Text style={styles.keyEmptySub}>
+              Pas d’annuaire ici. Quelqu’un te partage une clé — lien ou code —
+              et tu ouvres la porte dans l’app.
+            </Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.primaryButton,
+                pressed && styles.primaryButtonPressed,
+              ]}
+              onPress={() => router.push("/(tabs)/club/access" as Href)}
+              accessibilityRole="button"
+              accessibilityLabel="J'ai une clé"
+              testID="club-key-enter"
+            >
+              <Text style={styles.primaryButtonText}>J’ai une clé</Text>
+            </Pressable>
+            <Pressable
+              testID="club-create-entry"
+              accessibilityRole="button"
+              accessibilityLabel="Créer un club"
+              onPress={() => router.push("/(tabs)/club/create" as Href)}
+              style={styles.moreLinkWrap}
+            >
+              <Text style={styles.moreLink}>Créer mon club →</Text>
+            </Pressable>
+          </View>
         )}
       </ScrollView>
       </ScreenContainer>
@@ -997,45 +962,42 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontFamily: t.font.hanken.regular,
   },
-  joinSectionLabel: {
-    ...t.type.labelSm,
-    color: t.textSecondary,
-    textTransform: "uppercase",
-    marginHorizontal: 16,
-    marginTop: 14,
-    marginBottom: 8,
+  keyEmpty: {
+    marginHorizontal: 24,
+    marginTop: 28,
+    paddingBottom: 24,
   },
-  shortJoinCard: {
-    backgroundColor: t.card,
-    borderRadius: t.radiusMain,
-    borderWidth: 1,
-    borderColor: "rgba(232,232,233,0.9)",
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 8,
-  },
-  shortJoinLabel: {
-    color: t.textSecondary,
+  keyEmptyBrand: {
+    color: t.primary,
+    fontFamily: t.font.space.bold,
     fontSize: 13,
-    marginBottom: 8,
-    fontFamily: t.font.hanken.regular,
+    letterSpacing: 3.2,
+    textTransform: "uppercase",
+    marginBottom: 14,
   },
-  textInput: {
-    backgroundColor: t.surfaceContainerLow,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+  keyEmptyTitle: {
     color: t.text,
-    fontSize: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: t.outlineVariant,
+    fontFamily: t.font.space.bold,
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: -0.4,
+    marginBottom: 12,
+  },
+  keyEmptySub: {
+    color: t.textSecondary,
+    fontFamily: t.font.hanken.regular,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 28,
+    maxWidth: 320,
   },
   primaryButton: {
     backgroundColor: t.primary,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderRadius: t.radiusChip,
     alignItems: "center",
+    minHeight: 52,
+    justifyContent: "center",
   },
   primaryButtonPressed: {
     opacity: 0.85,
@@ -1046,12 +1008,12 @@ const styles = StyleSheet.create({
     fontFamily: t.font.space.bold,
   },
   moreLinkWrap: {
-    marginTop: 12,
+    marginTop: 18,
     alignItems: "center",
   },
   moreLink: {
-    color: t.primary,
-    fontSize: 14,
+    color: t.textSecondary,
+    fontSize: 15,
     fontFamily: t.font.space.semibold,
   },
   createGroupBtn: {
