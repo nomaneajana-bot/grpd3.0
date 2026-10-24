@@ -27,9 +27,11 @@ export function StitoHostCard({
         <Text style={styles.name} numberOfLines={1} testID="session-organizer-name">
           {hostName}
         </Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {[hostRole, clubName].filter(Boolean).join(" · ")}
-        </Text>
+        {[hostRole, clubName].filter(Boolean).length > 0 ? (
+          <Text style={styles.meta} numberOfLines={1}>
+            {[hostRole, clubName].filter(Boolean).join(" · ")}
+          </Text>
+        ) : null}
       </View>
       {onClubPress && clubName ? (
         <Pressable
@@ -62,14 +64,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarText: {
-    fontFamily: t.font.space.bold,
-    fontSize: 14,
+    fontFamily: t.font.space.medium,
+    fontSize: 16,
     color: t.onPrimary,
   },
   textCol: { flex: 1, minWidth: 0, gap: 2 },
   name: {
-    fontFamily: t.font.space.bold,
+    fontFamily: t.font.space.semibold,
     fontSize: 16,
+    lineHeight: 20,
     color: t.text,
   },
   meta: {
@@ -79,8 +82,8 @@ const styles = StyleSheet.create({
   },
   link: { paddingVertical: 8, paddingHorizontal: 4 },
   linkText: {
-    fontFamily: t.font.space.semibold,
-    fontSize: 14,
+    fontFamily: t.font.hanken.medium,
+    fontSize: 12,
     color: t.primary,
   },
 });

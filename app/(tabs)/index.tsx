@@ -5,7 +5,6 @@ import {
   RefreshControl,
   ScrollView,
   Text,
-  TextInput,
   View,
   StyleSheet,
 } from "react-native";
@@ -13,7 +12,6 @@ import { router, useFocusEffect, type Href } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { ActivitySummary } from "@/components/home/ActivitySummary";
 import { DiscoveryFilters } from "@/components/home/DiscoveryFilters";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { NewMemberIntro } from "@/components/home/NewMemberIntro";
@@ -26,7 +24,6 @@ import { OutingRow } from "@/components/home/OutingRow";
 import { homeTheme as h } from "@/constants/homeTheme";
 import { createApiClient, getMyMemberships, listSessions } from "@/lib/api";
 import {
-  buildHomeStats,
   countApprovedClubs,
   countCompletedOutings,
   countConfirmedUpcoming,
@@ -49,12 +46,11 @@ import { getUserSessions } from "@/lib/sessionStore";
 import type { ClubMembership } from "@/types/api";
 
 /**
- * Authenticated Accueil — Stitch / Noa-Stito refinement.
- * Tokens: constants/homeTheme.ts. Dark green-home theme unchanged elsewhere.
+ * Authenticated Accueil — Google Stitch / Noa-Stito composition.
+ * Tokens: constants/homeTheme.ts.
  */
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const searchRef = useRef<TextInput>(null);
   const discoveryAnchorRef = useRef<View>(null);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -92,7 +88,6 @@ export default function HomeScreen() {
       );
     }
 
-    // Annotate joined attendance from local join store when API left it unset
     const joined =
       results[3].status === "fulfilled" ? results[3].value : [];
     const jids = joinedIdSet(joined);
@@ -120,10 +115,27 @@ export default function HomeScreen() {
     }, [load]),
   );
 
-  const nextOuting = useMemo(
-    () => selectNextOuting(sessions, joinedIds),
-    [sessions, joinedIds],
-  );
+  const nextOuting = useMemo(() => {
+    const confirmed = selectNextOuting(sessions, joinedIds);
+    if (confirmed) return confirmed;
+    // Soft highlight — first upcoming (Stitch singular object) when none reserved.
+    const now = Date.now() - 15 * 60 * 1000;
+    return (
+      [...sessions]
+        .filter((s) => {
+          const iso = s.dateISO;
+          if (!iso) return true;
+          const t = new Date(`${iso.slice(0, 10)}T12:00:00`).getTime();
+          return Number.isFinite(t) ? t >= now : true;
+        })
+        .sort((a, b) => {
+          const ta = a.dateISO || "";
+          const tb = b.dateISO || "";
+          if (ta !== tb) return ta.localeCompare(tb);
+          return (a.timeMinutes ?? 0) - (b.timeMinutes ?? 0);
+        })[0] ?? null
+    );
+  }, [sessions, joinedIds]);
   const upcomingJoinedCount = useMemo(
     () => countConfirmedUpcoming(sessions, joinedIds),
     [sessions, joinedIds],
@@ -145,15 +157,6 @@ export default function HomeScreen() {
         upcomingJoinedCount,
       }),
     [nextOuting, approvedClubCount, completedCount, upcomingJoinedCount],
-  );
-  const stats = useMemo(
-    () =>
-      buildHomeStats({
-        upcomingJoinedCount,
-        approvedClubCount,
-        completedCount,
-      }),
-    [upcomingJoinedCount, approvedClubCount, completedCount],
   );
   const discovery = useMemo(
     () =>
@@ -218,19 +221,16 @@ export default function HomeScreen() {
           dayEyebrow={dayEyebrow}
           query={query}
           onQueryChange={setQuery}
-          onCityPress={() => searchRef.current?.focus()}
+          onCityPress={() => {}}
           onCitySelect={(city) => setQuery(city)}
-          searchInputRef={searchRef}
+          profileInitial="Y"
         />
 
-        {mode === "new_member" ? (
+        {mode === "new_member" && !nextOuting ? (
           <NewMemberIntro onSeeOutings={scrollToDiscovery} />
         ) : null}
 
-        {/* Stito: quiet stats under greeting (not after next outing) */}
-        {mode !== "new_member" ? <ActivitySummary stats={stats} /> : null}
-
-        {mode === "active_with_next" && nextOuting ? (
+        {nextOuting ? (
           <View style={styles.nextBlock}>
             <NextOutingSectionHeader
               reserved={nextOuting.attendanceStatus === "joined"}
@@ -242,16 +242,16 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
+        <View style={styles.hairline} />
+
         <OrganiseAction
           onPress={() => router.push("/session/create" as Href)}
         />
 
         <View ref={discoveryAnchorRef} collapsable={false} style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle} testID="home-discovery-title">
-              Sorties à découvrir
-            </Text>
-          </View>
+          <Text style={styles.sectionTitle} testID="home-discovery-title">
+            Sorties à découvrir
+          </Text>
 
           <DiscoveryFilters
             value={activityFilter}
@@ -279,11 +279,12 @@ export default function HomeScreen() {
             <ActivityIndicator color={h.primary} style={{ marginVertical: 24 }} />
           ) : discovery.length ? (
             <View style={styles.list} testID="home-discovery-list">
-              {discovery.map((s) => (
+              {discovery.map((s, i) => (
                 <OutingRow
                   key={s.id}
                   session={s}
                   onPress={() => openSession(s.id)}
+                  showRule={i < discovery.length - 1}
                 />
               ))}
             </View>
@@ -310,22 +311,27 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: h.canvas },
   content: {
-    paddingHorizontal: h.space.lg,
-    paddingTop: h.space.md,
-    gap: h.space.xl,
+    paddingHorizontal: 20,
+    paddingTop: h.space.sm,
+    gap: h.space.lg,
     width: "100%",
     maxWidth: 960,
     alignSelf: "center",
   },
-  nextBlock: { gap: h.space.md },
-  section: { gap: h.space.md },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  nextBlock: { gap: 8 },
+  hairline: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(190,202,190,0.45)",
+    marginVertical: 4,
   },
-  sectionTitle: { ...h.type.section, color: h.text },
-  list: { gap: h.space.md },
+  section: { gap: h.space.sm, marginTop: 4 },
+  sectionTitle: {
+    fontFamily: h.font.space.bold,
+    fontSize: 18,
+    lineHeight: 24,
+    color: h.text,
+  },
+  list: { marginTop: 4 },
   errorBox: {
     backgroundColor: "#FDECEA",
     borderRadius: h.radiusDiscovery,
@@ -345,11 +351,7 @@ const styles = StyleSheet.create({
   },
   retryText: { ...h.type.label, color: h.danger },
   empty: {
-    backgroundColor: h.card,
-    borderRadius: h.radiusDiscovery,
-    borderWidth: 1,
-    borderColor: h.outline,
-    padding: h.space.lg,
+    paddingVertical: h.space.lg,
     gap: 8,
   },
   emptyTitle: { ...h.type.label, fontSize: 16, color: h.text },

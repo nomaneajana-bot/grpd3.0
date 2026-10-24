@@ -1,5 +1,5 @@
-import React from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
 
@@ -14,36 +14,46 @@ type HomeHeaderProps = {
   onCityPress: () => void;
   onCitySelect?: (city: string) => void;
   searchFocused?: boolean;
-  searchInputRef?: React.RefObject<TextInput | null>;
+  searchInputRef?: React.RefObject<unknown>;
+  /** Optional profile initial for the mark (Stitch: single letter). */
+  profileInitial?: string;
 };
 
+/**
+ * Stitch Accueil top — low chrome city + mark, editorial greeting.
+ * City slider appears on demand (no search field clutter).
+ */
 export function HomeHeader({
   cityLabel,
   dayEyebrow,
-  query,
-  onQueryChange,
-  onCityPress,
   onCitySelect,
-  searchInputRef,
+  onQueryChange,
+  profileInitial = "Y",
 }: HomeHeaderProps) {
+  const [cityOpen, setCityOpen] = useState(false);
+
   return (
     <View style={styles.wrap} testID="home-header">
       <View style={styles.topRow}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Ville : ${cityLabel}. Activer la recherche`}
-          onPress={onCityPress}
+          accessibilityLabel={`Ville : ${cityLabel}. Changer de ville`}
+          onPress={() => setCityOpen((v) => !v)}
           style={({ pressed }) => [
-            styles.cityChip,
+            styles.cityBtn,
             pressed && { opacity: 0.85 },
           ]}
           testID="home-city-chip"
         >
-          <Ionicons name="location-outline" size={18} color={h.primary} />
+          <Ionicons name="location" size={19} color={h.primary} />
           <Text style={styles.cityText} numberOfLines={1}>
             {cityLabel}
           </Text>
-          <Ionicons name="chevron-down" size={16} color={h.textSecondary} />
+          <Ionicons
+            name={cityOpen ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={h.outline}
+          />
         </Pressable>
 
         <Pressable
@@ -56,56 +66,37 @@ export function HomeHeader({
           ]}
           testID="home-profile-btn"
         >
-          <Ionicons name="person" size={20} color={h.onPrimary} />
+          <Text style={styles.avatarText}>{profileInitial.slice(0, 1)}</Text>
         </Pressable>
       </View>
 
-      <Text style={styles.dayEyebrow} testID="home-day-eyebrow">
-        {dayEyebrow}
-      </Text>
-      <Text
-        style={styles.title}
-        accessibilityRole="header"
-        testID="home-title"
-      >
-        On sort ?
-      </Text>
-
-      <View style={styles.searchRow}>
-        <Ionicons name="search" size={18} color={h.textSecondary} />
-        <TextInput
-          ref={searchInputRef}
-          accessibilityLabel="Rechercher une sortie ou une ville"
-          testID="home-search"
-          placeholder="Une ville, un lieu, une envie…"
-          placeholderTextColor={h.textSecondary}
-          value={query}
-          onChangeText={onQueryChange}
-          style={styles.searchInput}
-          returnKeyType="search"
-          clearButtonMode="while-editing"
+      {cityOpen ? (
+        <CitySlider
+          value={cityLabel}
+          onChange={(city) => {
+            if (onCitySelect) onCitySelect(city);
+            else onQueryChange(city);
+            setCityOpen(false);
+          }}
+          testID="home-city-slider"
         />
-        {query ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Effacer la recherche"
-            onPress={() => onQueryChange("")}
-            hitSlop={8}
-            style={styles.clearBtn}
-          >
-            <Ionicons name="close-circle" size={20} color={h.textSecondary} />
-          </Pressable>
-        ) : null}
-      </View>
+      ) : null}
 
-      <CitySlider
-        value={cityLabel}
-        onChange={(city) => {
-          if (onCitySelect) onCitySelect(city);
-          else onQueryChange(city);
-        }}
-        testID="home-city-slider"
-      />
+      <View style={styles.greeting}>
+        <Text style={styles.dayEyebrow} testID="home-day-eyebrow">
+          {dayEyebrow}
+        </Text>
+        <Text
+          style={styles.title}
+          accessibilityRole="header"
+          testID="home-title"
+        >
+          On sort ?
+        </Text>
+        <Text style={styles.sub} testID="home-greeting-sub">
+          Cette semaine, avec les tiens.
+        </Text>
+      </View>
     </View>
   );
 }
@@ -116,66 +107,63 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: h.space.md,
+    paddingTop: h.space.xs,
+    paddingBottom: h.space.sm,
   },
-  cityChip: {
+  cityBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    minHeight: h.touchMin,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: h.radiusChip,
-    backgroundColor: h.mutedSurface,
+    minHeight: 36,
     maxWidth: "78%",
+    paddingVertical: 4,
   },
   cityText: {
-    ...h.type.label,
+    fontFamily: h.font.space.semibold,
+    fontSize: 15,
+    lineHeight: 20,
+    letterSpacing: -0.2,
     color: h.text,
     flexShrink: 1,
   },
   avatarBtn: {
-    width: h.touchMin,
-    height: h.touchMin,
-    borderRadius: h.touchMin / 2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: h.primary,
     alignItems: "center",
     justifyContent: "center",
   },
+  avatarText: {
+    fontFamily: h.font.space.semibold,
+    fontSize: 12,
+    lineHeight: 16,
+    color: h.onPrimary,
+  },
+  greeting: {
+    paddingTop: h.space.sm,
+    paddingBottom: 4,
+    gap: 6,
+  },
   dayEyebrow: {
-    ...h.type.meta,
-    color: h.textSecondary,
-    letterSpacing: 1.2,
+    fontFamily: h.font.hanken.bold,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
-    marginTop: h.space.sm,
+    color: h.outline,
   },
   title: {
-    ...h.type.pageTitle,
+    fontFamily: h.font.space.bold,
+    fontSize: 32,
+    lineHeight: 36,
+    letterSpacing: -0.9,
     color: h.text,
-    letterSpacing: -0.6,
+    fontWeight: "700",
   },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    minHeight: h.touchMin,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: h.card,
-    borderWidth: 1,
-    borderColor: h.outline,
-  },
-  searchInput: {
-    flex: 1,
-    minWidth: 0,
+  sub: {
     ...h.type.bodySm,
-    color: h.text,
-    paddingVertical: 10,
-  },
-  clearBtn: {
-    minWidth: h.touchMin,
-    minHeight: h.touchMin,
-    alignItems: "center",
-    justifyContent: "center",
+    color: h.textSecondary,
+    marginTop: 2,
   },
 });

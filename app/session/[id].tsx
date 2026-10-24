@@ -873,7 +873,7 @@ export default function SessionScreen() {
         />
       )}
 
-      {/* Slim fixed chrome — hero + story live in the scroll */}
+      {/* Slim fixed chrome — Stitch: title row + city / Modifier context */}
       <View style={styles.header}>
         <View style={styles.headerNavRow}>
           <TouchableOpacity
@@ -890,7 +890,19 @@ export default function SessionScreen() {
             numberOfLines={1}
             testID="session-detail-nav-title"
           >
-            Sortie
+            Détail de la sortie
+          </Text>
+          <View style={styles.headerAvatarMark} accessibilityElementsHidden>
+            <Text style={styles.headerAvatarMarkText}>·</Text>
+          </View>
+        </View>
+        <View style={styles.headerContextRow}>
+          <Text style={styles.headerCityLabel} numberOfLines={1}>
+            {(
+              matchingMembership?.club?.city ||
+              memberships.find((m) => m.club?.city)?.club?.city ||
+              "Casablanca"
+            ).toString()}
           </Text>
           {isOrganizer ? (
             <TouchableOpacity
@@ -963,16 +975,19 @@ export default function SessionScreen() {
             typeUpper.includes("WALKING") ||
             typeUpper.startsWith("LANGUES");
           const raw = linkedWorkout?.name ?? session.title;
-          const title = isWalkLike ? raw : raw.toUpperCase();
-          const metaBits = [
-            typeLabelStr,
-            session.genderRestriction === "women_only" ? "Femmes" : null,
-          ].filter(Boolean);
+          const title = raw;
+          const typeMeta = (
+            typeLabelStr ||
+            (session.genderRestriction === "women_only" ? "Femmes" : "") ||
+            ""
+          )
+            .toString()
+            .toUpperCase();
           return (
             <View style={styles.stitoHeroWrap}>
               <StitoOutingHero
                 title={title}
-                metaLine={metaBits.join(" · ") || null}
+                metaLine={typeMeta || null}
                 contextLabel={
                   session.visibility === "members"
                     ? "Réservée aux membres"
@@ -983,46 +998,7 @@ export default function SessionScreen() {
           );
         })()}
 
-        {!session.isCustom ? (
-          <View style={styles.tabRow}>
-            <Pressable
-              style={styles.tabCell}
-              onPress={() => setSessionDetailTab("info")}
-            >
-              <Text
-                style={[
-                  styles.tabLabel,
-                  sessionDetailTab === "info" && styles.tabLabelActive,
-                ]}
-              >
-                Infos
-              </Text>
-              {sessionDetailTab === "info" ? (
-                <View style={styles.tabUnderline} />
-              ) : (
-                <View style={styles.tabUnderlineMuted} />
-              )}
-            </Pressable>
-            <Pressable
-              style={styles.tabCell}
-              onPress={() => setSessionDetailTab("runners")}
-            >
-              <Text
-                style={[
-                  styles.tabLabel,
-                  sessionDetailTab === "runners" && styles.tabLabelActive,
-                ]}
-              >
-                Coureurs
-              </Text>
-              {sessionDetailTab === "runners" ? (
-                <View style={styles.tabUnderline} />
-              ) : (
-                <View style={styles.tabUnderlineMuted} />
-              )}
-            </Pressable>
-          </View>
-        ) : null}
+        {/* Stitch editorial: no Infos/Coureurs chrome — runners stay available via club. */}
 
         {joinedGroupId !== null && joinedGroup ? (
           <Text style={styles.joinedStatus}>
@@ -1030,74 +1006,8 @@ export default function SessionScreen() {
           </Text>
         ) : null}
 
-        {sessionDetailTab === "runners" && !session.isCustom ? (
-          <SessionRunnersPanel
-            variant="tab"
-            loading={participantsLoading}
-            error={participantsError}
-            data={participantsData}
-            filter={runnersFilter}
-            onFilter={setRunnersFilter}
-            noGroupOnly={runnersNoGroupOnly}
-            onToggleNoGroup={() => setRunnersNoGroupOnly((v) => !v)}
-            onGoToClub={() => router.push("/(tabs)/club")}
-            onRequestAccess={() => router.push("/(tabs)/club/access")}
-          />
-        ) : (
-          <>
-        {(() => {
-          const typeUpper = (session.typeLabel || "").toUpperCase();
-          const isCasualWalk =
-            typeUpper.includes("MARCHE") || typeUpper.includes("WALKING");
-          const dist = formatSessionDistanceKm(session.estimatedDistanceKm);
-          const pace = formatSessionPaceLabel(session.targetPace);
-          // No invented pace/distance for walk/casual — hide empty metric chrome.
-          if (isCasualWalk && dist === "—" && (pace === "—" || /allure\s+libre/i.test(pace))) {
-            return null;
-          }
-          return (
-            <StitoMetricsStrip
-              cells={[
-                {
-                  eyebrow: "Distance",
-                  value: dist === "—" ? "—" : dist.replace(/\s*km$/i, ""),
-                  unit: dist === "—" ? undefined : "km",
-                  caption: isCasualWalk ? "Parcours" : "Volume",
-                },
-                {
-                  eyebrow: "Rythme",
-                  // Keep range + /km as one string so it never wraps as "5:30–" + detached "/km".
-                  value:
-                    pace === "—"
-                      ? "—"
-                      : /km\/h|allure\s+libre/i.test(pace)
-                        ? pace
-                        : /\/km$/i.test(pace)
-                          ? pace
-                          : `${pace}/km`,
-                  caption: isCasualWalk ? "Allure douce" : "Cible",
-                  valueColor: stitoTheme.primary,
-                },
-                {
-                  eyebrow: isCasualWalk ? "Intensité" : "Coureurs",
-                  value: isCasualWalk
-                    ? "Libre"
-                    : String(
-                        session.paceGroups.reduce(
-                          (a, g) => a + g.runnersCount,
-                          0,
-                        ) || "—",
-                      ),
-                  caption: isCasualWalk ? "Tous niveaux" : "Confirmés",
-                  valueColor: isCasualWalk ? stitoTheme.primary : undefined,
-                },
-              ]}
-            />
-          );
-        })()}
-
-
-        {/* Stito composition: logistics → host → access → purpose → participants */}
+        <>
+        {/* Stitch composition: logistics → host → access → purpose → participants */}
         {(() => {
           const typeUpper = (session.typeLabel || "").toUpperCase();
           const vol = session.volume?.trim() || "";
@@ -1131,19 +1041,26 @@ export default function SessionScreen() {
             matchingMembership?.club?.name?.trim() ||
             session.hostGroupName?.trim() ||
             null;
-          const hostName = session.coachName?.trim() || "Organisateur";
+          const hostName =
+            session.coachName?.trim() ||
+            clubLabel ||
+            "Organisateur";
+          const hostRole =
+            session.coachName?.trim()
+              ? "Organisateur"
+              : clubLabel
+                ? "Club hôte"
+                : null;
           const placeTitle =
             session.meetingPoint?.trim() || session.spot?.trim() || "—";
-          const placeDetail = [
-            formatSessionDistanceKm(session.estimatedDistanceKm) !== "—"
-              ? formatSessionDistanceLabel(session.estimatedDistanceKm)
-              : null,
-            session.visibility === "members" && session.hostGroupName?.trim()
-              ? session.hostGroupName.trim()
-              : null,
-          ]
-            .filter(Boolean)
-            .join(" · ");
+          const placeDetail =
+            session.meetingPoint?.trim() &&
+            session.spot?.trim() &&
+            session.meetingPoint.trim() !== session.spot.trim()
+              ? `Point de repère : ${session.spot.trim()}.`
+              : session.visibility === "members" && session.hostGroupName?.trim()
+                ? `Club · ${session.hostGroupName.trim()}`
+                : null;
           const joinedFromApi = participantsData?.counts?.joined ?? null;
           const joinedFromGroups = (session.paceGroups ?? []).reduce(
             (a, g) => a + (g.runnersCount ?? 0),
@@ -1172,13 +1089,16 @@ export default function SessionScreen() {
                 isMembersOnly={session.visibility === "members"}
                 gpsAvailable={Boolean(session.meetingPointGPS)}
               />
+              <View style={styles.stitoRule} />
               {session.clubId &&
               (session.visibility == null || session.visibility === "public") ? (
                 <View testID="session-soft-club-row" collapsable={false}>
                   <StitoHostCard
                     hostName={hostName}
-                    hostRole="Organisateur"
-                    clubName={clubLabel}
+                    hostRole={hostRole}
+                    clubName={
+                      hostName !== clubLabel ? clubLabel : null
+                    }
                     onClubPress={() => router.push("/(tabs)/club")}
                   />
                 </View>
@@ -1186,12 +1106,17 @@ export default function SessionScreen() {
                 <StitoHostCard
                   hostName={hostName}
                   hostRole={
-                    session.visibility === "members" ? "Organisateur club" : "Organisateur"
+                    session.visibility === "members"
+                      ? "Organisateur club"
+                      : hostRole
                   }
                   clubName={
                     session.visibility === "members"
-                      ? session.hostGroupName?.trim() || clubLabel
-                      : clubLabel
+                      ? session.hostGroupName?.trim() ||
+                        (hostName !== clubLabel ? clubLabel : null)
+                      : hostName !== clubLabel
+                        ? clubLabel
+                        : null
                   }
                   onClubPress={
                     clubLabel ? () => router.push("/(tabs)/club") : undefined
@@ -1202,12 +1127,15 @@ export default function SessionScreen() {
               session.hostGroupName?.trim() ? (
                 <View testID="session-target-group-row" style={{ height: 0 }} />
               ) : null}
+              <View style={styles.stitoRule} />
               <StitoAccessNote visibility={session.visibility} />
+              <View style={styles.stitoRule} />
               <StitoPurposeSection
                 purposeText={purposeText}
                 structureText={languageOnly || !vol ? null : vol}
                 languageLabel={languageOnly ? vol : null}
               />
+              <View style={styles.stitoRule} />
               <StitoParticipantsCard
                 joinedCount={joinedCount}
                 names={participantNames}
@@ -1259,8 +1187,8 @@ export default function SessionScreen() {
 
         {/* Purpose section already surfaces coachAdvice — skip duplicate note card. */}
 
-        {/* Groups Section */}
-        {session.paceGroupsOverride && session.paceGroupsOverride.length > 0 ? (
+        {/* Stitch: pace-group picker / inter-group panel omitted — RSVP is the sticky dock. */}
+        {false && session.paceGroupsOverride && session.paceGroupsOverride.length > 0 ? (
           <View style={styles.card}>
             <Text style={styles.cardLabel}>GROUPES</Text>
             {session.paceGroupsOverride
@@ -1471,39 +1399,6 @@ export default function SessionScreen() {
           </View>
         ) : null}
 
-        {!isOrganizer ? (
-          <View style={styles.actionButtonContainer}>
-            <InterGroupJoinPanel
-              memberGroupId={memberHomeGroupId}
-              sessionAnchorGroupId={sessionAnchorGroupId}
-              selectedGroupId={selectedPaceGroupId}
-              sessionPaceLabel={
-                session.paceGroups.find((g) => g.id === sessionAnchorGroupId)
-                  ?.paceRange ?? session.targetPace
-              }
-              joinedSummaryLine={[
-                session.dateLabel,
-                session.meetingPoint || session.spot,
-              ]
-                .map((p) => (p || "").trim())
-                .filter(Boolean)
-                .join(" · ")}
-              settings={clubAdminSettings}
-              hasStoredJoin={hasStoredJoin}
-              canJoin={canJoin}
-              isPendingMember={isPendingMember}
-              isPublishing={isJoiningOuting}
-              onJoin={handleSave}
-              onRequestJoin={handleRequestJoin}
-              onLeave={openLeaveConfirm}
-              onGoToClub={() => router.push("/(tabs)/club")}
-              onGoToMySessions={() => router.push("/(tabs)/my-sessions")}
-              onCancelWarn={() =>
-                setSelectedGroupId(memberHomeGroupId ?? sessionAnchorGroupId)
-              }
-            />
-          </View>
-        ) : null}
 
         {isCoachOrAdmin &&
         ((session.paceGroupsOverride ?? []).some((g) => g.isActive) ||
@@ -1572,7 +1467,6 @@ export default function SessionScreen() {
           </View>
         ) : null}
         </>
-        )}
       </ScrollView>
 
       {/* Coach assign modal */}
@@ -1690,13 +1584,8 @@ export default function SessionScreen() {
           busy={isJoiningOuting}
           primaryLabel={
             hasStoredJoin
-              ? "Se désister"
+              ? "Inscrit·e (Se désister)"
               : "Rejoindre la sortie"
-          }
-          secondaryHint={
-            hasStoredJoin
-              ? "Place réservée · tu peux te désister à tout moment"
-              : formatSessionDetailSubtitle(session)
           }
           onPrimary={hasStoredJoin ? openLeaveConfirm : () => void handleSave()}
         />
@@ -1776,18 +1665,50 @@ const styles = StyleSheet.create({
     backgroundColor: stitoTheme.canvas,
   },
   header: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 6,
-    paddingBottom: 6,
+    paddingBottom: 4,
     backgroundColor: stitoTheme.canvas,
   },
+  headerContextRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  headerCityLabel: {
+    fontFamily: stitoTheme.font.space.bold,
+    fontSize: 10,
+    lineHeight: 13,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    color: stitoTheme.outline,
+  },
+  headerAvatarMark: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: stitoTheme.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerAvatarMarkText: {
+    fontFamily: stitoTheme.font.space.bold,
+    fontSize: 14,
+    color: stitoTheme.onPrimary,
+  },
   stitoHeroWrap: {
-    marginBottom: 20,
+    marginBottom: 8,
   },
   stitoStory: {
-    gap: 28,
+    gap: 22,
     marginBottom: 20,
-    paddingTop: 4,
+    paddingTop: 20,
+  },
+  stitoRule: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(190,202,190,0.45)",
   },
   orgBlock: {
     marginTop: 12,
@@ -1828,26 +1749,27 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   headerBackCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: stitoTheme.primary,
+    width: 44,
+    height: 44,
+    marginLeft: -8,
     alignItems: "center",
     justifyContent: "center",
   },
   headerBackChevron: {
-    color: stitoTheme.onPrimary,
-    fontSize: 22,
+    color: stitoTheme.text,
+    fontSize: 28,
     fontWeight: "300",
     marginTop: -2,
   },
   headerLocation: {
     flex: 1,
-    marginHorizontal: 10,
-    color: stitoTheme.textSecondary,
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
+    marginHorizontal: 8,
+    fontFamily: stitoTheme.font.space.semibold,
+    color: stitoTheme.text,
+    fontSize: 18,
+    lineHeight: 24,
+    letterSpacing: -0.2,
+    textAlign: "left",
   },
   headerMenuDots: {
     color: stitoTheme.text,
@@ -1856,9 +1778,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   headerMenuAction: {
+    fontFamily: stitoTheme.font.hanken.medium,
     color: stitoTheme.primary,
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 12,
+    lineHeight: 16,
   },
   headerTagRow: {
     flexDirection: "row",

@@ -13,7 +13,7 @@ type Props = {
   gpsAvailable?: boolean;
 };
 
-/** When / where — open rows, not a dense boxed stack. */
+/** When / where — open typography with Stitch hairlines. */
 export function StitoLogisticsCard({
   dateLine,
   departureTime,
@@ -62,27 +62,28 @@ const styles = StyleSheet.create({
   block: { gap: 4 },
   label: {
     fontFamily: t.font.space.bold,
-    fontSize: 11,
-    letterSpacing: 1.2,
+    fontSize: 10,
+    letterSpacing: 1.6,
     textTransform: "uppercase",
     color: t.outline,
     marginBottom: 2,
   },
   value: {
-    fontFamily: t.font.space.bold,
-    fontSize: 17,
-    lineHeight: 22,
+    fontFamily: t.font.space.semibold,
+    fontSize: 18,
+    lineHeight: 24,
     color: t.text,
   },
   sub: {
     fontFamily: t.font.hanken.regular,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 21,
     color: t.textSecondary,
+    marginTop: 2,
   },
   rule: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: t.surfaceContainerHigh,
+    backgroundColor: "rgba(190,202,190,0.45)",
   },
   privacyNote: {
     marginTop: 6,

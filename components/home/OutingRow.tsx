@@ -1,24 +1,55 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 import { homeTheme as h } from "@/constants/homeTheme";
 import {
   activityLabel,
-  formatDiscoveryWhen,
+  formatTimeLabel,
 } from "@/lib/homeViewModel";
 import type { SessionData } from "@/lib/sessionData";
 
 type OutingRowProps = {
   session: SessionData;
   onPress: () => void;
+  /** Hairline below (Stitch editorial list). */
+  showRule?: boolean;
 };
 
-export function OutingRow({ session, onPress }: OutingRowProps) {
-  const walk = activityLabel(session) === "Marche";
-  const clubOrHost =
-    session.hostGroupName?.trim() || session.coachName?.trim() || null;
+function formatDiscoveryDay(session: SessionData): string {
+  const iso = session.dateISO;
+  if (iso && /^\d{4}-\d{2}-\d{2}/.test(iso)) {
+    const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+    const days = ["Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam."];
+    const months = [
+      "janv.",
+      "févr.",
+      "mars",
+      "avr.",
+      "mai",
+      "juin",
+      "juil.",
+      "août",
+      "sept.",
+      "oct.",
+      "nov.",
+      "déc.",
+    ];
+    return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
+  }
+  return (session.dateLabel || "").replace(/\s+\d{1,2}:\d{2}.*/, "").trim();
+}
+
+/** Stitch editorial discovery row — typography + hairline, not a card. */
+export function OutingRow({
+  session,
+  onPress,
+  showRule = true,
+}: OutingRowProps) {
+  const host =
+    session.coachName?.trim() || session.hostGroupName?.trim() || null;
   const spot = session.meetingPoint?.trim() || session.spot?.trim() || "";
+  const time = formatTimeLabel(session.timeMinutes);
   const dist =
     session.estimatedDistanceKm > 0
       ? `${String(session.estimatedDistanceKm).replace(".", ",")} km`
@@ -27,107 +58,111 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
     session.targetPace &&
     session.targetPace !== "—" &&
     !/^0:00/i.test(session.targetPace)
-      ? session.targetPace
+      ? session.targetPace.startsWith("Allure")
+        ? session.targetPace
+        : `Allure ${session.targetPace}`
+      : "Allure libre";
+  const openBit =
+    session.visibility === "public" || session.visibility == null
+      ? "Ouverte"
       : null;
+  const rightMeta = [pace, dist || openBit].filter(Boolean).join(" · ");
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Voir ${session.title}`}
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]}
-      testID={`home-outing-row-${session.id}`}
-    >
-      <View style={styles.mid}>
+    <View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Voir ${session.title}`}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.row,
+          pressed && { backgroundColor: "rgba(243,243,244,0.4)" },
+        ]}
+        testID={`home-outing-row-${session.id}`}
+      >
         <View style={styles.whenRow}>
-          <Ionicons
-            name={walk ? "walk-outline" : "fitness-outline"}
-            size={14}
-            color={h.primary}
-          />
-          <Text style={styles.discipline}>{activityLabel(session)}</Text>
-          <Text style={styles.dotSep}>·</Text>
-          <Text style={styles.when} numberOfLines={1}>
-            {formatDiscoveryWhen(session)}
+          <Text style={styles.discipline} numberOfLines={1}>
+            {activityLabel(session)} · {formatDiscoveryDay(session)}
           </Text>
+          {time ? <Text style={styles.time}>{time}</Text> : null}
         </View>
         <Text style={styles.title} numberOfLines={2}>
           {session.title}
         </Text>
-        <Text style={styles.meta} numberOfLines={2}>
-          {[clubOrHost, spot].filter(Boolean).join(" · ")}
-        </Text>
-        {(dist || pace) && (
-          <View style={styles.pills}>
-            <View style={styles.pill}>
-              <Text style={styles.pillText}>
-                {[dist, pace].filter(Boolean).join(" · ")}
-              </Text>
-            </View>
-          </View>
-        )}
-      </View>
-      <View style={styles.chevron} accessibilityElementsHidden>
-        <Ionicons name="chevron-forward" size={20} color={h.textSecondary} />
-      </View>
-    </Pressable>
+        <View style={styles.metaRow}>
+          <Text style={styles.meta} numberOfLines={1}>
+            {[host, spot].filter(Boolean).join(" · ")}
+          </Text>
+          {rightMeta ? (
+            <Text style={styles.metaRight} numberOfLines={1}>
+              {rightMeta}
+            </Text>
+          ) : null}
+        </View>
+      </Pressable>
+      {showRule ? <View style={styles.rule} /> : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: h.space.md,
-    backgroundColor: h.card,
-    borderRadius: h.radiusMain,
-    borderWidth: 1,
-    borderColor: "rgba(232,232,233,0.7)",
-    padding: h.space.lg,
-    minHeight: 72,
+  row: {
+    paddingVertical: h.space.md,
+    paddingHorizontal: 4,
+    borderRadius: 12,
+    gap: 6,
   },
-  mid: { flex: 1, minWidth: 0, gap: 4 },
   whenRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    marginBottom: 2,
+    justifyContent: "space-between",
+    gap: 8,
   },
   discipline: {
-    ...h.type.meta,
-    color: h.primary,
-    fontWeight: "700",
-    fontSize: 12,
+    fontFamily: h.font.hanken.semibold,
+    fontSize: 10,
+    lineHeight: 13,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: "rgba(63,73,65,0.8)",
+    flexShrink: 1,
   },
-  dotSep: { ...h.type.meta, color: h.textSecondary, fontSize: 12 },
-  when: { ...h.type.meta, color: h.textSecondary, fontSize: 12, flexShrink: 1 },
+  time: {
+    fontFamily: h.font.hanken.medium,
+    fontSize: 10,
+    lineHeight: 13,
+    color: h.outline,
+  },
   title: {
-    ...h.type.label,
-    fontSize: 16,
+    fontFamily: h.font.space.semibold,
+    fontSize: 17,
     lineHeight: 22,
+    letterSpacing: -0.2,
     color: h.text,
-    fontWeight: "700",
+    marginTop: 2,
   },
-  meta: { ...h.type.meta, color: h.textSecondary, fontSize: 12 },
-  pills: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 },
-  pill: {
-    backgroundColor: h.mutedSurface,
-    borderRadius: h.radiusChip,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    marginTop: 2,
   },
-  pillText: {
+  meta: {
     ...h.type.meta,
     color: h.textSecondary,
-    fontSize: 11,
-    fontWeight: "600",
+    flexShrink: 1,
   },
-  chevron: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: h.mutedSurface,
-    alignItems: "center",
-    justifyContent: "center",
+  metaRight: {
+    fontFamily: h.font.hanken.regular,
+    fontSize: 12,
+    lineHeight: 16,
+    color: h.outline,
+    flexShrink: 0,
+  },
+  rule: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(190,202,190,0.45)",
+    marginVertical: 4,
   },
 });

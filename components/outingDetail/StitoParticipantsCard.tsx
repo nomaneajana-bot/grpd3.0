@@ -12,6 +12,8 @@ type Props = {
   isJoined?: boolean;
 };
 
+const AVATAR_COLORS = [t.primary, "#333E35", "#576158"];
+
 export function StitoParticipantsCard({
   joinedCount,
   placesHint,
@@ -21,31 +23,42 @@ export function StitoParticipantsCard({
 }: Props) {
   const shown = names.filter(Boolean).slice(0, 4);
   const extra = Math.max(0, joinedCount - shown.length);
+  const displayCount = Math.max(joinedCount, shown.length);
 
   return (
     <View style={styles.wrap} testID="stito-participants-card">
       <View style={styles.head}>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.eyebrow}>Participants</Text>
-          <Text style={styles.count} testID="stito-participants-count">
-            {joinedCount} inscrit{joinedCount === 1 ? "" : "s"}
-            {placesHint ? ` · ${placesHint}` : ""}
-          </Text>
-        </View>
+        <Text style={styles.eyebrow}>Participants</Text>
         {statusLabel || isJoined ? (
-          <Text style={styles.status}>
-            {statusLabel || (isJoined ? "Confirmé" : "")}
-          </Text>
+          <View style={styles.statusRow}>
+            <View style={styles.statusDot} />
+            <Text style={styles.status}>
+              {statusLabel || (isJoined ? "Confirmé" : "")}
+            </Text>
+          </View>
         ) : null}
       </View>
 
-      {(shown.length > 0 || joinedCount > 0) && (
+      <Text style={styles.count} testID="stito-participants-count">
+        {displayCount} inscrit{displayCount === 1 ? "" : "s"}
+        {isJoined ? (
+          <Text style={styles.countHint}> (dont toi)</Text>
+        ) : placesHint ? (
+          <Text style={styles.countHint}> · {placesHint}</Text>
+        ) : null}
+      </Text>
+
+      {(shown.length > 0 || displayCount > 0) && (
         <View style={styles.row}>
           <View style={styles.avatars}>
             {shown.map((n, i) => (
               <View
                 key={`${n}-${i}`}
-                style={[styles.avatar, i > 0 && { marginLeft: -8 }]}
+                style={[
+                  styles.avatar,
+                  { backgroundColor: AVATAR_COLORS[i % AVATAR_COLORS.length] },
+                  i > 0 && { marginLeft: -8 },
+                ]}
               >
                 <Text style={styles.avatarText}>
                   {initialsFromName(n) || "·"}
@@ -67,7 +80,7 @@ export function StitoParticipantsCard({
           <Text style={styles.hint} numberOfLines={2}>
             {isJoined
               ? "Tu fais partie de cette sortie"
-              : joinedCount > 0
+              : displayCount > 0
                 ? "Rejoins les participants confirmés"
                 : "Sois parmi les premiers"}
           </Text>
@@ -78,40 +91,57 @@ export function StitoParticipantsCard({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 14, paddingVertical: 4 },
+  wrap: { gap: 10, paddingVertical: 4 },
   head: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
+    marginBottom: 2,
   },
   eyebrow: {
     fontFamily: t.font.space.bold,
-    fontSize: 11,
-    letterSpacing: 1.4,
+    fontSize: 10,
+    letterSpacing: 1.6,
     textTransform: "uppercase",
     color: t.outline,
-    marginBottom: 4,
   },
-  count: {
-    fontFamily: t.font.space.bold,
-    fontSize: 17,
-    color: t.text,
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: t.primary,
   },
   status: {
-    fontFamily: t.font.space.bold,
+    fontFamily: t.font.hanken.semibold,
     fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
+    lineHeight: 16,
     color: t.primary,
-    marginTop: 2,
+  },
+  count: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 18,
+    lineHeight: 24,
+    color: t.text,
+    marginBottom: 4,
+  },
+  countHint: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 15,
+    lineHeight: 21,
+    color: t.textSecondary,
   },
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
   avatars: { flexDirection: "row", alignItems: "center" },
   avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: t.primary,
     alignItems: "center",
     justifyContent: "center",
@@ -119,8 +149,8 @@ const styles = StyleSheet.create({
     borderColor: t.canvas,
   },
   avatarText: {
-    fontFamily: t.font.space.bold,
-    fontSize: 11,
+    fontFamily: t.font.space.semibold,
+    fontSize: 13,
     color: t.onPrimary,
   },
   avatarMore: { backgroundColor: t.surfaceContainerHigh },
@@ -131,9 +161,9 @@ const styles = StyleSheet.create({
   },
   hint: {
     flex: 1,
-    fontFamily: t.font.hanken.regular,
-    fontSize: 14,
-    lineHeight: 20,
+    fontFamily: t.font.hanken.medium,
+    fontSize: 13,
+    lineHeight: 18,
     color: t.textSecondary,
   },
 });

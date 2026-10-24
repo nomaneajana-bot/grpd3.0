@@ -1,18 +1,13 @@
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 
 import { homeTheme as h } from "@/constants/homeTheme";
 import type { HomeActivityFilter } from "@/lib/homeViewModel";
 
-const FILTERS: Array<{
-  id: HomeActivityFilter;
-  label: string;
-  icon?: keyof typeof Ionicons.glyphMap;
-}> = [
+const FILTERS: Array<{ id: HomeActivityFilter; label: string }> = [
   { id: "all", label: "Tout" },
-  { id: "run", label: "Course", icon: "fitness-outline" },
-  { id: "walk", label: "Marche", icon: "walk-outline" },
+  { id: "run", label: "Course" },
+  { id: "walk", label: "Marche" },
 ];
 
 type DiscoveryFiltersProps = {
@@ -20,6 +15,7 @@ type DiscoveryFiltersProps = {
   onChange: (v: HomeActivityFilter) => void;
 };
 
+/** Stitch understated text filters — pills without icon noise. */
 export function DiscoveryFilters({ value, onChange }: DiscoveryFiltersProps) {
   return (
     <ScrollView
@@ -44,13 +40,6 @@ export function DiscoveryFilters({ value, onChange }: DiscoveryFiltersProps) {
             ]}
             testID={`home-filter-${f.id}`}
           >
-            {f.icon ? (
-              <Ionicons
-                name={f.icon}
-                size={16}
-                color={on ? h.onPrimary : h.text}
-              />
-            ) : null}
             <Text style={[styles.chipText, on && styles.chipTextOn]}>
               {f.label}
             </Text>
@@ -64,26 +53,30 @@ export function DiscoveryFilters({ value, onChange }: DiscoveryFiltersProps) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
-    gap: h.space.sm,
-    paddingVertical: 2,
+    gap: 8,
+    paddingTop: 4,
+    paddingBottom: 8,
   },
   chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    minHeight: h.touchMin,
-    paddingHorizontal: 16,
+    minHeight: 32,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderRadius: h.radiusChip,
-    backgroundColor: h.mutedSurface,
+    backgroundColor: "rgba(232,232,233,0.65)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   chipOn: {
     backgroundColor: h.primary,
   },
   chipText: {
-    ...h.type.label,
-    color: h.text,
+    fontFamily: h.font.hanken.medium,
+    fontSize: 12,
+    lineHeight: 16,
+    color: h.textSecondary,
   },
   chipTextOn: {
+    fontFamily: h.font.hanken.semibold,
     color: h.onPrimary,
   },
 });
