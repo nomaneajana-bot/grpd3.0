@@ -17,7 +17,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Linking from "expo-linking";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 
-import { Tag } from "../../components/redesign/Tag";
 import { StitoOutingHero } from "../../components/outingDetail/StitoOutingHero";
 import { StitoMetricsStrip } from "../../components/outingDetail/StitoMetricsStrip";
 import { StitoStickyJoinBar } from "../../components/outingDetail/StitoStickyJoinBar";
@@ -29,7 +28,6 @@ import { StitoAccessNote } from "../../components/outingDetail/StitoAccessNote";
 import { stitoTheme } from "../../constants/stitoTheme";
 import { formatTimeLabel } from "../../lib/homeViewModel";
 import { formatOutingDateTime } from "../../lib/mesSortiesViewModel";
-import { SessionCoachAdviceCard } from "../../components/session/SessionCoachAdviceCard";
 import {
   SessionRunnersPanel,
   type RunnersFilter,
@@ -875,13 +873,15 @@ export default function SessionScreen() {
         />
       )}
 
-      {/* Fixed Header */}
+      {/* Slim fixed chrome — hero + story live in the scroll */}
       <View style={styles.header}>
         <View style={styles.headerNavRow}>
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.headerBackCircle}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Retour"
           >
             <Text style={styles.headerBackChevron}>‹</Text>
           </TouchableOpacity>
@@ -890,11 +890,11 @@ export default function SessionScreen() {
             numberOfLines={1}
             testID="session-detail-nav-title"
           >
-            Détail de la sortie
+            Sortie
           </Text>
           {isOrganizer ? (
             <TouchableOpacity
-              testID="session-header-modify"
+              testID="session-modify-btn"
               onPress={() => {
                 router.push({
                   pathname: "/session/create",
@@ -902,6 +902,8 @@ export default function SessionScreen() {
                 });
               }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel="Modifier la sortie"
             >
               <Text style={styles.headerMenuAction}>Modifier</Text>
             </TouchableOpacity>
@@ -934,70 +936,73 @@ export default function SessionScreen() {
                   { text: "Annuler", style: "cancel" },
                 ]);
               }}
+              accessibilityRole="button"
+              accessibilityLabel="Plus d'actions"
             >
               <Text style={styles.headerMenuDots}>···</Text>
             </TouchableOpacity>
           )}
         </View>
+      </View>
 
-        <View style={styles.headerTagRow}>
-          {(() => {
-            const typeLabelStr = linkedWorkout
-              ? getRunTypePillLabel(linkedWorkout.runType)
-              : getRunTypePillLabelFromModule(
-                  getSessionRunTypeId(session) as RunTypeIdFromRunTypes,
-                );
-            return <Tag label={typeLabelStr} variant="tb" />;
-          })()}
-          {session.genderRestriction === "women_only" ? (
-            <Tag label="100% FEMMES" variant="tpk" />
-          ) : null}
-          {session.visibility === "members" ? (
-            <Tag label="MEMBRES" variant="tgr" />
-          ) : null}
-        </View>
+      {/* Scrollable Content */}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        testID="session-detail-scroll"
+      >
+        {(() => {
+          const typeLabelStr = linkedWorkout
+            ? getRunTypePillLabel(linkedWorkout.runType)
+            : getRunTypePillLabelFromModule(
+                getSessionRunTypeId(session) as RunTypeIdFromRunTypes,
+              );
+          const typeUpper = (session.typeLabel || typeLabelStr || "").toUpperCase();
+          const isWalkLike =
+            typeUpper.includes("MARCHE") ||
+            typeUpper.includes("WALKING") ||
+            typeUpper.startsWith("LANGUES");
+          const raw = linkedWorkout?.name ?? session.title;
+          const title = isWalkLike ? raw : raw.toUpperCase();
+          const metaBits = [
+            typeLabelStr,
+            session.genderRestriction === "women_only" ? "Femmes" : null,
+          ].filter(Boolean);
+          return (
+            <View style={styles.stitoHeroWrap}>
+              <StitoOutingHero
+                title={title}
+                metaLine={metaBits.join(" · ") || null}
+                contextLabel={
+                  session.visibility === "members"
+                    ? "Réservée aux membres"
+                    : "Ouverte à tous"
+                }
+              />
+            </View>
+          );
+        })()}
 
-        <View style={styles.stitoHeroWrap}>
-          <StitoOutingHero
-            title={(() => {
-              const raw = linkedWorkout?.name ?? session.title;
-              const t = (session.typeLabel || "").toUpperCase();
-              const isWalkLike =
-                t.includes("MARCHE") ||
-                t.includes("WALKING") ||
-                t.startsWith("LANGUES");
-              return isWalkLike ? raw : raw.toUpperCase();
-            })()}
-            contextLabel={
-              session.visibility === "members"
-                ? `Sortie membres · ${session.spot || "Club"}`
-                : `Sortie publique · ${session.spot || "Ouverte à tous"}`
-            }
-            placesLabel={null}
-            editionLabel={formatSessionDetailSubtitle(session)}
-          />
-        </View>
-
-        <View style={styles.tabRow}>
-          <Pressable
-            style={styles.tabCell}
-            onPress={() => setSessionDetailTab("info")}
-          >
-            <Text
-              style={[
-                styles.tabLabel,
-                sessionDetailTab === "info" && styles.tabLabelActive,
-              ]}
+        {!session.isCustom ? (
+          <View style={styles.tabRow}>
+            <Pressable
+              style={styles.tabCell}
+              onPress={() => setSessionDetailTab("info")}
             >
-              Infos
-            </Text>
-            {sessionDetailTab === "info" ? (
-              <View style={styles.tabUnderline} />
-            ) : (
-              <View style={styles.tabUnderlineMuted} />
-            )}
-          </Pressable>
-          {!session.isCustom ? (
+              <Text
+                style={[
+                  styles.tabLabel,
+                  sessionDetailTab === "info" && styles.tabLabelActive,
+                ]}
+              >
+                Infos
+              </Text>
+              {sessionDetailTab === "info" ? (
+                <View style={styles.tabUnderline} />
+              ) : (
+                <View style={styles.tabUnderlineMuted} />
+              )}
+            </Pressable>
             <Pressable
               style={styles.tabCell}
               onPress={() => setSessionDetailTab("runners")}
@@ -1016,19 +1021,15 @@ export default function SessionScreen() {
                 <View style={styles.tabUnderlineMuted} />
               )}
             </Pressable>
-          ) : null}
-        </View>
+          </View>
+        ) : null}
 
-        {joinedGroupId !== null && joinedGroup && (
+        {joinedGroupId !== null && joinedGroup ? (
           <Text style={styles.joinedStatus}>
-            Tu es inscrit à cette séance · {joinedGroup.label} ·{" "}
-            {joinedGroup.paceRange}
+            Tu es inscrit·e · {joinedGroup.label} · {joinedGroup.paceRange}
           </Text>
-        )}
-      </View>
+        ) : null}
 
-      {/* Scrollable Content */}
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {sessionDetailTab === "runners" && !session.isCustom ? (
           <SessionRunnersPanel
             variant="tab"
@@ -1134,12 +1135,11 @@ export default function SessionScreen() {
           const placeTitle =
             session.meetingPoint?.trim() || session.spot?.trim() || "—";
           const placeDetail = [
-            session.typeLabel ? `Type · ${session.typeLabel}` : null,
             formatSessionDistanceKm(session.estimatedDistanceKm) !== "—"
               ? formatSessionDistanceLabel(session.estimatedDistanceKm)
               : null,
             session.visibility === "members" && session.hostGroupName?.trim()
-              ? `Groupe · ${session.hostGroupName.trim()}`
+              ? session.hostGroupName.trim()
               : null,
           ]
             .filter(Boolean)
@@ -1161,12 +1161,11 @@ export default function SessionScreen() {
             .flatMap((g) => g.participants ?? [])
             .map((p) => (p.displayName || "").trim())
             .filter(Boolean);
-          const departure = formatTimeLabel(session.timeMinutes);
           return (
             <View style={styles.stitoStory} testID="stito-outing-story">
               <StitoLogisticsCard
                 dateLine={formatOutingDateTime(session)}
-                departureTime={departure}
+                departureTime={null}
                 meetingTime={null}
                 placeTitle={placeTitle}
                 placeDetail={placeDetail || null}
@@ -1258,23 +1257,7 @@ export default function SessionScreen() {
           </TouchableOpacity>
         ) : null}
 
-        <SessionCoachAdviceCard
-          coachName={session.coachName}
-          coachAdvice={session.coachAdvice}
-          engineContext={coachEngineContext}
-          onAskQuestion={
-            session.coachPhone?.trim()
-              ? () => {
-                  const phoneNumber = session.coachPhone!.trim();
-                  const message = encodeURIComponent(
-                    `Question sur la séance "${session.title}" le ${session.dateLabel}`,
-                  );
-                  const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
-                  Linking.openURL(whatsappUrl).catch(() => {});
-                }
-              : undefined
-          }
-        />
+        {/* Purpose section already surfaces coachAdvice — skip duplicate note card. */}
 
         {/* Groups Section */}
         {session.paceGroupsOverride && session.paceGroupsOverride.length > 0 ? (
@@ -1522,11 +1505,13 @@ export default function SessionScreen() {
           </View>
         ) : null}
 
-        {isCoachOrAdmin && (
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>ESPACE COACH</Text>
-            <Text style={styles.cardSubtitle}>
-              Assigne un groupe pour cette séance.
+        {isCoachOrAdmin &&
+        ((session.paceGroupsOverride ?? []).some((g) => g.isActive) ||
+          session.paceGroups.length > 0) ? (
+          <View style={styles.orgBlock} testID="session-org-block">
+            <Text style={styles.orgLabel}>Organisation</Text>
+            <Text style={styles.orgHint}>
+              Assigne un groupe si besoin — discret, hors du récit de la sortie.
             </Text>
             {isCoachLoading ? (
               <Text style={styles.coachEmptyText}>Chargement...</Text>
@@ -1568,103 +1553,21 @@ export default function SessionScreen() {
               </View>
             )}
           </View>
-        )}
+        ) : null}
 
-        {/* Ton rendez-vous card - only shown if joined */}
-        {joinedGroupId !== null && (
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>TON RENDEZ-VOUS</Text>
-            <View style={styles.cardSection}>
-              <Text style={styles.infoLabelSmall}>Lieu exact</Text>
-              <Text style={styles.infoValueSmall}>
-                {session.meetingPoint ||
-                  (session.spot === "Spot 1"
-                    ? "Marina Casablanca - Entrée principale"
-                    : session.spot)}
-              </Text>
-              {session.meetingPointGPS ? (
-                <Text style={styles.infoSubtext}>
-                  {session.meetingPointGPS}
-                </Text>
-              ) : (
-                <Text style={styles.infoSubtext}>
-                  Coordonnées GPS disponibles sur demande
-                </Text>
-              )}
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.cardSection}>
-              <Text style={styles.infoLabelSmall}>Heure de rendez-vous</Text>
-              <Text style={styles.infoValueSmall}>
-                {session.dateLabel.split(" ").slice(-1)[0]} - 10 min avant le
-                départ
-              </Text>
-              <Text style={styles.infoSubtext}>
-                Échauffement collectif avant le départ
-              </Text>
-            </View>
-            <View style={styles.divider} />
-            {session.coachAdvice?.trim() ? (
-              <View style={styles.cardSection}>
-                <Text style={styles.infoLabelSmall}>Note de l&apos;organisateur</Text>
-                <Text style={styles.infoValueSmall}>
-                  {session.coachAdvice.trim()}
-                </Text>
-              </View>
-            ) : null}
-            {session.coachPhone?.trim() ? (
-              <>
-                <View style={styles.divider} />
-                <View style={styles.cardSection}>
-                  <Text style={styles.infoLabelSmall}>Contact</Text>
-                  <TouchableOpacity
-                    style={styles.whatsappButton}
-                    onPress={() => {
-                      const phoneNumber = session.coachPhone!.trim();
-                      const message = encodeURIComponent(
-                        `Séance ${session.title}`,
-                      );
-                      const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
-                      Linking.openURL(whatsappUrl).catch((err) => {
-                        console.warn("Failed to open WhatsApp:", err);
-                      });
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.whatsappButtonText}>
-                      Contacter {session.coachName?.trim() || "l'organisateur"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            ) : null}
-          </View>
-        )}
-
-        {/* Footer: organizer-only modify/delete (hostUserId), not merely isCustom */}
+        {/* Footer: delete only — Modifier lives in the slim header */}
         {isOrganizer ? (
           <View style={styles.footer}>
             <TouchableOpacity
-              style={styles.modifyButton}
-              activeOpacity={0.8}
-              onPress={() => {
-                router.push({
-                  pathname: "/session/create",
-                  params: { sessionId: session.id },
-                });
-              }}
-              testID="session-modify-btn"
-            >
-              <Text style={styles.modifyButtonText}>Modifier</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.deleteButton}
-              activeOpacity={0.8}
+              style={styles.deleteLink}
+              activeOpacity={0.7}
               onPress={() => setShowDeleteModal(true)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               testID="session-delete-btn"
+              accessibilityRole="button"
+              accessibilityLabel="Supprimer la séance"
             >
-              <Text style={styles.deleteButtonText}>Supprimer la séance</Text>
+              <Text style={styles.deleteLinkText}>Supprimer la sortie</Text>
             </TouchableOpacity>
           </View>
         ) : null}
@@ -1873,23 +1776,56 @@ const styles = StyleSheet.create({
     backgroundColor: stitoTheme.canvas,
   },
   header: {
-    paddingHorizontal: 14,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 6,
     backgroundColor: stitoTheme.canvas,
   },
   stitoHeroWrap: {
-    marginBottom: 12,
+    marginBottom: 20,
   },
   stitoStory: {
-    gap: 12,
-    marginBottom: 12,
+    gap: 28,
+    marginBottom: 20,
+    paddingTop: 4,
+  },
+  orgBlock: {
+    marginTop: 12,
+    marginBottom: 8,
+    paddingTop: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: stitoTheme.surfaceContainerHigh,
+    gap: 8,
+  },
+  orgLabel: {
+    fontFamily: stitoTheme.font.space.bold,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    color: stitoTheme.outline,
+  },
+  orgHint: {
+    fontFamily: stitoTheme.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: stitoTheme.textSecondary,
+    marginBottom: 8,
+  },
+  deleteLink: {
+    alignItems: "center",
+    paddingVertical: 16,
+    marginTop: 8,
+  },
+  deleteLinkText: {
+    fontFamily: stitoTheme.font.space.semibold,
+    fontSize: 14,
+    color: stitoTheme.error,
   },
   headerNavRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 0,
   },
   headerBackCircle: {
     width: 36,
@@ -2007,9 +1943,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 120,
+    paddingBottom: 140,
   },
   backRow: {
     flexDirection: "row",

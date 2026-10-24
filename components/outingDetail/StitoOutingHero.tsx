@@ -1,53 +1,47 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 import { stitoTheme as t } from "@/constants/stitoTheme";
 
 type Props = {
   title: string;
-  contextLabel: string;
-  placesLabel?: string | null;
+  /** e.g. Marche · Membres */
+  metaLine?: string | null;
+  /** When + place, already formatted */
   editionLabel?: string | null;
+  contextLabel?: string | null;
 };
 
 /**
- * Compact no-photo hero — deliberate deep-green plane, not a tall empty vignette.
- * Keeps exact title + date/edition; never fakes a location photo.
+ * Calm green plane — brand identity without pill clutter or icon chrome.
+ * One composition: context → when/where → title.
  */
 export function StitoOutingHero({
   title,
-  contextLabel,
-  placesLabel,
+  metaLine,
   editionLabel,
+  contextLabel,
 }: Props) {
   return (
     <View style={styles.wrap} testID="stito-outing-hero">
-      <View style={styles.topRow}>
-        <Text style={styles.context}>{contextLabel}</Text>
-        {placesLabel ? (
-          <View style={styles.places}>
-            <View style={styles.dot} />
-            <Text style={styles.placesText}>{placesLabel}</Text>
-          </View>
-        ) : null}
-      </View>
-
-      <View style={styles.body}>
-        <View style={styles.iconWell} accessibilityElementsHidden>
-          <Ionicons name="trail-sign-outline" size={28} color="#D4E8D8" />
-        </View>
-        <View style={styles.textCol}>
-          {editionLabel ? (
-            <Text style={styles.edition} testID="stito-hero-edition">
-              {editionLabel}
-            </Text>
-          ) : null}
-          <Text style={styles.title} testID="session-detail-title">
-            {title}
-          </Text>
-        </View>
-      </View>
+      {metaLine ? (
+        <Text style={styles.meta} testID="stito-hero-meta">
+          {metaLine}
+        </Text>
+      ) : null}
+      {contextLabel ? (
+        <Text style={styles.context} numberOfLines={2}>
+          {contextLabel}
+        </Text>
+      ) : null}
+      {editionLabel ? (
+        <Text style={styles.edition} testID="stito-hero-edition">
+          {editionLabel}
+        </Text>
+      ) : null}
+      <Text style={styles.title} testID="session-detail-title">
+        {title}
+      </Text>
     </View>
   );
 }
@@ -55,81 +49,46 @@ export function StitoOutingHero({
 const styles = StyleSheet.create({
   wrap: {
     width: "100%",
-    borderRadius: t.radiusMain,
+    borderRadius: t.radiusXl,
     overflow: "hidden",
     backgroundColor: t.primary,
-    borderWidth: 1,
-    borderColor: "rgba(0,95,52,0.35)",
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 16,
-    gap: 12,
-    minHeight: 132,
+    paddingHorizontal: 22,
+    paddingTop: 22,
+    paddingBottom: 26,
+    gap: 8,
+    minHeight: 148,
+    justifyContent: "flex-end",
   },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 10,
+  meta: {
+    fontFamily: t.font.space.bold,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.72)",
+    marginBottom: 2,
   },
   context: {
-    flex: 1,
-    flexShrink: 1,
     fontFamily: t.font.space.medium,
-    fontSize: 11,
-    lineHeight: 15,
-    letterSpacing: 1.2,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.6,
     textTransform: "uppercase",
-    color: "rgba(255,255,255,0.92)",
+    color: "rgba(255,255,255,0.88)",
   },
-  places: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(0,0,0,0.22)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 4,
-    flexShrink: 0,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#B8DCC4",
-  },
-  placesText: {
-    fontFamily: t.font.hanken.regular,
-    fontSize: 11,
-    color: "rgba(255,255,255,0.9)",
-  },
-  body: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-  iconWell: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  textCol: { flex: 1, minWidth: 0, gap: 4 },
   edition: {
-    fontFamily: t.font.space.semibold,
-    fontSize: 11,
-    lineHeight: 15,
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-    color: "rgba(255,255,255,0.78)",
+    fontFamily: t.font.hanken.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "rgba(255,255,255,0.82)",
+    marginTop: 2,
   },
   title: {
     fontFamily: t.font.space.bold,
-    fontSize: 24,
-    lineHeight: 28,
+    fontSize: 28,
+    lineHeight: 32,
     letterSpacing: -0.6,
     color: "#FFFFFF",
+    marginTop: 6,
   },
 });
