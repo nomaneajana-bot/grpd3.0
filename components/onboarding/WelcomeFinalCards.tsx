@@ -3,14 +3,22 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { onboardingColors } from "@/components/onboarding/onboardingTheme";
 import { borderRadius, colors, hairline, typography } from "@/constants/ui";
+import { adjPret, genderLabel } from "@/lib/frGender";
 import type { OnboardingState } from "@/lib/onboardingStore";
 
-export function WelcomeHero({ firstName }: { firstName: string }) {
+export function WelcomeHero({
+  firstName,
+  gender,
+}: {
+  firstName: string;
+  gender?: OnboardingState["gender"];
+}) {
   return (
     <View style={heroStyles.wrap}>
       <Text style={heroStyles.kicker}>BIENVENUE · ÉTAPE FINALE</Text>
       <Text style={heroStyles.title}>
-        C’est prêt, <Text style={heroStyles.name}>{firstName}.</Text>
+        Tu es {adjPret(gender)},{" "}
+        <Text style={heroStyles.name}>{firstName}.</Text>
       </Text>
       <Text style={heroStyles.sub}>
         Récap de ton parcours — tu pourras tout ajuster plus tard.
@@ -62,6 +70,8 @@ export function OnboardingSummaryCard({ state }: { state: OnboardingState }) {
   const rows: { label: string; value: string }[] = [
     { label: "Parcours", value: roleLine(state.role) },
   ];
+  const gender = genderLabel(state.gender);
+  if (gender) rows.push({ label: "Genre", value: gender });
   if (goal) rows.push({ label: "Intention", value: goal });
   if (clubName) {
     rows.push({ label: "Club", value: clubName });
