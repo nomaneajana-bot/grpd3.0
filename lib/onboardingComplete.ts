@@ -17,6 +17,7 @@ import {
   type OnboardingState,
 } from "@/lib/onboardingStore";
 import { registerForPushNotificationsAsync } from "@/lib/notifications";
+import { nounCoureur } from "@/lib/frGender";
 import {
   getRunnerProfile,
   saveRunnerProfile,
@@ -69,11 +70,14 @@ export async function persistOnboardingProfile(
   state: OnboardingState,
 ): Promise<void> {
   const existing = (await getRunnerProfile()) ?? ({} as RunnerProfile);
-  const name = state.firstName?.trim() || existing.name || "Coureur";
+  const gender = state.gender ?? existing.gender ?? null;
+  const name =
+    state.firstName?.trim() || existing.name || nounCoureur(gender);
   await saveRunnerProfile({
     ...existing,
     name,
     firstName: state.firstName?.trim() || existing.firstName,
+    gender,
     mainGoal: mapGoal(state.goal),
     targetSessionsPerWeek: state.cadence ?? existing.targetSessionsPerWeek,
     clubName: state.clubName ?? existing.clubName,

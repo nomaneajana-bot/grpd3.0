@@ -21,6 +21,8 @@ export type RunnerProfile = {
   sharePrsWithCoach?: boolean; // default true
   // Extended fields (backward compatible - all optional)
   firstName?: string;
+  /** French copy agreement — homme | femme */
+  gender?: "female" | "male" | null;
   defaultGroup?: "A" | "B" | "C" | "D" | null; // deprecated
   targetRaceType?: "5k" | "10k" | "half" | "marathon" | "other" | null;
   targetRaceLabel?: string | null; // used only when type === 'other'

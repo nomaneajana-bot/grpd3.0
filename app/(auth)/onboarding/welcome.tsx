@@ -44,7 +44,7 @@ export default function OnboardingWelcomeFinalScreen() {
       onPrimaryPress={() => void handleFinish()}
       primaryLoading={loading}
     >
-      <WelcomeHero firstName={firstName} />
+      <WelcomeHero firstName={firstName} gender={state.gender} />
       <OnboardingSummaryCard state={state} />
       {error ? (
         <Text style={styles.error} testID="onboarding-finish-error">

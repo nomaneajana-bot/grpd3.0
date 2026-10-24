@@ -12,10 +12,14 @@ export type OnboardingGoal =
   | "half"
   | "marathon";
 
+export type OnboardingGender = "female" | "male";
+
 export type OnboardingState = {
   phone?: string;
   code?: string;
   firstName?: string;
+  /** Used to agree French copy (prêt/prête, inscrit/inscrite…). */
+  gender?: OnboardingGender;
   city?: string;
   role?: OnboardingRole;
   pace?: number;

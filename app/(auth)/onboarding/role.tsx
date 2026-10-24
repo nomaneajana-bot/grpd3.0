@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
 import { OnboardingTitle } from "@/components/onboarding/OnboardingTitle";
 import { RoleOptionCard } from "@/components/onboarding/RoleOptionCard";
+import { adjContent } from "@/lib/frGender";
 import type { OnboardingRole } from "@/lib/onboardingStore";
 import { useOnboarding } from "@/hooks/useOnboarding";
 
@@ -27,7 +28,7 @@ export default function OnboardingRoleScreen() {
     >
       <OnboardingTitle
         title={`Comment tu veux commencer, ${firstName} ?`}
-        subtitle="Marche, langue, course ou club — on s’adapte à ton rythme, sans imposer la perf."
+        subtitle={`Marche, langue, course ou club — on s’adapte à ton rythme. Choisis ce qui te rend ${adjContent(state.gender)}.`}
       />
       <RoleOptionCard
         title="Découvrir à mon rythme"
