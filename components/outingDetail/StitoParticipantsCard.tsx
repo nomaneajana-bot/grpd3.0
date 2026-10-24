@@ -6,9 +6,7 @@ import { initialsFromName } from "@/lib/homeViewModel";
 
 type Props = {
   joinedCount: number;
-  /** Only show when a real capacity is known — never invent spotsTotal. */
   placesHint?: string | null;
-  /** Real display names only; no stock photos. */
   names?: string[];
   statusLabel?: string | null;
   isJoined?: boolean;
@@ -25,21 +23,19 @@ export function StitoParticipantsCard({
   const extra = Math.max(0, joinedCount - shown.length);
 
   return (
-    <View style={styles.card} testID="stito-participants-card">
+    <View style={styles.wrap} testID="stito-participants-card">
       <View style={styles.head}>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.title}>Participants</Text>
-          <Text style={styles.sub} testID="stito-participants-count">
+          <Text style={styles.eyebrow}>Participants</Text>
+          <Text style={styles.count} testID="stito-participants-count">
             {joinedCount} inscrit{joinedCount === 1 ? "" : "s"}
             {placesHint ? ` · ${placesHint}` : ""}
           </Text>
         </View>
         {statusLabel || isJoined ? (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {statusLabel || (isJoined ? "Confirmé" : "")}
-            </Text>
-          </View>
+          <Text style={styles.status}>
+            {statusLabel || (isJoined ? "Confirmé" : "")}
+          </Text>
         ) : null}
       </View>
 
@@ -57,17 +53,23 @@ export function StitoParticipantsCard({
               </View>
             ))}
             {extra > 0 ? (
-              <View style={[styles.avatar, styles.avatarMore, shown.length > 0 && { marginLeft: -8 }]}>
+              <View
+                style={[
+                  styles.avatar,
+                  styles.avatarMore,
+                  shown.length > 0 && { marginLeft: -8 },
+                ]}
+              >
                 <Text style={styles.avatarMoreText}>+{extra}</Text>
               </View>
             ) : null}
           </View>
-          <Text style={styles.ctaHint} numberOfLines={2}>
+          <Text style={styles.hint} numberOfLines={2}>
             {isJoined
               ? "Tu fais partie de cette sortie"
               : joinedCount > 0
                 ? "Rejoins les participants confirmés"
-                : "Sois parmi les premiers inscrits"}
+                : "Sois parmi les premiers"}
           </Text>
         </View>
       )}
@@ -76,62 +78,50 @@ export function StitoParticipantsCard({
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: t.card,
-    borderRadius: t.radiusMain,
-    borderWidth: 1,
-    borderColor: "rgba(232,232,233,0.85)",
-    padding: 20,
-    gap: 12,
-  },
+  wrap: { gap: 14, paddingVertical: 4 },
   head: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 8,
+    gap: 12,
   },
-  title: {
+  eyebrow: {
     fontFamily: t.font.space.bold,
-    fontSize: 16,
+    fontSize: 11,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    color: t.outline,
+    marginBottom: 4,
+  },
+  count: {
+    fontFamily: t.font.space.bold,
+    fontSize: 17,
     color: t.text,
   },
-  sub: {
-    fontFamily: t.font.hanken.regular,
-    fontSize: 12.5,
-    color: t.textSecondary,
-    marginTop: 2,
-  },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: "#EAF2EC",
-    borderWidth: 1,
-    borderColor: "rgba(0,95,52,0.25)",
-  },
-  badgeText: {
-    fontFamily: t.font.space.semibold,
-    fontSize: 11,
+  status: {
+    fontFamily: t.font.space.bold,
+    fontSize: 12,
     letterSpacing: 0.6,
     textTransform: "uppercase",
     color: t.primary,
+    marginTop: 2,
   },
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
   avatars: { flexDirection: "row", alignItems: "center" },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#EAF2EC",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: t.primary,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: t.card,
+    borderColor: t.canvas,
   },
   avatarText: {
     fontFamily: t.font.space.bold,
-    fontSize: 10,
-    color: t.primary,
+    fontSize: 11,
+    color: t.onPrimary,
   },
   avatarMore: { backgroundColor: t.surfaceContainerHigh },
   avatarMoreText: {
@@ -139,10 +129,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: t.text,
   },
-  ctaHint: {
+  hint: {
     flex: 1,
     fontFamily: t.font.hanken.regular,
-    fontSize: 12.5,
+    fontSize: 14,
+    lineHeight: 20,
     color: t.textSecondary,
   },
 });

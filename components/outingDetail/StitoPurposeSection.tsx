@@ -9,7 +9,6 @@ type Props = {
   purposeText: string;
   structureText?: string | null;
   languageLabel?: string | null;
-  /** Real structured steps only — omit when none stored. */
   timeline?: TimelineStep[] | null;
 };
 
@@ -21,8 +20,8 @@ export function StitoPurposeSection({
 }: Props) {
   return (
     <View style={styles.wrap} testID="stito-purpose-section">
-      <View style={styles.card}>
-        <Text style={styles.eyebrow}>L&apos;esprit de la sortie</Text>
+      <View style={styles.block}>
+        <Text style={styles.eyebrow}>L&apos;esprit</Text>
         <Text style={styles.body} testID="session-purpose-text">
           {purposeText}
         </Text>
@@ -34,7 +33,7 @@ export function StitoPurposeSection({
       </View>
 
       {structureText || (timeline && timeline.length > 0) ? (
-        <View style={styles.card}>
+        <View style={styles.block}>
           <Text style={styles.eyebrow}>Au programme</Text>
           {structureText ? (
             <Text style={styles.body} testID="session-structure-text">
@@ -43,20 +42,11 @@ export function StitoPurposeSection({
           ) : null}
           {timeline && timeline.length > 0 ? (
             <View style={styles.timeline}>
-              <View style={styles.thread} />
               {timeline.map((step, idx) => (
                 <View key={`${step.time}-${idx}`} style={styles.step}>
-                  <View
-                    style={[
-                      styles.dot,
-                      idx === timeline.length - 1 && styles.dotMuted,
-                    ]}
-                  />
+                  <Text style={styles.stepTime}>{step.time}</Text>
                   <View style={styles.stepBody}>
-                    <View style={styles.stepHead}>
-                      <Text style={styles.stepTime}>{step.time}</Text>
-                      <Text style={styles.stepTitle}>{step.title}</Text>
-                    </View>
+                    <Text style={styles.stepTitle}>{step.title}</Text>
                     {step.description ? (
                       <Text style={styles.stepDesc}>{step.description}</Text>
                     ) : null}
@@ -72,66 +62,39 @@ export function StitoPurposeSection({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 12 },
-  card: {
-    backgroundColor: t.card,
-    borderRadius: t.radiusMain,
-    borderWidth: 1,
-    borderColor: "rgba(232,232,233,0.85)",
-    padding: 20,
-    gap: 8,
-  },
+  wrap: { gap: 22 },
+  block: { gap: 8 },
   eyebrow: {
     fontFamily: t.font.space.bold,
     fontSize: 11,
-    letterSpacing: 1.6,
+    letterSpacing: 1.4,
     textTransform: "uppercase",
-    color: t.textSecondary,
+    color: t.outline,
   },
   body: {
     fontFamily: t.font.hanken.regular,
-    fontSize: 15,
+    fontSize: 16,
     lineHeight: 24,
-    color: "rgba(26,28,29,0.9)",
+    color: t.text,
   },
   lang: {
-    marginTop: 4,
+    marginTop: 2,
     fontFamily: t.font.space.semibold,
-    fontSize: 12,
+    fontSize: 13,
     color: t.primary,
   },
-  timeline: { marginTop: 8, paddingLeft: 20, gap: 20, position: "relative" },
-  thread: {
-    position: "absolute",
-    left: 5,
-    top: 8,
-    bottom: 8,
-    width: StyleSheet.hairlineWidth,
-    backgroundColor: t.outlineVariant,
-  },
-  step: { position: "relative" },
-  dot: {
-    position: "absolute",
-    left: -20,
-    top: 4,
-    width: 11,
-    height: 11,
-    borderRadius: 6,
-    backgroundColor: t.primary,
-    borderWidth: 2,
-    borderColor: t.card,
-  },
-  dotMuted: { backgroundColor: t.outline },
-  stepBody: { gap: 4 },
-  stepHead: { flexDirection: "row", alignItems: "baseline", gap: 8, flexWrap: "wrap" },
+  timeline: { marginTop: 4, gap: 14 },
+  step: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
   stepTime: {
     fontFamily: t.font.space.bold,
     fontSize: 13,
     color: t.primary,
+    minWidth: 48,
   },
+  stepBody: { flex: 1, gap: 2 },
   stepTitle: {
     fontFamily: t.font.space.semibold,
-    fontSize: 14,
+    fontSize: 15,
     color: t.text,
   },
   stepDesc: {

@@ -11,7 +11,6 @@ type Props = {
   onClubPress?: () => void;
 };
 
-/** Organisateur — initials only (no fake avatar photos). */
 export function StitoHostCard({
   hostName,
   hostRole,
@@ -20,41 +19,27 @@ export function StitoHostCard({
 }: Props) {
   const initials = initialsFromName(hostName) || "·";
   return (
-    <View style={styles.card} testID="stito-host-card">
-      <View style={styles.left}>
-        <View style={styles.avatar} accessibilityLabel={`Initiales ${initials}`}>
-          <Text style={styles.avatarText}>{initials}</Text>
-        </View>
-        <View style={styles.textCol}>
-          <View style={styles.nameRow}>
-            <Text style={styles.name} numberOfLines={1} testID="session-organizer-name">
-              {hostName}
-            </Text>
-            {hostRole ? (
-              <Text style={styles.role} numberOfLines={1}>
-                {hostRole}
-              </Text>
-            ) : null}
-          </View>
-          {clubName ? (
-            <Text style={styles.forClub} numberOfLines={1}>
-              Pour{" "}
-              <Text style={styles.clubName} testID="session-soft-club-name">
-                {clubName}
-              </Text>
-            </Text>
-          ) : null}
-        </View>
+    <View style={styles.row} testID="stito-host-card">
+      <View style={styles.avatar} accessibilityLabel={`Initiales ${initials}`}>
+        <Text style={styles.avatarText}>{initials}</Text>
+      </View>
+      <View style={styles.textCol}>
+        <Text style={styles.name} numberOfLines={1} testID="session-organizer-name">
+          {hostName}
+        </Text>
+        <Text style={styles.meta} numberOfLines={1}>
+          {[hostRole, clubName].filter(Boolean).join(" · ")}
+        </Text>
       </View>
       {onClubPress && clubName ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Voir le club"
           onPress={onClubPress}
-          style={({ pressed }) => [styles.clubBtn, pressed && { opacity: 0.85 }]}
+          style={({ pressed }) => [styles.link, pressed && { opacity: 0.85 }]}
           testID="stito-host-club-btn"
         >
-          <Text style={styles.clubBtnText}>Voir club</Text>
+          <Text style={styles.linkText}>Club →</Text>
         </Pressable>
       ) : null}
     </View>
@@ -62,68 +47,40 @@ export function StitoHostCard({
 }
 
 const styles = StyleSheet.create({
-  card: {
+  row: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    backgroundColor: t.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(232,232,233,0.85)",
-    padding: 16,
+    gap: 14,
+    paddingVertical: 4,
   },
-  left: { flexDirection: "row", alignItems: "center", gap: 14, flex: 1, minWidth: 0 },
   avatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#EAF2EC",
-    borderWidth: 1,
-    borderColor: "rgba(0,95,52,0.18)",
+    backgroundColor: t.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
     fontFamily: t.font.space.bold,
     fontSize: 14,
-    color: t.primary,
+    color: t.onPrimary,
   },
   textCol: { flex: 1, minWidth: 0, gap: 2 },
-  nameRow: { flexDirection: "row", alignItems: "baseline", gap: 8 },
   name: {
     fontFamily: t.font.space.bold,
-    fontSize: 15,
+    fontSize: 16,
     color: t.text,
-    flexShrink: 1,
   },
-  role: {
-    fontFamily: t.font.hanken.medium,
-    fontSize: 11,
-    color: t.textSecondary,
-  },
-  forClub: {
+  meta: {
     fontFamily: t.font.hanken.regular,
     fontSize: 13,
     color: t.textSecondary,
   },
-  clubName: {
-    fontFamily: t.font.hanken.semibold,
-    color: t.text,
-    textDecorationLine: "underline",
-  },
-  clubBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(232,232,233,0.9)",
-    minHeight: 36,
-    justifyContent: "center",
-  },
-  clubBtnText: {
+  link: { paddingVertical: 8, paddingHorizontal: 4 },
+  linkText: {
     fontFamily: t.font.space.semibold,
-    fontSize: 12,
-    color: t.text,
+    fontSize: 14,
+    color: t.primary,
   },
 });
