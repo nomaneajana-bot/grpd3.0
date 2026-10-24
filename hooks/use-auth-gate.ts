@@ -1,26 +1,42 @@
 import { type Href, router, usePathname } from "expo-router";
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
-import { ONBOARDING_V2 } from "../lib/featureFlags";
+import { DEMO_MODE, ONBOARDING_V2 } from "../lib/featureFlags";
 import { getAuthData } from "../lib/authStore";
 
+/**
+ * Resolve the path used for auth redirects.
+ * On web, prefer `window.location.pathname` so cold opens of `/demo`
+ * are not raced by Expo Router briefly reporting `/` or tabs.
+ */
 function currentPath(pathname: string | undefined): string {
-  if (pathname) return pathname;
   if (Platform.OS === "web" && typeof window !== "undefined") {
-    return window.location.pathname;
+    const win = window.location.pathname || "";
+    if (win && win !== "/") return win;
+    if (pathname && pathname !== "/" && pathname !== "") return pathname;
+    return win || pathname || "";
   }
-  return "";
+  return pathname || "";
 }
 
 /** Public pitch / design-reference / demo-entry pages — never force onboarding. */
 function isPublicVisionRoute(path: string): boolean {
-  return (
+  if (
     path === "/avenir" ||
     path.endsWith("/avenir") ||
     path === "/demo" ||
     path.endsWith("/demo") ||
+    path === "/pitch" ||
+    path.endsWith("/pitch") ||
     path.includes("/reference/")
-  );
+  ) {
+    return true;
+  }
+  // Preview builds: bare `/` is the share link — hold the gate so `/demo` can seed.
+  if (DEMO_MODE && (path === "/" || path === "")) {
+    return true;
+  }
+  return false;
 }
 
 /** Auth / onboarding routes — do not redirect away mid-flow. */
@@ -32,6 +48,13 @@ function isAuthFlowRoute(path: string): boolean {
     path.includes("/verify") ||
     path.startsWith("/(auth)")
   );
+}
+
+function unauthLandingHref(path: string): Href {
+  if (DEMO_MODE && (path === "/" || path === "" || path === "/demo")) {
+    return "/demo" as Href;
+  }
+  return (ONBOARDING_V2 ? "/(auth)/onboarding" : "/(auth)/phone") as Href;
 }
 
 /**
@@ -63,6 +86,22 @@ export function useAuthGate(): {
         if (authData === null) {
           setIsAuthenticated(false);
           setIsLoading(false);
+          // Demo root: send share links to /demo (seeds auth → Accueil).
+          if (
+            DEMO_MODE &&
+            (livePath === "/" || livePath === "") &&
+            Platform.OS === "web"
+          ) {
+            timeoutId = setTimeout(() => {
+              if (!isMounted) return;
+              try {
+                router.replace("/demo" as Href);
+              } catch (err) {
+                console.warn("Router redirect failed:", err);
+              }
+            }, 50);
+            return;
+          }
           if (stayOnAuth) {
             return;
           }
@@ -76,11 +115,7 @@ export function useAuthGate(): {
               return;
             }
             try {
-              router.replace(
-                (ONBOARDING_V2
-                  ? "/(auth)/onboarding"
-                  : "/(auth)/phone") as Href,
-              );
+              router.replace(unauthLandingHref(nowPath));
             } catch (err) {
               console.warn("Router redirect failed:", err);
             }
@@ -97,12 +132,9 @@ export function useAuthGate(): {
         if (stayOnAuth) return;
         timeoutId = setTimeout(() => {
           if (!isMounted) return;
+          const nowPath = currentPath(pathname);
           try {
-            router.replace(
-              (ONBOARDING_V2
-                ? "/(auth)/onboarding"
-                : "/(auth)/phone") as Href,
-            );
+            router.replace(unauthLandingHref(nowPath));
           } catch (err) {
             console.warn("Router redirect failed:", err);
           }
