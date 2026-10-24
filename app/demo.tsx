@@ -28,6 +28,9 @@ export default function DemoHomeEntryScreen() {
       try {
         await enterDemoHomeSession();
         if (!alive) return;
+        // Replace after storage flush so the auth gate sees the session.
+        await new Promise((r) => setTimeout(r, 30));
+        if (!alive) return;
         router.replace("/(tabs)" as Href);
       } catch (e) {
         console.warn("Demo home entry failed:", e);
