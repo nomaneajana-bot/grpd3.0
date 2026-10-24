@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { colors, typography } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 import { createApiClient, getSession as getSessionApi } from "@/lib/api";
 import {
   apiSessionToSessionData,
@@ -18,12 +18,24 @@ import {
 } from "@/lib/sessionData";
 
 /**
- * Confirmation after publishing a sortie — not the full detail dump.
+ * Confirmation after publishing a sortie — light Stito (matches organise flow).
  */
 export default function SessionPublishedScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const sessionId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
   const [session, setSession] = useState<SessionData | null>(null);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const prevBody = document.body.style.backgroundColor;
+    const prevHtml = document.documentElement.style.backgroundColor;
+    document.body.style.backgroundColor = t.canvas;
+    document.documentElement.style.backgroundColor = t.canvas;
+    return () => {
+      document.body.style.backgroundColor = prevBody;
+      document.documentElement.style.backgroundColor = prevHtml;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,7 +135,7 @@ export default function SessionPublishedScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.canvas,
   },
   content: {
     paddingHorizontal: 24,
@@ -131,83 +143,91 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   eyebrow: {
-    color: colors.accent.primary,
-    fontSize: 12,
-    fontWeight: "700",
+    color: t.primary,
+    ...t.type.labelSm,
+    fontFamily: t.font.space.bold,
     letterSpacing: 1.2,
     marginBottom: 10,
+    textTransform: "uppercase",
   },
   title: {
-    color: colors.text.primary,
+    color: t.text,
+    ...t.type.pageTitle,
     fontSize: 28,
-    fontWeight: "700",
-    letterSpacing: -0.6,
     marginBottom: 10,
   },
   sub: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.md,
+    color: t.textSecondary,
+    ...t.type.bodySm,
+    fontSize: 15,
     lineHeight: 22,
     marginBottom: 24,
   },
   card: {
-    backgroundColor: colors.background.card,
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.default,
+    backgroundColor: t.surfaceContainerLowest,
+    borderRadius: t.radiusMain,
+    borderWidth: 1,
+    borderColor: t.surfaceContainerHigh,
     padding: 18,
     marginBottom: 24,
     gap: 6,
   },
   cardTitle: {
-    color: colors.text.primary,
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: -0.3,
+    color: t.text,
+    ...t.type.cardTitle,
   },
   cardLine: {
-    color: colors.text.secondary,
+    color: t.textSecondary,
+    ...t.type.bodySm,
     fontSize: 15,
   },
   cardDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.default,
+    backgroundColor: t.outlineVariant,
     marginVertical: 10,
   },
   cardMeta: {
-    color: colors.text.primary,
+    color: t.text,
+    ...t.type.labelMd,
+    fontFamily: t.font.space.semibold,
     fontSize: 14,
-    fontWeight: "600",
   },
   cardPurpose: {
     marginTop: 6,
-    color: colors.text.secondary,
+    color: t.textSecondary,
+    ...t.type.bodySm,
     fontSize: 14,
     lineHeight: 20,
   },
   primaryBtn: {
-    backgroundColor: colors.accent.primary,
-    borderRadius: 16,
+    backgroundColor: t.primary,
+    borderRadius: t.radiusChip,
+    minHeight: 52,
     paddingVertical: 16,
     alignItems: "center",
+    justifyContent: "center",
     marginBottom: 12,
   },
   primaryBtnText: {
-    color: colors.background.primary,
+    color: t.onPrimary,
+    ...t.type.labelMd,
+    fontFamily: t.font.space.bold,
     fontSize: 16,
-    fontWeight: "700",
   },
   secondaryBtn: {
-    borderRadius: 16,
+    borderRadius: t.radiusChip,
+    minHeight: 52,
     paddingVertical: 16,
     alignItems: "center",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.default,
-    backgroundColor: colors.background.card,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: t.surfaceContainerHigh,
+    backgroundColor: t.surfaceContainer,
   },
   secondaryBtnText: {
-    color: colors.text.primary,
+    color: t.text,
+    ...t.type.labelMd,
+    fontFamily: t.font.space.semibold,
     fontSize: 16,
-    fontWeight: "600",
   },
 });
