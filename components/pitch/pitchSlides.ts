@@ -12,7 +12,7 @@ export type PitchSlide = {
 };
 
 /**
- * Structure: Accroche → Problème → Solution → Cible → Valeur → Crédibilité → CTA.
+ * Structure: Accroche → Problème → Solution → Cible → Valeur → Business model → Crédibilité → CTA.
  * Visuals only from the uploaded GRpD PDF.
  */
 export const PITCH_SLIDES: PitchSlide[] = [
@@ -91,23 +91,38 @@ export const PITCH_SLIDES: PitchSlide[] = [
     accentKey: "valeur",
   },
   {
-    id: "credibilite",
+    id: "business",
     step: "06",
+    label: "Le modèle économique",
+    headline: "Gratuit pour sortir. Payant pour faire grandir.",
+    bullets: [
+      "La communauté reste libre — rejoindre et sortir ne se monétise pas.",
+      "Les clubs et organisateurs paient pour des outils qui leur font gagner du temps.",
+      "Les marques et événements rejoignent des gens qui bougent vraiment.",
+      "Plus tard : coaching et services premium — sans transformer GRpD en feed.",
+    ],
+    image: require("../../assets/pitch/06-depart.jpg"),
+    imageKind: "photo",
+    accentKey: "business",
+  },
+  {
+    id: "credibilite",
+    step: "07",
     label: "La crédibilité",
     headline: "Ce n'est pas une idée sur un slide.",
     bullets: [
       "Le produit tourne déjà : clubs, séances, groupes d'allure.",
       "On est ancrés à Casa, avec des partenaires de terrain.",
-      "Gratuit pour la communauté — le reste se construit autour.",
+      "On construit avec des gens qui sortent vraiment — pas seulement des slides.",
       "Demain : plus de villes, plus de façons de se retrouver en bougeant.",
     ],
-    image: require("../../assets/pitch/06-depart.jpg"),
+    image: require("../../assets/pitch/05-ensemble.jpg"),
     imageKind: "photo",
     accentKey: "credibilite",
   },
   {
     id: "cta",
-    step: "07",
+    step: "08",
     label: "L'appel à l'action",
     headline: "Viens faire le prochain tour avec nous.",
     bullets: [

@@ -1,5 +1,5 @@
 /**
- * Pitch deck — human copy + 7-step structure + GRpD PDF visuals.
+ * Pitch deck — human copy + structure + business model + GRpD PDF visuals.
  */
 import { chromium } from "playwright";
 import fs from "fs";
@@ -11,7 +11,7 @@ const OUT = "/opt/cursor/artifacts";
 fs.mkdirSync(OUT, { recursive: true });
 
 const report = {
-  batch: "pitch-deck-human-copy",
+  batch: "pitch-deck-business-model",
   tested_sha: execSync("git rev-parse HEAD", { encoding: "utf8" }).trim(),
   base: BASE,
   checks: [],
@@ -35,8 +35,9 @@ const STEPS = [
   [/on sort ensemble|chez-soi/i, "03-solution"],
   [/vraie bande|Casa/i, "04-cible"],
   [/excuse pour se retrouver|likes/i, "05-valeur"],
-  [/pas une idée|partenaires/i, "06-credibilite"],
-  [/prochain tour|pilote/i, "07-cta"],
+  [/Gratuit pour sortir|marques et événements|outils/i, "06-business"],
+  [/pas une idée|partenaires de terrain/i, "07-credibilite"],
+  [/prochain tour|pilote/i, "08-cta"],
 ];
 
 (async () => {
@@ -49,6 +50,9 @@ const STEPS = [
     await page.goto(`${BASE}/pitch`, { waitUntil: "networkidle", timeout: 90000 });
     await page.getByTestId("pitch-deck").waitFor({ state: "visible", timeout: 45000 });
 
+    const first = await page.locator("body").innerText();
+    check("eight_slides", /\/\s*08/.test(first), first.slice(0, 80));
+
     for (let i = 0; i < STEPS.length; i++) {
       if (i > 0) {
         await page.getByTestId("pitch-next").click({ force: true });
@@ -57,7 +61,7 @@ const STEPS = [
       const body = await page.locator("body").innerText();
       const [re, name] = STEPS[i];
       check(`slide_${name}`, re.test(body), body.slice(0, 200));
-      await shot(page, `pitch-human-${name}`);
+      await shot(page, `pitch-biz-${name}`);
     }
     check("has_bullets", (await page.getByTestId("pitch-bullets").count()) >= 1, "ok");
   } catch (e) {

@@ -22,8 +22,13 @@ await page.goto(`${BASE}/pitch`, { waitUntil: "networkidle", timeout: 90000 });
 await page.getByTestId("pitch-deck").waitFor({ state: "visible", timeout: 45000 });
 await page.waitForTimeout(800);
 
+const slideCount = await page.evaluate(() => {
+  const label = document.body?.innerText?.match(/(\d+)\s*\/\s*(\d+)/);
+  return label ? Number(label[2]) : 8;
+});
+
 const pages = [];
-for (let i = 0; i < 7; i++) {
+for (let i = 0; i < slideCount; i++) {
   if (i > 0) {
     await page.getByTestId("pitch-next").click({ force: true });
     await page.waitForTimeout(550);

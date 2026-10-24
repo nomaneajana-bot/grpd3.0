@@ -21,6 +21,7 @@ export const pitchTheme = {
     solution: "#D4A017",
     cible: "#2F6B8A",
     valeur: "#F5A623",
+    business: "#0F5C38",
     credibilite: "#2F6B4F",
     cta: "#0F5C38",
   },
