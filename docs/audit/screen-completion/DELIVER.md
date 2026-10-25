@@ -4,7 +4,7 @@
 **Base:** `cursor/avenir-vision-page-3184`  
 **Preserved:** code tip `c754f9f` · package tip `fc81650` · PR #33 evidence (separate; NOT re-run as 16-point mission)  
 **PR:** #34 (this follow-up)  
-**Tested tip (this package):** `git rev-parse HEAD` on branch after commit of this deliverable  
+**Tested tip (this package):** `b5b2f19650d625f8da9f3e45d3c298ca25f65866` (honesty + matrix commit; P3–P6 smokes on parents `3c569b01` / live 8081; rebuilt `dist-demo` includes honesty string)  
 **Environment:** demo web — Expo `8081` (live) + static `dist-demo` `8082`  
 **Hosted / native / UAT / OCIF / READY:** **not claimed**  
 **Workflow:** Cursor implements/tests · **Codex reviews** · no merge to main
