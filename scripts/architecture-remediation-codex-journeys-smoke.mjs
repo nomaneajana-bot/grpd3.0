@@ -487,36 +487,27 @@ async function main() {
       detailB.slice(0, 80),
     );
 
-    // MyOutings vs detail agreement — navigate via tab (exact label).
-    let myOutingsText = "";
-    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-    await page.waitForTimeout(600);
-    const mesTab = page.getByText(/^Mes sorties$/i).first();
-    if (await mesTab.count()) {
-      await mesTab.click({ force: false });
-      await page.waitForTimeout(1200);
-      myOutingsText = await page.locator("body").innerText();
-    } else {
-      for (const route of ["/my-outings", "/outings"]) {
-        await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
-        await page.waitForTimeout(700);
-        const t = await page.locator("body").innerText();
-        if (t.includes(OUTING_A) || /Mes sorties/i.test(t)) {
-          myOutingsText = t;
-          break;
-        }
-      }
-    }
+    // MyOutings vs detail agreement — route /my-sessions (tab title "Mes sorties").
+    await page.goto(`${BASE}/my-sessions`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(1200);
+    const mesRoot = page.getByTestId("mes-sorties");
+    check(
+      "p9_my_outings_screen",
+      (await mesRoot.count()) > 0,
+      "mes-sorties root",
+    );
+    const myOutingsText = await page.locator("body").innerText();
+    const confirmedA = page.getByTestId(`mes-sorties-confirmed-${outA.id}`);
     check(
       "p9_my_outings_shows_joined_a",
-      myOutingsText.includes(OUTING_A),
-      myOutingsText.slice(0, 100),
+      (await confirmedA.count()) > 0 || myOutingsText.includes(OUTING_A),
+      myOutingsText.slice(0, 120),
     );
+    const confirmedB = page.getByTestId(`mes-sorties-confirmed-${outB.id}`);
     check(
       "p9_my_outings_excludes_unjoined_b",
-      !myOutingsText.includes(OUTING_B) ||
-        /Suggéré|Découvrir|À venir/i.test(myOutingsText),
-      "B not listed as joined (or only in discover context)",
+      (await confirmedB.count()) === 0,
+      `confirmedB=${await confirmedB.count()}`,
     );
 
     // Cancel A; B still unchanged; reload
