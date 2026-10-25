@@ -13,6 +13,8 @@
 | Topic | Status after remediation | Evidence |
 | --- | --- | --- |
 | `EXPO_PUBLIC_DEMO_MODE` + `/demo` | **CONFIRMED used** on Stito tip (`lib/featureFlags.ts`, `app/demo.tsx`) | Source |
+| Client transport | Connected = real contract; empty URL → `MISSING_API_URL` (**not** mock); no silent mock on network fail | `TRANSPORT_AND_DEPLOYMENT.md` |
+| Deploy entrypoint | `api/v1/[...path].ts` → `vercel-dispatch`; `vercel.json` build currently **demo-forced**; prod = D05 | same |
 | Tabs | Accueil · Mes sorties · Club · Profil (Workouts hidden/deferred on this tip) | `app/(tabs)/_layout.tsx` |
 | `POST /api/v1/auth/logout` | **Implemented** (stateless JWT ack; no denylist) | `connected-evidence.json` |
 | `PATCH /api/v1/clubs/:id` | **Implemented** (admin/coach) | same |
