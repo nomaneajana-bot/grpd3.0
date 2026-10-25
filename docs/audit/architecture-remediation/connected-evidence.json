@@ -1,15 +1,20 @@
 {
   "batch": "architecture-remediation-connected",
-  "tested_sha": "b9d47557d3ce233292285e8b288b4d5c964f1607",
+  "tested_sha": "4cc4056aa85ff67e9b85e12b78cd48e4684042c7",
   "environment": "local_postgres_integration",
   "hosted_claim": false,
   "native_claim": false,
   "uat_claim": false,
   "summary": {
-    "pass": 16,
+    "pass": 18,
     "fail": 0
   },
   "checks": [
+    {
+      "id": "unrelated_club_seeded_before_mutation",
+      "ok": true,
+      "detail": "C"
+    },
     {
       "id": "admin_pin_login",
       "ok": true,
@@ -58,7 +63,7 @@
     {
       "id": "patch_persisted",
       "ok": true,
-      "detail": "Arch Renamed arch_mvo7lflz"
+      "detail": "Arch Renamed arch_mvo9idj9"
     },
     {
       "id": "member_group_requires_auth",
@@ -76,19 +81,24 @@
       "detail": "200"
     },
     {
-      "id": "member_group_persisted",
+      "id": "member_group_api_response_home",
       "ok": true,
       "detail": "B"
     },
     {
-      "id": "member_group_reload",
+      "id": "member_group_persisted_db",
       "ok": true,
-      "detail": "reload"
+      "detail": "B"
+    },
+    {
+      "id": "member_group_fresh_api_get_after_mutation",
+      "ok": true,
+      "detail": "200"
     },
     {
       "id": "unrelated_club_home_group_preserved",
       "ok": true,
-      "detail": "C"
+      "detail": "C->C"
     }
   ]
 }
