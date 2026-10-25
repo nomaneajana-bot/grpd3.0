@@ -1,8 +1,9 @@
 # GRPD 3.0 Architecture
 
 > **HISTORICAL / STALE — not authoritative.**  
-> Preserved for provenance only. Current architecture authority: root `APP_BLUEPRINT.md` (remediation addendum) + `docs/audit/architecture-remediation/` + canonical issue register `docs/product/ISSUE_REGISTER.md`.  
-> This document describes an older tree (pre–Stito Accueil/Détail, pre–`/demo`, incomplete club/API surface). Do not implement from it when it conflicts with the blueprint.
+> Preserved for provenance only (Batch E). **Do not delete** — historical evidence.  
+> Current architecture authority: root `APP_BLUEPRINT.md` (**remediation addendum + tip surface**) + `docs/audit/architecture-remediation/` + **one** issue register `docs/product/ISSUE_REGISTER.md`.  
+> This document describes an older tree (pre–Stito Accueil/Détail, pre–`/demo`, Home/Séances/Workouts tabs, incomplete club/API surface). Do not implement from it when it conflicts with the blueprint.
 
 ## Overview
 

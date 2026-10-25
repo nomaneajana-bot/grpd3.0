@@ -16,7 +16,7 @@ Not a docs-only audit. Not production deploy. Not OCIF submission.
 ### Exact next action
 
 1. Remaining queue items (batch discipline note, VERIFICATION, orphans/avenir/notifications reminders, Batch B demo UI, DELIVER) then **STOP for Codex**.  
-2. No unrelated visual ports or production promotion. Batch E docs reconciliation **done**.
+2. No unrelated visual ports or production promotion. Batch E docs reconciliation **done** (blueprint tip truth + historical banners; sole `ISSUE_REGISTER`).
 
 ## Surfaces
 

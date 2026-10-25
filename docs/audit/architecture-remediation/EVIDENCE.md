@@ -46,9 +46,11 @@
 | Field | Value |
 |---|---|
 | Doc | `BATCH_E.md` |
-| Stale docs | `docs/architecture.md`, `docs/dead-routes.md` bannered HISTORICAL |
-| Rule | `.cursor/rules/app-architecture.mdc` updated |
-| Issue register | single — `docs/product/ISSUE_REGISTER.md` |
+| Blueprint | Tip truth in remediation addendum; §1–§10 historical @ `3ba6775` with tip callouts |
+| Stale docs | `docs/architecture.md`, `docs/dead-routes.md` bannered HISTORICAL (preserved) |
+| Rule | `.cursor/rules/app-architecture.mdc` → addendum + sole register + decisions ≠ OCIF |
+| Issue register | **single** — `docs/product/ISSUE_REGISTER.md` |
+| Historical evidence | Other `docs/audit/**` folders left intact |
 
 ## Batch A — inventory + mode
 

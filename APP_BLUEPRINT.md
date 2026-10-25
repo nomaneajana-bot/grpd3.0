@@ -3,43 +3,51 @@
 **Status:** Authoritative product-architecture reference for this repository.  
 **Codebase snapshot (initial audit):** git `3ba6775` (avenir-only — incomplete vs Stito/demo; **not an ancestor of the Stito tip**).  
 **Remediation base:** `cursor/architecture-remediation-3184` ← `cursor/stitch-home-detail-3184` @ `8cbfe83` (preserves Accueil/Détail Stito + `/demo`).  
-**Batch E reconciled tip:** see branch HEAD (docs stamped 2026-10-25 Africa/Casablanca).  
+**Batch E reconciled tip:** `697bfe9` on `cursor/architecture-remediation-3184` (docs stamped 2026-10-25 Africa/Casablanca).  
 **Working decisions:** `docs/audit/architecture-remediation/WORKING_DECISIONS.md` (**not OCIF**).  
 **API inventory:** `docs/audit/architecture-remediation/CLIENT_API_INVENTORY.md`  
-**Canonical issue register (one):** `docs/product/ISSUE_REGISTER.md`  
-**Scope of initial audit:** Static analysis. Remediation batches add runtime evidence under `docs/audit/architecture-remediation/` (historical batch1–7 / outing-detail evidence remains historical).  
+**Canonical issue register (one):** `docs/product/ISSUE_REGISTER.md` — do not create a second register.  
+**Scope of initial audit:** Static analysis at `3ba6775`. Remediation batches add runtime evidence under `docs/audit/architecture-remediation/` (historical batch1–7 / outing-detail evidence remains historical — do not rewrite past PASS claims).  
 
 ### Doc authority (Batch E)
 
 | Document | Role after reconciliation |
 | --- | --- |
-| `APP_BLUEPRINT.md` (this file + remediation addendum) | **Authoritative** architecture |
-| `.cursor/rules/app-architecture.mdc` | Permanent rule → points here |
+| `APP_BLUEPRINT.md` (**this remediation addendum + tip surface**) | **Authoritative** architecture for the current tip |
+| `.cursor/rules/app-architecture.mdc` | Permanent rule → points here; working decisions ≠ OCIF |
 | `docs/product/ISSUE_REGISTER.md` | **Only** canonical issue register |
-| `docs/architecture.md` | **HISTORICAL / STALE** — bannered; keep file |
-| `docs/dead-routes.md` | **HISTORICAL / STALE** — bannered; listed deletes already gone |
-| `docs/audit/**` evidence folders | Historical or current by folder name; do not rewrite past PASS claims |
+| `docs/architecture.md` | **HISTORICAL / STALE** — bannered; keep file; do not implement from it |
+| `docs/dead-routes.md` | **HISTORICAL / STALE** — bannered; listed deletes already gone on tip |
+| `docs/audit/architecture-remediation/` | Current remediation evidence |
+| `docs/audit/batch*` / outing-detail / etc. | Historical evidence — preserve as historical |
 
-### Remediation addendum (post–Stito tip — supersedes stale §6.5 / §7 rows below)
+### Remediation addendum — current tip truth (supersedes conflicting §1–§10 rows)
 
-| Topic | Status after remediation | Evidence |
+| Topic | Status on tip | Evidence |
 | --- | --- | --- |
-| `EXPO_PUBLIC_DEMO_MODE` + `/demo` | **CONFIRMED used** on Stito tip (`lib/featureFlags.ts`, `app/demo.tsx`) | Source |
+| `EXPO_PUBLIC_DEMO_MODE` + `/demo` | **CONFIRMED used** (`DEMO_MODE` in `lib/featureFlags.ts`; `app/demo.tsx`; `/` redirects to `/demo` when DEMO) | Source |
 | Client transport | Connected = real contract; empty URL → `MISSING_API_URL` (**not** mock); no silent mock on network fail | `TRANSPORT_AND_DEPLOYMENT.md` |
 | Deploy entrypoint | `api/v1/[...path].ts` → `vercel-dispatch`; `vercel.json` build currently **demo-forced**; prod = D05 | same |
-| Tabs | Accueil · Mes sorties · Club · Profil (Workouts hidden/deferred on this tip) | `app/(tabs)/_layout.tsx` |
+| Tabs (visible) | **Accueil · Mes sorties · Clubs · Profil** — `workouts` file kept as Redirect with `href: null` (not in tab bar) | `app/(tabs)/_layout.tsx` |
+| Root `/` | `app/index.tsx` — DEMO → `/demo`; else → onboarding | Source |
+| Extra tip routes (vs avenir audit) | `/demo`, `/idea/[id]`, `/reference/green-home`, `/session/published`, `/profile/training` | Source |
+| Screen count (tip) | **45** default-export routes under `app/` (incl. redirects); **6** layouts | `find` / `rg` |
 | `POST /api/v1/auth/logout` | **Implemented** (stateless JWT ack; no denylist) | `connected-evidence.json` |
 | `PATCH /api/v1/clubs/:id` | **Implemented** (admin/coach) | same |
 | `PUT /api/v1/clubs/:id/member-group` | **Implemented** + `homeGroupId` migration | same |
-| Settings language/units | **Implemented** local prefs | `app/profile/settings.tsx` |
+| Settings language/units | **Implemented** local prefs (fr↔en, km↔mi) | `SETTINGS_DISPOSITION.md` · Batch D |
+| Settings phone | Read-only display (no fake edit) | same |
 | Settings legal/photo/support | Non-interactive **Hors MVP** (no fake success) | same |
-| Notifications | Local prefs only — **no push delivery claim** | same |
-| `/avenir` | Deep-link + enter-app CTA | `app/avenir.tsx` |
-| `/run/setup` | Deep-link; connected shows deferred honesty | `app/run/setup.tsx` |
+| Notifications | Local prefs only — caption denies push delivery | same · D4 |
+| Logout | `performLogout` — local clear + server ack when connected; demo uses mock only | `LOGOUT_SEMANTICS.md` |
+| `/avenir` | Deep-link + enter-app CTA (auth-aware); no forced tab | Batch D · D10 |
+| `/profile/test-history` | Redirect → profile (deferred; no invented activity tracking) | Batch D · D7 |
+| `/run/setup` | Deep-link retained; connected deferred honesty (no `/runs` API) | Batch D · D8 |
+| `/club/group-edit` | Redirect → `group-create` + params | Batch D · D9 |
 | Runs / coach remote / push | **Deferred / blocked** — not invented | WORKING_DECISIONS D13 |
 | Hosted / production | **BLOCKED** — separate D05 | ISSUE-004/008 |
 
-Historical §6.5–§9 tables below retain the **initial avenir audit** wording for provenance; prefer this addendum + `CLIENT_API_INVENTORY.md` for current truth.
+**§1–§10 below** retain the **initial avenir audit** (`3ba6775`) wording for provenance. Inline “tip note” callouts mark closed gaps. **When any § row conflicts with this addendum, the addendum wins.** Prefer `CLIENT_API_INVENTORY.md` + working decisions for API/mode truth.
 
 ### Evidence labels (required)
 
@@ -54,6 +62,8 @@ Historical §6.5–§9 tables below retain the **initial avenir audit** wording 
 **Supersedes (for architecture intent):** `docs/architecture.md`, `docs/dead-routes.md` — both are **CONFIRMED stale** relative to the current tree (they omit club/auth/inbox/run/avenir; they still list removed paths such as `edit-paces`, `past-sessions`, `modal`).
 
 ---
+
+> **HISTORICAL SECTION BANNER (Batch E):** Sections 1–10 were authored against avenir snapshot `3ba6775`. They are preserved as historical evidence. **Do not treat unlabeled CONFIRMED rows below as current tip truth** when the remediation addendum says otherwise.
 
 ## SECTION 1 — APPLICATION OVERVIEW
 
@@ -100,43 +110,56 @@ Product language in UI is primarily **French**. Marketing vision route uses bran
 | UI tokens | `constants/ui.ts` (and Stito-related constants if present on later branches) |
 | Platforms | iOS, Android, Web |
 
-Feature flags in source: **`ONBOARDING_V2 = true`** only (`lib/featureFlags.ts`).  
-`.env` may set `EXPO_PUBLIC_DEMO_MODE` — **CONFIRMED unused** in this snapshot’s `app/`/`lib/`/`hooks/` (demo entry is via mock API / demo phone path, not a `/demo` route).
+Feature flags (`lib/featureFlags.ts`):
+
+| Flag | Initial audit (`3ba6775`) | **Current tip** |
+| --- | --- | --- |
+| `ONBOARDING_V2` | `true` | `true` (unchanged) |
+| `DEMO_MODE` / `EXPO_PUBLIC_DEMO_MODE` | Claimed **unused** (no `/demo`) | **CONFIRMED used** — drives mock transport, `/demo`, root redirect, demo OTP |
 
 ---
 
 ## SECTION 2 — COMPLETE SCREEN HIERARCHY
 
-**Totals (CONFIRMED):** **39** default-export screen routes under `app/` (excluding layouts, `+html`, API `route.ts`). **6** `_layout.tsx` files.
+**Totals (initial audit CONFIRMED @ `3ba6775`):** **39** default-export screen routes; **6** layouts.  
+**Tip totals (Batch E CONFIRMED):** **45** default-export routes (incl. redirects); **6** layouts — see addendum.
 
-### 2.1 Layout tree — CONFIRMED
+### 2.1 Layout tree — CONFIRMED (tip; supersedes avenir tab labels)
 
 ```
 app/_layout.tsx                    Root Stack + useAuthGate + fonts/splash
+├── index.tsx                      / → /demo (DEMO) or onboarding
 ├── +html.tsx                      Web document only
-├── avenir.tsx                     /avenir (public)
+├── demo.tsx                       /demo (jury / offline entry)
+├── avenir.tsx                     /avenir (public + enter-app CTA)
+├── idea/[id].tsx                  /idea/[id]
+├── reference/green-home.tsx       design reference
 ├── inbox/index.tsx                /inbox
-├── profile/*                      /profile/...
-├── run/_layout.tsx                Stack: setup, confirm
-├── session/{create,[id]}
+├── profile/*                      settings, update-tests, custom-pr-models,
+│                                  test-history (→ profile), training
+├── run/_layout.tsx                Stack: setup (deferred honesty), confirm
+├── session/{create,[id],published}
 ├── workout/[id], [id]/edit
 ├── (auth)/_layout.tsx             Stack: onboarding, phone, verify
 │   └── onboarding/_layout.tsx     Stack + progress chrome
-└── (tabs)/_layout.tsx             Tabs: Home, Séances, Workouts, Club, Profil
+└── (tabs)/_layout.tsx             Tabs: Accueil, Mes sorties, Clubs, Profil
+    │                              (workouts: href null → Redirect to profile)
     └── club/_layout.tsx           Nested Stack (club screens)
 ```
 
-Tab labels (CONFIRMED in `app/(tabs)/_layout.tsx`): Home · Séances · Workouts · Club · Profil.
+Tab labels (CONFIRMED tip): **Accueil · Mes sorties · Clubs · Profil**. Workouts not shown in tab bar.
 
 ### 2.2 Screen inventory
 
 | Route | File | Parent | Purpose (from code) | Reachability |
 | --- | --- | --- | --- | --- |
-| `/` (tabs home) | `app/(tabs)/index.tsx` | tabs | Browse / home sessions | CONFIRMED — tab + auth success |
-| `/my-sessions` | `app/(tabs)/my-sessions.tsx` | tabs | User sessions | CONFIRMED — tab |
-| `/workouts` | `app/(tabs)/workouts.tsx` | tabs | Workout templates | CONFIRMED — tab |
+| `/` (root) | `app/index.tsx` | root | DEMO→`/demo` else onboarding | CONFIRMED tip |
+| `/demo` | `app/demo.tsx` | root | Demo / jury entry | CONFIRMED tip |
+| `/` Accueil | `app/(tabs)/index.tsx` | tabs | Browse / home sessions | CONFIRMED — tab |
+| `/my-sessions` | `app/(tabs)/my-sessions.tsx` | tabs | Mes sorties | CONFIRMED — tab |
+| `/workouts` | `app/(tabs)/workouts.tsx` | tabs | **Redirect → profile** (`href: null`) | CONFIRMED tip — not a product tab |
 | `/profile` | `app/(tabs)/profile.tsx` | tabs | Profile & PRs | CONFIRMED — tab |
-| `/club` | `app/(tabs)/club/index.tsx` | club stack | Club hub | CONFIRMED — tab |
+| `/club` | `app/(tabs)/club/index.tsx` | club stack | Club hub (“Clubs”) | CONFIRMED — tab |
 | `/club/access` | `.../club/access.tsx` | club | Join / invite / request | CONFIRMED — nav from club |
 | `/club/create` | `.../club/create.tsx` | club | Create club | CONFIRMED — from access/onboarding paths |
 | `/club/admin` | `.../club/admin.tsx` | club | Approve members | CONFIRMED — coach/admin |
@@ -153,8 +176,11 @@ Tab labels (CONFIRMED in `app/(tabs)/_layout.tsx`): Home · Séances · Workouts
 | `/profile/settings` | `app/profile/settings.tsx` | root | Account settings | CONFIRMED |
 | `/profile/update-tests` | `app/profile/update-tests.tsx` | root | PR / tests editor | CONFIRMED |
 | `/profile/custom-pr-models` | `app/profile/custom-pr-models.tsx` | root | Custom PR models | CONFIRMED — from update-tests |
-| `/profile/test-history` | `app/profile/test-history.tsx` | root | Test history | **INFERRED orphan** — no inbound nav found |
-| `/run/setup` | `app/run/setup.tsx` | run stack | Create/match run | **INFERRED orphan** — layout registered; callers use `/run/confirm` |
+| `/profile/test-history` | `app/profile/test-history.tsx` | root | Test history | **Tip:** Redirect → profile (deferred; D7) — was INFERRED orphan @ avenir |
+| `/profile/training` | `app/profile/training.tsx` | root | Training surface | CONFIRMED tip |
+| `/run/setup` | `app/run/setup.tsx` | run stack | Create/match run | **Tip:** deep-link + connected deferred honesty (D8) |
+| `/session/published` | `app/session/published.tsx` | root | Post-publish | CONFIRMED tip |
+| `/idea/[id]` | `app/idea/[id].tsx` | root | Idea detail | CONFIRMED tip |
 | `/run/confirm` | `app/run/confirm.tsx` | run stack | Confirm/join run | CONFIRMED — from my-sessions |
 | `/inbox` | `app/inbox/index.tsx` | root | Notifications | CONFIRMED — from home/club |
 | `/avenir` | `app/avenir.tsx` | root | Vision / marketing | CONFIRMED deep-link / typed URL only (**INFERRED** no in-app push) |
@@ -178,15 +204,16 @@ Tab labels (CONFIRMED in `app/(tabs)/_layout.tsx`): Home · Séances · Workouts
 - Club nested stack: 9 child routes under `/club/*`.
 - Onboarding nested stack: 10 child routes under `/onboarding/*`.
 
-### 2.4 Missing screens required by confirmed UI copy — CONFIRMED stubs (not separate routes)
+### 2.4 Settings / vision affordances — tip disposition (supersedes avenir “Bientôt” stubs)
 
-Settings rows that only show `Alert.alert(..., "Bientôt disponible.")` — **no screens exist** for:
-
-- Edit phone, profile photo, language, units  
-- Terms of use, privacy, support contact  
-- Inter-group access policy (when no club context)  
-
-Vision page lists future product areas as “Bientôt” badges — **marketing**, not navigation targets (**CONFIRMED** in `app/avenir.tsx`).
+| Row / surface | Avenir audit | **Tip (Batch D/E)** |
+| --- | --- | --- |
+| Language, units | Stub alerts | **Implemented** local prefs |
+| Notification toggles | Local-only | Local prefs + **explicit no-push caption** |
+| Phone | Stub edit | **Read-only** display |
+| Photo / ToS / privacy / support | Stub alerts | Non-interactive **Hors MVP** |
+| Leave club | — | **Implemented** (kept) |
+| `/avenir` | Marketing only | Marketing + **enter-app CTA** (auth-aware) |
 
 ---
 
@@ -198,8 +225,8 @@ Vision page lists future product areas as “Bientôt” badges — **marketing*
 | --- | --- | --- | --- | --- |
 | Cold start unauthenticated | `useAuthGate` | `/(auth)/onboarding` | `ONBOARDING_V2 === true` | N/A (replace) |
 | Cold start unauthenticated | `useAuthGate` | `/(auth)/phone` | `ONBOARDING_V2 === false` | N/A |
-| `/avenir` | load | stay | public exception | browser / none |
-| No `app/index.tsx` | — | tabs via `unstable_settings.anchor = "(tabs)"` | CONFIRMED absent index | — |
+| `/` (`app/index.tsx`) | load | `/demo` or onboarding | `DEMO_MODE` | N/A |
+| `/avenir` | load | stay + CTA | public exception; CTA respects auth | browser / CTA |
 | `/club/group-edit` | mount | `/club/group-create` | Redirect with params | N/A |
 
 ### 3.2 Auth / onboarding chain — CONFIRMED
@@ -231,14 +258,14 @@ Secondary: onboarding index → `/(auth)/phone` (“J'ai déjà un compte”); p
 
 Static `router.push` / `href` destinations cross-checked against `app/` files: **0 missing destination files**.
 
-### 3.5 Unreachable / weakly reachable screens — INFERRED
+### 3.5 Orphans / weak reachability — tip disposition (was INFERRED @ avenir)
 
-| Route | Issue |
+| Route | Tip disposition |
 | --- | --- |
-| `/profile/test-history` | No inbound navigation found |
-| `/run/setup` | No inbound navigation found (confirm used instead) |
-| `/avenir` | No in-app navigation; URL / deep link only |
-| `/club/group-edit` | Only self-redirect; deprecated |
+| `/profile/test-history` | Redirect → profile; excluded from primary nav (D7) |
+| `/run/setup` | Deep-link safe; connected deferred honesty; no invented runs MVP (D8) |
+| `/avenir` | URL / deep link + enter-app CTA; no forced tab (D10) |
+| `/club/group-edit` | Deprecated redirect → group-create + params (D9) |
 
 ---
 
@@ -259,20 +286,17 @@ Static `router.push` / `href` destinations cross-checked against `app/` files: *
 | Backend-dependent | Calls `lib/api/*` (may be mock) |
 | Unclear | Intended product behavior not fully specified in code |
 
-### 4.2 High-risk / incomplete interactions — CONFIRMED
+### 4.2 High-risk / incomplete interactions
 
-| Location | Element | Intended (from UI) | Action today | Backend? | Status |
-| --- | --- | --- | --- | --- | --- |
-| `app/profile/settings.tsx` | Téléphone | Edit phone | `openPlaceholder` alert | No | Stub |
-| same | Photo de profil | Change photo | placeholder | No | Stub |
-| same | Langue | Change language | placeholder | No | Stub |
-| same | Unités | Change units | placeholder | No | Stub |
-| same | Conditions / Confidentialité / Support | Legal / help | placeholder | No | Stub |
-| same | Politique inter-groupes (no club) | Policy | placeholder | No | Stub |
-| same | Déconnexion | Logout | `clearAuthData` + replace phone; **does not call** API `logout()` | Partial | Implemented local; remote revoke UNKNOWN |
-| `lib/coach/coachProvider.ts` | Coach advice fetch | Remote coach | TODO warn; POST `/api/v1/coach` missing in `app/api` | Intended yes | Stub |
-| `app/session/create.tsx` | Publish path | Enforce workout-backed sessions | TODO comment ~2683 | — | Incomplete rule |
-| Notification toggles in settings | Push prefs | Save preferences | Local `settingsPreferencesStore` | No push API found | Local-only |
+| Location | Element | Avenir audit | **Tip (remediation)** |
+| --- | --- | --- | --- |
+| `app/profile/settings.tsx` | Téléphone | Stub edit alert | **Read-only** display |
+| same | Photo / Conditions / Confidentialité / Support | Stub alerts | Non-interactive **Hors MVP** |
+| same | Langue / Unités | Stub alerts | **Implemented** local prefs |
+| same | Déconnexion | Local clear only | **`performLogout`** + server ack when connected (JWT no denylist — honest) |
+| Notification toggles | Push implied? | Local-only | Local prefs + caption **denies push delivery** |
+| `lib/coach/coachProvider.ts` | Remote coach | Stub / missing API | **Still deferred** (D13) — not invented |
+| `app/session/create.tsx` | Workout-enforcement TODO | Incomplete | Unchanged in this package (out of batch scope) |
 
 ### 4.3 Screen-level interaction summary — CONFIRMED / INFERRED
 
@@ -290,8 +314,8 @@ Static `router.push` / `href` destinations cross-checked against `app/` files: *
 | Run setup/confirm | Form + join/leave run | Client `lib/api/runs.ts` — **no** matching `app/api/v1/runs` route CONFIRMED |
 | Profile / update-tests / custom-pr-models | PR sheets, toggles | Local + `updateMyPrs` |
 | Inbox | Open `actionPath` | Navigate |
-| Avenir | Mostly static cards | Marketing |
-| Settings stubs | See 4.2 | Stub |
+| Avenir | Marketing + enter-app CTA | Tip: CTA wired |
+| Settings | See 4.2 tip column | Honest / partial implemented |
 
 ### 4.4 Forms & validation — CONFIRMED (selected)
 
@@ -402,120 +426,127 @@ No dedicated drawer library — bottom sheets are `Modal`-based (**CONFIRMED**).
 - Workouts local-first (`workoutStore`).  
 - PRs via profile store + `POST /me/prs`.
 
-### 6.5 Client ↔ server gaps — CONFIRMED
+### 6.5 Client ↔ server gaps
 
-| Client capability | `app/api/v1` route present? |
-| --- | --- |
-| Clubs CRUD-ish, join, invite, approve, roster, sessions list/get/join/leave/request/assign, me/memberships, me/prs, me/sessions | Yes (see tree) |
-| Auth OTP/PIN/refresh/logout | **No** route files in this snapshot |
-| Devices register | **No** |
-| Runs create/join/leave | **No** |
-| `POST /clubs/:id/leave` | **No** (client has `leaveClub`) |
-| `PATCH /clubs/:id` | **No** (client has `updateClub`) |
-| `PUT .../member-group` | **No** |
-| Coach `POST /api/v1/coach` | **No** |
+> **Tip note (Batch E):** Table below is the **avenir audit** gap list. On the remediation tip: logout, club PATCH, and member-group are **implemented** and local-PG verified (`connected-evidence.json` 16/16). Runs / coach remote / devices / push remain deferred or blocked — see addendum + `CLIENT_API_INVENTORY.md`. Hosted/production still **BLOCKED** (D05).
 
-Mock layer may implement several of these (**CONFIRMED** comments/handlers in `lib/api/mock.ts`) — production connected behavior is **UNKNOWN** without environment verification.
+| Client capability | Avenir audit (`3ba6775`) | **Tip** |
+| --- | --- | --- |
+| Clubs CRUD-ish, join, invite, approve, roster, sessions… | Yes | Yes |
+| Auth OTP/PIN/refresh/logout | **No** logout route | **logout implemented**; OTP/PIN reuse allowlist (D11) |
+| Devices register | **No** | Still deferred |
+| Runs create/join/leave | **No** | Still no `/runs` API — setup honesty (D8) |
+| `POST /clubs/:id/leave` | **No** | Connected leave verified in prior batches / client path |
+| `PATCH /clubs/:id` | **No** | **Implemented** + PG verified |
+| `PUT .../member-group` | **No** | **Implemented** + PG verified |
+| Coach `POST /api/v1/coach` | **No** | Still deferred (D13) |
 
 ---
 
 ## SECTION 7 — MISSING FUNCTIONALITY
 
-### 7.1 Missing screens (for stubbed settings) — CONFIRMED need or explicit deferral required
+### 7.1 Settings — tip disposition (was “alerts only” @ avenir)
 
-Phone edit, photo, language, units, ToS, privacy, support — currently alerts only.
+Language/units **implemented**; phone read-only; photo/legal/support **Hors MVP** non-interactive. See `SETTINGS_DISPOSITION.md`.
 
-### 7.2 Dead / orphan routes — INFERRED
+### 7.2 Dead / orphan routes — tip disposition
 
-`/profile/test-history`, `/run/setup`, `/avenir` (no in-app entry), `/club/group-edit` (deprecated).
+`test-history` → profile redirect; `run/setup` deep-link + honesty; `/avenir` deep-link + CTA; `group-edit` → group-create. (Avenir: INFERRED orphans.)
 
-### 7.3 Dead buttons / stubs — CONFIRMED
+### 7.3 Dead buttons / stubs
 
-Eight settings `openPlaceholder` call sites (§4.2).
+Avenir: eight `openPlaceholder` sites. **Tip:** those misleading alerts removed; remaining unsupported rows are non-interactive Hors MVP.
 
-### 7.4 Broken / incomplete navigation — CONFIRMED / INFERRED
+### 7.4 Broken / incomplete navigation
 
-- No broken static destinations.  
-- Incomplete journeys: test-history, run setup, vision → app.  
-- Stale docs still describe deleted routes.
+- No broken static destinations (still true).  
+- Orphan journeys disposed (not invented).  
+- Stale docs (`architecture.md`, `dead-routes.md`) **bannered HISTORICAL** (Batch E).
 
-### 7.5 Incomplete workflows — CONFIRMED
+### 7.5 Incomplete workflows — remaining after remediation
 
-- Session create workout-enforcement TODO.  
-- Coach remote provider TODO.  
-- Logout without API revoke.  
-- Notification prefs without push registration API.  
-- Runs / leave / PATCH club / member-group server routes missing in-repo.
+- Session create workout-enforcement TODO (unchanged).  
+- Coach remote / runs API / push delivery — **deferred/blocked** (D13).  
+- Logout API ack **done** (JWT denylist still absent — documented honesty).  
+- PATCH club / member-group **done** (local PG).  
+- Hosted dual-context / production — **BLOCKED**.
 
 ### 7.6 Missing interaction states — UNKNOWN / INFERRED
 
-Full offline, permission-denied, and 403/404 matrices not systematically verified in this audit.
+Full offline, permission-denied, and 403/404 matrices not systematically verified in the initial audit. Remediation batches add targeted demo/connected evidence — not full UAT.
 
-### 7.7 Unimplemented backend dependencies — CONFIRMED list in §6.5
+### 7.7 Unimplemented backend dependencies — see tip column in §6.5
 
 ---
 
 ## SECTION 8 — IMPLEMENTATION ROADMAP
 
-Prioritized by **user journey impact**. Items are incomplete work already evidenced — **not** new product ideas.
+Prioritized by **user journey impact**. Status column updated at Batch E against tip.
 
-| Priority | Item | Journey | Label |
+| Priority | Item | Journey | Tip status |
 | --- | --- | --- | --- |
-| P0 | Decide mock vs connected contract for auth, leave club, PATCH club, member-group, runs | B, C, E, G | CONFIRMED gaps |
-| P0 | Align docs (`architecture.md`, `dead-routes.md`) with this blueprint or delete/archive | All | **DONE (Batch E)** — bannered HISTORICAL/STALE; not deleted (preserve provenance) |
-| P1 | Wire or remove settings stubs (phone/photo/language/units/legal/support) | Profile | CONFIRMED stubs |
-| P1 | Link or remove `/profile/test-history` | F | INFERRED orphan |
-| P1 | Link or remove `/run/setup`; clarify run journey | G | INFERRED orphan |
-| P2 | Call API logout on sign-out or document local-only logout | B | CONFIRMED partial |
-| P2 | Resolve coach provider TODO or keep local-only advice | C | CONFIRMED stub |
-| P2 | Session create workout-enforcement TODO | D | CONFIRMED incomplete |
-| P3 | In-app entry to `/avenir` or keep URL-only deliberately | H | OPEN |
-| P3 | Add testIDs for critical journeys (none today) | QA | CONFIRMED absent |
+| P0 | Mock vs connected contract; no silent mock; deploy entry | B, C | **DONE (working decisions D1/D2)** — prod still D05 |
+| P0 | Align docs (`architecture.md`, `dead-routes.md`) | All | **DONE (Batch E)** — bannered HISTORICAL; not deleted |
+| P1 | Settings honesty (language/units/legal/photo) | Profile | **DONE (Batch D)** — ISSUE-017 |
+| P1 | `/profile/test-history` disposition | F | **DONE** — redirect deferred (D7) |
+| P1 | `/run/setup` disposition | G | **DONE** — deep-link + honesty (D8) |
+| P2 | API logout + honesty | B | **DONE** — ISSUE-016; JWT no denylist documented |
+| P2 | Club PATCH + member-group | C | **DONE** — ISSUE-018; local PG |
+| P2 | Coach remote / runs connected | C, G | **DEFERRED/BLOCKED** (D13) — not invented |
+| P2 | Session create workout-enforcement TODO | D | Still open (out of package) |
+| P3 | `/avenir` enter-app CTA | H | **DONE** — ISSUE-019; no tab |
+| P3 | testIDs for critical journeys | QA | Still sparse — not claimed complete |
 
 ---
 
 ## SECTION 9 — OPEN QUESTIONS
 
-| # | Question | Why it matters | Label |
-| --- | --- | --- | --- |
-| Q1 | Is **mock-first** (Expo + `lib/api/mock`) or **connected Next `app/api/v1`** the approved production path for auth/runs/leave/PATCH? | P0 backend gaps | UNKNOWN |
-| Q2 | Should settings “Bientôt” rows ship as deferred stubs, be removed, or become real screens? | Avoid dead UI | UNKNOWN |
-| Q3 | Keep `/profile/test-history` and `/run/setup` (add nav) or delete? | Orphans | UNKNOWN |
-| Q4 | Is `/avenir` intentionally deep-link-only? | Marketing vs product | UNKNOWN |
-| Q5 | Should coach and admin remain identical in UI? | Role model | INFERRED current = identical |
-| Q6 | Tab IA: five tabs including Workouts — still approved vs later “Mes sorties / Accueil” Stito naming on other branches? | This snapshot uses Home/Séances/Workouts/Club/Profil | CONFIRMED here; other branches UNKNOWN to this file until re-audited |
-| Q7 | Notification toggles: local prefs only forever, or push pipeline planned? | Journey completeness | UNKNOWN |
-| Q8 | Logout: local clear enough, or must revoke refresh tokens server-side? | Security | UNKNOWN |
-
----
-
-## SECTION 10 — VALIDATION NOTES (Phase 4)
-
-Performed against this snapshot:
-
-1. **Blueprint vs tree:** 39 screens listed match `find app -name '*.tsx'` screen set (layouts/API excluded).  
-2. **Unreachable:** test-history, run/setup, avenir (in-app), group-edit inbound — §2/§3.  
-3. **Missing destinations:** none for static routes.  
-4. **Buttons without real handlers:** settings placeholders (§4.2); empty `onPress={() => {}}` count **0**.  
-5. **Incomplete journeys:** F (history), G (setup), H (vision), settings stubs, backend gaps.  
-6. **Rule file:** `.cursor/rules/app-architecture.mdc` must `alwaysApply: true` and point at `/APP_BLUEPRINT.md`.  
-7. **Claims of “working”:** reserved for items with handlers present; **not** claimed runtime-verified unless a smoke/E2E was run in a later change.
-
-### Inventory totals (for final report)
-
-| Metric | Value | Confidence |
+| # | Question | Tip answer (working decision — **not OCIF**) |
 | --- | --- | --- |
-| Screens (default export routes) | 39 | CONFIRMED |
-| Layout files | 6 | CONFIRMED |
-| Tab roots | 5 | CONFIRMED |
-| Static nav edges (approx unique) | ~55 | CONFIRMED sample |
-| `onPress` bindings | ~310 | CONFIRMED grep |
-| Modal usages | ~20 | CONFIRMED |
-| Stub settings actions | 8 | CONFIRMED |
-| Orphan / weak routes | 4 | INFERRED |
-| Broken static destinations | 0 | CONFIRMED |
-| In-repo API route files (`app/api/v1`) | 20 | CONFIRMED |
+| Q1 | Mock vs connected production path? | Connected = real-user contract; demo/mock explicit isolated; vercel build currently demo-forced; **prod = D05 blocked** |
+| Q2 | Settings stubs? | Implemented where supported; unsupported = Hors MVP non-interactive (D3) |
+| Q3 | test-history / run/setup? | Safe deep-link / redirect; no invented MVP scope (D7/D8) |
+| Q4 | `/avenir` deep-link-only? | Deep-link + enter CTA; no forced tab (D10) |
+| Q5 | Coach ≡ admin in UI? | Still INFERRED identical — unchanged |
+| Q6 | Tab IA / Workouts? | **Tip:** Accueil · Mes sorties · Clubs · Profil; workouts hidden redirect |
+| Q7 | Notification push? | Local prefs only; push delivery deferred/blocked (D4) |
+| Q8 | Logout revoke? | Server ack + local clear; JWT remains valid server-side (no denylist) — documented |
 
 ---
 
-*End of APP_BLUEPRINT.md — update this file whenever navigation, screens, workflows, or business rules change.*
+## SECTION 10 — VALIDATION NOTES
+
+### 10.1 Initial audit (Phase 4 @ `3ba6775`) — historical
+
+1. **Blueprint vs tree:** 39 screens listed matched that snapshot.  
+2. **Unreachable:** test-history, run/setup, avenir (in-app), group-edit inbound.  
+3. **Missing destinations:** none for static routes.  
+4. **Settings placeholders:** eight stub alerts.  
+5. **Rule file:** `.cursor/rules/app-architecture.mdc` → `APP_BLUEPRINT.md`.
+
+### 10.2 Batch E tip re-check (2026-10-25 Africa/Casablanca)
+
+1. **Screens:** **45** default-export routes (incl. redirects) / **6** layouts.  
+2. **Tabs:** Accueil · Mes sorties · Clubs · Profil (`workouts` href null).  
+3. **DEMO_MODE / `/demo`:** CONFIRMED used.  
+4. **Orphans:** disposed per working decisions (not deleted blindly).  
+5. **Settings / logout / avenir CTA / PATCH / member-group:** see remediation evidence (demo C/D + connected 16/16).  
+6. **Stale docs:** `docs/architecture.md` + `docs/dead-routes.md` bannered HISTORICAL; content preserved.  
+7. **Issue register:** sole canonical file `docs/product/ISSUE_REGISTER.md`.  
+8. **Not claimed:** hosted UAT, production, OCIF, “everything fixed.”
+
+### Inventory totals
+
+| Metric | Avenir audit | Tip (Batch E) |
+| --- | --- | --- |
+| Screens (default export routes) | 39 | **45** |
+| Layout files | 6 | **6** |
+| Visible tab roots | 5 (incl. Workouts) | **4** (workouts hidden) |
+| Stub settings “Bientôt” alerts | 8 | **0** (Hors MVP non-interactive / implemented) |
+| Orphan disposition | INFERRED open | Documented D7–D10 |
+| Broken static destinations | 0 | 0 |
+| Issue registers | — | **1** (`docs/product/ISSUE_REGISTER.md`) |
+
+---
+
+*End of APP_BLUEPRINT.md — update this file whenever navigation, screens, workflows, or business rules change. Prefer the remediation addendum over historical § rows when they conflict.*

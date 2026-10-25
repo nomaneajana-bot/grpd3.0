@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Application architecture (permanent)
 
-`APP_BLUEPRINT.md` at the repository root is the **authoritative** reference for product architecture (screens, navigation, interactions, journeys, business rules, known gaps). Prefer its **remediation addendum** and `docs/audit/architecture-remediation/` over older numbered sections when they conflict.
+`APP_BLUEPRINT.md` at the repository root is the **authoritative** reference for product architecture (screens, navigation, interactions, journeys, business rules, known gaps). Prefer its **remediation addendum / tip surface** and `docs/audit/architecture-remediation/` over older numbered §1–§10 rows (those rows are the avenir `@3ba6775` audit kept for provenance).
 
 **Canonical issues:** `docs/product/ISSUE_REGISTER.md` only — do not invent a second register.  
 **Working decisions** in `docs/audit/architecture-remediation/WORKING_DECISIONS.md` are implementation defaults for authorized work — **not** OCIF approvals.
