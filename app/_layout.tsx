@@ -13,7 +13,14 @@ import "react-native-reanimated";
 import { colors } from "@/constants/ui";
 import { useAuthGate } from "@/hooks/use-auth-gate";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useWelcomeFonts } from "@/lib/welcomeFonts";
+import { useFonts } from "expo-font";
+import { stitoFontAssets } from "@/lib/stitoFonts";
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from "@expo-google-fonts/inter";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -57,7 +64,14 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { isLoading } = useAuthGate();
-  const [fontsLoaded] = useWelcomeFonts();
+  // Stito UI: Space Grotesk + Hanken; Inter retained for /avenir welcome surfaces.
+  const [fontsLoaded] = useFonts({
+    ...stitoFontAssets,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
 
   useEffect(() => {
     if (!isLoading && fontsLoaded) {

@@ -213,15 +213,23 @@ async function main() {
     await shot(page, "02-home-phone");
 
     // UI coherent / controls unobstructed (phone)
-    const tabAccueil = page.getByText(/^Accueil$/i).first();
-    const tabClubs = page.getByText(/^Clubs$/i).first();
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(900);
+    const tabAccueil = page.getByRole("tab", { name: /^Accueil$/i }).first();
+    const tabClubs = page.getByRole("tab", { name: /^Clubs$/i }).first();
+    const tabClubsFb = page.getByText(/^Clubs$/i).last();
     check(
       "phone_tabs_visible",
       (await tabAccueil.isVisible().catch(() => false)) ||
         /Accueil|On sort/i.test(await page.locator("body").innerText()),
       "tabs/home chrome",
     );
-    const box = await tabClubs.boundingBox().catch(() => null);
+    let box = await tabClubs.boundingBox().catch(() => null);
+    let clubsTarget = tabClubs;
+    if (!box) {
+      box = await tabClubsFb.boundingBox().catch(() => null);
+      clubsTarget = tabClubsFb;
+    }
     // Point 11: null boundingBox is NOT unobstructed — require real hit target.
     check(
       "phone_club_tab_unobstructed",
@@ -229,7 +237,7 @@ async function main() {
       box ? JSON.stringify(box) : "FAIL: null boundingBox",
     );
     if (box) {
-      await tabClubs.click({ force: false, timeout: 10000 });
+      await clubsTarget.click({ force: false, timeout: 10000 });
       await page.waitForTimeout(800);
       check(
         "phone_club_tab_hit_navigates",
@@ -239,7 +247,11 @@ async function main() {
           ),
         page.url(),
       );
-      await page.getByText(/^Accueil$/i).first().click({ force: false }).catch(() => {});
+      await page
+        .getByRole("tab", { name: /^Accueil$/i })
+        .first()
+        .click({ force: false })
+        .catch(() => {});
       await page.waitForTimeout(500);
     } else {
       check("phone_club_tab_hit_navigates", false, "no hit target");
@@ -361,8 +373,12 @@ async function main() {
     await page.waitForTimeout(800);
     const desk = await page.locator("body").innerText();
     // Point 11: separate route smoke from accessibility — require chrome + enabled control.
-    const deskClubs = page.getByText(/^Clubs$/i).first();
-    const deskClubsBox = await deskClubs.boundingBox().catch(() => null);
+    let deskClubs = page.getByRole("tab", { name: /^Clubs$/i }).first();
+    let deskClubsBox = await deskClubs.boundingBox().catch(() => null);
+    if (!deskClubsBox) {
+      deskClubs = page.getByText(/^Clubs$/i).last();
+      deskClubsBox = await deskClubs.boundingBox().catch(() => null);
+    }
     check(
       "desktop_home_readable",
       /Accueil|On sort/i.test(desk) &&
