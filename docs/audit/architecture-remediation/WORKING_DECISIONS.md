@@ -9,8 +9,8 @@ These are **working decisions** for this remediation package — not OCIF approv
 
 | # | Decision | Disposition |
 |---|----------|-------------|
-| D1 | Connected persistent API is the real-user contract; mock/demo is explicit rehearsal only | ACTIVE |
-| D2 | Never silently fall back to mock on network/auth failure | ACTIVE (`lib/api/mode.ts` already enforces) |
+| D1 | Connected persistent API is the real-user contract; mock/demo is explicit rehearsal only | ACTIVE — see `TRANSPORT_AND_DEPLOYMENT.md` |
+| D2 | Never silently fall back to mock on network/auth failure | ACTIVE (`mode.ts` + `client.ts`; empty URL → `MISSING_API_URL`, not mock) |
 | D3 | Settings: implement language/units persistence already supported; remove misleading interactive stubs for unsupported rows (no eight fake toasts); retain source + document disposition — see `SETTINGS_DISPOSITION.md` | ACTIVE |
 | D4 | Notifications copy must not imply delivered push; local prefs only | ACTIVE |
 | D5 | Logout: always clear local session/caches; connected calls server logout; honest messaging if only local cleared; JWT has no denylist — see `LOGOUT_SEMANTICS.md` | ACTIVE |
@@ -23,6 +23,7 @@ These are **working decisions** for this remediation package — not OCIF approv
 | D12 | Club PATCH + member-group are required for connected club admin UI already calling them | ACTIVE |
 | D13 | Runs / coach remote / push delivery remain deferred or blocked — do not invent scope | DEFERRED/BLOCKED |
 | D14 | Production deploy remains separate D05 — not this package | BLOCKED (out of scope) |
+| D15 | Current `vercel.json` buildCommand forces `EXPO_PUBLIC_DEMO_MODE=true` — Preview static is demo rehearsal until D05/connected build wiring | CONFIRMED; do not treat Preview HTML as connected UAT |
 
 ## Methodology note
 

@@ -1,0 +1,23 @@
+{
+  "batch": "architecture-remediation-transport",
+  "decision": "D1/D2 — connected contract; no silent mock fallback",
+  "tested_sha_note": "logic matrix; mode.ts source of truth",
+  "environment": "static_logic",
+  "hosted_claim": false,
+  "production_claim": false,
+  "d05_claim": false,
+  "summary": { "pass": 6, "fail": 0 },
+  "checks": [
+    { "id": "demo_forces_mock", "ok": true },
+    { "id": "explicit_mock", "ok": true },
+    { "id": "storage_mock", "ok": true },
+    { "id": "connected_empty_url_not_mock", "ok": true },
+    { "id": "connected_empty_throws_not_fallback", "ok": true },
+    { "id": "connected_with_url", "ok": true }
+  ],
+  "deployment_entrypoint": {
+    "serverless": "api/v1/[...path].ts → lib/server/vercel-dispatch.ts",
+    "vercel_buildCommand_demo_forced": true,
+    "production": "D05 blocked/out of package"
+  }
+}

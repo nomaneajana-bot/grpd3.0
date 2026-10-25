@@ -41,12 +41,19 @@
 | Script | `scripts/architecture-remediation-smoke.mjs` |
 | Status | Still available; Batch D supersedes settings/avenir deep-link checks for this package |
 
+## Transport / deployment (decision #1)
+
+| Field | Value |
+|---|---|
+| Doc | `TRANSPORT_AND_DEPLOYMENT.md` |
+| Matrix | `transport-mode-matrix.json` **6/6** |
+| Production / D05 | **Not claimed** |
+
 ## Docs updated this package
 
-- `WORKING_DECISIONS.md`
+- `WORKING_DECISIONS.md` · `TRANSPORT_AND_DEPLOYMENT.md`
 - `CLIENT_API_INVENTORY.md`
-- `BEFORE_AFTER.md`
-- `SETTINGS_DISPOSITION.md` (row-level D3 / ISSUE-017)
+- `BEFORE_AFTER.md` · `SETTINGS_DISPOSITION.md` · `BATCH_C.md` · `BATCH_D.md`
 - `docs/product/ISSUE_REGISTER.md` (007, 016–019)
 - `docs/PROJECT_CHECKPOINT.md`
 - `APP_BLUEPRINT.md` remediation addendum

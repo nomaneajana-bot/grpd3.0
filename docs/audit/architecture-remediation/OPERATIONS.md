@@ -14,7 +14,8 @@ Batches under the authorized remediation package. Continue independently; blocke
 
 | Item | Status |
 |---|---|
-| Connected = real contract; mock/demo isolated; no silent mock fallback | Active (`lib/api/mode.ts`) |
+| Connected = real contract; mock/demo isolated; no silent mock fallback | **Documented + matrix 6/6** — `TRANSPORT_AND_DEPLOYMENT.md` |
+| Actual deploy entrypoint | `api/v1/[...path].ts` → dispatch; `vercel.json` currently **demo-forced** build |
 | Production deploy | **BLOCKED** (D05 — out of package) |
 | Hosted mutations | **BLOCKED** without authorized env |
 | Codex stop | After package evidence complete — not claimed accepted |

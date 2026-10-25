@@ -24,7 +24,10 @@
 | `EXPO_PUBLIC_DEMO_MODE=true` | Always mock; demo OTP `000000`; `/demo` entry |
 | `EXPO_PUBLIC_USE_MOCK_API=true` | Explicit mock |
 | AsyncStorage mock flag | Set by demo phone path |
-| Connected | Requires non-empty `EXPO_PUBLIC_API_URL`; else `MISSING_API_URL` error |
+| Connected | `useMock: false`; empty `EXPO_PUBLIC_API_URL` → **error**, not mock |
+| Network failure (connected) | `ApiError` — **no** silent mock fallback |
+
+**Deployment entrypoint:** `api/v1/[...path].ts` + `vercel-dispatch` (not `app/api` file count alone). Full note: `TRANSPORT_AND_DEPLOYMENT.md`.
 
 ## Orphans (disposition)
 
