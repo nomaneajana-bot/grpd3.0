@@ -15,8 +15,8 @@ Not a docs-only audit. Not production deploy. Not OCIF submission.
 
 ### Exact next action
 
-1. Finish remaining queued remediation items (settings/avenir package smoke, Batch B auth UI, docs E) then **STOP for Codex**.  
-2. Do not start unrelated visual ports or production promotion.
+1. Execute remaining **OPERATIONS** batches per `docs/audit/architecture-remediation/OPERATIONS.md` (D deep-link retest, B demo auth UI, E stale-doc reconcile, package smoke).  
+2. Then **STOP for Codex**. No unrelated visual ports or production promotion.
 
 ## Surfaces
 
