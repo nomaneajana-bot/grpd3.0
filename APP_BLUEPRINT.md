@@ -4,6 +4,7 @@
 **Codebase snapshot (initial audit):** git `3ba6775` (avenir-only — incomplete vs Stito/demo; **not an ancestor of the Stito tip**).  
 **Remediation base:** `cursor/architecture-remediation-3184` ← `cursor/stitch-home-detail-3184` @ `8cbfe83` (preserves Accueil/Détail Stito + `/demo`).  
 **Codex correction tip:** `cursor/codex-correction-mission-3184` (PR #33) @ `c754f9f` — club GET privacy, atomic PATCH+invite, eligible member-groups, tightened demo evidence, Stito font registration in root layout; hosted still BLOCKED.  
+**Screen-completion follow-up tip:** `cursor/screen-completion-followup-3184` (PR #34) — six UI/journey prompts; P1–P6 demo evidence under `docs/audit/screen-completion/`; free-form club create `activityStructure: neutral`; settings language/units labeled device-local only; server group catalog remains **BLOCKED**; hosted still BLOCKED. **Not READY** — STOP for Codex.  
 **Batch E reconciled tip:** prior `cursor/architecture-remediation-3184` @ `8196f31` (Codex did not accept — see correction DELIVER).  
 **Working decisions:** `docs/audit/architecture-remediation/WORKING_DECISIONS.md` (**not OCIF**).  
 **API inventory:** `docs/audit/architecture-remediation/CLIENT_API_INVENTORY.md`  
@@ -38,7 +39,7 @@
 | `PATCH /api/v1/clubs/:id` | **Atomic** club+invite; unique invite → 409 | same |
 | `PUT /api/v1/clubs/:id/member-group` | **Eligible groups** (+ color ids); attendance untouched | same |
 | Root fonts | **Space Grotesk + Hanken** registered via `useFonts(stitoFontAssets)` (+ Inter for avenir) | `app/_layout.tsx` |
-| Settings language/units | **Implemented** local prefs (fr↔en, km↔mi) | `SETTINGS_DISPOSITION.md` · Batch D |
+| Settings language/units | **Implemented** device-local labels only (fr↔en, km↔mi) — honesty caption; no full i18n / distance conversion | `SETTINGS_DISPOSITION.md` · screen-completion P6 |
 | Settings phone | Read-only display (no fake edit) | same |
 | Settings legal/photo/support | Non-interactive **Hors MVP** (no fake success) | same |
 | Notifications | Local prefs only — caption denies push delivery | same · D4 |

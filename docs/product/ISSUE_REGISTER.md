@@ -1,6 +1,7 @@
 # Issue Register (canonical)
 
-**Codex correction mission (FIXED AWAITING RETEST — STOP for Codex):** branch `cursor/codex-correction-mission-3184` (PR #33) @ `c754f9f` · package `docs/audit/architecture-remediation/DELIVER.md` · 16-point matrix · API 47/47 · connected 18/18 · Batch C 21/21 · journeys 37/37 · verification 18/18 · fonts/TS18048 local VERIFIED · hosted **BLOCKED** (SSO) · preserves PR #32 tip `8196f31` (Codex did **not** accept) · **no OCIF / no merge / no production**  
+**Screen-completion follow-up (FIXED AWAITING RETEST — STOP for Codex):** branch `cursor/screen-completion-followup-3184` (PR #34) · package `docs/audit/screen-completion/DELIVER.md` · P1 **17/17** · P2 **13/13** · P3–P5 **21/21** · P6 **20/20** · settings language/units local-label honesty · server group catalog **BLOCKED** · hosted **BLOCKED** (SSO) · preserves PR #33 tips `c754f9f` / `fc81650` (PR33 received, **not** independently accepted by this agent) · **no OCIF / no merge / no production / not READY**  
+**Codex correction mission (FIXED AWAITING RETEST — separate review):** branch `cursor/codex-correction-mission-3184` (PR #33) @ `c754f9f` · package `docs/audit/architecture-remediation/DELIVER.md` · 16-point matrix · API 47/47 · connected 18/18 · Batch C 21/21 · journeys 37/37 · verification 18/18 · fonts/TS18048 local VERIFIED · hosted **BLOCKED** (SSO) · preserves PR #32 tip `8196f31` (Codex did **not** accept) · **no OCIF / no merge / no production**  
 **Architecture remediation tip (prior; NOT Codex-accepted):** branch `cursor/architecture-remediation-3184` (PR #32) @ `8196f31` · base Stito `8cbfe83` · **this file is the only issue register**  
 
 **Outing detail light-fix tip (FIXED AWAITING RETEST — STOP Codex):** branch `cursor/outing-detail-light-fix-3184` (PR #20) · evidence `docs/audit/outing-detail-stito/` · smoke **34/34** · **demo web only** · canonical ref `docs/design-reference/stitch-six-2026-10-17/.../grpd_d_tail_de_la_sortie_avant_inscription/screen.png` from `64dc1d1` — **not** dark `renders/11`  
@@ -340,11 +341,11 @@ PR33 Preview Ready for `c754f9f` at `grpd30-git-cursor-codex-correctio-adce28-�
 | Field | Value |
 |-------|-------|
 | Route / journey | `/profile/settings` (+ onboarding permissions copy) |
-| Expected meaning | Language/units persist; no fake interactive stubs; notifications describe local prefs only — no implied push delivery |
-| Observed behavior | Settings caption denies push; toggles persist `grpd_settings_prefs_v1`; onboarding subtitle states push not active; devices API missing connected |
-| Capability | IMPLEMENTED (local prefs) · push delivery **DEFERRED/BLOCKED** · phone-edit/photo/legal CMS **Hors MVP** |
+| Expected meaning | Language/units persist as **device-local labels** only (no full i18n / distance conversion claim); no fake interactive stubs; notifications describe local prefs only — no implied push delivery |
+| Observed behavior | Push caption retained; **screen-completion:** PRÉFÉRENCES honesty caption + « Langue/Unités (libellé local) »; toggles persist `grpd_settings_prefs_v1`; logout keeps device prefs, clears joined caches; onboarding subtitle states push not active; devices API missing connected |
+| Capability | IMPLEMENTED (local prefs) · full i18n/units conversion **DEFERRED** · push delivery **DEFERRED/BLOCKED** · phone-edit/photo/legal CMS **Hors MVP** |
 | Owner | Cursor |
-| Evidence | `NOTIFICATIONS.md` · `notifications-evidence.json` **14/14** · `SETTINGS_DISPOSITION.md` · Batch D |
+| Evidence | `docs/audit/screen-completion/p6-evidence.json` **20/20** · `SETTINGS_DISPOSITION.md` · prior `notifications-evidence.json` **14/14** · Batch D |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-018 — P1 — FIXED AWAITING RETEST (club GET privacy + PATCH atomic + member-group)
@@ -375,13 +376,15 @@ PR33 Preview Ready for `c754f9f` at `grpd30-git-cursor-codex-correctio-adce28-�
 
 | Rank | Issue | Why next / not next |
 |------|-------|---------------------|
-| — | **Codex correction PR #33** | **STOP for Codex** @ `c754f9f` |
+| — | **Screen-completion PR #34** | **STOP for Codex** — `docs/audit/screen-completion/DELIVER.md` |
+| — | **Codex correction PR #33** | Separate STOP — tip `c754f9f` / package `fc81650` (not accepted by follow-up) |
 | 1 | ISSUE-004 / 008 hosted | Preview SSO — owner must authorize isolated env |
-| 2 | ISSUE-016–019 + club GET privacy | FIXED AWAITING RETEST — correction evidence local only |
-| 3 | Native / real UAT | Not claimed |
-| 4 | ISSUE-012 keyboard | Keep open |
-| 5 | ISSUE-006 / 009 | Deferred / NOT IMPLEMENTED |
-| — | Runs connected / push / coach remote | **BLOCKED/DEFERRED** by working decisions |
+| 2 | Server club group catalog | Explicit **BLOCKED** — client AdminStore only; do not fake |
+| 3 | ISSUE-016–019 + club GET privacy | FIXED AWAITING RETEST — correction + screen-completion evidence local only |
+| 4 | Native / real UAT | Not claimed |
+| 5 | ISSUE-012 keyboard | Keep open |
+| 6 | ISSUE-006 / 009 | Deferred / NOT IMPLEMENTED |
+| — | Runs connected / push / coach remote / full i18n | **BLOCKED/DEFERRED** by working decisions |
 
 ---
 

@@ -1,0 +1,123 @@
+{
+  "prompts": [
+    6
+  ],
+  "tested_sha": "3c569b01b4f0e5a9981e4f98a5d1271f74ada128",
+  "tested_at": "2026-10-25T21:24:23.533Z",
+  "environment": "demo",
+  "hosted_claim": false,
+  "native_claim": false,
+  "uat_claim": false,
+  "checks": [
+    {
+      "id": "p6_settings_loads",
+      "ok": true,
+      "detail": "\nParamètres\nCOMPTE\nTéléphone\n+212 6111 11 11 1\nPhoto de profil\nInitiale C · non"
+    },
+    {
+      "id": "p6_push_honesty",
+      "ok": true,
+      "detail": "push caption"
+    },
+    {
+      "id": "p6_prefs_honesty",
+      "ok": true,
+      "detail": "language/units local-only caption"
+    },
+    {
+      "id": "p6_language_local_label",
+      "ok": true,
+      "detail": "language row label"
+    },
+    {
+      "id": "p6_units_local_label",
+      "ok": true,
+      "detail": "units row label"
+    },
+    {
+      "id": "p6_hors_mvp_noninteractive",
+      "ok": true,
+      "detail": "legal stubs"
+    },
+    {
+      "id": "p6_language_persists_device",
+      "ok": true,
+      "detail": "{\"language\":\"en\"}"
+    },
+    {
+      "id": "p6_language_toggled",
+      "ok": true,
+      "detail": "en"
+    },
+    {
+      "id": "p6_orphan_test_history",
+      "ok": true,
+      "detail": "http://127.0.0.1:8081/profile"
+    },
+    {
+      "id": "p6_orphan_run_setup_safe",
+      "ok": true,
+      "detail": "Trouver mon groupe\nRemplis les informations pour trouver ou créer une course\nTYP"
+    },
+    {
+      "id": "p6_orphan_group_edit_redirect",
+      "ok": true,
+      "detail": "http://127.0.0.1:8081/club/group-create?clubId=club_orphan_x&groupId=B"
+    },
+    {
+      "id": "p6_avenir_loads",
+      "ok": true,
+      "detail": "G R P D\nL'avenir de GrpD\nAujourd'hui nous réunissons des cou"
+    },
+    {
+      "id": "p6_avenir_cta",
+      "ok": true,
+      "detail": "cta"
+    },
+    {
+      "id": "p6_avenir_signed_in_label",
+      "ok": true,
+      "detail": "Retour à l'accueil"
+    },
+    {
+      "id": "p6_avenir_returns_tabs",
+      "ok": true,
+      "detail": "http://127.0.0.1:8081/"
+    },
+    {
+      "id": "p6_logout_clears_user_cache",
+      "ok": true,
+      "detail": "{}"
+    },
+    {
+      "id": "p6_logout_preserves_device_prefs",
+      "ok": true,
+      "detail": "{\"shareStatsWithClub\":false,\"language\":\"en\",\"units\":\"km\",\"notifications\":{\"sessi"
+    },
+    {
+      "id": "p6_logout_leaves_session",
+      "ok": true,
+      "detail": "http://127.0.0.1:8081/phone"
+    },
+    {
+      "id": "p6_account_switch_no_foreign_joined",
+      "ok": true,
+      "detail": "{}"
+    },
+    {
+      "id": "p6_larger_text_readable",
+      "ok": true,
+      "detail": "larger text"
+    }
+  ],
+  "notes": {
+    "language_units": "Device-local labels only — honesty caption; no full i18n / distance conversion",
+    "push": "Caption: no push delivery",
+    "orphans": "test-history redirect; run/setup safe; group-edit → group-create"
+  },
+  "summary": {
+    "pass": 20,
+    "fail": 0,
+    "total": 20
+  }
+}

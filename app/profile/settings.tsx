@@ -387,15 +387,25 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
 
-        <SettingsSectionLabel>PRÉFÉRENCES</SettingsSectionLabel>
+        <SettingsSectionLabel
+          subtitle={
+            <Text style={styles.notificationsCaption} testID="settings-prefs-honesty">
+              Préférences enregistrées sur cet appareil. Elles n&apos;appliquent
+              pas encore une traduction complète de l&apos;app ni une conversion
+              des distances partout.
+            </Text>
+          }
+        >
+          PRÉFÉRENCES
+        </SettingsSectionLabel>
         <SettingsGroup>
           <SettingsNavRow
-            title="Langue"
+            title="Langue (libellé local)"
             value={LANGUAGE_LABELS[language]}
             onPress={() => void handleLanguagePress()}
           />
           <SettingsNavRow
-            title="Unités"
+            title="Unités (libellé local)"
             value={UNITS_LABELS[units]}
             onPress={() => void handleUnitsPress()}
           />

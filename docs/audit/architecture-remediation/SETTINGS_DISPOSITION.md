@@ -7,8 +7,8 @@
 |---|---|---|---|
 | Téléphone | **Display** (read-only) | None | Shows formatted number; phone change **not supported** in MVP — not a fake edit |
 | Photo de profil | **Deferred / unsupported** | None (`showChevron={false}`) | Source retained; value states non-modifiable |
-| Langue | **Implemented** | Toggle fr↔en → `saveSettingsPreferences` | Already-supported store |
-| Unités | **Implemented** | Toggle km↔mi → `saveSettingsPreferences` | Already-supported store |
+| Langue (libellé local) | **Implemented (device label only)** | Toggle fr↔en → `saveSettingsPreferences` | Honesty caption: does **not** full-app i18n yet — screen-completion P6 |
+| Unités (libellé local) | **Implemented (device label only)** | Toggle km↔mi → `saveSettingsPreferences` | Honesty caption: does **not** convert distances app-wide yet — P6 |
 | Notification toggles (4) | **Implemented (local prefs only)** | Persist locally | Caption: no push delivery — see `NOTIFICATIONS.md` / D4 |
 | Partager PR / stats | **Implemented** | Toggles + PR sync where applicable | Retained privacy controls |
 | Politique inter-groupes | **Implemented** (if member) | Navigates to club settings | Non-member: display-only hint |
@@ -28,4 +28,5 @@
 
 ## Verified (demo)
 
-`batch-d-evidence.json` — **23/23** (language/units persist, Hors MVP non-interactive, orphans, avenir CTA, phone+desktop). Hosted push / legal CMS — still blocked/deferred.
+`batch-d-evidence.json` — **23/23** (language/units persist, Hors MVP non-interactive, orphans, avenir CTA, phone+desktop).  
+Screen-completion P6 — **20/20** (`docs/audit/screen-completion/p6-evidence.json`) — local-label honesty + logout preserves device prefs. Hosted push / legal CMS / full i18n — still blocked/deferred.

@@ -1,37 +1,38 @@
 # GRPD Project Checkpoint
 
 **Updated:** 2026-10-25 (Africa/Casablanca)  
-**Working branch:** `cursor/codex-correction-mission-3184`  
-**Code tip:** `c754f9f` · **Package tip:** branch HEAD (`git rev-parse HEAD`)  
-**Preserved prior tip:** PR #32 `8196f3172325a7a9834d6f1c55b9bd2739c6c572` (Codex NOT accepted)  
+**Working branch:** `cursor/screen-completion-followup-3184`  
+**Base:** `cursor/avenir-vision-page-3184`  
+**Preserved code tip:** `c754f9f` · **Preserved package tip:** `fc81650` · PR #33 evidence (separate review; **not** re-accepted by this agent)  
 **Base visual tip:** `origin/cursor/stitch-home-detail-3184` @ `8cbfe83`  
 **Method:** `docs/PROJECT_METHOD.md` · `AGENTS.md`  
-**Workflow:** inventory → rules → issue register → bounded batches → **independent Codex review**
+**Workflow:** Cursor implements/tests → **independent Codex review** · one canonical register `docs/product/ISSUE_REGISTER.md`
 
 ## Current phase
 
-**Codex correction mission — DELIVERED · STOP for Codex.**  
-Not production. Not OCIF. Not “everything fixed.”
+**Screen-completion follow-up — DELIVERED · STOP for Codex.**  
+Six bounded prompts executed. Not production. Not OCIF. Not READY.
 
 ### Exact next action
 
-1. **Codex independent review** of `docs/audit/architecture-remediation/DELIVER.md` + tip `c754f9f` / PR #33.  
-2. No merge / no production / no spending from this agent.  
-3. Hosted Preview remains **BLOCKED** (Vercel SSO) until owner authorizes isolated env.
+1. **Codex independent review** of `docs/audit/screen-completion/DELIVER.md` + PR #34 tip.  
+2. Preserve PR #33 (`c754f9f` / package `fc81650`) for its own review — do not treat this follow-up as Codex acceptance of PR33.  
+3. No merge / no production / no spending from this agent.  
+4. Hosted Preview remains **BLOCKED** (Vercel SSO) until owner authorizes isolated env.
 
 ## Package deliverable
 
-`docs/audit/architecture-remediation/DELIVER.md` (16-point matrix)
+`docs/audit/screen-completion/DELIVER.md` (one screen/state matrix)
 
-## Surfaces (correction)
+## Surfaces (this follow-up)
 
 | Surface | Status |
 |---------|--------|
-| Codex API 1–6 (local PG) | **47/47** |
-| Connected (p6 fix) | **18/18** |
-| Demo Batch C tightened | **21/21** |
-| Journeys 8–11 | **37/37** |
-| Demo VERIFICATION strict | **18/18** |
-| Font/visual 12–13 | **9/9** |
-| tsc / server typecheck / serverless / web export | **PASS** |
+| P1 Home → discovery → detail | **17/17** demo |
+| P2 Create club → home → edit | **13/13** demo · server group catalog **BLOCKED** |
+| P3 Invite → request → approval | PASS (in P3–P5 **21/21**) |
+| P4 Organise → publish → detail | PASS (same) |
+| P5 Join → Mes Sorties → cancel | PASS (same) |
+| P6 Profile/settings + orphans + avenir | **20/20** · language/units honesty fixed |
+| tsc / web demo export | **PASS** |
 | Hosted / native / UAT | **Hosted BLOCKED** · native/UAT **not claimed** |
