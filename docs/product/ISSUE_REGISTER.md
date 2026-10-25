@@ -334,7 +334,7 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 | Evidence | `docs/audit/architecture-remediation/LOGOUT_SEMANTICS.md` · `connected-evidence.json` |
 | Status | **FIXED AWAITING RETEST** |
 
-### ISSUE-017 — P1 — FIXED AWAITING RETEST (settings honesty)
+### ISSUE-017 — P1 — FIXED AWAITING RETEST (settings honesty + notifications D4)
 | Field | Value |
 |-------|-------|
 | Route / journey | `/profile/settings` |
@@ -360,11 +360,11 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 | Field | Value |
 |-------|-------|
 | Route / journey | `/avenir` deep link |
-| Expected meaning | Vision page may stay marketing; working enter/return CTA respects auth (+ demo → `/demo`) |
-| Observed behavior | Screen restored onto stitch tip; CTA routes signed-in→tabs, demo→`/demo`, else onboarding |
+| Expected meaning | Vision page may stay marketing; working enter/return CTA respects auth (+ demo → `/demo`); no tab |
+| Observed behavior | Public deep link; CTA signed-in « Retour à l'accueil » → tabs; unsigned demo → `/demo`→tabs; no avenir tab |
 | Capability | IMPLEMENTED |
 | Owner | Cursor |
-| Evidence | `docs/audit/architecture-remediation/` |
+| Evidence | `AVENIR.md` · `avenir-evidence.json` **15/15** · D10 |
 | Status | **FIXED AWAITING RETEST** |
 
 ---
