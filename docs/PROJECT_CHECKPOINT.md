@@ -15,8 +15,8 @@ Not a docs-only audit. Not production deploy. Not OCIF submission.
 
 ### Exact next action
 
-1. Remaining queue: orphans/avenir/notif confirmations (already evidenced in D) · Batch B already verified · **DELIVER** · then **STOP for Codex**.  
-2. **VERIFICATION done** (see `VERIFICATION.md`). No production promotion. No broad acceptance / OCIF.
+1. Remaining queue: avenir CTA · notifications honesty · Batch B (already verified) · **DELIVER** · then **STOP for Codex**.  
+2. Orphans (#3) **confirmed** — `ORPHANS.md` · **12/12**. VERIFICATION done. No production promotion. No broad acceptance / OCIF.
 
 ## Surfaces
 

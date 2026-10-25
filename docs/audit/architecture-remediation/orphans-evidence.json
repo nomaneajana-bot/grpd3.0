@@ -1,0 +1,81 @@
+{
+  "batch": "architecture-remediation-orphans",
+  "issue_ids": [
+    "ISSUE-007",
+    "D7",
+    "D8",
+    "D9"
+  ],
+  "tested_sha": "efff9f56de591cdc104de68fea0d9b7998d4e4b2",
+  "environment": "demo",
+  "hosted_claim": false,
+  "invented_activity_tracking": false,
+  "invented_coaching_scope": false,
+  "checks": [
+    {
+      "id": "source_test_history_redirect",
+      "ok": true,
+      "detail": "redirect only"
+    },
+    {
+      "id": "source_group_edit_preserves_params",
+      "ok": true,
+      "detail": "params"
+    },
+    {
+      "id": "source_run_setup_deferred_testid",
+      "ok": true,
+      "detail": "connected honesty"
+    },
+    {
+      "id": "no_primary_nav_inbound",
+      "ok": true,
+      "detail": "none"
+    },
+    {
+      "id": "deeplink_test_history_to_profile",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/profile"
+    },
+    {
+      "id": "deeplink_run_setup_safe",
+      "ok": true,
+      "detail": "Trouver mon groupe\nRemplis les informations pour trouver ou créer une course\nTYP"
+    },
+    {
+      "id": "run_setup_not_blank",
+      "ok": true,
+      "detail": "content"
+    },
+    {
+      "id": "group_edit_redirect_path",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/club/group-create?clubId=club_orphan_x&groupId=B"
+    },
+    {
+      "id": "group_edit_preserves_clubId",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/club/group-create?clubId=club_orphan_x&groupId=B"
+    },
+    {
+      "id": "group_edit_preserves_groupId",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/club/group-create?clubId=club_orphan_x&groupId=B"
+    },
+    {
+      "id": "profile_no_test_history_cta",
+      "ok": true,
+      "detail": "no CTA"
+    },
+    {
+      "id": "mes_sorties_no_run_setup_primary",
+      "ok": true,
+      "detail": "excluded from primary — soft"
+    }
+  ],
+  "summary": {
+    "passed": 12,
+    "failed": 0,
+    "total": 12
+  }
+}

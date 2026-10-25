@@ -116,13 +116,13 @@
 ### ISSUE-007 — P2 — FIXED AWAITING RETEST (architecture remediation)
 | Field | Value |
 |-------|-------|
-| Route / journey | `/run/setup`, `/profile/test-history` |
-| Expected meaning | Orphans disposed without inventing activity/coaching scope |
-| Observed behavior | `test-history` → profile; `group-edit` → `group-create` with params; `run/setup` demo form safe; connected deferred UI in source; `/avenir` CTA (Batch D demo) |
-| Capability | DEFERRED (safe deep-link) / NOT IMPLEMENTED connected runs |
+| Route / journey | `/run/setup`, `/profile/test-history`, `/club/group-edit` |
+| Expected meaning | Orphans disposed without inventing activity/coaching scope; group-edit params preserved |
+| Observed behavior | Scope check: neither test-history nor run/setup completes shipped MVP without new deps → deferred. `test-history` → profile; `run/setup` deep-link + connected honesty (`run-setup-deferred`); `group-edit` → `group-create?clubId&groupId` |
+| Capability | DEFERRED (safe deep-link) / NOT IMPLEMENTED connected runs / KEEP group-edit redirect |
 | Owner | Cursor |
 | Candidate SHA / env | `cursor/architecture-remediation-3184` · demo |
-| Evidence | `docs/audit/architecture-remediation/BATCH_D.md` · `batch-d-evidence.json` |
+| Evidence | `ORPHANS.md` · `orphans-evidence.json` **12/12** · `BATCH_D.md` · `WORKING_DECISIONS.md` D7–D9 |
 | Next action | Codex review disposition |
 | Status | **FIXED AWAITING RETEST** |
 

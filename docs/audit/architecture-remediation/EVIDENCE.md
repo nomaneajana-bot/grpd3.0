@@ -65,6 +65,15 @@
 | Issue register | **single** — `docs/product/ISSUE_REGISTER.md` |
 | Historical evidence | Other `docs/audit/**` folders left intact |
 
+## Orphans (decision #3 / ISSUE-007)
+
+| Field | Value |
+|---|---|
+| Doc | `ORPHANS.md` · working decisions D7–D9 |
+| Evidence | `orphans-evidence.json` **12/12** · `orphans/*.png` |
+| Invented activity/coach | **false** |
+| group-edit params | `clubId` + `groupId` preserved on redirect |
+
 ## VERIFICATION (package)
 
 | Field | Value |
