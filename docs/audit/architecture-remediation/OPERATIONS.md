@@ -20,7 +20,7 @@ Batches under the authorized remediation package. Continue independently; blocke
 | Actual deploy entrypoint | `api/v1/[...path].ts` → dispatch; `vercel.json` currently **demo-forced** build |
 | Production deploy | **BLOCKED** (D05 — out of package) |
 | Hosted mutations | **BLOCKED** without authorized env |
-| Codex stop | After package evidence complete — not claimed accepted |
+| Codex stop | **DELIVERED** — `DELIVER.md` · tip awaiting Codex · **not** accepted |
 
 ## Batch discipline (authorized)
 

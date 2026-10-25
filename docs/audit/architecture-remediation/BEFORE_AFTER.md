@@ -35,4 +35,4 @@
 
 ## Stop
 
-Stop for **Codex** independent review of this folder + tip SHA after demo evidence lands. No production promotion. No OCIF submission.
+**DELIVERED** — see `DELIVER.md`. Stop for **Codex** independent review of this folder + tip SHA. No production promotion. No OCIF submission. No “everything fixed.”

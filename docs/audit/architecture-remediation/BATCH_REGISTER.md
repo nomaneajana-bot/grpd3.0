@@ -25,3 +25,7 @@
 ## Explicit non-claims
 
 No OCIF · no “everything fixed” · no hosted/native/UAT acceptance from demo or static analysis alone.
+
+## DELIVER
+
+Package closed for Codex: `DELIVER.md` · tip `cbdaadf` lineage (re-stamp HEAD on deliver commit).

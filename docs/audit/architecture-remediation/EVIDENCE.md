@@ -1,7 +1,8 @@
 # Architecture remediation — evidence index
 
-**Method:** inventory → working decisions → issue register → bounded batches → Codex stop  
-**Branch:** `cursor/architecture-remediation-3184`
+**Method:** inventory → working decisions → issue register → bounded batches → **DELIVER / Codex stop**  
+**Branch:** `cursor/architecture-remediation-3184`  
+**Package deliverable:** `DELIVER.md`
 
 ## Connected local Postgres
 

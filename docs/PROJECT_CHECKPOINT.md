@@ -2,38 +2,40 @@
 
 **Updated:** 2026-10-25 (Africa/Casablanca)  
 **Working branch:** `cursor/architecture-remediation-3184`  
+**Package HEAD:** `cbdaadfa4b9035096bf22d2ed35a8807020847a9` (`cbdaadf`) — see also `DELIVER.md` after deliver commit  
 **Base visual tip:** `origin/cursor/stitch-home-detail-3184` @ `8cbfe83` (Stito Accueil + Détail + `/demo`)  
-**Remediation tip:** see `git rev-parse HEAD` on branch · **API tested_sha:** `f920e4a` · **Batch C demo tested_sha:** in `batch-c-evidence.json`  
-**Prior blueprint-only tip (avenir tree):** `69f0ecb` / audited `3ba6775` — **not an ancestor of Stito tip**; does **not** cover later demo/Stito  
+**Prior blueprint-only tip (avenir tree):** `3ba6775` — **not an ancestor of Stito tip**  
 **Method:** `docs/PROJECT_METHOD.md` · `AGENTS.md`  
-**Workflow preserved:** inventory → product rules → canonical issue register → bounded journey implementation/testing → independent Codex review
+**Workflow:** inventory → rules → issue register → bounded batches → **independent Codex review**
 
 ## Current phase
 
-**Architecture remediation (authorized by Nouamane)** — implement reported gaps in bounded batches; stop for Codex review after this package.  
-Not a docs-only audit. Not production deploy. Not OCIF submission.
+**Architecture remediation — DELIVERED · STOP for Codex.**  
+Not production. Not OCIF. Not “everything fixed.”
 
 ### Exact next action
 
-1. Remaining queue: **DELIVER** · then **STOP for Codex**.  
-2. Batch B **re-verified** — demo **19/19** @ `2f4f8cc` · DEMO OTP ≠ prod. Notifications/avenir/orphans/VERIFICATION done. No production promotion. No OCIF.
+1. **Codex independent review** of `docs/audit/architecture-remediation/` + tip.  
+2. No additional features / no production promotion from this agent on this package.  
+3. Hosted Preview (ISSUE-004/008) remains **BLOCKED** until authorized env.
+
+## Package deliverable
+
+`docs/audit/architecture-remediation/DELIVER.md`
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
-| Demo VERIFICATION (interactive handlers) | **17/17 PASS** — `verification-demo-evidence.json` @ `b9d4755` |
-| Demo web Batch B (auth→logout→relogin) | **19/19 PASS** — `batch-b-evidence.json` @ `2f4f8cc` |
-| Demo web Batch C (club→outing→join/leave) | **19/19 PASS** — `batch-c-evidence.json` |
-| Demo web Batch D (settings + orphans) | **23/23 PASS** — `batch-d-evidence.json` |
-| Connected API (local PG) | **16/16 PASS** (re-run @ `b9d4755`) — logout, PATCH, member-group, unrelated preserve |
-| Integration PG + JWT unit | **22 + 11 PASS** |
-| Hosted / native / UAT | **Hosted BLOCKED** (Vercel Auth) · native/UAT **not claimed** |
+| Demo Batch B | **19/19** @ `2f4f8cc` |
+| Demo Batch C | **19/19** |
+| Demo Batch D | **23/23** |
+| Demo VERIFICATION | **17/17** |
+| Orphans / avenir / notifications | **12 / 15 / 14** |
+| Connected local PG | **16/16** |
+| Integration PG + JWT | **22 + 11** |
+| Hosted / native / UAT | **Hosted BLOCKED** · native/UAT **not claimed** |
 
-## Working decisions
+## Issue IDs this package (FIXED AWAITING RETEST)
 
-See `docs/audit/architecture-remediation/WORKING_DECISIONS.md`.
-
-## Issue IDs this package
-
-ISSUE-007, ISSUE-016, ISSUE-017, ISSUE-018, ISSUE-019 — **FIXED AWAITING RETEST** (Codex).
+ISSUE-007, ISSUE-016, ISSUE-017, ISSUE-018, ISSUE-019 → Codex.
