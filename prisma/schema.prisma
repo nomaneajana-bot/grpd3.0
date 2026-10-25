@@ -42,6 +42,8 @@ model ClubMembership {
   displayName String?
   sharePrs  Boolean  @default(true)
   prSummary Json?
+  // Club home pace group (TOI) — not session attendance.
+  homeGroupId String?
   createdAt DateTime @default(now())
 
   // Relations

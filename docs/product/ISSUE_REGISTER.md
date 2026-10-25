@@ -112,17 +112,18 @@
 | Next action | Later batch; confirm if differentiation required; else remove dead ternary |
 | Status | **NOT CHECKED** |
 
-### ISSUE-007 — P2 — NOT CHECKED
+### ISSUE-007 — P2 — FIXED AWAITING RETEST (architecture remediation)
 | Field | Value |
 |-------|-------|
 | Route / journey | `/run/setup`, `/profile/test-history` |
-| Expected meaning | Reachable product surfaces or intentionally removed |
-| Observed behavior | Orphan screens — no inbound navigation found |
-| Capability | PARTIAL / unclear |
-| Owner | Nouamane |
-| Evidence | Inventory orphans |
-| Next action | Decide keep+link, hide, or delete in a later batch |
-| Status | **NOT CHECKED** |
+| Expected meaning | Orphans disposed without inventing activity/coaching scope |
+| Observed behavior | `test-history` already redirects to profile (Entraînement avancé removed). `run/setup` deep-link kept; connected mode shows honest deferred UI (no `/runs` API). Primary nav unchanged. `group-edit` redirect preserved. |
+| Capability | DEFERRED (safe deep-link) / NOT IMPLEMENTED connected runs |
+| Owner | Cursor |
+| Candidate SHA / env | `cursor/architecture-remediation-3184` · demo + static |
+| Evidence | `docs/audit/architecture-remediation/` |
+| Next action | Codex review disposition |
+| Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-008 — P2 — BLOCKED (hosted env/creds)
 | Field | Value |
@@ -321,19 +322,62 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 
 ---
 
+### ISSUE-016 — P1 — FIXED AWAITING RETEST (logout honesty)
+| Field | Value |
+|-------|-------|
+| Route / journey | Settings → logout → phone/relogin |
+| Expected meaning | Local session+caches cleared; connected calls `/auth/logout`; never claim global revoke if only local; demo stays mock |
+| Observed behavior | `performLogout` + `POST /api/v1/auth/logout` (stateless JWT ack) + settings wiring |
+| Capability | IMPLEMENTED (local + server ack); global denylist **NOT IMPLEMENTED** (honest copy) |
+| Owner | Cursor |
+| Evidence | `docs/audit/architecture-remediation/` |
+| Status | **FIXED AWAITING RETEST** |
+
+### ISSUE-017 — P1 — FIXED AWAITING RETEST (settings honesty)
+| Field | Value |
+|-------|-------|
+| Route / journey | `/profile/settings` |
+| Expected meaning | Language/units persist; no fake interactive stubs; notifications do not imply push delivery |
+| Observed behavior | Language/units toggles save locally; photo/legal/support non-interactive “Hors MVP”; notification caption corrected |
+| Capability | IMPLEMENTED (prefs) · push delivery **UNSUPPORTED** |
+| Owner | Cursor |
+| Evidence | `docs/audit/architecture-remediation/` |
+| Status | **FIXED AWAITING RETEST** |
+
+### ISSUE-018 — P1 — FIXED AWAITING RETEST (club PATCH + member-group)
+| Field | Value |
+|-------|-------|
+| Route / journey | Club settings save · group assign |
+| Expected meaning | Connected PATCH `/clubs/:id` + PUT `/clubs/:id/member-group` with authz |
+| Observed behavior | Routes + dispatch + `homeGroupId` column migration added |
+| Capability | IMPLEMENTED (code); connected PG runtime evidence pending this package |
+| Owner | Cursor |
+| Evidence | `docs/audit/architecture-remediation/` |
+| Status | **FIXED AWAITING RETEST** |
+
+### ISSUE-019 — P2 — FIXED AWAITING RETEST (avenir enter CTA)
+| Field | Value |
+|-------|-------|
+| Route / journey | `/avenir` deep link |
+| Expected meaning | Vision page may stay marketing; working enter/return CTA respects auth (+ demo → `/demo`) |
+| Observed behavior | Screen restored onto stitch tip; CTA routes signed-in→tabs, demo→`/demo`, else onboarding |
+| Capability | IMPLEMENTED |
+| Owner | Cursor |
+| Evidence | `docs/audit/architecture-remediation/` |
+| Status | **FIXED AWAITING RETEST** |
+
+---
+
 ## Ranked remaining MVP gaps (from this register)
 
 | Rank | Issue | Why next / not next |
 |------|-------|---------------------|
-| — | **ISSUE-015 outing detail** | **STOP — Codex review now** (blocks Organise/Clubs/Create/Invitations/Profile visual port) |
-| — | ISSUE-013 / 014 Accueil + Mes Sorties | FIXED AWAITING RETEST — Codex with or after 015 |
-| 1 | ISSUE-004 hosted VERIFIED | Code+PG done; needs authorized Preview/Test |
-| 2 | ISSUE-008 hosted multi-context | Needs hosted creds (SSO today) |
-| 3 | ISSUE-012 keyboard open note | Keep open; harness_limitation |
-| 4 | ISSUE-006 dead social ternary | P2 after Nouamane |
-| 5 | ISSUE-007 orphans | P2 product decision |
-| 6 | ISSUE-009 lifecycle | NOT IMPLEMENTED |
-| — | Unresolved rules | Creator auto-attendance; public+club; admin-transfer UX |
+| — | **Architecture remediation package** | **STOP for Codex** after evidence on this branch |
+| 1 | ISSUE-004 / 008 hosted | Still BLOCKED without Preview auth |
+| 2 | ISSUE-016–019 | FIXED AWAITING RETEST — this package |
+| 3 | ISSUE-012 keyboard | Keep open |
+| 4 | ISSUE-006 / 009 | Deferred / NOT IMPLEMENTED |
+| — | Runs connected / push / coach remote | **BLOCKED/DEFERRED** by working decisions |
 
 ---
 
