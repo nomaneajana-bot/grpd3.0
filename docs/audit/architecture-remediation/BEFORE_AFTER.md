@@ -25,8 +25,9 @@
 
 | Surface | Claim |
 |---|---|
-| Demo web UI | Implemented; **full Playwright not claimed this turn** (message queue active) |
-| Local Postgres API | **Verified** — `connected-evidence.json` 15/15 |
+| Demo Batch C journey | **Verified** — `batch-c-evidence.json` 19/19 |
+| Demo settings/avenir package smoke | Script ready; not yet claimed |
+| Local Postgres API | **Verified** — `connected-evidence.json` 16/16 |
 | Hosted / native / UAT | **Not claimed** |
 
 ## Stop
