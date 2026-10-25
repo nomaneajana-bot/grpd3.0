@@ -2,7 +2,7 @@
 
 **Delivered:** 2026-10-25 (Africa/Casablanca)  
 **Branch:** `cursor/architecture-remediation-3184`  
-**Tip commit (package HEAD):** `0c6b9813377c75b2aefba929d89a1314e142060b` (`0c6b981`) · prior evidence tip `cbdaadf`  
+**Tip commit:** branch HEAD — run `git rev-parse HEAD` (DELIVER doc introduced `0c6b981`; stamp follow-ups may append). Evidence JSON files keep their own `tested_sha`.  
 **Base visual tip:** `origin/cursor/stitch-home-detail-3184` @ `8cbfe83` (Stito Accueil + Détail + `/demo`)  
 **Not base:** avenir-only `3ba6775` (incomplete; not an ancestor of Stito tip)  
 **PR:** https://github.com/nomaneajana-bot/grpd3.0/pull/32  
