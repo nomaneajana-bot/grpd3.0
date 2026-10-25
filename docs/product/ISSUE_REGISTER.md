@@ -1,5 +1,6 @@
 # Issue Register (canonical)
 
+**Architecture remediation tip (FIXED AWAITING RETEST — STOP Codex after package):** branch `cursor/architecture-remediation-3184` (PR #32) · base Stito `8cbfe83` · evidence `docs/audit/architecture-remediation/` · Batch A inventory + C 19/19 + D 23/23 + connected 16/16 · **not** avenir-only `3ba6775`  
 **Outing detail light-fix tip (FIXED AWAITING RETEST — STOP Codex):** branch `cursor/outing-detail-light-fix-3184` (PR #20) · evidence `docs/audit/outing-detail-stito/` · smoke **34/34** · **demo web only** · canonical ref `docs/design-reference/stitch-six-2026-10-17/.../grpd_d_tail_de_la_sortie_avant_inscription/screen.png` from `64dc1d1` — **not** dark `renders/11`  
 **Prior rejected outing tip:** `2c1b981` / `e75122a` (PR #19) — ISSUE-015 **NOT accepted visually** (white-on-white / empty hero / pace / toast)  
 **Mes Sorties Stito tip (FIXED AWAITING RETEST):** PR #19 stack · preserved under PR #20  

@@ -41,6 +41,13 @@
 | Script | `scripts/architecture-remediation-smoke.mjs` |
 | Status | Still available; Batch D supersedes settings/avenir deep-link checks for this package |
 
+## Batch A — inventory + mode
+
+| Field | Value |
+|---|---|
+| Doc | `BATCH_A.md` · `CLIENT_API_INVENTORY.md` |
+| Mode matrix | `batch-a-mode-evidence.json` **11/11** |
+
 ## Transport / deployment (decision #1)
 
 | Field | Value |

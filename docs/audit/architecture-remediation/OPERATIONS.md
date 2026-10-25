@@ -4,7 +4,7 @@ Batches under the authorized remediation package. Continue independently; blocke
 
 | Batch | Scope | Status | Evidence |
 |---|---|---|---|
-| **A** | Refresh inventory + issue register; classify OTP/PIN/devices/runs/leave/PATCH/member-group/coach; reconcile `EXPO_PUBLIC_DEMO_MODE` | **Done (docs)** | `CLIENT_API_INVENTORY.md` · ISSUE-007/016–019 |
+| **A** | Refresh inventory + issue register; classify OTP/PIN/devices/runs/leave/PATCH/member-group/coach; reconcile `EXPO_PUBLIC_DEMO_MODE` | **Done** — full inventory refresh + mode **11/11** | `BATCH_A.md` · `CLIENT_API_INVENTORY.md` · `batch-a-mode-evidence.json` |
 | **B** | Auth → onboarding → home → logout/relogin; honest states; demo OTP ≠ prod | **Partial** — server logout + local clear **verified** (PG); full demo UI auth journey deferred to verification turn | `LOGOUT_SEMANTICS.md` · `connected-evidence.json` |
 | **C** | Create → edit → invite → organise → join/cancel → leave; two users/clubs; membership ≠ attendance; walk ≠ forced pace | **Verified demo** 19/19 | `BATCH_C.md` · `batch-c-evidence.json` |
 | **D** | Settings + orphan dispositions; retained actions/deep links; honest unsupported | **Verified demo** 23/23 | `BATCH_D.md` · `batch-d-evidence.json` · `SETTINGS_DISPOSITION.md` |

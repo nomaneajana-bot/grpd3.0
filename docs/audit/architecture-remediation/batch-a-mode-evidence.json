@@ -1,0 +1,26 @@
+{
+  "batch": "architecture-remediation-batch-a-mode",
+  "tested_sha": "38a306a6f32291912105e9edc530b076f8dad905",
+  "environment": "static_logic",
+  "hosted_claim": false,
+  "production_claim": false,
+  "summary": { "pass": 11, "fail": 0 },
+  "checks": [
+    { "id": "demo_true_useMock", "ok": true },
+    { "id": "demo_ignores_url", "ok": true },
+    { "id": "mock_env", "ok": true },
+    { "id": "mock_storage", "ok": true },
+    { "id": "connected_empty_not_mock", "ok": true },
+    { "id": "connected_empty_error", "ok": true },
+    { "id": "connected_url_ok", "ok": true },
+    { "id": "production_safe_default_no_demo", "ok": true },
+    { "id": "prod_safe_undefined_not_demo", "ok": true },
+    { "id": "prod_safe_false_string_not_demo", "ok": true },
+    { "id": "prod_safe_true_is_demo", "ok": true }
+  ],
+  "source": {
+    "featureFlags": "EXPO_PUBLIC_DEMO_MODE === \"true\"",
+    "vercel_buildCommand_demo_forced": true,
+    "build_web_connected_script": "package.json build:web:connected"
+  }
+}
