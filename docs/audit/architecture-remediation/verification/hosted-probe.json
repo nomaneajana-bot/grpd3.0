@@ -1,21 +1,61 @@
 {
-  "environment": "hosted_preview",
+  "batch": "codex-correction-hosted-probe-15",
+  "tested_at": "2026-10-25T20:36:47Z",
+  "correction_branch": "cursor/codex-correction-mission-3184",
+  "correction_sha": "c754f9fd4489768216a9ca6114a14f2423c03253",
+  "pr33": "https://github.com/nomaneajana-bot/grpd3.0/pull/33",
+  "pr32_tip_reviewed": "8196f3172325a7a9834d6f1c55b9bd2739c6c572",
+  "pr32": "https://github.com/nomaneajana-bot/grpd3.0/pull/32",
+  "vercel_dashboard_pr33": "https://vercel.com/noas-projects-0b3f311d/grpd3.0/2njeknV8dNCkE1UTbZmxVUmV24p1",
+  "vercel_dashboard_pr32": "https://vercel.com/noas-projects-0b3f311d/grpd3.0/FznnP4568M41gf9k7Ei7iCGxPgJ2",
+  "preview_url_pr33": "https://grpd30-git-cursor-codex-correctio-adce28-noas-projects-0b3f311d.vercel.app",
+  "deployment_sha_match": true,
   "hosted_claim": false,
   "mutations_run": false,
+  "protected_bypass": false,
+  "secret_changes": false,
   "status": "BLOCKED",
-  "reason": "Vercel Authentication / no authorized isolated Preview env for this branch",
+  "separation": {
+    "unknown_deployment": "grpd3-0.vercel.app remains DEPLOYMENT_NOT_FOUND \u2014 not current-branch evidence",
+    "protection": "Vercel Authentication SSO redirect on PR33 Preview + /api/v1/health",
+    "api_wiring": "unverified without authorized access to Preview + API env",
+    "db_isolation": "unverified \u2014 no remote mutations; DEMO/local PG != hosted",
+    "production_like_host": "grpd30.vercel.app returned 200 HTML \u2014 NOT claimed as PR33; do not use as correction evidence"
+  },
   "probes": [
     {
       "url": "https://grpd3-0.vercel.app",
-      "result": "404 DEPLOYMENT_NOT_FOUND"
+      "status": 404,
+      "error": "HTTP Error 404: Not Found",
+      "body_snip": "The deployment could not be found on Vercel.\n\nDEPLOYMENT_NOT_FOUND\n\niad1::djm27-1792960606554-4c3ccc281dfd\n",
+      "vercel_auth_gate": false
     },
     {
-      "url": "https://grpd30-git-cursor-green-home-ux-j-75ed8a-noas-projects-0b3f311d.vercel.app",
-      "result": "Protected by Vercel Authentication (historical preview; no mutations)"
+      "url": "https://grpd30-git-cursor-codex-correctio-adce28-noas-projects-0b3f311d.vercel.app",
+      "status": 200,
+      "final_url": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fgrpd30-git-cursor-codex-correctio-adce28-noas-projects-0b3f311d.vercel.app%252F%26nonce%3Da11dad6a813dc3ecc23e7dfd1934ed6537c2a299706b7a0257cad174b2df8dcd",
+      "body_snip": "<!DOCTYPE html><html data-dpl-id=\"dpl_83RLunU6ezzwg1WQBcXUUqqasg6q\" class=\"VEU71W_className X0u9Hq_className VEU71W_variable X0u9Hq_variable dash\" lang=\"en-US\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, ",
+      "vercel_auth_gate": true,
+      "classification": "vercel_authentication_sso_redirect"
+    },
+    {
+      "url": "https://grpd30-git-cursor-codex-correctio-adce28-noas-projects-0b3f311d.vercel.app/api/v1/health",
+      "status": 200,
+      "final_url": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fgrpd30-git-cursor-codex-correctio-adce28-noas-projects-0b3f311d.vercel.app%252Fapi%252Fv1%252Fhealth%26nonce%3D60008b8b12730e9ee571796ac85e9a28b117515bfc2f77e0ad418307b934df60",
+      "body_snip": "<!DOCTYPE html><html data-dpl-id=\"dpl_83RLunU6ezzwg1WQBcXUUqqasg6q\" class=\"VEU71W_className X0u9Hq_className VEU71W_variable X0u9Hq_variable dash\" lang=\"en-US\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, ",
+      "vercel_auth_gate": true,
+      "classification": "vercel_authentication_sso_redirect"
+    },
+    {
+      "url": "https://grpd30.vercel.app",
+      "status": 200,
+      "final_url": "https://grpd30.vercel.app",
+      "body_snip": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\" />\n    <meta httpEquiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\" />\n    <title>grpd3.",
+      "vercel_auth_gate": false
     }
   ],
   "native_claim": false,
   "uat_claim": false,
   "ocif_claim": false,
-  "tested_sha_tip": "ref: refs/heads/cursor/architecture-remediation-3184"
+  "reason": "PR33 Preview deployment Ready for SHA c754f9f (https://grpd30-git-cursor-codex-correctio-adce28-noas-projects-0b3f311d.vercel.app) but public GET redirects to Vercel SSO login. No bypass. API/DB isolation unverified. grpd3-0.vercel.app still DEPLOYMENT_NOT_FOUND. grpd30.vercel.app is a separate production-like host \u2014 not PR33 evidence."
 }

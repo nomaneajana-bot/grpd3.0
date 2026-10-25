@@ -1,6 +1,8 @@
 # Issue Register (canonical)
 
-**Architecture remediation tip (FIXED AWAITING RETEST — DELIVERED · STOP for Codex):** branch `cursor/architecture-remediation-3184` (PR #32) · package `DELIVER.md` · base Stito `8cbfe83` · evidence `docs/audit/architecture-remediation/` · B 19/19 · C 19/19 · D 23/23 · connected 16/16 · VERIFICATION 17/17 · **not** avenir-only `3ba6775` · **this file is the only issue register** · **no OCIF / no everything-fixed**  
+**Codex correction mission (FIXED AWAITING RETEST — STOP for Codex):** branch `cursor/codex-correction-mission-3184` (PR #33) @ `c754f9f` · package `docs/audit/architecture-remediation/DELIVER.md` · 16-point matrix · API 47/47 · connected 18/18 · Batch C 21/21 · journeys 37/37 · verification 18/18 · fonts/TS18048 local VERIFIED · hosted **BLOCKED** (SSO) · preserves PR #32 tip `8196f31` (Codex did **not** accept) · **no OCIF / no merge / no production**  
+**Architecture remediation tip (prior; NOT Codex-accepted):** branch `cursor/architecture-remediation-3184` (PR #32) @ `8196f31` · base Stito `8cbfe83` · **this file is the only issue register**  
+
 **Outing detail light-fix tip (FIXED AWAITING RETEST — STOP Codex):** branch `cursor/outing-detail-light-fix-3184` (PR #20) · evidence `docs/audit/outing-detail-stito/` · smoke **34/34** · **demo web only** · canonical ref `docs/design-reference/stitch-six-2026-10-17/.../grpd_d_tail_de_la_sortie_avant_inscription/screen.png` from `64dc1d1` — **not** dark `renders/11`  
 **Prior rejected outing tip:** `2c1b981` / `e75122a` (PR #19) — ISSUE-015 **NOT accepted visually** (white-on-white / empty hero / pace / toast)  
 **Mes Sorties Stito tip (FIXED AWAITING RETEST):** PR #19 stack · preserved under PR #20  
@@ -319,7 +321,7 @@ Surfaces: Demo **CLEARED** · Hosted / native / UAT **not** accepted.
 
 ### Hosted access blocker
 
-Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated browser contexts **not** run. ISSUE-008 remains BLOCKED.
+PR33 Preview Ready for `c754f9f` at `grpd30-git-cursor-codex-correctio-adce28-….vercel.app` but public GET → Vercel SSO login. `grpd3-0.vercel.app` = DEPLOYMENT_NOT_FOUND. Dual isolated browser contexts **not** run. ISSUE-008 remains **BLOCKED**. No credential/secret changes; no protected bypass.
 
 ---
 
@@ -345,15 +347,15 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 | Evidence | `NOTIFICATIONS.md` · `notifications-evidence.json` **14/14** · `SETTINGS_DISPOSITION.md` · Batch D |
 | Status | **FIXED AWAITING RETEST** |
 
-### ISSUE-018 — P1 — FIXED AWAITING RETEST (club PATCH + member-group)
+### ISSUE-018 — P1 — FIXED AWAITING RETEST (club GET privacy + PATCH atomic + member-group)
 | Field | Value |
 |-------|-------|
-| Route / journey | Club settings save · group assign |
-| Expected meaning | Connected PATCH `/clubs/:id` + PUT `/clubs/:id/member-group` with authz |
-| Observed behavior | Routes + dispatch + `homeGroupId` migration; local PG smoke 15/15 (PATCH + member-group authz/persist/reload) |
-| Capability | IMPLEMENTED (local API); hosted **not** verified |
-| Owner | Cursor |
-| Evidence | `docs/audit/architecture-remediation/connected-evidence.json` |
+| Route / journey | Club detail GET · settings PATCH · group assign |
+| Expected meaning | Privacy-shaped GET; atomic club+invite PATCH; eligible groups only; attendance untouched |
+| Observed behavior | Codex correction: allowlist GET + pending admin-only; PATCH `$transaction` + 409 collision rollback; `eligibleGroupIds` / color groups; seed-before unrelated club; API **47/47** + connected **18/18** @ correction branch |
+| Capability | IMPLEMENTED (local PG packaged); hosted **BLOCKED** |
+| Owner | Cursor → Codex review |
+| Evidence | `codex-correction-api-evidence.json` · `connected-evidence.json` · `clubDetailPrivacy.ts` |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-019 — P2 — FIXED AWAITING RETEST (avenir enter CTA)
@@ -373,11 +375,12 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 
 | Rank | Issue | Why next / not next |
 |------|-------|---------------------|
-| — | **Architecture remediation package** | **STOP for Codex** after evidence on this branch |
-| 1 | ISSUE-004 / 008 hosted | Still BLOCKED without Preview auth |
-| 2 | ISSUE-016–019 | FIXED AWAITING RETEST — this package |
-| 3 | ISSUE-012 keyboard | Keep open |
-| 4 | ISSUE-006 / 009 | Deferred / NOT IMPLEMENTED |
+| — | **Codex correction PR #33** | **STOP for Codex** @ `c754f9f` |
+| 1 | ISSUE-004 / 008 hosted | Preview SSO — owner must authorize isolated env |
+| 2 | ISSUE-016–019 + club GET privacy | FIXED AWAITING RETEST — correction evidence local only |
+| 3 | Native / real UAT | Not claimed |
+| 4 | ISSUE-012 keyboard | Keep open |
+| 5 | ISSUE-006 / 009 | Deferred / NOT IMPLEMENTED |
 | — | Runs connected / push / coach remote | **BLOCKED/DEFERRED** by working decisions |
 
 ---

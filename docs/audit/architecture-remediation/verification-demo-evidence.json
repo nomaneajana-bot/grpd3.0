@@ -1,13 +1,13 @@
 {
   "batch": "architecture-remediation-verification-demo",
-  "tested_sha": "b9d47557d3ce233292285e8b288b4d5c964f1607",
+  "tested_sha": "c754f9fd4489768216a9ca6114a14f2423c03253",
   "environment": "demo",
   "hosted_claim": false,
   "native_claim": false,
   "uat_claim": false,
   "ocif_claim": false,
   "broad_acceptance": false,
-  "base": "http://127.0.0.1:38303",
+  "base": "http://127.0.0.1:8082",
   "notes": {
     "failed_requests_connected": "401/403 authz exercised in connected local PG smoke (logout/PATCH/member-group)",
     "unrelated_records_connected": "unrelated_club_home_group_preserved in connected-evidence.json"
@@ -16,27 +16,27 @@
     {
       "id": "invalid_empty_phone_no_verify",
       "ok": true,
-      "detail": "http://127.0.0.1:38303/phone"
+      "detail": "http://127.0.0.1:8082/phone"
     },
     {
       "id": "invalid_short_phone_no_verify",
       "ok": true,
-      "detail": "http://127.0.0.1:38303/phone"
+      "detail": "http://127.0.0.1:8082/phone"
     },
     {
       "id": "duplicate_submit_single_verify",
       "ok": true,
-      "detail": "landed http://127.0.0.1:38303/verify (not crashed)"
+      "detail": "landed http://127.0.0.1:8082/verify (not crashed)"
     },
     {
       "id": "failed_otp_stays_off_tabs",
       "ok": true,
-      "detail": "http://127.0.0.1:38303/verify"
+      "detail": "http://127.0.0.1:8082/verify"
     },
     {
       "id": "retry_otp_reaches_home",
       "ok": true,
-      "detail": "http://127.0.0.1:38303/"
+      "detail": "http://127.0.0.1:8082/"
     },
     {
       "id": "phone_tabs_visible",
@@ -46,12 +46,17 @@
     {
       "id": "phone_club_tab_unobstructed",
       "ok": true,
-      "detail": "text fallback ok"
+      "detail": "{\"x\":195,\"y\":781,\"width\":97.5,\"height\":53}"
+    },
+    {
+      "id": "phone_club_tab_hit_navigates",
+      "ok": true,
+      "detail": "http://127.0.0.1:8082/club"
     },
     {
       "id": "abandoned_form_left_to_home",
       "ok": true,
-      "detail": "http://127.0.0.1:38303/"
+      "detail": "http://127.0.0.1:8082/"
     },
     {
       "id": "abandoned_form_no_auto_publish",
@@ -66,27 +71,27 @@
     {
       "id": "direct_club_admin_safe",
       "ok": true,
-      "detail": "http://127.0.0.1:38303/club/admin"
+      "detail": "http://127.0.0.1:8082/club/admin"
     },
     {
       "id": "direct_missing_session_safe",
       "ok": true,
-      "detail": "http://127.0.0.1:38303/session/does-not-exist-verif"
+      "detail": "http://127.0.0.1:8082/session/does-not-exist-verif"
     },
     {
       "id": "private_club_settings_gated_or_safe",
       "ok": true,
-      "detail": "http://127.0.0.1:38303/onboarding"
+      "detail": "http://127.0.0.1:8082/onboarding | G R P D\nSors.\nAvec les tiens.\nUne communauté calme pour marcher, parler ou courir — à ton rythme, ch"
     },
     {
       "id": "desktop_home_readable",
       "ok": true,
-      "detail": "\nCasablanca\n\nY\nLUNDI 26 OCTOBRE\nOn sort ?\nCette "
+      "detail": "{\"len\":968,\"box\":{\"x\":640,\"y\":737,\"width\":320,\"height\":53}}"
     },
     {
       "id": "desktop_settings_readable",
       "ok": true,
-      "detail": "\nParamètres\nCOMPTE\nTéléphone\n+212 0708 06 03 37\nP"
+      "detail": "{\"box\":{\"x\":582.5625,\"y\":1235,\"width\":114.859375,\"height\":20},\"logoutEnabled\":true}"
     },
     {
       "id": "desktop_logout_unobstructed",
@@ -96,12 +101,12 @@
     {
       "id": "demo_failed_request_analogue",
       "ok": true,
-      "detail": "wrong OTP handler = failed auth attempt on demo surface"
+      "detail": "OTP fail = auth only; club/outing fail covered in codex-journeys (not counted as substitute here)"
     }
   ],
   "summary": {
-    "passed": 17,
+    "passed": 18,
     "failed": 0,
-    "total": 17
+    "total": 18
   }
 }

@@ -1,16 +1,39 @@
-# DELIVER — Architecture remediation package (STOP for Codex)
+# DELIVER — Codex correction mission (STOP for Codex)
 
 **Delivered:** 2026-10-25 (Africa/Casablanca)  
-**Branch:** `cursor/architecture-remediation-3184`  
-**Tip commit:** branch HEAD — run `git rev-parse HEAD` (DELIVER doc introduced `0c6b981`; stamp follow-ups may append). Evidence JSON files keep their own `tested_sha`.  
-**Base visual tip:** `origin/cursor/stitch-home-detail-3184` @ `8cbfe83` (Stito Accueil + Détail + `/demo`)  
-**Not base:** avenir-only `3ba6775` (incomplete; not an ancestor of Stito tip)  
-**PR:** https://github.com/nomaneajana-bot/grpd3.0/pull/32  
-
+**Branch:** `cursor/codex-correction-mission-3184`  
+**Final candidate SHA:** `c754f9fd4489768216a9ca6114a14f2423c03253` (run `git rev-parse HEAD` to confirm)  
+**Preserved prior tip:** PR #32 `cursor/architecture-remediation-3184` @ `8196f3172325a7a9834d6f1c55b9bd2739c6c572` (Codex did **not** accept)  
+**Base visual tip:** `origin/cursor/stitch-home-detail-3184` @ `8cbfe83`  
+**PR (correction):** https://github.com/nomaneajana-bot/grpd3.0/pull/33  
 **Working decisions:** `WORKING_DECISIONS.md` — **not OCIF**  
-**Canonical issues (one register):** `docs/product/ISSUE_REGISTER.md`  
+**Canonical issues:** `docs/product/ISSUE_REGISTER.md`  
 
-> **STOP.** No additional features. No production release. No “everything fixed.” Awaiting **independent Codex review**.
+> **STOP for Codex independent review.** No merge. No production. No spending. No fake acceptance.  
+> DEMO/local PG ≠ hosted/native/UAT/OCIF.
+
+---
+
+## 16-point result matrix
+
+| # | Result | Evidence / note |
+|---|---|---|
+| 1 | **VERIFIED** (local PG packaged) | Club GET allowlist + role shaping; `pendingMembers` admin-only; anon private→404; invite preview kept |
+| 2 | **VERIFIED** (local PG) | Identity matrix anon/outsider/pending/member/admin/ex-member — `codex-correction-api-evidence.json` **47/47** |
+| 3 | **VERIFIED** (local PG) | PATCH+invite `$transaction`; collision **409** + name rollback; retry OK |
+| 4 | **VERIFIED** (local PG) | `eligibleGroupIds` / color-group; pending/member forbidden; membership-gone 404; attendance untouched |
+| 5 | **VERIFIED** (local PG + docs) | Logout stateless ack; token still valid until client discard; no global-revoke claim |
+| 6 | **VERIFIED** (local PG) | Unrelated club seeded **before** mutation; fresh API GET; DB persistence separate — connected **18/18** |
+| 7 | **VERIFIED** (demo) | Batch C exact club IDs/fields; organise CTA required (no URL fallback); both clubs — **21/21** |
+| 8 | **VERIFIED** (demo) | Pending name-knock → admin Approuver → member; cancel-request; reject N/A in rules — journeys |
+| 9 | **VERIFIED** (demo) | Two outings; join/cancel A; B unchanged; Mes sorties agrees; full logistics title+structure+spot |
+| 10 | **VERIFIED** (demo) | Abandon/missing/dup/fail+retry club create; past date **400** via mock harness (not OTP substitute) |
+| 11 | **VERIFIED** (demo) | Strict unauthorized + hit-testing — verification **18/18** |
+| 12 | **VERIFIED** (demo) | Root loads Space Grotesk + Hanken; `document.fonts` lists them; hero `On sort ?` → `SpaceGrotesk_700Bold` |
+| 13 | **VERIFIED** (demo inspect) | Phone/desktop captures + findings in `codex-font-visual-evidence.json` (vs actual Stitch refs; not acceptance) |
+| 14 | **VERIFIED** (local) | TS18048×5 removed; `tsc --noEmit` clean; server typecheck PASS; serverless smoke PASS; web export OK |
+| 15 | **BLOCKED** (hosted) | PR33 Preview Ready @ SHA but Vercel SSO gate; `grpd3-0.vercel.app` 404; no bypass/mutations |
+| 16 | **DONE** (this doc) | Register + blueprint + DELIVER refreshed; remaining owner actions listed |
 
 ---
 
@@ -18,117 +41,78 @@
 
 | Surface | Exact environment | Claim |
 |---|---|---|
-| Demo web | Static `dist-demo` @ `http://127.0.0.1:38303` · `EXPO_PUBLIC_DEMO_MODE=true` | Verified batch smokes (see below) |
-| Local backend | Disposable PG `postgresql://***@127.0.0.1:5432/grpd_batch5_test` · serverless dispatch bundle | Connected **16/16** + integration **22** + JWT **11** |
-| Hosted Preview | Vercel Authentication / deployment not authorized for this branch | **BLOCKED** — **no mutations** |
-| Native | — | **Not run / not claimed** |
-| Real UAT | — | **Not run / not claimed** |
-| Working preview URL | Not available without Preview auth | **BLOCKED** (ISSUE-004/008) |
-
-Per-batch `tested_sha` values live inside each evidence JSON (may predate package HEAD when that batch’s code was last exercised).
+| Demo web | `dist-demo` @ `http://127.0.0.1:8082` · `EXPO_PUBLIC_DEMO_MODE=true` · entry `entry-83362fc6…` | Correction smokes VERIFIED |
+| Local backend | Disposable PG + packaged `.packaging/serverless/api-v1.cjs` | API **47/47** · connected **18/18** · serverless local PASS |
+| Hosted Preview | PR33 `…codex-correctio-adce28….vercel.app` · deploy Ready · SSO redirect | **BLOCKED** — no mutations |
+| `grpd3-0.vercel.app` | — | **DEPLOYMENT_NOT_FOUND** (not evidence) |
+| `grpd30.vercel.app` | Separate host 200 | **Not PR33 evidence** |
+| Native / UAT / OCIF | — | **Not claimed** |
 
 ---
 
-## Status legend (this package)
+## Test counts @ final candidate `c754f9f`
 
-| Label | Meaning |
+| Suite | Result | SHA in evidence | Path |
+|---|---|---|---|
+| Codex API 1–6 | **47/47** | `4cc4056` (API code) / tip advanced | `codex-correction-api-evidence.json` |
+| Connected (p6 fix) | **18/18** | `4cc4056` | `connected-evidence.json` |
+| Batch C tightened | **21/21** | `15d0f5b`+ | `batch-c-evidence.json` |
+| Journeys 8–11 | **37/37** | `15d0f5b` | `codex-journeys-evidence.json` |
+| Verification strict | **18/18** | `c754f9f` | `verification-demo-evidence.json` |
+| Font/visual 12–13 | **9/9** | `c754f9f` | `codex-font-visual-evidence.json` |
+| `tsc --noEmit` | **0 errors** | `c754f9f` | artifacts |
+| Server typecheck | **PASS** | `c754f9f` | artifacts |
+| Serverless local smoke | **PASS** | `c754f9f` | artifacts |
+| Web export | **PASS** | `c754f9f` | `dist-demo` / `dist-demo-buildcheck` |
+| Hosted probe | **BLOCKED** | `c754f9f` | `verification/hosted-probe.json` |
+
+### Unchanged older evidence (still valid for their SHA)
+
+Batch A/B/D, orphans, avenir, notifications, transport matrix, integration PG 22, JWT 11 — code paths not reverted; re-run not required for this mission. Their `tested_sha` remains historical. Correction supersedes privacy/PATCH/member-group/Batch C/verification/font/TS claims above.
+
+---
+
+## Screenshots / evidence paths
+
+- API: `docs/audit/architecture-remediation/codex-correction-api-evidence.json`
+- Journeys: `…/codex-journeys-evidence.json` + `codex-journeys/*.png` + `/opt/cursor/artifacts/codex-journeys-*.png`
+- Font/visual: `…/codex-font-visual-evidence.json` + `codex-visual/*.png`
+- Verification: `…/verification/02-home-phone.png`, `07-home-desktop.png` (post-fonts)
+- Hosted: `…/verification/hosted-probe.json`
+- Stitch refs (actual, not reconstructed):  
+  - `docs/design-reference/stitch-homepage-2026-10-17/references/grpd_accueil_nouveau_membre_version_peaufin_e/screen.png`  
+  - `docs/design-reference/stitch-six-2026-10-17/…/grpd_d_tail_de_la_sortie_avant_inscription/screen.png`
+
+---
+
+## Classification
+
+### VERIFIED (correction surface)
+
+Club GET privacy matrix; atomic PATCH+invite; eligible member-groups; logout honesty; connected seed-before; Batch C rigor; pending→approve + cancel-request; multi-outing attendance; invalid/fail/retry (club); strict verification; Stito font registration; TS18048 cleared; local package/typecheck/web export.
+
+### DEFERRED
+
+Admin **reject** membership (not in current rules — cancel-by-requester only); server-persisted club color-group catalog (still AdminStore + `eligibleGroupIds`); push delivery; runs/coach remote.
+
+### BLOCKED / AWAITING REVIEW
+
+| Item | Status |
 |---|---|
-| **Implemented** | Code/docs change present on tip |
-| **Verified** | Runtime evidence recorded for a named surface |
-| **Deferred** | Intentionally not built; disposition documented |
-| **Blocked** | Cannot proceed without external dependency |
-| **FIXED AWAITING RETEST** | In issue register — awaiting Codex / independent review |
-| **Not claimed** | No evidence; do not infer PASS |
+| Hosted Preview exercise (API/DB isolation) | **BLOCKED** — Vercel SSO; owner must authorize isolated Preview |
+| Native / UAT / OCIF | **Not claimed** |
+| Production / merge | **Out of scope** |
+| Codex acceptance of this package | **AWAITING REVIEW** |
 
 ---
 
-## Before → after (reported gaps)
+## Remaining owner actions before real-user MVP
 
-| Gap | Before | After | Status |
-|---|---|---|---|
-| Mock vs connected contract; silent mock fallback | Unclear / blueprint stale | Connected = real contract; empty URL → `MISSING_API_URL`; mode matrix | **Implemented** + **Verified** (mode 11/11, transport 6/6) |
-| `POST /auth/logout` | Local clear / mock only | Route + `performLogout`; JWT no denylist (honest) | **Implemented** + **Verified** (PG + demo Batch B) |
-| Auth → home → logout/relogin | Partial | Demo handlers **19/19**; demo OTP ≠ prod | **Verified** demo · connected logout verified |
-| Club PATCH + member-group | Client-only | Server routes + PG persist/reload/unrelated preserve | **Implemented** + **Verified** PG |
-| Club journeys (create→join/leave) | Gaps reported | Demo Batch C **19/19** | **Verified** demo |
-| Settings stubs / honesty | Fake “Bientôt” / unclear | Language/units persist; Hors MVP non-interactive; leave kept | **Implemented** + **Verified** demo D **23/23** |
-| Notifications imply push | Misleading | Local prefs + explicit no-push caption; onboarding copy aligned | **Implemented** + **Verified** **14/14** |
-| Orphans test-history / run/setup | Unclear / invent risk | Deferred safe deep-links; no invented activity/coach | **Deferred** + **Verified** disposition **12/12** |
-| `group-edit` redirect | Needed preserve params | → `group-create?clubId&groupId` | **Verified** |
-| `/avenir` | Missing / no return | Public deep link + auth-aware CTA; **no tab** | **Implemented** + **Verified** **15/15** |
-| Docs authority | Stale `architecture.md` / `dead-routes.md` | Bannered HISTORICAL; blueprint addendum tip truth; one register | **Implemented** (Batch E) |
-| Runs / coach remote / push delivery | Missing | **Not invented** | **Deferred / Blocked** (D13) |
-| Hosted Preview mutations | SSO | Still no authorized isolated env | **Blocked** |
-| Production deploy (D05) | Out of scope | Out of scope | **Blocked** |
+1. Authorize isolated Vercel Preview (or disable SSO for a throwaway Preview) matching PR33 SHA; prove API wiring + DB isolation — **no** use of `grpd3-0` 404 or unrelated hosts as evidence.  
+2. Native device smoke (iOS/Android) — fonts, notifications prefs, deep links.  
+3. Real OTP/PIN allowlist + non-demo `DATABASE_URL` UAT with two humans (pending→approve, invite, attendance).  
+4. Decide OCIF / production cut (D05) — not this agent.  
+5. Optional: persist club group catalog server-side so eligibility is not client-supplied.  
+6. Independent Codex review of this DELIVER + tip `c754f9f` / PR33.
 
-Full table: `BEFORE_AFTER.md`.
-
----
-
-## Test results (durable)
-
-| Evidence | Environment | tested_sha (file) | Result |
-|---|---|---|---|
-| `batch-a-mode-evidence.json` | static_logic | `38a306a6f322` | 11/11 |
-| `transport-mode-matrix.json` | static_logic | — | 6/6 |
-| `batch-b-evidence.json` + `batch-b/*.png` | demo | `2f4f8cc22a87` | **19/19** |
-| `batch-c-evidence.json` + `batch-c/*.png` | demo | `4d42bbede6e0` | **19/19** |
-| `batch-d-evidence.json` + `batch-d/*.png` | demo | `89b622a02d83` | **23/23** |
-| `connected-evidence.json` | local_postgres | `b9d47557d3ce` | **16/16** |
-| `verification-demo-evidence.json` + `verification/*.png` | demo | `b9d47557d3ce` | **17/17** |
-| `orphans-evidence.json` + `orphans/*.png` | demo | `efff9f56de59` | **12/12** |
-| `avenir-evidence.json` + `avenir/*.png` | demo | `1e9e98a03e1b` | **15/15** |
-| `notifications-evidence.json` + `notifications/*.png` | demo | `272ae1b359d0` | **14/14** |
-| `verification/typecheck-server.log` | local | tip @ verification | **PASS** |
-| `verification/integration-pg-summary.txt` | local PG | — | **22/22** |
-| JWT unit (`app-jwt`) | local | — | **11/11** |
-| `verification/tsc-client-errors.txt` | local | — | **5 pre-existing** TS18048 in `app/session/[id].tsx` |
-| `verification/hosted-probe.json` | hosted | — | **BLOCKED** |
-
-Artifact mirrors under `/opt/cursor/artifacts/` for this run.
-
----
-
-## Classification summary
-
-### Implemented + Verified (demo and/or local PG)
-
-- Transport/mode honesty; logout; club PATCH; member-group  
-- Batch B auth/logout/relogin (demo)  
-- Batch C club journeys (demo)  
-- Settings honesty; notifications local prefs  
-- `/avenir` CTA; orphan deep-link dispositions  
-- Docs reconcile (Batch E)  
-- VERIFICATION interactive handlers (demo) + connected re-run  
-
-### Deferred (documented, not invented)
-
-- Connected `/runs` + `/run/setup` product journey  
-- Activity / test-history product surface  
-- Coach remote API  
-- Push **delivery** pipeline  
-
-### Blocked (owner / action)
-
-| Blocker | Owner | Action |
-|---|---|---|
-| Hosted Preview SSO / mutations (ISSUE-004/008) | Owner (Preview env/access) | Grant isolated Preview + DB/JWT; then hosted smoke |
-| Production deploy D05 | Owner | Separate production track — **out of this package** |
-| Client `tsc` 5× TS18048 dead branch in `session/[id].tsx` | Cursor (later scoped fix) | Optional cleanup — **pre-existing**, not claimed fixed here |
-
-### FIXED AWAITING RETEST (Codex)
-
-ISSUE-007, ISSUE-016, ISSUE-017, ISSUE-018, ISSUE-019 — see `docs/product/ISSUE_REGISTER.md`.
-
-### Explicitly not claimed
-
-OCIF · production acceptance · native · real UAT · “everything fixed” · demo PASS ≠ hosted PASS · DEMO OTP `000000` as production auth  
-
----
-
-## Stop conditions (met)
-
-1. Bounded remediation batches A–E + decision defaults 1–6 evidenced  
-2. VERIFICATION surfaces separated; hosted marked blocked without mutations  
-3. Canonical checkpoint updated  
-4. **STOP for Codex** — no further feature work on this package  
+**Working preview:** local demo `http://127.0.0.1:8082` VERIFIED for this run. Hosted Preview URL known but **SSO-blocked** — not a working public preview.

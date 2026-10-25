@@ -1,0 +1,215 @@
+{
+  "batch": "codex-correction-journeys-8-11",
+  "points": [
+    8,
+    9,
+    10,
+    11
+  ],
+  "tested_sha": "15d0f5b4a5ffa04e4993628295f7dcf53e959519",
+  "tested_at": "2026-10-25T20:25:16.418Z",
+  "environment": "demo",
+  "hosted_claim": false,
+  "native_claim": false,
+  "uat_claim": false,
+  "ocif_claim": false,
+  "base": "http://127.0.0.1:8082",
+  "ids": {
+    "clubId": "club_1792959921637_k6pgon52",
+    "clubName": "PendingClub OA1HMM",
+    "outingA": "session_1792959963870_gdpg921v",
+    "outingB": "session_1792959969579_gx85nimz"
+  },
+  "checks": [
+    {
+      "id": "p8_club_created_exact",
+      "ok": true,
+      "detail": "club_1792959921637_k6pgon52"
+    },
+    {
+      "id": "p8_requester_pending_state",
+      "ok": true,
+      "detail": "Clubs\nDemande en attente\nTa demande est envoyée.\nPendingClub OA1HMM\nEN ATTENTE D'APPROBATION\nLe club"
+    },
+    {
+      "id": "p8_membership_status_pending",
+      "ok": true,
+      "detail": "{\"id\":\"membership_1792959929109_84izmrj5\",\"clubId\":\"club_1792959921637_k6pgon52\",\"userId\":\"user_1792959926377_muse6vuz\",\"role\":\"member\",\"status\":\"pending\",\"displayName\":null,\"sharePrs\":true,\"prSummary\":null,\"createdAt\":\"2026-10-25T20:25:29.109Z\"}"
+    },
+    {
+      "id": "p8_pending_no_admin_settings",
+      "ok": true,
+      "detail": "←\nRetour\nParamètres du club\nEspace réservé aux administrateurs et coachs du club"
+    },
+    {
+      "id": "p8_admin_sees_pending_queue",
+      "ok": true,
+      "detail": "←\nRetour\nResponsable du club\nMembres & PRs (coach)\nRafraîchir\nPendingClub OA1HMM\n1 en attente\n+21263"
+    },
+    {
+      "id": "p8_approve_control_visible",
+      "ok": true,
+      "detail": "Approuver"
+    },
+    {
+      "id": "p8_requester_now_member",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nPO\n\nCasablanca · Sur invitation · 2 membres\nPendingClub OA1HMM\n"
+    },
+    {
+      "id": "p8_membership_status_approved",
+      "ok": true,
+      "detail": "{\"id\":\"membership_1792959929109_84izmrj5\",\"clubId\":\"club_1792959921637_k6pgon52\",\"userId\":\"user_1792959926377_muse6vuz\",\"role\":\"member\",\"status\":\"approved\",\"displayName\":null,\"sharePrs\":true,\"prSummary\":null,\"createdAt\":\"2026-10-25T20:25:29.109Z\"}"
+    },
+    {
+      "id": "p8_cancel_request_control",
+      "ok": true,
+      "detail": "cancel pending CTA"
+    },
+    {
+      "id": "p8_cancel_request_clears_pending",
+      "ok": true,
+      "detail": "Clubs\nInvitation · pas d’annuaire\nGRPD\nTes clubs arrivent par invitation\nPas d’annuaire ici. Quelqu’"
+    },
+    {
+      "id": "p8_reject_not_in_current_rules",
+      "ok": true,
+      "detail": "no admin reject endpoint in current surface — cancel-by-requester covered"
+    },
+    {
+      "id": "p9_outing_a_created",
+      "ok": true,
+      "detail": "session_1792959963870_gdpg921v"
+    },
+    {
+      "id": "p9_outing_b_created",
+      "ok": true,
+      "detail": "session_1792959969579_gx85nimz"
+    },
+    {
+      "id": "p9_two_distinct_outings",
+      "ok": true,
+      "detail": "{\"a\":\"session_1792959963870_gdpg921v\",\"b\":\"session_1792959969579_gx85nimz\"}"
+    },
+    {
+      "id": "p9_no_autojoin_before",
+      "ok": true,
+      "detail": "{\"userId\":\"user_1792959926377_muse6vuz\",\"aJoined\":false,\"bJoined\":false,\"aTitle\":\"OutingA OA1HMM\",\"bTitle\":\"OutingB OA1HMM\",\"aStruct\":\"SPOT-A-OA1HMM\",\"bStruct\":\"SPOT-B-OA1HMM\"}"
+    },
+    {
+      "id": "p9_detail_a_full_logistics",
+      "ok": true,
+      "detail": "‹\nDétail de la sortie\n·\nCASABLANCA\n···\nMARCHE\nRéservée aux membres\nOutingA OA1HMM\nQUAND\nDim. 25 oct. · 21:00\nOÙ\nSPOT-A-O"
+    },
+    {
+      "id": "p9_join_a_attendance",
+      "ok": true,
+      "detail": "Tu es inscrit à cette séance.\n‹\nDétail de la sortie\n·\nCASABLANCA\n···\nMARCHE\nRése"
+    },
+    {
+      "id": "p9_detail_b_full_logistics",
+      "ok": true,
+      "detail": "‹\nDétail de la sortie\n·\nCASABLANCA\n···\nMARCHE\nRéservée aux membres\nOutingB OA1HMM\nQUAND\nDim. 25 oct. · 21:00\nOÙ\nSPOT-B-O"
+    },
+    {
+      "id": "p9_outing_b_not_autojoined",
+      "ok": true,
+      "detail": "‹\nDétail de la sortie\n·\nCASABLANCA\n···\nMARCHE\nRéservée aux membres\nOutingB OA1HM"
+    },
+    {
+      "id": "p9_my_outings_screen",
+      "ok": true,
+      "detail": "mes-sorties root"
+    },
+    {
+      "id": "p9_my_outings_shows_joined_a",
+      "ok": true,
+      "detail": "CALENDRIER PERSONNEL\nMes Sorties & Réservations\nÀ venir\n1\nEn attente\n0\nPassées\n0\nSorties confirmées\n1 RÉSERVATION ACTIVE"
+    },
+    {
+      "id": "p9_my_outings_excludes_unjoined_b",
+      "ok": true,
+      "detail": "confirmedB=0"
+    },
+    {
+      "id": "p9_cancel_a_clears_attendance",
+      "ok": true,
+      "detail": "Participation annulée. Tu restes membre du club.\n‹\nDétail de la sortie\n·\nCASABLA"
+    },
+    {
+      "id": "p9_cancel_persists_reload",
+      "ok": true,
+      "detail": "‹\nDétail de la sortie\n·\nCASABLANCA\n···\nMARCHE\nRéservée aux membres\nOutingA OA1HM"
+    },
+    {
+      "id": "p9_unrelated_b_still_unchanged",
+      "ok": true,
+      "detail": "‹\nDétail de la sortie\n·\nCASABLANCA\n···\nMARCHE\nRéservée aux membres\nOutingB OA1HM"
+    },
+    {
+      "id": "p9_membership_unchanged_after_attendance",
+      "ok": true,
+      "detail": "{\"id\":\"membership_1792959929109_84izmrj5\",\"clubId\":\"club_1792959921637_k6pgon52\",\"userId\":\"user_1792959926377_muse6vuz\",\"role\":\"member\",\"status\":\"approved\",\"displayName\":null,\"sharePrs\":true,\"prSummary\":null,\"createdAt\":\"2026-10-25T20:25:29.109Z\"}"
+    },
+    {
+      "id": "p10_abandoned_form_no_club",
+      "ok": true,
+      "detail": "ABANDON-OA1HMM"
+    },
+    {
+      "id": "p10_missing_inputs_no_create",
+      "ok": true,
+      "detail": "2->2"
+    },
+    {
+      "id": "p10_controlled_club_fail_no_persist",
+      "ok": true,
+      "detail": "FailRetry OA1HMM"
+    },
+    {
+      "id": "p10_controlled_club_retry_ok",
+      "ok": true,
+      "detail": "club_1792960000834_7vtli7wl"
+    },
+    {
+      "id": "p10_duplicate_submit_cardinality",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "id": "p10_past_date_rejected",
+      "ok": true,
+      "detail": "{\"kind\":\"rejected\",\"before\":8,\"after\":8,\"status\":400,\"message\":\"Date/heure doit être dans le futur\"}"
+    },
+    {
+      "id": "p10_date_field_control_present",
+      "ok": true,
+      "detail": "session-date-field"
+    },
+    {
+      "id": "p10_used_club_fail_not_otp_substitute",
+      "ok": true,
+      "detail": "club create fail harness"
+    },
+    {
+      "id": "p11_private_settings_unauthorized_exact",
+      "ok": true,
+      "detail": "http://127.0.0.1:8082/onboarding | G R P D\nSors.\nAvec les tiens.\nUne communauté calme pour marcher, parler ou couri"
+    },
+    {
+      "id": "p11_clubs_tab_hit_target",
+      "ok": true,
+      "detail": "{\"x\":195,\"y\":781,\"width\":97.5,\"height\":53}"
+    },
+    {
+      "id": "p11_clubs_tab_click_navigates",
+      "ok": true,
+      "detail": "http://127.0.0.1:8082/club"
+    }
+  ],
+  "summary": {
+    "pass": 37,
+    "fail": 0,
+    "total": 37
+  }
+}

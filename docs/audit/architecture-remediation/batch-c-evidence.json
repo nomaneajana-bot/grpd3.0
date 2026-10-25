@@ -1,54 +1,66 @@
 {
   "batch": "architecture-remediation-batch-c",
-  "tested_sha": "4d42bbede6e0dd9cb3409ab70f4b006741a191b7",
+  "tested_sha": "15d0f5b4a5ffa04e4993628295f7dcf53e959519",
   "environment": "demo",
   "hosted_claim": false,
   "native_claim": false,
   "uat_claim": false,
-  "base": "http://127.0.0.1:38303",
+  "base": "http://127.0.0.1:8082",
   "ids": {
-    "clubAName": "Marche A O6QXWF",
-    "clubARenamed": "Marche A edit O6QXWF",
-    "inviteCode": "MARCH2YD",
-    "outingId": "session_1792954416992_quv5u0ft",
+    "clubAName": "Marche A OA4FP9",
+    "clubAId": "club_1792960059470_dbcf5bkr",
+    "clubARenamed": "Marche A edit OA4FP9",
+    "inviteCode": "MARCHES0",
+    "outingId": "session_1792960085516_lrigr70i",
     "publishedBind": {
-      "clubId": "club_1792954390996_b4c025km",
+      "clubId": "club_1792960059470_dbcf5bkr",
       "visibility": "members",
-      "title": "Balade O6QXWF"
+      "title": "Balade OA4FP9"
     },
     "memberBind": {
-      "userId": "user_1792954403589_boubnjkq",
+      "userId": "user_1792960072086_xc03e8rh",
       "clubIds": [
-        "club_1792954390996_b4c025km"
+        "club_1792960059470_dbcf5bkr"
       ]
     },
-    "clubBName": "Langue B O6QXWF"
+    "clubBName": "Langue B OA4FP9",
+    "clubBId": "club_1792960113111_a82bkq6u"
   },
   "checks": [
     {
       "id": "create_club_a_walk_purpose",
       "ok": true,
-      "detail": "Marche A O6QXWF"
+      "detail": "{\"id\":\"club_1792960059470_dbcf5bkr\",\"name\":\"Marche A OA4FP9\"}"
     },
     {
       "id": "edit_club_persisted",
       "ok": true,
-      "detail": "Marche A edit O6QXWF"
+      "detail": "Marche A edit OA4FP9"
     },
     {
       "id": "invite_code_created",
       "ok": true,
-      "detail": "MARCH2YD"
+      "detail": "MARCHES0"
     },
     {
       "id": "member_joined_club_a",
       "ok": true,
-      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMAE\n\nCasablanca · Sur invitation · 2 membres\nMarche A edit O6QXW"
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMAE\n\nCasablanca · Sur invitation · 2 membres\nMarche A edit OA4FP"
     },
     {
       "id": "focus_club_a_before_outing",
       "ok": true,
       "detail": "club A focused"
+    },
+    {
+      "id": "organise_cta_reachable_from_club",
+      "ok": true,
+      "detail": "cta present"
+    },
+    {
+      "id": "organise_nav_reached_create",
+      "ok": true,
+      "detail": "http://127.0.0.1:8082/session/create?clubId=club_1792960059470_dbcf5bkr&audience=club"
     },
     {
       "id": "walk_does_not_force_running_pace",
@@ -58,22 +70,22 @@
     {
       "id": "organise_outing_real_id",
       "ok": true,
-      "detail": "session_1792954416992_quv5u0ft"
+      "detail": "session_1792960085516_lrigr70i"
     },
     {
       "id": "outing_bound_to_club",
       "ok": true,
-      "detail": "{\"clubId\":\"club_1792954390996_b4c025km\",\"visibility\":\"members\",\"title\":\"Balade O6QXWF\"}"
+      "detail": "{\"clubId\":\"club_1792960059470_dbcf5bkr\",\"visibility\":\"members\",\"title\":\"Balade OA4FP9\"}"
     },
     {
       "id": "member_has_outing_club_membership",
       "ok": true,
-      "detail": "{\"publishedBind\":{\"clubId\":\"club_1792954390996_b4c025km\",\"visibility\":\"members\",\"title\":\"Balade O6QXWF\"},\"memBind\":{\"userId\":\"user_1792954403589_boubnjkq\",\"clubIds\":[\"club_1792954390996_b4c025km\"]}}"
+      "detail": "{\"publishedBind\":{\"clubId\":\"club_1792960059470_dbcf5bkr\",\"visibility\":\"members\",\"title\":\"Balade OA4FP9\"},\"memBind\":{\"userId\":\"user_1792960072086_xc03e8rh\",\"clubIds\":[\"club_1792960059470_dbcf5bkr\"]}}"
     },
     {
       "id": "member_sees_outing_detail",
       "ok": true,
-      "detail": "‹\nDétail de la sortie\n·\nCASABLANCA\n···\nMARCHE\nRéservée aux membres\nBalade O6QXWF\nQUAND\nDim. 25 oct. "
+      "detail": "‹\nDétail de la sortie\n·\nCASABLANCA\n···\nMARCHE\nRéservée aux membres\nBalade OA4FP9\nQUAND\nDim. 25 oct. · 21:00\nOÙ\nSPOT-OA4FP9\nLieu exact réserv"
     },
     {
       "id": "member_join_attendance",
@@ -108,21 +120,21 @@
     {
       "id": "create_club_b_language_purpose",
       "ok": true,
-      "detail": "Langue B O6QXWF"
+      "detail": "{\"id\":\"club_1792960113111_a82bkq6u\",\"name\":\"Langue B OA4FP9\"}"
     },
     {
       "id": "two_clubs_host_visible",
       "ok": true,
-      "detail": "host multi-club"
+      "detail": "{\"bothNames\":true,\"storeBoth\":true,\"a\":\"club_1792960059470_dbcf5bkr\",\"b\":\"club_1792960113111_a82bkq6u\"}"
     },
     {
       "id": "host_clubs_persist_reload",
       "ok": true,
-      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche A edit O6QXWF\nLangue B O6QXWF\nLBO\n\nRabat · Sur "
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche A edit OA4FP9\nLangue B OA4FP9\nLBO\n\nRabat · Sur "
     }
   ],
   "summary": {
-    "pass": 19,
+    "pass": 21,
     "fail": 0
   }
 }
