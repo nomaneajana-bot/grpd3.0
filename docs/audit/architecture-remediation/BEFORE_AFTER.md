@@ -26,7 +26,7 @@
 
 | Surface | Claim |
 |---|---|
-| Demo Batch B auth/logout/relogin | **Verified** — `batch-b-evidence.json` 16/16 |
+| Demo Batch B auth/logout/relogin | **Verified** — `batch-b-evidence.json` **19/19** @ `2f4f8cc` |
 | Demo Batch C journey | **Verified** — `batch-c-evidence.json` 19/19 |
 | Demo Batch D settings/orphans/avenir | **Verified** — `batch-d-evidence.json` 23/23 |
 | Docs Batch E | **Done** — tip reconcile; historical preserved |

@@ -323,15 +323,15 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 
 ---
 
-### ISSUE-016 — P1 — FIXED AWAITING RETEST (logout honesty)
+### ISSUE-016 — P1 — FIXED AWAITING RETEST (logout honesty + Batch B auth)
 | Field | Value |
 |-------|-------|
-| Route / journey | Settings → logout → phone/relogin |
-| Expected meaning | Local session+caches cleared; connected calls `/auth/logout`; never claim global revoke if only local; demo stays mock |
-| Observed behavior | `performLogout` clears auth + login/onboarding + focused club + joined-session keys; connected `POST /auth/logout` ack; demo/mock never fetch live; failure Alert honest; token still valid post-ack until client discard (16/16 local PG incl. denylist proof) |
-| Capability | IMPLEMENTED (local + server ack); global denylist **NOT IMPLEMENTED** (honest copy) |
+| Route / journey | Onboarding entry → phone/OTP → home → settings logout → relogin (+ isolation) |
+| Expected meaning | Truthful auth states; retry on bad OTP; account isolation; demo OTP ≠ prod; local clear + connected logout ack |
+| Observed behavior | Demo UI **19/19** handlers; wrong OTP rejected; A/B isolation; `performLogout` wired; connected logout_* in PG **16/16**; `000000` requires `DEMO_MODE` |
+| Capability | IMPLEMENTED (demo UI + local PG); global denylist **NOT IMPLEMENTED** (honest); hosted **NOT claimed** |
 | Owner | Cursor |
-| Evidence | `docs/audit/architecture-remediation/LOGOUT_SEMANTICS.md` · `connected-evidence.json` |
+| Evidence | `BATCH_B.md` · `batch-b-evidence.json` **19/19** @ `2f4f8cc` · `LOGOUT_SEMANTICS.md` · `connected-evidence.json` |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-017 — P1 — FIXED AWAITING RETEST (settings honesty + notifications D4)

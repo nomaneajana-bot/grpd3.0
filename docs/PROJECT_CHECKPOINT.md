@@ -15,15 +15,15 @@ Not a docs-only audit. Not production deploy. Not OCIF submission.
 
 ### Exact next action
 
-1. Remaining queue: Batch B (already verified) · **DELIVER** · then **STOP for Codex**.  
-2. Notifications (#5) **confirmed** — `NOTIFICATIONS.md` · **14/14**. Avenir/orphans/VERIFICATION done. No production promotion. No OCIF.
+1. Remaining queue: **DELIVER** · then **STOP for Codex**.  
+2. Batch B **re-verified** — demo **19/19** @ `2f4f8cc` · DEMO OTP ≠ prod. Notifications/avenir/orphans/VERIFICATION done. No production promotion. No OCIF.
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
 | Demo VERIFICATION (interactive handlers) | **17/17 PASS** — `verification-demo-evidence.json` @ `b9d4755` |
-| Demo web Batch B (auth→logout→relogin) | **16/16 PASS** — `batch-b-evidence.json` @ `cd42a80` |
+| Demo web Batch B (auth→logout→relogin) | **19/19 PASS** — `batch-b-evidence.json` @ `2f4f8cc` |
 | Demo web Batch C (club→outing→join/leave) | **19/19 PASS** — `batch-c-evidence.json` |
 | Demo web Batch D (settings + orphans) | **23/23 PASS** — `batch-d-evidence.json` |
 | Connected API (local PG) | **16/16 PASS** (re-run @ `b9d4755`) — logout, PATCH, member-group, unrelated preserve |

@@ -48,11 +48,11 @@
 | Script | `scripts/architecture-remediation-batch-b-smoke.mjs` |
 | Manifest | `batch-b-evidence.json` · `BATCH_B.md` |
 | Environment | **demo** `http://127.0.0.1:38303` |
-| tested_sha | `cd42a80bd07fc78fd8d74c862654630b13d7b4a0` |
-| Result | **16 PASS / 0 FAIL** |
+| tested_sha | `2f4f8cc22a876e42dbaf517c172a34e0bb07de03` |
+| Result | **19 PASS / 0 FAIL** |
 | Screenshots | `docs/audit/architecture-remediation/batch-b/*.png` |
 | Hosted / native / UAT / OCIF | **false** |
-| DEMO OTP | `000000` DEMO_MODE-only — not production auth |
+| DEMO OTP | `000000` only if `DEMO_MODE` — **not** production auth |
 
 ## Batch E — docs reconciliation
 

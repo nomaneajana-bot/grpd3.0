@@ -5,7 +5,7 @@ Batches under the authorized remediation package. Continue independently; blocke
 | Batch | Scope | Status | Evidence |
 |---|---|---|---|
 | **A** | Refresh inventory + issue register; classify OTP/PIN/devices/runs/leave/PATCH/member-group/coach; reconcile `EXPO_PUBLIC_DEMO_MODE` | **Done** — full inventory refresh + mode **11/11** | `BATCH_A.md` · `CLIENT_API_INVENTORY.md` · `batch-a-mode-evidence.json` |
-| **B** | Auth → onboarding → home → logout/relogin; honest states; demo OTP ≠ prod | **Verified** — PG logout in connected 16/16 + demo UI **16/16** | `BATCH_B.md` · `batch-b-evidence.json` · `LOGOUT_SEMANTICS.md` · `connected-evidence.json` |
+| **B** | Auth → onboarding → home → logout/relogin; honest states; demo OTP ≠ prod | **Verified** — PG logout 16/16 + demo UI **19/19** @ `2f4f8cc` | `BATCH_B.md` · `batch-b-evidence.json` · `LOGOUT_SEMANTICS.md` · `connected-evidence.json` |
 | **C** | Create → edit → invite → organise → join/cancel → leave; two users/clubs; membership ≠ attendance; walk ≠ forced pace | **Verified demo** 19/19 | `BATCH_C.md` · `batch-c-evidence.json` |
 | **D** | Settings + orphan dispositions; retained actions/deep links; honest unsupported | **Verified demo** 23/23 | `BATCH_D.md` · `batch-d-evidence.json` · `SETTINGS_DISPOSITION.md` |
 | **E** | Reconcile APP_BLUEPRINT / architecture.md / dead-routes / rule; one issue register | **Done** — tip truth in blueprint addendum; stale docs bannered (preserved); rule updated; register sole | `BATCH_E.md` · `APP_BLUEPRINT.md` |

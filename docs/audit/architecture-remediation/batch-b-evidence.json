@@ -6,7 +6,7 @@
     "D6",
     "D11"
   ],
-  "tested_sha": "cd42a80bd07fc78fd8d74c862654630b13d7b4a0",
+  "tested_sha": "2f4f8cc22a876e42dbaf517c172a34e0bb07de03",
   "environment": "demo",
   "hosted_claim": false,
   "native_claim": false,
@@ -19,12 +19,27 @@
     {
       "id": "demo_otp_gated_in_source",
       "ok": true,
-      "detail": "mockOtpVerify requires DEMO_MODE"
+      "detail": "mockOtpVerify requires DEMO_MODE && DEMO_OTP_CODE"
+    },
+    {
+      "id": "demo_otp_not_unconditional",
+      "ok": true,
+      "detail": "000000 alone is not enough without DEMO_MODE"
     },
     {
       "id": "demo_otp_constant_documented",
       "ok": true,
-      "detail": "000000 constant"
+      "detail": "000000 DEMO_MODE-only comment"
+    },
+    {
+      "id": "settings_wires_performLogout",
+      "ok": true,
+      "detail": "real logout handler, not stub"
+    },
+    {
+      "id": "logout_clears_auth_and_caches",
+      "ok": true,
+      "detail": "truthful local clear"
     },
     {
       "id": "onboarding_entry_loads",
@@ -98,8 +113,8 @@
     }
   ],
   "summary": {
-    "passed": 16,
+    "passed": 19,
     "failed": 0,
-    "total": 16
+    "total": 19
   }
 }
