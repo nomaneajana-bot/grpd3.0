@@ -9,8 +9,8 @@
 |---|---|---|---|
 | Connected vs mock contract | Mode resolver existed; blueprint still avenir-stale | D1–D2 recorded; inventory refreshed | Docs + `lib/api/mode.ts` |
 | `POST /auth/logout` | Client mock only; settings local clear | Route + dispatch + `performLogout` honesty | Connected smoke logout_* PASS |
-| Settings language/units | Supported store; UI stubs/alerts on older trees | Toggle rows persist prefs | Demo UI smoke deferred (queue) |
-| Settings legal/photo/support | Interactive fake / “Bientôt” | Non-interactive **Hors MVP** | Code + awaiting demo smoke |
+| Settings language/units | Supported store; UI stubs/alerts on older trees | Toggle rows persist prefs | See `SETTINGS_DISPOSITION.md` |
+| Settings legal/photo/support | Interactive fake / “Bientôt” toasts | Non-interactive **Hors MVP**; source retained; leave-club kept | `SETTINGS_DISPOSITION.md` · demo UI smoke deferred |
 | Notifications copy | Implied push-capable | Local prefs + no push claim | Code + awaiting demo smoke |
 | `PATCH /clubs/:id` | Client called; GET only on server | PATCH + authz + persistence | Connected smoke patch_* 15/15 package |
 | `PUT .../member-group` | Client called; no route | PUT + `homeGroupId` migration | Connected smoke member_group_* |

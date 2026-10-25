@@ -338,10 +338,10 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 |-------|-------|
 | Route / journey | `/profile/settings` |
 | Expected meaning | Language/units persist; no fake interactive stubs; notifications do not imply push delivery |
-| Observed behavior | Language/units toggles save locally; photo/legal/support non-interactive “Hors MVP”; notification caption corrected |
-| Capability | IMPLEMENTED (prefs) · push delivery **UNSUPPORTED** |
+| Observed behavior | Language/units toggles save locally; photo/legal/support non-interactive “Hors MVP” (source retained); leave-club kept; notification caption corrected; no fake success/toasts on unsupported rows |
+| Capability | IMPLEMENTED (prefs) · push delivery **UNSUPPORTED** · phone-edit/photo-upload/legal CMS **NOT IMPLEMENTED** (documented) |
 | Owner | Cursor |
-| Evidence | `docs/audit/architecture-remediation/` |
+| Evidence | `docs/audit/architecture-remediation/SETTINGS_DISPOSITION.md` |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-018 — P1 — FIXED AWAITING RETEST (club PATCH + member-group)

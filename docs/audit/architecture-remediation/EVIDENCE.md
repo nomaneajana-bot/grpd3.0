@@ -28,6 +28,7 @@
 - `WORKING_DECISIONS.md`
 - `CLIENT_API_INVENTORY.md`
 - `BEFORE_AFTER.md`
+- `SETTINGS_DISPOSITION.md` (row-level D3 / ISSUE-017)
 - `docs/product/ISSUE_REGISTER.md` (007, 016–019)
 - `docs/PROJECT_CHECKPOINT.md`
 - `APP_BLUEPRINT.md` remediation addendum
