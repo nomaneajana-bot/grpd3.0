@@ -21,6 +21,19 @@ Batches under the authorized remediation package. Continue independently; blocke
 | Hosted mutations | **BLOCKED** without authorized env |
 | Codex stop | After package evidence complete — not claimed accepted |
 
+## Batch discipline (authorized)
+
+Within each batch: record scope/issue IDs → implement → meaningful checks → correct failures → retain exact SHA/environment/evidence. Continue independent in-scope batches; blocked credentials must not halt unrelated work. Do **not** report broad acceptance before Codex. If a fix exposes uncertain scope or risks a prior gate, **record/block** that dependency — do not guess or rewrite unrelated flows.
+
+| Decision default | Issue IDs | Batch evidence |
+|---|---|---|
+| #3 Orphans | ISSUE-007 | Batch D — test-history→profile; run/setup deep-link+honesty; group-edit→group-create+params; no invented activity/coach scope |
+| #4 `/avenir` | ISSUE-019 | Batch D — enter-app CTA; no tab |
+| #5 Notifications | ISSUE-017 | Batch D — local prefs + no push claim; delivery deferred |
+| #6 Logout | ISSUE-016 | Connected 16/16 + settings wiring |
+| #2 Settings | ISSUE-017 | Batch D 23/23 |
+| #1 Transport / D05 | ISSUE-004/008 | Documented; hosted/prod **BLOCKED** |
+
 ## Tip
 
 Branch `cursor/architecture-remediation-3184` · see latest `git rev-parse HEAD`.
