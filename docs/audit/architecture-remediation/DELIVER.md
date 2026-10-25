@@ -2,7 +2,7 @@
 
 **Delivered:** 2026-10-25 (Africa/Casablanca)  
 **Branch:** `cursor/architecture-remediation-3184`  
-**Tip commit (package HEAD):** `cbdaadfa4b9035096bf22d2ed35a8807020847a9` (`cbdaadf`)  
+**Tip commit (package HEAD):** `0c6b9813377c75b2aefba929d89a1314e142060b` (`0c6b981`) · prior evidence tip `cbdaadf`  
 **Base visual tip:** `origin/cursor/stitch-home-detail-3184` @ `8cbfe83` (Stito Accueil + Détail + `/demo`)  
 **Not base:** avenir-only `3ba6775` (incomplete; not an ancestor of Stito tip)  
 **PR:** https://github.com/nomaneajana-bot/grpd3.0/pull/32  
