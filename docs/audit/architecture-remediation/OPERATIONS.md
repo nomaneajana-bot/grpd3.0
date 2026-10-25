@@ -14,7 +14,8 @@ Batches under the authorized remediation package. Continue independently; blocke
 
 | Item | Status |
 |---|---|
-| Connected = real contract; mock/demo isolated; no silent mock fallback | **Documented + matrix 6/6** — `TRANSPORT_AND_DEPLOYMENT.md` |
+| Decision defaults 1–6 | **Recorded** as working decisions (not OCIF) — `WORKING_DECISIONS.md` |
+| Connected = real contract; mock/demo isolated; no silent mock fallback | **Documented + matrix** — `TRANSPORT_AND_DEPLOYMENT.md` |
 | Actual deploy entrypoint | `api/v1/[...path].ts` → dispatch; `vercel.json` currently **demo-forced** build |
 | Production deploy | **BLOCKED** (D05 — out of package) |
 | Hosted mutations | **BLOCKED** without authorized env |

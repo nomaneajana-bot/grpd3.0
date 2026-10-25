@@ -3,28 +3,83 @@
 **Authorized by:** Nouamane (implementation of reported gaps)  
 **Branch:** `cursor/architecture-remediation-3184`  
 **Base visual tip:** `origin/cursor/stitch-home-detail-3184` @ `8cbfe83` (not avenir-only `3ba6775`)  
-**Recorded:** 2026-10-25 (Africa/Casablanca)
+**Recorded / refreshed:** 2026-10-25 (Africa/Casablanca)
 
-These are **working decisions** for this remediation package — not OCIF approvals.
+> **These are working decisions for this remediation package — not OCIF approvals, not invented product law, not production acceptance.**
 
-| # | Decision | Disposition |
-|---|----------|-------------|
-| D1 | Connected persistent API is the real-user contract; mock/demo is explicit rehearsal only | ACTIVE — see `TRANSPORT_AND_DEPLOYMENT.md` |
-| D2 | Never silently fall back to mock on network/auth failure | ACTIVE (`mode.ts` + `client.ts`; empty URL → `MISSING_API_URL`, not mock) |
-| D3 | Settings: implement language/units persistence already supported; remove misleading interactive stubs for unsupported rows (no eight fake toasts); retain source + document disposition — see `SETTINGS_DISPOSITION.md` | ACTIVE |
-| D4 | Notifications copy must not imply delivered push; local prefs only | ACTIVE |
-| D5 | Logout: always clear local session/caches; connected calls server logout; honest messaging if only local cleared; JWT has no denylist — see `LOGOUT_SEMANTICS.md` | ACTIVE |
-| D6 | Demo logout stays on mock transport; never hits live services | ACTIVE |
-| D7 | `/profile/test-history` already redirects (Entraînement avancé removed) — keep deferred deep-link redirect | DEFERRED safe |
-| D8 | `/run/setup` — no in-repo connected `/runs` routes; keep deep-link with honest deferred/connected guard; not primary nav | DEFERRED / BLOCKED connected |
-| D9 | Preserve `/club/group-edit` → `group-create` redirect + params | KEEP |
-| D10 | `/avenir` may stay deep-link; add enter-app CTA respecting auth | ACTIVE |
-| D11 | OTP/PIN: reuse existing PIN allowlist + mock OTP; fixed demo OTP must never be production auth | ACTIVE |
-| D12 | Club PATCH + member-group are required for connected club admin UI already calling them | ACTIVE |
-| D13 | Runs / coach remote / push delivery remain deferred or blocked — do not invent scope | DEFERRED/BLOCKED |
-| D14 | Production deploy remains separate D05 — not this package | BLOCKED (out of scope) |
-| D15 | Current `vercel.json` buildCommand forces `EXPO_PUBLIC_DEMO_MODE=true` — Preview static is demo rehearsal until D05/connected build wiring | CONFIRMED; do not treat Preview HTML as connected UAT |
+Source defaults (authorized wording) → recorded dispositions below.
 
-## Methodology note
+---
 
-`AGENTS.md` / `docs/PROJECT_METHOD.md` / `docs/PROJECT_CHECKPOINT.md` exist on this stack. Prior avenir-only blueprint audit (`3ba6775`) does **not** cover Stito/demo. Remediation continues: inventory → rules → issue register → bounded batches → Codex review stop.
+## Decision defaults 1–6 (canonical mapping)
+
+### 1 — Connected contract / mock isolation / deploy entry / D05
+
+**Default:** Connected persistent API is the intended real-user contract; mock/demo remains an explicit isolated rehearsal mode. Never silently fall back to mock on network/auth failure. Reuse existing backend/auth before duplicates. Audit actual deployment entrypoint and client transport, not only `app/api` file counts. Production deployment remains separate D05.
+
+| ID | Disposition | Evidence |
+|---|---|---|
+| D1 | ACTIVE — connected = real contract; demo/mock explicit only | `TRANSPORT_AND_DEPLOYMENT.md` |
+| D2 | ACTIVE — no silent mock fallback (`MISSING_API_URL` / `ApiError`) | `lib/api/mode.ts`, `lib/api/client.ts`, mode matrix |
+| D14 | BLOCKED — production = D05, out of package | — |
+| D15 | CONFIRMED — `vercel.json` build currently demo-forced | `vercel.json` |
+
+### 2 — Settings honesty
+
+**Default:** Implement already-supported meaningful actions. For unsupported optional settings, remove misleading interactive affordances (not eight fake success/toast buttons). Retain source + documented disposition. Do not silently remove approved deliverables; block scope conflicts explicitly.
+
+| ID | Disposition | Evidence |
+|---|---|---|
+| D3 | ACTIVE | `SETTINGS_DISPOSITION.md` · Batch D **23/23** |
+
+### 3 — Orphans
+
+**Default:** test-history and run/setup need dependency/scope checks. Wire only if they complete an existing MVP journey; else exclude from primary nav, mark deferred, keep safe deep-links. Do not invent activity/coaching scope. Preserve group-edit redirect + params.
+
+| ID | Disposition | Evidence |
+|---|---|---|
+| D7 | DEFERRED safe — `test-history` → profile | Batch D |
+| D8 | DEFERRED / BLOCKED connected — `run/setup` deep-link + honesty | Batch D · no `/runs` API |
+| D9 | KEEP — `group-edit` → `group-create` + params | Batch D |
+| D13 | DEFERRED/BLOCKED — runs / coach remote / push (no invented scope) | inventory |
+
+### 4 — `/avenir`
+
+**Default:** May remain vision/marketing deep link; working return/enter-app CTA respecting auth. No forced tab addition.
+
+| ID | Disposition | Evidence |
+|---|---|---|
+| D10 | ACTIVE — CTA; no tab | Batch D · `app/avenir.tsx` |
+
+### 5 — Notifications
+
+**Default:** Describe actual behavior. Persist real prefs where supported; do not imply delivered push from local toggles. Unsupported delivery = deferred/blocked, not fake-implemented.
+
+| ID | Disposition | Evidence |
+|---|---|---|
+| D4 | ACTIVE — local prefs; caption denies push | settings · Batch D |
+
+### 6 — Logout
+
+**Default:** Always clear local session + user-specific caches. Connected: invoke supported server logout; verify token invalidation semantics; honest failure if only local cleared. Demo logout isolated from live services.
+
+| ID | Disposition | Evidence |
+|---|---|---|
+| D5 | ACTIVE — local clear + server ack; JWT no denylist (honest) | `LOGOUT_SEMANTICS.md` · connected **16/16** |
+| D6 | ACTIVE — demo/mock → `mockApiRequest` only | same |
+
+---
+
+## Supporting decisions (implementation)
+
+| ID | Decision | Disposition |
+|---|---|---|
+| D11 | OTP/PIN: reuse PIN allowlist + mock OTP; fixed demo OTP ≠ production auth | ACTIVE |
+| D12 | Club PATCH + member-group required for existing connected admin UI | ACTIVE · PG verified |
+
+---
+
+## Methodology
+
+inventory → product rules → issue register → bounded batches → **Codex review stop**.  
+Not claimed: hosted UAT, production, OCIF acceptance, “everything fixed” from static analysis alone.
