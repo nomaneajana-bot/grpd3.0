@@ -15,15 +15,15 @@ Not a docs-only audit. Not production deploy. Not OCIF submission.
 
 ### Exact next action
 
-1. Execute remaining **OPERATIONS** batches per `docs/audit/architecture-remediation/OPERATIONS.md` (D deep-link retest, B demo auth UI, E stale-doc reconcile, package smoke).  
-2. Then **STOP for Codex**. No unrelated visual ports or production promotion.
+1. Remaining **OPERATIONS**: B demo auth UI if needed, E stale-doc reconcile, then package wrap → **STOP for Codex**.  
+2. No unrelated visual ports or production promotion.
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
 | Demo web Batch C (club→outing→join/leave) | **19/19 PASS** — `batch-c-evidence.json` |
-| Demo web settings/avenir package smoke | Script ready; deferred to verification turn |
+| Demo web Batch D (settings + orphans) | **23/23 PASS** — `batch-d-evidence.json` |
 | Connected API (local PG) | **16/16 PASS** — logout, PATCH club, member-group (`connected-evidence.json`) |
 | Hosted / native / UAT | **Not claimed** · **BLOCKED** without authorized env |
 

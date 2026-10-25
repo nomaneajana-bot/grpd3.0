@@ -25,13 +25,21 @@
 | Result | **19 PASS / 0 FAIL** |
 | Screenshots | `docs/audit/architecture-remediation/batch-c/*.png` |
 
-## Demo web — settings/avenir (package smoke)
+## Demo web — Batch D settings + orphans
+
+| Field | Value |
+|---|---|
+| Script | `scripts/architecture-remediation-batch-d-smoke.mjs` |
+| Manifest | `batch-d-evidence.json` · `BATCH_D.md` |
+| Result | **23 PASS / 0 FAIL** |
+| Screenshots | `docs/audit/architecture-remediation/batch-d/*.png` |
+
+## Demo web — package smoke (settings/avenir combined)
 
 | Field | Value |
 |---|---|
 | Script | `scripts/architecture-remediation-smoke.mjs` |
-| Status | Written; full settings/avenir UI run deferred to verification turn |
-| Serve | `dist-demo` (re-export used for Batch C) |
+| Status | Still available; Batch D supersedes settings/avenir deep-link checks for this package |
 
 ## Docs updated this package
 

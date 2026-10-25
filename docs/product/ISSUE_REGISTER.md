@@ -117,11 +117,11 @@
 |-------|-------|
 | Route / journey | `/run/setup`, `/profile/test-history` |
 | Expected meaning | Orphans disposed without inventing activity/coaching scope |
-| Observed behavior | `test-history` already redirects to profile (Entraînement avancé removed). `run/setup` deep-link kept; connected mode shows honest deferred UI (no `/runs` API). Primary nav unchanged. `group-edit` redirect preserved. |
+| Observed behavior | `test-history` → profile; `group-edit` → `group-create` with params; `run/setup` demo form safe; connected deferred UI in source; `/avenir` CTA (Batch D demo) |
 | Capability | DEFERRED (safe deep-link) / NOT IMPLEMENTED connected runs |
 | Owner | Cursor |
-| Candidate SHA / env | `cursor/architecture-remediation-3184` · demo + static |
-| Evidence | `docs/audit/architecture-remediation/` |
+| Candidate SHA / env | `cursor/architecture-remediation-3184` · demo |
+| Evidence | `docs/audit/architecture-remediation/BATCH_D.md` · `batch-d-evidence.json` |
 | Next action | Codex review disposition |
 | Status | **FIXED AWAITING RETEST** |
 
@@ -338,10 +338,10 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 |-------|-------|
 | Route / journey | `/profile/settings` |
 | Expected meaning | Language/units persist; no fake interactive stubs; notifications do not imply push delivery |
-| Observed behavior | Language/units toggles save locally; photo/legal/support non-interactive “Hors MVP” (source retained); leave-club kept; notification caption corrected; no fake success/toasts on unsupported rows |
+| Observed behavior | Language/units toggles save locally + reload persist; photo/legal/support non-interactive “Hors MVP”; leave-club kept; notification caption corrected; Batch D demo **23/23** |
 | Capability | IMPLEMENTED (prefs) · push delivery **UNSUPPORTED** · phone-edit/photo-upload/legal CMS **NOT IMPLEMENTED** (documented) |
 | Owner | Cursor |
-| Evidence | `docs/audit/architecture-remediation/SETTINGS_DISPOSITION.md` |
+| Evidence | `docs/audit/architecture-remediation/BATCH_D.md` · `batch-d-evidence.json` · `SETTINGS_DISPOSITION.md` |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-018 — P1 — FIXED AWAITING RETEST (club PATCH + member-group)

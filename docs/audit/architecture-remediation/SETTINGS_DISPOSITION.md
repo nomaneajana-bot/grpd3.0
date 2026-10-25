@@ -26,6 +26,6 @@
 | Drop leave-club from settings | **Blocked** — approved deliverable kept |
 | Invent phone-edit / photo-upload / support inbox | **Blocked** — out of MVP; would invent scope |
 
-## Not claimed
+## Verified (demo)
 
-Demo UI Playwright re-check of these rows — deferred to verification turn. Hosted push / legal CMS — blocked/deferred.
+`batch-d-evidence.json` — **23/23** (language/units persist, Hors MVP non-interactive, orphans, avenir CTA, phone+desktop). Hosted push / legal CMS — still blocked/deferred.
