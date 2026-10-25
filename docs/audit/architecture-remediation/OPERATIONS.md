@@ -34,6 +34,10 @@ Within each batch: record scope/issue IDs → implement → meaningful checks �
 | #2 Settings | ISSUE-017 | Batch D 23/23 |
 | #1 Transport / D05 | ISSUE-004/008 | Documented; hosted/prod **BLOCKED** |
 
+## Exact SHA / environment ledger
+
+See `BATCH_REGISTER.md` — each batch keeps `tested_sha` inside its evidence JSON. Do not equate demo PASS with hosted/UAT.
+
 ## Tip
 
 Branch `cursor/architecture-remediation-3184` · see latest `git rev-parse HEAD`.
