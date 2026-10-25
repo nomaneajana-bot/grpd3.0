@@ -1,0 +1,89 @@
+{
+  "batch": "architecture-remediation-connected",
+  "tested_sha": "6ffbcbc7c081508d4cf8e20f53c7044c101b5d1b",
+  "environment": "local_postgres_integration",
+  "hosted_claim": false,
+  "native_claim": false,
+  "uat_claim": false,
+  "summary": {
+    "pass": 15,
+    "fail": 0
+  },
+  "checks": [
+    {
+      "id": "admin_pin_login",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "logout_requires_auth",
+      "ok": true,
+      "detail": "401"
+    },
+    {
+      "id": "logout_ack_stateless",
+      "ok": true,
+      "detail": "{\"ok\":true,\"data\":{\"ok\":true,\"serverRevocation\":\"not_applicable_stateless_jwt\"}}"
+    },
+    {
+      "id": "logout_does_not_claim_denylist",
+      "ok": true,
+      "detail": "honest revocation semantics"
+    },
+    {
+      "id": "patch_requires_auth",
+      "ok": true,
+      "detail": "401"
+    },
+    {
+      "id": "member_pin_login",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "patch_forbidden_for_member",
+      "ok": true,
+      "detail": "403"
+    },
+    {
+      "id": "patch_admin_ok",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "patch_persisted",
+      "ok": true,
+      "detail": "Arch Renamed arch_mvo63mm6"
+    },
+    {
+      "id": "member_group_requires_auth",
+      "ok": true,
+      "detail": "401"
+    },
+    {
+      "id": "member_group_forbidden_for_member",
+      "ok": true,
+      "detail": "403"
+    },
+    {
+      "id": "member_group_admin_ok",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "member_group_persisted",
+      "ok": true,
+      "detail": "B"
+    },
+    {
+      "id": "member_group_reload",
+      "ok": true,
+      "detail": "reload"
+    },
+    {
+      "id": "unrelated_club_home_group_preserved",
+      "ok": true,
+      "detail": "C"
+    }
+  ]
+}

@@ -1,12 +1,31 @@
 # APP_BLUEPRINT — GRPD 3.0 / Stito
 
 **Status:** Authoritative product-architecture reference for this repository.  
-**Codebase snapshot (initial audit):** git `3ba6775` (avenir-only — incomplete vs Stito/demo).  
+**Codebase snapshot (initial audit):** git `3ba6775` (avenir-only — incomplete vs Stito/demo; **not an ancestor of the Stito tip**).  
 **Remediation base:** `cursor/architecture-remediation-3184` ← `cursor/stitch-home-detail-3184` @ `8cbfe83` (preserves Accueil/Détail Stito + `/demo`).  
 **Audit / remediation date:** 2026-10-25 (Africa/Casablanca)  
 **Working decisions:** `docs/audit/architecture-remediation/WORKING_DECISIONS.md`  
 **API inventory:** `docs/audit/architecture-remediation/CLIENT_API_INVENTORY.md`  
 **Scope of initial audit:** Static analysis. Remediation batches add runtime evidence under `docs/audit/architecture-remediation/`.
+
+### Remediation addendum (post–Stito tip — supersedes stale §6.5 / §7 rows below)
+
+| Topic | Status after remediation | Evidence |
+| --- | --- | --- |
+| `EXPO_PUBLIC_DEMO_MODE` + `/demo` | **CONFIRMED used** on Stito tip (`lib/featureFlags.ts`, `app/demo.tsx`) | Source |
+| Tabs | Accueil · Mes sorties · Club · Profil (Workouts hidden/deferred on this tip) | `app/(tabs)/_layout.tsx` |
+| `POST /api/v1/auth/logout` | **Implemented** (stateless JWT ack; no denylist) | `connected-evidence.json` |
+| `PATCH /api/v1/clubs/:id` | **Implemented** (admin/coach) | same |
+| `PUT /api/v1/clubs/:id/member-group` | **Implemented** + `homeGroupId` migration | same |
+| Settings language/units | **Implemented** local prefs | `app/profile/settings.tsx` |
+| Settings legal/photo/support | Non-interactive **Hors MVP** (no fake success) | same |
+| Notifications | Local prefs only — **no push delivery claim** | same |
+| `/avenir` | Deep-link + enter-app CTA | `app/avenir.tsx` |
+| `/run/setup` | Deep-link; connected shows deferred honesty | `app/run/setup.tsx` |
+| Runs / coach remote / push | **Deferred / blocked** — not invented | WORKING_DECISIONS D13 |
+| Hosted / production | **BLOCKED** — separate D05 | ISSUE-004/008 |
+
+Historical §6.5–§9 tables below retain the **initial avenir audit** wording for provenance; prefer this addendum + `CLIENT_API_INVENTORY.md` for current truth.
 
 ### Evidence labels (required)
 

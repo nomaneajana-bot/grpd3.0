@@ -1,20 +1,20 @@
 # Client ↔ transport inventory (stitch tip + remediation)
 
-**SHA base:** `8cbfe83` · **Updated with remediation tip:** see evidence.json after commits  
+**SHA base:** `8cbfe83` · **Remediation tip:** `6ffbcbc` (+ follow-up commits) · **Connected evidence:** `connected-evidence.json`  
 **Transport:** `lib/api/mode.ts` → demo | mock | connected (no silent URL→mock)
 
 | Client method | Path | Auth | Persistence | Demo/mock | Connected `app/api` | Consumers | Class |
 |---|---|---|---|---|---|---|---|
-| requestOtp / verifyOtp | `/auth/otp/*` | no | mock users | yes | **missing** | onboarding/phone | required missing → demo/mock only; PIN is connected auth |
+| requestOtp / verifyOtp | `/auth/otp/*` | no | mock users | yes | **missing** | onboarding/phone | demo/mock only; PIN is connected auth |
 | loginWithPin / registerWithPin | `/auth/pin/*` | no | allowlist + JWT | yes | **pin/login exists** | verify flows | existing/reusable |
 | refreshToken | `/auth/token/refresh` | no | mock | yes | missing | client | optional deferred |
-| logout | `/auth/logout` | yes | local clear | yes | **added in remediation** | settings | required → implement |
+| logout | `/auth/logout` | yes | local clear | yes | **POST route + dispatch** | settings / `performLogout` | **implemented** · local PG verified |
 | registerDevice | `/devices` | yes | mock | yes | missing | verify | optional deferred |
-| createClub…leaveClub… | clubs* | yes | prisma/mock | yes | leave/join/… exist | club UI | existing |
-| updateClub PATCH | `/clubs/:id` | yes | prisma/mock | mock yes | **GET only → PATCH added** | club/settings | required → implement |
-| setClubMemberGroup PUT | `/clubs/:id/member-group` | yes | homeGroupId/mock | mock yes | **added** | settings/group-detail | required → implement |
+| createClub…leaveClub… | clubs* | yes | prisma/mock | yes | leave/join/… exist | club UI | existing (prior batches) |
+| updateClub PATCH | `/clubs/:id` | yes | prisma/mock | mock yes | **PATCH added** | club/settings | **implemented** · local PG verified |
+| setClubMemberGroup PUT | `/clubs/:id/member-group` | yes | homeGroupId/mock | mock yes | **PUT added** | settings/group-detail | **implemented** · local PG verified |
 | sessions join/leave/… | sessions* | yes | prisma/mock | yes | exist | session UI | existing |
-| createOrMatchRun… | `/runs*` | yes | mock runStore | yes | **missing** | run/setup|confirm | optional deferred / blocked connected |
+| createOrMatchRun… | `/runs*` | yes | mock runStore | yes | **missing** | run/setup|confirm | deferred / blocked connected |
 | coach POST | `/coach` | — | TODO | — | missing | coachProvider | blocked / deferred |
 
 ## Mode selection

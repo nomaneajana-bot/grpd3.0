@@ -349,10 +349,10 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 |-------|-------|
 | Route / journey | Club settings save · group assign |
 | Expected meaning | Connected PATCH `/clubs/:id` + PUT `/clubs/:id/member-group` with authz |
-| Observed behavior | Routes + dispatch + `homeGroupId` column migration added |
-| Capability | IMPLEMENTED (code); connected PG runtime evidence pending this package |
+| Observed behavior | Routes + dispatch + `homeGroupId` migration; local PG smoke 15/15 (PATCH + member-group authz/persist/reload) |
+| Capability | IMPLEMENTED (local API); hosted **not** verified |
 | Owner | Cursor |
-| Evidence | `docs/audit/architecture-remediation/` |
+| Evidence | `docs/audit/architecture-remediation/connected-evidence.json` |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-019 — P2 — FIXED AWAITING RETEST (avenir enter CTA)
@@ -385,9 +385,9 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 
 | Status | Count |
 |--------|------:|
-| VERIFIED (demo) | 7 (001, 002, 003, 005, 010 privacy, 010 participation, 011) |
-| FIXED AWAITING RETEST | 5 (004 hosted; 013 Accueil; 014 Mes Sorties; 015 outing detail; Batch A create) |
+| VERIFIED (demo) | 7 (001, 002, 003, 005, 010 privacy, 010 participation, 011) + 012 Tab |
+| FIXED AWAITING RETEST | 9 (004 hosted; 007 orphans; 013 Accueil; 014 Mes Sorties; 015 outing detail; 016 logout; 017 settings; 018 club PATCH/member-group; 019 avenir) + Batch A create |
 | FAILED | 0 |
-| NOT CHECKED | 3 (006, 007, 009) |
+| NOT CHECKED | 2 (006, 009) |
 | BLOCKED | 1 (008) |
-| OPEN (note) | 1 (012 keyboard) |
+| OPEN (note) | 012 full a11y remains open beyond Tab order |
