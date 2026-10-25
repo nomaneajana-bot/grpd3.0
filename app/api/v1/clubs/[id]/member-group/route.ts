@@ -9,10 +9,29 @@ import { prisma } from "@/lib/server/prisma";
 import { requireClubPermission } from "@/lib/server/role-checks";
 import { clubIdParamSchema } from "@/lib/server/validators";
 
+/**
+ * Legacy pace groups A–D, or opt-in color-group ids (`g_…`).
+ * When `eligibleGroupIds` is provided (from club admin settings), groupId
+ * must be in that list — prevents assigning inactive/absent groups.
+ * When omitted, only A–D are accepted (legacy callers).
+ */
 const bodySchema = z.object({
   userId: z.string().min(1),
-  groupId: z.enum(["A", "B", "C", "D"]),
+  groupId: z.string().trim().min(1).max(64),
+  eligibleGroupIds: z.array(z.string().min(1).max(64)).max(32).optional(),
 });
+
+const LEGACY_PACE = new Set(["A", "B", "C", "D"]);
+
+function isEligibleGroupId(
+  groupId: string,
+  eligibleGroupIds: string[] | undefined,
+): boolean {
+  if (eligibleGroupIds && eligibleGroupIds.length > 0) {
+    return eligibleGroupIds.includes(groupId);
+  }
+  return LEGACY_PACE.has(groupId);
+}
 
 export async function PUT(
   req: NextRequest,
@@ -37,21 +56,56 @@ export async function PUT(
       return jsonError("Invalid request", "VALIDATION_ERROR", 400);
     }
 
-    const membership = await prisma.clubMembership.findUnique({
-      where: {
-        userId_clubId: { userId: body.data.userId, clubId },
-      },
-    });
-    if (!membership || membership.status !== "approved") {
-      return jsonError("Member not found", "NOT_FOUND", 404);
+    if (!isEligibleGroupId(body.data.groupId, body.data.eligibleGroupIds)) {
+      return jsonError(
+        "Group is not available for this club",
+        "VALIDATION_ERROR",
+        400,
+      );
     }
 
-    await prisma.clubMembership.update({
-      where: { id: membership.id },
-      data: { homeGroupId: body.data.groupId },
+    // Atomic: re-check approved membership; never touch SessionAttendance.
+    const result = await prisma.$transaction(async (tx) => {
+      const membership = await tx.clubMembership.findUnique({
+        where: {
+          userId_clubId: { userId: body.data.userId, clubId },
+        },
+      });
+      if (!membership) {
+        return { kind: "missing" as const };
+      }
+      if (membership.status !== "approved") {
+        return { kind: "not_approved" as const, status: membership.status };
+      }
+
+      const updated = await tx.clubMembership.update({
+        where: { id: membership.id },
+        data: { homeGroupId: body.data.groupId },
+      });
+
+      return {
+        kind: "ok" as const,
+        homeGroupId: updated.homeGroupId,
+        membershipId: updated.id,
+      };
     });
 
-    return jsonOk({ ok: true as const });
+    if (result.kind === "missing") {
+      return jsonError("Member not found", "NOT_FOUND", 404);
+    }
+    if (result.kind === "not_approved") {
+      return jsonError(
+        "Member is not an approved club member",
+        "FORBIDDEN",
+        403,
+      );
+    }
+
+    return jsonOk({
+      ok: true as const,
+      homeGroupId: result.homeGroupId,
+      membershipId: result.membershipId,
+    });
   } catch (e) {
     if (e instanceof Error && e.message === "UNAUTHORIZED") {
       return jsonError("Unauthorized", "UNAUTHORIZED", 401);

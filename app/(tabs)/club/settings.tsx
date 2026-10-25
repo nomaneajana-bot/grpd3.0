@@ -242,11 +242,22 @@ export default function ClubSettingsScreen() {
       const memberGroups = { ...adminSettings.memberGroups };
       if (groupId) {
         memberGroups[userId] = groupId;
-        // Best-effort API for legacy A–D ids only.
-        if (groupId === "A" || groupId === "B" || groupId === "C" || groupId === "D") {
-          const client = createApiClient();
-          await setClubMemberGroup(client, clubId, { userId, groupId });
-        }
+        // Persist homeGroupId: legacy A–D and opt-in color-group ids.
+        const client = createApiClient();
+        const eligibleFromLegacy = (adminSettings.groups ?? [])
+          .filter((g) => g.active !== false)
+          .map((g) => g.id);
+        const eligibleFromColor = (adminSettings.colorGroups ?? [])
+          .filter((g) => g.active !== false)
+          .map((g) => g.id);
+        const eligibleGroupIds = [
+          ...new Set([...eligibleFromLegacy, ...eligibleFromColor]),
+        ];
+        await setClubMemberGroup(client, clubId, {
+          userId,
+          groupId,
+          ...(eligibleGroupIds.length > 0 ? { eligibleGroupIds } : {}),
+        });
       } else {
         delete memberGroups[userId];
       }

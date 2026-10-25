@@ -126,6 +126,33 @@ try {
     },
   });
 
+  // Point 6: seed unrelated club BEFORE the member-group mutation.
+  const other = await prisma.club.create({
+    data: {
+      name: `Other ${suffix}`,
+      slug: `other-${suffix}`,
+      city: "Rabat",
+      visibility: "members",
+      createdById: `other_${suffix}`,
+      memberships: {
+        create: {
+          userId: memberId,
+          role: MembershipRole.member,
+          status: MembershipStatus.approved,
+          homeGroupId: "C",
+        },
+      },
+    },
+  });
+  const otherBefore = await prisma.clubMembership.findUnique({
+    where: { userId_clubId: { userId: memberId, clubId: other.id } },
+  });
+  check(
+    "unrelated_club_seeded_before_mutation",
+    otherBefore?.homeGroupId === "C",
+    otherBefore?.homeGroupId,
+  );
+
   const login = await invoke("POST", "/api/v1/auth/pin/login", {
     body: { phone, pin },
   });
@@ -225,45 +252,43 @@ try {
 
   const mg = await invoke("PUT", `/api/v1/clubs/${club.id}/member-group`, {
     token,
-    body: { userId: memberId, groupId: "B" },
+    body: {
+      userId: memberId,
+      groupId: "B",
+      eligibleGroupIds: ["A", "B", "C", "D"],
+    },
   });
   check("member_group_admin_ok", mg.statusCode === 200, mg.statusCode);
+  const mgBody = JSON.parse(mg.body || "{}");
+  check(
+    "member_group_api_response_home",
+    mgBody?.data?.homeGroupId === "B",
+    mgBody?.data?.homeGroupId,
+  );
+
+  // Persistence evidence (DB) — separate from API reload.
   const mem = await prisma.clubMembership.findUnique({
     where: { userId_clubId: { userId: memberId, clubId: club.id } },
   });
-  check("member_group_persisted", mem?.homeGroupId === "B", mem?.homeGroupId);
+  check("member_group_persisted_db", mem?.homeGroupId === "B", mem?.homeGroupId);
 
-  // Reload persistence: second read
-  const mem2 = await prisma.clubMembership.findUnique({
-    where: { userId_clubId: { userId: memberId, clubId: club.id } },
+  // Fresh API read after mutation (not a second labelled DB "reload").
+  const clubGetReload = await invoke("GET", `/api/v1/clubs/${club.id}`, {
+    token,
   });
-  check("member_group_reload", mem2?.homeGroupId === "B", "reload");
+  check(
+    "member_group_fresh_api_get_after_mutation",
+    clubGetReload.statusCode === 200,
+    clubGetReload.statusCode,
+  );
 
-  // Unrelated club preservation
-  const other = await prisma.club.create({
-    data: {
-      name: `Other ${suffix}`,
-      slug: `other-${suffix}`,
-      city: "Rabat",
-      visibility: "members",
-      createdById: `other_${suffix}`,
-      memberships: {
-        create: {
-          userId: memberId,
-          role: MembershipRole.member,
-          status: MembershipStatus.approved,
-          homeGroupId: "C",
-        },
-      },
-    },
-  });
-  const otherMem = await prisma.clubMembership.findUnique({
+  const otherAfter = await prisma.clubMembership.findUnique({
     where: { userId_clubId: { userId: memberId, clubId: other.id } },
   });
   check(
     "unrelated_club_home_group_preserved",
-    otherMem?.homeGroupId === "C",
-    otherMem?.homeGroupId,
+    otherBefore?.homeGroupId === "C" && otherAfter?.homeGroupId === "C",
+    `${otherBefore?.homeGroupId}->${otherAfter?.homeGroupId}`,
   );
 } catch (e) {
   check("uncaught", false, String(e));

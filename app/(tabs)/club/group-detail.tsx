@@ -190,9 +190,19 @@ export default function ClubGroupDetailScreen() {
     if (!clubId || !settings) return;
     try {
       const client = createApiClient();
+      const eligibleFromLegacy = (settings.groups ?? [])
+        .filter((g) => g.active !== false)
+        .map((g) => g.id);
+      const eligibleFromColor = (settings.colorGroups ?? [])
+        .filter((g) => g.active !== false)
+        .map((g) => g.id);
+      const eligibleGroupIds = [
+        ...new Set([...eligibleFromLegacy, ...eligibleFromColor]),
+      ];
       await setClubMemberGroup(client, clubId, {
         userId: member.userId,
         groupId: targetGroupId,
+        ...(eligibleGroupIds.length > 0 ? { eligibleGroupIds } : {}),
       });
       const next = mergeClubAdminSettings({
         ...settings,

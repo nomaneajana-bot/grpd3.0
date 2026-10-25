@@ -1,11 +1,17 @@
-// GET /api/v1/clubs/:id
-// PATCH /api/v1/clubs/:id — coach/admin update name/description/visibility (+ invite code)
+// GET /api/v1/clubs/:id — privacy-shaped by membership
+// PATCH /api/v1/clubs/:id — coach/admin; club+invite update is atomic
 
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { requireAuth } from "@/lib/server/auth-helpers";
+import { getAuthUserId, requireAuth } from "@/lib/server/auth-helpers";
+import {
+  classifyClubViewer,
+  shapeClubGetResponse,
+  type ClubViewerKind,
+} from "@/lib/server/clubDetailPrivacy";
 import { prisma } from "@/lib/server/prisma";
 import { requireClubPermission } from "@/lib/server/role-checks";
 import { clubIdParamSchema } from "@/lib/server/validators";
@@ -36,8 +42,24 @@ export async function GET(
     const club = await prisma.club.findUnique({
       where: { id: clubId },
     });
-
     if (!club) return jsonError("Club not found", "NOT_FOUND", 404);
+
+    const userId = await getAuthUserId(req);
+    let viewer: ClubViewerKind = "anonymous";
+    if (userId) {
+      const membership = await prisma.clubMembership.findUnique({
+        where: { userId_clubId: { userId, clubId } },
+        select: { status: true, role: true },
+      });
+      viewer = classifyClubViewer(membership);
+    }
+
+    // Private clubs: anonymous cannot probe existence beyond 404.
+    // Authenticated outsiders still receive the public allowlist (invite preview)
+    // without pendingMembers / createdById — see shapeClubGetResponse.
+    if (club.visibility === "members" && viewer === "anonymous") {
+      return jsonError("Club not found", "NOT_FOUND", 404);
+    }
 
     const [membersCount, sessionsCount, pendingMembers] =
       await prisma.$transaction([
@@ -59,12 +81,11 @@ export async function GET(
         }),
       ]);
 
-    return jsonOk({
-      club: {
-        ...club,
-        membersCount,
-        sessionsCount,
-      },
+    const shaped = shapeClubGetResponse({
+      club,
+      viewer,
+      membersCount,
+      sessionsCount,
       pendingMembers: pendingMembers.map((m) => ({
         id: m.id,
         userId: m.userId,
@@ -73,6 +94,12 @@ export async function GET(
         role: m.role,
         requestedAt: m.createdAt,
       })),
+    });
+
+    return jsonOk({
+      club: shaped.club,
+      pendingMembers: shaped.pendingMembers,
+      viewer: shaped.viewer,
     });
   } catch (e) {
     console.error("Get club:", e);
@@ -104,6 +131,15 @@ export async function PATCH(
       return jsonError("Invalid request", "VALIDATION_ERROR", 400);
     }
 
+    if (
+      body.data.name === undefined &&
+      body.data.description === undefined &&
+      body.data.visibility === undefined &&
+      body.data.accessCode === undefined
+    ) {
+      return jsonError("No fields to update", "VALIDATION_ERROR", 400);
+    }
+
     const existing = await prisma.club.findUnique({ where: { id: clubId } });
     if (!existing) return jsonError("Club not found", "NOT_FOUND", 404);
 
@@ -118,30 +154,51 @@ export async function PATCH(
     if (body.data.visibility !== undefined)
       data.visibility = body.data.visibility;
 
-    const club =
-      Object.keys(data).length > 0
-        ? await prisma.club.update({ where: { id: clubId }, data })
-        : existing;
+    const accessCode = body.data.accessCode
+      ? body.data.accessCode.trim().toUpperCase()
+      : undefined;
 
-    if (body.data.accessCode) {
-      const code = body.data.accessCode.toUpperCase();
-      const invite = await prisma.clubInvite.findFirst({
-        where: { clubId },
-        orderBy: { createdAt: "desc" },
+    try {
+      const club = await prisma.$transaction(async (tx) => {
+        const updated =
+          Object.keys(data).length > 0
+            ? await tx.club.update({ where: { id: clubId }, data })
+            : existing;
+
+        if (accessCode) {
+          const invite = await tx.clubInvite.findFirst({
+            where: { clubId },
+            orderBy: { createdAt: "desc" },
+          });
+          if (invite) {
+            await tx.clubInvite.update({
+              where: { id: invite.id },
+              data: { code: accessCode },
+            });
+          } else {
+            await tx.clubInvite.create({
+              data: { clubId, code: accessCode },
+            });
+          }
+        }
+
+        return updated;
       });
-      if (invite) {
-        await prisma.clubInvite.update({
-          where: { id: invite.id },
-          data: { code },
-        });
-      } else {
-        await prisma.clubInvite.create({
-          data: { clubId, code },
-        });
-      }
-    }
 
-    return jsonOk(club);
+      return jsonOk(club);
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        return jsonError(
+          "Invite code already in use",
+          "CONFLICT",
+          409,
+        );
+      }
+      throw err;
+    }
   } catch (e) {
     if (e instanceof Error && e.message === "UNAUTHORIZED") {
       return jsonError("Unauthorized", "UNAUTHORIZED", 401);

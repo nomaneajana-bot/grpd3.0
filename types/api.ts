@@ -229,7 +229,10 @@ export type ClubUpdateInput = {
 
 export type ClubMemberGroupInput = {
   userId: string;
-  groupId: "A" | "B" | "C" | "D";
+  /** Legacy A–D or opt-in color-group id. */
+  groupId: string;
+  /** When set, server requires groupId ∈ this list (active club groups). */
+  eligibleGroupIds?: string[];
 };
 
 export type ClubJoinByCodeInput = {
