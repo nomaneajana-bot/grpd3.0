@@ -5,21 +5,24 @@ alwaysApply: true
 
 # Application architecture (permanent)
 
-`APP_BLUEPRINT.md` at the repository root is the **authoritative** reference for approved product architecture (screens, navigation, interactions, journeys, business rules, known gaps).
+`APP_BLUEPRINT.md` at the repository root is the **authoritative** reference for product architecture (screens, navigation, interactions, journeys, business rules, known gaps). Prefer its **remediation addendum** and `docs/audit/architecture-remediation/` over older numbered sections when they conflict.
+
+**Canonical issues:** `docs/product/ISSUE_REGISTER.md` only — do not invent a second register.  
+**Working decisions** in `docs/audit/architecture-remediation/WORKING_DECISIONS.md` are implementation defaults for authorized work — **not** OCIF approvals.
 
 ## Required practice
 
-1. **Consult the blueprint** before planning or implementing changes. Read the sections that cover the screens, journeys, and interactions you will touch.
+1. **Consult the blueprint** (and remediation addendum) before planning or implementing changes.
 2. **Do not contradict** approved requirements in the blueprint by adding screens, routes, workflows, or behaviors that conflict with it.
-3. **Place every feature** in the existing screen hierarchy (Section 2) before implementing. If it has no place, stop and ask — do not invent a new surface silently.
-4. **Every interactive element** you add or change must have a defined purpose and expected behavior (document in the blueprint Interaction Inventory / journey notes).
+3. **Place every feature** in the existing screen hierarchy before implementing. If it has no place, stop and ask — do not invent a new surface silently.
+4. **Every interactive element** you add or change must have a defined purpose and expected behavior.
 5. **Update `APP_BLUEPRINT.md`** in the same change when you alter navigation, screens, workflows, business logic, or known gaps.
-6. **Never silently invent product requirements.** Label uncertainty as UNKNOWN and ask. Prefer CONFIRMED / INFERRED / UNKNOWN as in the blueprint.
-7. **Flag inconsistencies** between the blueprint and the codebase. If they disagree, **report the discrepancy before deciding** which is correct — do not quietly pick one.
-8. **After completing a feature, verify:** navigation, button handlers, forms/validation, error/empty/loading states, and the affected user journeys from the blueprint.
-9. **Preserve** established UI patterns and design systems already in the app; do not redesign unless the task explicitly requires it.
-10. **Do not create** unnecessary screens or features outside approved scope in the blueprint.
-11. **Keep this rule concise** — detail lives in `APP_BLUEPRINT.md`, not duplicated here.
-12. **Maintain the blueprint** for the full development lifecycle of this application.
+6. **Never silently invent product requirements.** Label uncertainty as UNKNOWN. Prefer CONFIRMED / INFERRED / UNKNOWN.
+7. **Flag inconsistencies** between the blueprint and the codebase before deciding which is correct.
+8. **After completing a feature, verify** navigation, handlers, forms/validation, empty/error/loading, and affected journeys.
+9. **Preserve** established UI patterns; do not redesign unless the task requires it.
+10. **Do not create** unnecessary screens or features outside approved scope.
+11. **Keep this rule concise** — detail lives in `APP_BLUEPRINT.md` and remediation docs.
+12. **Maintain the blueprint** for the full development lifecycle.
 
-Stale docs (`docs/architecture.md`, `docs/dead-routes.md`, etc.) are not authoritative when they conflict with `APP_BLUEPRINT.md`.
+`docs/architecture.md` and `docs/dead-routes.md` are **historical/stale** (bannered). They are not authoritative when they conflict with `APP_BLUEPRINT.md`. Preserve them as provenance; do not treat their action lists as current work.

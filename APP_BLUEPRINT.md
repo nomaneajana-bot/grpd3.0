@@ -3,10 +3,22 @@
 **Status:** Authoritative product-architecture reference for this repository.  
 **Codebase snapshot (initial audit):** git `3ba6775` (avenir-only — incomplete vs Stito/demo; **not an ancestor of the Stito tip**).  
 **Remediation base:** `cursor/architecture-remediation-3184` ← `cursor/stitch-home-detail-3184` @ `8cbfe83` (preserves Accueil/Détail Stito + `/demo`).  
-**Audit / remediation date:** 2026-10-25 (Africa/Casablanca)  
-**Working decisions:** `docs/audit/architecture-remediation/WORKING_DECISIONS.md`  
+**Batch E reconciled tip:** see branch HEAD (docs stamped 2026-10-25 Africa/Casablanca).  
+**Working decisions:** `docs/audit/architecture-remediation/WORKING_DECISIONS.md` (**not OCIF**).  
 **API inventory:** `docs/audit/architecture-remediation/CLIENT_API_INVENTORY.md`  
-**Scope of initial audit:** Static analysis. Remediation batches add runtime evidence under `docs/audit/architecture-remediation/`.
+**Canonical issue register (one):** `docs/product/ISSUE_REGISTER.md`  
+**Scope of initial audit:** Static analysis. Remediation batches add runtime evidence under `docs/audit/architecture-remediation/` (historical batch1–7 / outing-detail evidence remains historical).  
+
+### Doc authority (Batch E)
+
+| Document | Role after reconciliation |
+| --- | --- |
+| `APP_BLUEPRINT.md` (this file + remediation addendum) | **Authoritative** architecture |
+| `.cursor/rules/app-architecture.mdc` | Permanent rule → points here |
+| `docs/product/ISSUE_REGISTER.md` | **Only** canonical issue register |
+| `docs/architecture.md` | **HISTORICAL / STALE** — bannered; keep file |
+| `docs/dead-routes.md` | **HISTORICAL / STALE** — bannered; listed deletes already gone |
+| `docs/audit/**` evidence folders | Historical or current by folder name; do not rewrite past PASS claims |
 
 ### Remediation addendum (post–Stito tip — supersedes stale §6.5 / §7 rows below)
 
@@ -450,7 +462,7 @@ Prioritized by **user journey impact**. Items are incomplete work already eviden
 | Priority | Item | Journey | Label |
 | --- | --- | --- | --- |
 | P0 | Decide mock vs connected contract for auth, leave club, PATCH club, member-group, runs | B, C, E, G | CONFIRMED gaps |
-| P0 | Align docs (`architecture.md`, `dead-routes.md`) with this blueprint or delete/archive | All | CONFIRMED stale |
+| P0 | Align docs (`architecture.md`, `dead-routes.md`) with this blueprint or delete/archive | All | **DONE (Batch E)** — bannered HISTORICAL/STALE; not deleted (preserve provenance) |
 | P1 | Wire or remove settings stubs (phone/photo/language/units/legal/support) | Profile | CONFIRMED stubs |
 | P1 | Link or remove `/profile/test-history` | F | INFERRED orphan |
 | P1 | Link or remove `/run/setup`; clarify run journey | G | INFERRED orphan |

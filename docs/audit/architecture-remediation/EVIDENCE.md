@@ -41,6 +41,15 @@
 | Script | `scripts/architecture-remediation-smoke.mjs` |
 | Status | Still available; Batch D supersedes settings/avenir deep-link checks for this package |
 
+## Batch E — docs reconciliation
+
+| Field | Value |
+|---|---|
+| Doc | `BATCH_E.md` |
+| Stale docs | `docs/architecture.md`, `docs/dead-routes.md` bannered HISTORICAL |
+| Rule | `.cursor/rules/app-architecture.mdc` updated |
+| Issue register | single — `docs/product/ISSUE_REGISTER.md` |
+
 ## Batch A — inventory + mode
 
 | Field | Value |

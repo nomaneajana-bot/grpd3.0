@@ -1,5 +1,10 @@
 # Dead Routes Analysis
 
+> **HISTORICAL / STALE — not authoritative.**  
+> Preserved for provenance. The four files listed below (`App.tsx`, `edit-paces`, `past-sessions`, `modal`) are **already absent** on the current tip.  
+> Current orphan dispositions (test-history redirect, run/setup deferred, group-edit redirect, `/avenir` CTA): `docs/audit/architecture-remediation/` (`BATCH_D.md`, `WORKING_DECISIONS.md`) and `APP_BLUEPRINT.md` remediation addendum.  
+> Canonical issues: `docs/product/ISSUE_REGISTER.md` only.
+
 ## Summary
 
 Identified 4 files that appear to be unused or placeholders:

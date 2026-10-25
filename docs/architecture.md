@@ -1,5 +1,9 @@
 # GRPD 3.0 Architecture
 
+> **HISTORICAL / STALE — not authoritative.**  
+> Preserved for provenance only. Current architecture authority: root `APP_BLUEPRINT.md` (remediation addendum) + `docs/audit/architecture-remediation/` + canonical issue register `docs/product/ISSUE_REGISTER.md`.  
+> This document describes an older tree (pre–Stito Accueil/Détail, pre–`/demo`, incomplete club/API surface). Do not implement from it when it conflicts with the blueprint.
+
 ## Overview
 
 GRPD 3.0 is a React Native running group session management app built with Expo Router. Users can browse sessions, join groups, create custom sessions, manage workout templates, and track personal records (PRs).

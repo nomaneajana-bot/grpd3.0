@@ -15,8 +15,8 @@ Not a docs-only audit. Not production deploy. Not OCIF submission.
 
 ### Exact next action
 
-1. Remaining **OPERATIONS**: B demo auth UI if needed, E stale-doc reconcile, then package wrap → **STOP for Codex**.  
-2. No unrelated visual ports or production promotion.
+1. Remaining queue items (batch discipline note, VERIFICATION, orphans/avenir/notifications reminders, Batch B demo UI, DELIVER) then **STOP for Codex**.  
+2. No unrelated visual ports or production promotion. Batch E docs reconciliation **done**.
 
 ## Surfaces
 
