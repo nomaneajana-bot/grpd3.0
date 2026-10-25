@@ -29,7 +29,7 @@ Within each batch: record scope/issue IDs → implement → meaningful checks �
 | Decision default | Issue IDs | Batch evidence |
 |---|---|---|
 | #3 Orphans | ISSUE-007 | `ORPHANS.md` + demo **12/12** — deferred (no invented activity/coach); group-edit params verified |
-| #4 `/avenir` | ISSUE-019 | Batch D — enter-app CTA; no tab |
+| #4 `/avenir` | ISSUE-019 | `AVENIR.md` + demo **15/15** — auth-aware CTA; no tab |
 | #5 Notifications | ISSUE-017 | Batch D — local prefs + no push claim; delivery deferred |
 | #6 Logout | ISSUE-016 | Connected 16/16 + settings wiring |
 | #2 Settings | ISSUE-017 | Batch D 23/23 |

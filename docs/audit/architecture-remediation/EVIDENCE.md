@@ -65,6 +65,14 @@
 | Issue register | **single** — `docs/product/ISSUE_REGISTER.md` |
 | Historical evidence | Other `docs/audit/**` folders left intact |
 
+## `/avenir` (decision #4 / ISSUE-019)
+
+| Field | Value |
+|---|---|
+| Doc | `AVENIR.md` · D10 |
+| Evidence | `avenir-evidence.json` **15/15** · `avenir/*.png` |
+| Forced tab | **false** |
+
 ## Orphans (decision #3 / ISSUE-007)
 
 | Field | Value |
