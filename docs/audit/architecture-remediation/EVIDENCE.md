@@ -65,6 +65,14 @@
 | Issue register | **single** — `docs/product/ISSUE_REGISTER.md` |
 | Historical evidence | Other `docs/audit/**` folders left intact |
 
+## Notifications (decision #5 / D4 / ISSUE-017)
+
+| Field | Value |
+|---|---|
+| Doc | `NOTIFICATIONS.md` |
+| Evidence | `notifications-evidence.json` **14/14** · `notifications/*.png` |
+| Push delivery | **Not claimed / not implemented** |
+
 ## `/avenir` (decision #4 / ISSUE-019)
 
 | Field | Value |

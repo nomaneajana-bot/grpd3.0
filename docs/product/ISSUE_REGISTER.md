@@ -337,12 +337,12 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 ### ISSUE-017 — P1 — FIXED AWAITING RETEST (settings honesty + notifications D4)
 | Field | Value |
 |-------|-------|
-| Route / journey | `/profile/settings` |
-| Expected meaning | Language/units persist; no fake interactive stubs; notifications do not imply push delivery |
-| Observed behavior | Language/units toggles save locally + reload persist; photo/legal/support non-interactive “Hors MVP”; leave-club kept; notification caption corrected; Batch D demo **23/23** |
-| Capability | IMPLEMENTED (prefs) · push delivery **UNSUPPORTED** · phone-edit/photo-upload/legal CMS **NOT IMPLEMENTED** (documented) |
+| Route / journey | `/profile/settings` (+ onboarding permissions copy) |
+| Expected meaning | Language/units persist; no fake interactive stubs; notifications describe local prefs only — no implied push delivery |
+| Observed behavior | Settings caption denies push; toggles persist `grpd_settings_prefs_v1`; onboarding subtitle states push not active; devices API missing connected |
+| Capability | IMPLEMENTED (local prefs) · push delivery **DEFERRED/BLOCKED** · phone-edit/photo/legal CMS **Hors MVP** |
 | Owner | Cursor |
-| Evidence | `docs/audit/architecture-remediation/BATCH_D.md` · `batch-d-evidence.json` · `SETTINGS_DISPOSITION.md` |
+| Evidence | `NOTIFICATIONS.md` · `notifications-evidence.json` **14/14** · `SETTINGS_DISPOSITION.md` · Batch D |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-018 — P1 — FIXED AWAITING RETEST (club PATCH + member-group)

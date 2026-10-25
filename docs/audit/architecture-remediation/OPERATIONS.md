@@ -30,7 +30,7 @@ Within each batch: record scope/issue IDs → implement → meaningful checks �
 |---|---|---|
 | #3 Orphans | ISSUE-007 | `ORPHANS.md` + demo **12/12** — deferred (no invented activity/coach); group-edit params verified |
 | #4 `/avenir` | ISSUE-019 | `AVENIR.md` + demo **15/15** — auth-aware CTA; no tab |
-| #5 Notifications | ISSUE-017 | Batch D — local prefs + no push claim; delivery deferred |
+| #5 Notifications | ISSUE-017 · D4 | `NOTIFICATIONS.md` + demo **14/14** — local prefs; push delivery deferred/blocked |
 | #6 Logout | ISSUE-016 | Connected 16/16 + settings wiring |
 | #2 Settings | ISSUE-017 | Batch D 23/23 |
 | #1 Transport / D05 | ISSUE-004/008 | Documented; hosted/prod **BLOCKED** |
