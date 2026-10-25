@@ -16,13 +16,22 @@
 | Covers | logout authz + stateless ack + post-logout token still valid (no denylist); club PATCH; member-group persist/reload; unrelated club preserved |
 | Semantics | `LOGOUT_SEMANTICS.md` · `SETTINGS_DISPOSITION.md` |
 
-## Demo web
+## Demo web — Batch C journey
+
+| Field | Value |
+|---|---|
+| Script | `scripts/architecture-remediation-batch-c-smoke.mjs` |
+| Manifest | `batch-c-evidence.json` · `BATCH_C.md` |
+| Result | **19 PASS / 0 FAIL** |
+| Screenshots | `docs/audit/architecture-remediation/batch-c/*.png` |
+
+## Demo web — settings/avenir (package smoke)
 
 | Field | Value |
 |---|---|
 | Script | `scripts/architecture-remediation-smoke.mjs` |
-| Status | Written; **not claimed run** until message queue empty / follow-up verification turn |
-| Serve | `dist-demo` on `:8082` (export previously completed) |
+| Status | Written; full settings/avenir UI run deferred to verification turn |
+| Serve | `dist-demo` (re-export used for Batch C) |
 
 ## Docs updated this package
 

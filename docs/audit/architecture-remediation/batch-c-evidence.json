@@ -1,0 +1,128 @@
+{
+  "batch": "architecture-remediation-batch-c",
+  "tested_sha": "4d42bbede6e0dd9cb3409ab70f4b006741a191b7",
+  "environment": "demo",
+  "hosted_claim": false,
+  "native_claim": false,
+  "uat_claim": false,
+  "base": "http://127.0.0.1:38303",
+  "ids": {
+    "clubAName": "Marche A O6QXWF",
+    "clubARenamed": "Marche A edit O6QXWF",
+    "inviteCode": "MARCH2YD",
+    "outingId": "session_1792954416992_quv5u0ft",
+    "publishedBind": {
+      "clubId": "club_1792954390996_b4c025km",
+      "visibility": "members",
+      "title": "Balade O6QXWF"
+    },
+    "memberBind": {
+      "userId": "user_1792954403589_boubnjkq",
+      "clubIds": [
+        "club_1792954390996_b4c025km"
+      ]
+    },
+    "clubBName": "Langue B O6QXWF"
+  },
+  "checks": [
+    {
+      "id": "create_club_a_walk_purpose",
+      "ok": true,
+      "detail": "Marche A O6QXWF"
+    },
+    {
+      "id": "edit_club_persisted",
+      "ok": true,
+      "detail": "Marche A edit O6QXWF"
+    },
+    {
+      "id": "invite_code_created",
+      "ok": true,
+      "detail": "MARCH2YD"
+    },
+    {
+      "id": "member_joined_club_a",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMAE\n\nCasablanca · Sur invitation · 2 membres\nMarche A edit O6QXW"
+    },
+    {
+      "id": "focus_club_a_before_outing",
+      "ok": true,
+      "detail": "club A focused"
+    },
+    {
+      "id": "walk_does_not_force_running_pace",
+      "ok": true,
+      "detail": "[object Object]"
+    },
+    {
+      "id": "organise_outing_real_id",
+      "ok": true,
+      "detail": "session_1792954416992_quv5u0ft"
+    },
+    {
+      "id": "outing_bound_to_club",
+      "ok": true,
+      "detail": "{\"clubId\":\"club_1792954390996_b4c025km\",\"visibility\":\"members\",\"title\":\"Balade O6QXWF\"}"
+    },
+    {
+      "id": "member_has_outing_club_membership",
+      "ok": true,
+      "detail": "{\"publishedBind\":{\"clubId\":\"club_1792954390996_b4c025km\",\"visibility\":\"members\",\"title\":\"Balade O6QXWF\"},\"memBind\":{\"userId\":\"user_1792954403589_boubnjkq\",\"clubIds\":[\"club_1792954390996_b4c025km\"]}}"
+    },
+    {
+      "id": "member_sees_outing_detail",
+      "ok": true,
+      "detail": "‹\nDétail de la sortie\n·\nCASABLANCA\n···\nMARCHE\nRéservée aux membres\nBalade O6QXWF\nQUAND\nDim. 25 oct. "
+    },
+    {
+      "id": "member_join_attendance",
+      "ok": true,
+      "detail": "Tu es inscrit à cette séance.\n‹\nDétail de la sortie\n·\nCASABLANCA\n···\nMARCHE\nRése"
+    },
+    {
+      "id": "cancel_confirm_modal",
+      "ok": true,
+      "detail": "M06 modal"
+    },
+    {
+      "id": "cancel_attendance_not_leave_club",
+      "ok": true,
+      "detail": "Participation annulée. Tu restes membre du club.\n‹\nDétail de la sortie\n·\nCASABLANCA\n···\nMARCHE\nRéservée aux membres\nBala"
+    },
+    {
+      "id": "membership_preserved_after_cancel",
+      "ok": true,
+      "detail": "still member"
+    },
+    {
+      "id": "member_left_club",
+      "ok": true,
+      "detail": "Clubs\nInvitation · pas d’annuaire\nGRPD\nTes clubs arrivent par invitation\nPas d’annuaire ici. Quelqu’"
+    },
+    {
+      "id": "privacy_after_leave",
+      "ok": true,
+      "detail": "gated"
+    },
+    {
+      "id": "create_club_b_language_purpose",
+      "ok": true,
+      "detail": "Langue B O6QXWF"
+    },
+    {
+      "id": "two_clubs_host_visible",
+      "ok": true,
+      "detail": "host multi-club"
+    },
+    {
+      "id": "host_clubs_persist_reload",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche A edit O6QXWF\nLangue B O6QXWF\nLBO\n\nRabat · Sur "
+    }
+  ],
+  "summary": {
+    "pass": 19,
+    "fail": 0
+  }
+}

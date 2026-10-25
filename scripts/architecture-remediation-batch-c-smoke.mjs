@@ -231,38 +231,33 @@ async function main() {
     }
     await shot(page, "04-member-joined");
 
-    // --- Host: club B (second club / language purpose) ---
+    // --- Host: organise walk outing on club A (before creating club B) ---
     await login(page, HOST);
-    const createdB = await createClub(page, {
-      name: CLUB_B,
-      city: "Rabat",
-      purpose: `Pratiquer le darija en marchant ${TOKEN}.`,
-    });
-    check("create_club_b_language_purpose", createdB, CLUB_B);
-    report.ids.clubBName = CLUB_B;
     await page.goto(`${BASE}/club`, { waitUntil: "networkidle" });
     await page.waitForTimeout(1000);
-    const switcher = page.getByTestId("club-switcher");
-    const twoClubsUi =
-      (await switcher.count()) > 0 ||
-      ((await page.locator("body").innerText()).includes(CLUB_B) &&
-        ((await page.locator("body").innerText()).includes(CLUB_A_RENAMED) ||
-          (await page.locator("body").innerText()).includes(CLUB_A)));
-    // Focus club A for outing (switch if needed)
-    const switchA = page
-      .locator(`[data-testid^="club-switch-"]`)
-      .filter({ hasText: new RegExp(TOKEN, "i") })
-      .first();
-    if (await page.getByText(CLUB_A_RENAMED).count()) {
-      // try click switcher chip containing renamed name
-      const chip = page.getByText(CLUB_A_RENAMED).first();
-      if (await chip.isVisible().catch(() => false)) {
-        await chip.click({ force: true }).catch(() => {});
-        await page.waitForTimeout(600);
+    // Ensure focused club is A (member's club)
+    {
+      const chips = page.locator('[data-testid^="club-switch-"]');
+      const n = await chips.count();
+      for (let i = 0; i < n; i++) {
+        const label = (await chips.nth(i).innerText()).trim();
+        if (
+          label.includes(CLUB_A_RENAMED) ||
+          label.includes("Marche A") ||
+          label.includes(CLUB_A)
+        ) {
+          await chips.nth(i).click({ force: true });
+          await page.waitForTimeout(800);
+          break;
+        }
       }
     }
-    check("two_clubs_host_visible", twoClubsUi || createdB, "host multi-club");
-    await shot(page, "05-two-clubs");
+    check(
+      "focus_club_a_before_outing",
+      (await page.locator("body").innerText()).includes(CLUB_A_RENAMED) ||
+        (await page.locator("body").innerText()).includes(CLUB_A),
+      "club A focused",
+    );
 
     // Organise walk outing (club audience) — pace must not be forced
     const organise = page.getByTestId("club-organise-outing-cta");
@@ -327,17 +322,59 @@ async function main() {
     }
     check("organise_outing_real_id", Boolean(outingId), outingId || url);
     report.ids.outingId = outingId;
+
+    const publishedBind = await page.evaluate((id) => {
+      try {
+        const sessions = JSON.parse(
+          localStorage.getItem("mock:sessions") || "{}",
+        );
+        const s = sessions[id];
+        return s
+          ? { clubId: s.clubId, visibility: s.visibility, title: s.title }
+          : null;
+      } catch {
+        return null;
+      }
+    }, outingId);
+    report.ids.publishedBind = publishedBind;
+    check(
+      "outing_bound_to_club",
+      Boolean(publishedBind?.clubId) &&
+        publishedBind?.visibility === "members",
+      JSON.stringify(publishedBind),
+    );
     await shot(page, "06-outing-created");
 
-    // Discover → detail (member)
+    // Member → detail (membership ≠ attendance)
     await login(page, MEMBER);
     if (outingId) {
-      await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-      await page.waitForTimeout(1000);
+      const memBind = await page.evaluate(() => {
+        try {
+          const user = JSON.parse(
+            localStorage.getItem("grpd_auth_user_v1") || "null",
+          );
+          const ms = Object.values(
+            JSON.parse(localStorage.getItem("mock:club_memberships") || "{}"),
+          ).filter((m) => m.userId === user?.id && m.status === "approved");
+          return { userId: user?.id, clubIds: ms.map((m) => m.clubId) };
+        } catch {
+          return null;
+        }
+      });
+      report.ids.memberBind = memBind;
+      check(
+        "member_has_outing_club_membership",
+        Boolean(
+          publishedBind?.clubId &&
+            memBind?.clubIds?.includes(publishedBind.clubId),
+        ),
+        JSON.stringify({ publishedBind, memBind }),
+      );
+
       await page.goto(`${BASE}/session/${outingId}`, {
         waitUntil: "networkidle",
       });
-      await page.waitForTimeout(1200);
+      await page.waitForTimeout(1500);
       const detail = await page.locator("body").innerText();
       check(
         "member_sees_outing_detail",
@@ -347,40 +384,42 @@ async function main() {
         detail.slice(0, 100),
       );
 
-      // Join attendance (≠ membership)
-      const joinLabel = page.getByText(/Rejoindre la sortie/i).first();
-      if (await joinLabel.count()) {
-        await joinLabel.click({ force: true });
+      // Join attendance (≠ membership) via sticky CTA
+      const joinCta = page.getByTestId("stito-join-cta");
+      if (await joinCta.count()) {
+        await joinCta.click({ force: true });
         await page.waitForTimeout(1800);
-      } else {
-        // already joined as host auto? member should join
-        check("member_join_attendance", false, "join CTA missing");
       }
       const afterJoin = await page.locator("body").innerText();
       const joinedAtt =
         /Inscrit|Se désister|désister/i.test(afterJoin) ||
-        Boolean(await page.getByText(/Inscrit·e \(Se désister\)/i).count());
-      check("member_join_attendance", joinedAtt, afterJoin.slice(0, 80));
+        Boolean(await page.getByTestId("stito-join-cta").count());
+      check(
+        "member_join_attendance",
+        /inscrit|désister/i.test(afterJoin),
+        afterJoin.slice(0, 80),
+      );
       await shot(page, "07-joined");
 
-      // Cancel attendance — not leave club
-      const cancelCta = page.getByText(/Se désister|Inscrit/i).first();
-      if (await cancelCta.count()) {
-        await cancelCta.click({ force: true });
-        await page.waitForTimeout(600);
-        const confirm = page.getByTestId("session-leave-confirm-btn");
-        if (await confirm.count()) {
-          await confirm.click({ force: true });
-        } else {
-          await clickText(page, /Confirmer|Se désister|Oui/i).catch(() => {});
-        }
-        await page.waitForTimeout(1500);
+      // Cancel attendance — not leave club (same CTA opens M06 modal)
+      await page.getByTestId("stito-join-cta").click({ force: true });
+      await page.waitForTimeout(800);
+      const confirm = page.getByTestId("session-leave-confirm-btn");
+      check(
+        "cancel_confirm_modal",
+        (await confirm.count()) > 0,
+        "M06 modal",
+      );
+      if (await confirm.count()) {
+        await confirm.click({ force: true });
+        await page.waitForTimeout(1800);
       }
       const afterCancel = await page.locator("body").innerText();
+      const attendanceCleared = /Rejoindre la sortie/i.test(afterCancel);
       check(
         "cancel_attendance_not_leave_club",
-        /Rejoindre la sortie/i.test(afterCancel),
-        "attendance cleared",
+        attendanceCleared,
+        afterCancel.slice(0, 120),
       );
       await page.goto(`${BASE}/club`, { waitUntil: "networkidle" });
       await page.waitForTimeout(1000);
@@ -411,8 +450,9 @@ async function main() {
       const afterLeave = await page.locator("body").innerText();
       check(
         "member_left_club",
-        !/Quitter le club/i.test(afterLeave) ||
-          /Rejoindre|clé|invitation|Créer/i.test(afterLeave),
+        !/Quitter le club/i.test(afterLeave) &&
+          !afterLeave.includes(CLUB_A_RENAMED) &&
+          !afterLeave.includes(CLUB_A),
         afterLeave.slice(0, 100),
       );
       // Private outing should gate after leave
@@ -437,19 +477,36 @@ async function main() {
       check("member_sees_outing_detail", false, "no outing id");
     }
 
-    // Reload persistence: host still has clubs after reload
+    // --- Host: second club (language purpose) + two-club persistence ---
     await login(page, HOST);
+    const createdB = await createClub(page, {
+      name: CLUB_B,
+      city: "Rabat",
+      purpose: `Pratiquer le darija en marchant ${TOKEN}.`,
+    });
+    check("create_club_b_language_purpose", createdB, CLUB_B);
+    report.ids.clubBName = CLUB_B;
     await page.goto(`${BASE}/club`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(1000);
+    const hostTwo = await page.locator("body").innerText();
+    const twoClubsUi =
+      (await page.getByTestId("club-switcher").count()) > 0 ||
+      (hostTwo.includes(CLUB_B) &&
+        (hostTwo.includes(CLUB_A_RENAMED) || hostTwo.includes(CLUB_A)));
+    check("two_clubs_host_visible", twoClubsUi || createdB, "host multi-club");
+    await shot(page, "10-two-clubs");
+
+    // Reload persistence
+    await page.reload({ waitUntil: "networkidle" });
     await page.waitForTimeout(1200);
     const hostReload = await page.locator("body").innerText();
     check(
       "host_clubs_persist_reload",
-      hostReload.includes(CLUB_B) ||
-        hostReload.includes(CLUB_A_RENAMED) ||
-        hostReload.includes(CLUB_A),
+      hostReload.includes(CLUB_B) &&
+        (hostReload.includes(CLUB_A_RENAMED) || hostReload.includes(CLUB_A)),
       hostReload.slice(0, 100),
     );
-    await shot(page, "10-host-reload");
+    await shot(page, "11-host-reload");
   } catch (e) {
     check("batch_c_uncaught", false, String(e));
     await shot(page, "error").catch(() => {});

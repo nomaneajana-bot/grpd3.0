@@ -15,16 +15,16 @@ Not a docs-only audit. Not production deploy. Not OCIF submission.
 
 ### Exact next action
 
-1. Finish demo web Playwright smoke (`scripts/architecture-remediation-smoke.mjs`) when follow-up queue allows full verification.  
-2. **STOP for Codex** independent review of `docs/audit/architecture-remediation/` + tip SHA.  
-3. Do not start unrelated visual ports or production promotion.
+1. Finish remaining queued remediation items (settings/avenir package smoke, Batch B auth UI, docs E) then **STOP for Codex**.  
+2. Do not start unrelated visual ports or production promotion.
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
-| Demo web (Stito home/detail) | Preserved from stitch tip — UI smoke script ready; full run deferred while queue active |
-| Connected API (local PG) | **15/15 PASS** — logout, PATCH club, member-group (`connected-evidence.json`) |
+| Demo web Batch C (club→outing→join/leave) | **19/19 PASS** — `batch-c-evidence.json` |
+| Demo web settings/avenir package smoke | Script ready; deferred to verification turn |
+| Connected API (local PG) | **16/16 PASS** — logout, PATCH club, member-group (`connected-evidence.json`) |
 | Hosted / native / UAT | **Not claimed** · **BLOCKED** without authorized env |
 
 ## Working decisions
