@@ -65,6 +65,15 @@ describe("homeViewModel", () => {
     expect(selectNextOuting([pending], new Set(["p"]), now)).toBeNull();
   });
 
+  it("unjoined upcoming is never next outing", () => {
+    const open = session({
+      id: "open",
+      dateISO: "2099-10-18",
+      attendanceStatus: null,
+    });
+    expect(selectNextOuting([open], new Set(), now)).toBeNull();
+  });
+
   it("resolves new_member vs existing_no_upcoming", () => {
     expect(
       resolveHomeMode({

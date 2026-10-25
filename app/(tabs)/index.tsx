@@ -115,27 +115,11 @@ export default function HomeScreen() {
     }, [load]),
   );
 
-  const nextOuting = useMemo(() => {
-    const confirmed = selectNextOuting(sessions, joinedIds);
-    if (confirmed) return confirmed;
-    // Soft highlight — first upcoming (Stitch singular object) when none reserved.
-    const now = Date.now() - 15 * 60 * 1000;
-    return (
-      [...sessions]
-        .filter((s) => {
-          const iso = s.dateISO;
-          if (!iso) return true;
-          const t = new Date(`${iso.slice(0, 10)}T12:00:00`).getTime();
-          return Number.isFinite(t) ? t >= now : true;
-        })
-        .sort((a, b) => {
-          const ta = a.dateISO || "";
-          const tb = b.dateISO || "";
-          if (ta !== tb) return ta.localeCompare(tb);
-          return (a.timeMinutes ?? 0) - (b.timeMinutes ?? 0);
-        })[0] ?? null
-    );
-  }, [sessions, joinedIds]);
+  // Only a confirmed upcoming registration — never soft-promote an unjoined discovery item.
+  const nextOuting = useMemo(
+    () => selectNextOuting(sessions, joinedIds),
+    [sessions, joinedIds],
+  );
   const upcomingJoinedCount = useMemo(
     () => countConfirmedUpcoming(sessions, joinedIds),
     [sessions, joinedIds],

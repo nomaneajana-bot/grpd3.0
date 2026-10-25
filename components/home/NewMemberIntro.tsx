@@ -19,7 +19,7 @@ export function NewMemberIntro({ onSeeOutings }: NewMemberIntroProps) {
         <Ionicons name="sparkles-outline" size={16} color={h.primary} />
         <Text style={styles.kicker}>BIENVENUE</Text>
       </View>
-      <Text style={styles.title}>Rejoins une sortie près de toi</Text>
+      <Text style={styles.title}>Rejoins une sortie ouverte</Text>
       <Text style={styles.body}>
         Découvre des marches et courses ouvertes — sans chronomètre imposé, ni
         choix de groupe forcé. L’inscription se fait sur la fiche de la sortie.
