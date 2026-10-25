@@ -1,0 +1,91 @@
+{
+  "prompt": 2,
+  "journey": "create-club-home-edit",
+  "tested_sha": "bae80bdb2fccf7b3e1e0e2848c2e7eb9ffc5f1ed",
+  "tested_at": "2026-10-25T21:19:13.588Z",
+  "environment": "demo",
+  "hosted_claim": false,
+  "blockers": [
+    {
+      "id": "server_group_catalog",
+      "status": "BLOCKED",
+      "note": "Club color-group catalog remains client AdminStore; not a fake server production feature"
+    }
+  ],
+  "checks": [
+    {
+      "id": "p2_empty_name_validation",
+      "ok": true,
+      "detail": "Ajoute un nom de club.\n\nCRÉER UN CLUB\nFonder un club.\nDonne un cadre bienveilla"
+    },
+    {
+      "id": "p2_cancel_clears_draft_no_publish",
+      "ok": true,
+      "detail": "ABANDON-P2-BYVFY"
+    },
+    {
+      "id": "p2_create_a_exact",
+      "ok": true,
+      "detail": "club_1792963158912_6ah9ba8v"
+    },
+    {
+      "id": "p2_create_a_focused",
+      "ok": true,
+      "detail": "club_1792963158912_6ah9ba8v"
+    },
+    {
+      "id": "p2_no_forced_running_groups",
+      "ok": true,
+      "detail": "{\"memberOrgEnabled\":false,\"activityStructure\":\"neutral\"}"
+    },
+    {
+      "id": "p2_club_home_shows_a",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nPCA\n\nCasablanca · Sur invitation · 1 membre\n"
+    },
+    {
+      "id": "p2_admin_actions_visible",
+      "ok": true,
+      "detail": "admin chrome"
+    },
+    {
+      "id": "p2_edit_round_trip",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nPCA\n\nCasablanca · Sur invitation · 1 membre\n"
+    },
+    {
+      "id": "p2_edit_persisted_store",
+      "ok": true,
+      "detail": "P2 Club A edit BYVFY"
+    },
+    {
+      "id": "p2_second_preserves_first",
+      "ok": true,
+      "detail": "{\"aStill\":true,\"bId\":\"club_1792963167943_qabzwbpy\",\"focus\":\"club_1792963167943_qabzwbpy\"}"
+    },
+    {
+      "id": "p2_second_focused",
+      "ok": true,
+      "detail": "club_1792963167943_qabzwbpy"
+    },
+    {
+      "id": "p2_both_clubs_visible",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nP2 Club A edit BYVFY\nP2 Club B BYVFY\nPCB\n\nRabat · Sur "
+    },
+    {
+      "id": "p2_outsider_no_admin",
+      "ok": true,
+      "detail": "Clubs\nInvitation · pas d’annuaire\nGRPD\nTes clubs arrivent par invitation\nPas d’a"
+    }
+  ],
+  "ids": {
+    "clubA": "club_1792963158912_6ah9ba8v",
+    "clubB": "club_1792963167943_qabzwbpy"
+  },
+  "summary": {
+    "pass": 13,
+    "fail": 0,
+    "total": 13
+  }
+}

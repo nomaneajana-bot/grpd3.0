@@ -166,12 +166,12 @@ const DEFAULT_WALK_GROUPS: ClubAdminGroupOverride[] = [
 ];
 
 export function defaultClubAdminSettings(): ClubAdminSettings {
-  // New clubs: no invented A–D membership chrome until admin opts in.
+  // Free-form create: neutral — no invented running Élite A–D until admin opts in.
   return {
     interGroupAccessEnabled: true,
     defaultInterGroupPolicy: "warn",
-    activityStructure: "run",
-    ...emptyColorGroupsSettingsPatch("run"),
+    activityStructure: "neutral",
+    ...emptyColorGroupsSettingsPatch("neutral"),
   };
 }
 
@@ -182,6 +182,16 @@ export function defaultWalkClubAdminSettings(): ClubAdminSettings {
     defaultInterGroupPolicy: "free",
     activityStructure: "walk",
     ...emptyColorGroupsSettingsPatch("walk"),
+  };
+}
+
+/** Explicit run-structure defaults when product chooses a running club idea. */
+export function defaultRunClubAdminSettings(): ClubAdminSettings {
+  return {
+    interGroupAccessEnabled: true,
+    defaultInterGroupPolicy: "warn",
+    activityStructure: "run",
+    ...emptyColorGroupsSettingsPatch("run"),
   };
 }
 

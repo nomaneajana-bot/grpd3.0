@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/useToast";
 import { createApiClient, createClub } from "@/lib/api";
 import {
   defaultClubAdminSettings,
+  defaultRunClubAdminSettings,
   defaultWalkClubAdminSettings,
   saveClubAdminSettings,
 } from "@/lib/clubAdminStore";
@@ -74,7 +75,9 @@ export default function ClubCreateScreen() {
       const adminDefaults =
         fromIdea?.activity === "walk"
           ? defaultWalkClubAdminSettings()
-          : defaultClubAdminSettings();
+          : fromIdea?.activity === "run"
+            ? defaultRunClubAdminSettings()
+            : defaultClubAdminSettings();
       await saveClubAdminSettings(club.id, adminDefaults);
       await setFocusedClubId(club.id);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
