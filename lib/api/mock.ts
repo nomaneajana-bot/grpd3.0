@@ -1766,3 +1766,12 @@ export async function mockApiRequest<T>(
 
   throw new ApiError(404, 'Not found');
 }
+
+/** Demo evidence harness — page.evaluate smokes may call mock without inventing a new platform. */
+if (typeof globalThis !== "undefined") {
+  (
+    globalThis as typeof globalThis & {
+      __GRPD_MOCK_API_REQUEST__?: typeof mockApiRequest;
+    }
+  ).__GRPD_MOCK_API_REQUEST__ = mockApiRequest;
+}

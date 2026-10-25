@@ -11,7 +11,7 @@ import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 
-const BASE = process.env.SMOKE_URL || "http://127.0.0.1:38303";
+const BASE = process.env.SMOKE_URL || "http://127.0.0.1:8082";
 const OUT = "/opt/cursor/artifacts";
 const AUDIT = "/workspace/docs/audit/architecture-remediation";
 const SHOTS = path.join(AUDIT, "verification");
@@ -222,11 +222,28 @@ async function main() {
       "tabs/home chrome",
     );
     const box = await tabClubs.boundingBox().catch(() => null);
+    // Point 11: null boundingBox is NOT unobstructed — require real hit target.
     check(
       "phone_club_tab_unobstructed",
-      !box || (box.width > 8 && box.height > 8),
-      box ? JSON.stringify(box) : "text fallback ok",
+      Boolean(box) && box.width >= 24 && box.height >= 24,
+      box ? JSON.stringify(box) : "FAIL: null boundingBox",
     );
+    if (box) {
+      await tabClubs.click({ force: false, timeout: 10000 });
+      await page.waitForTimeout(800);
+      check(
+        "phone_club_tab_hit_navigates",
+        /club/i.test(page.url()) ||
+          /Quitter|Créer|J'ai une clé|Paramètres|Clubs/i.test(
+            await page.locator("body").innerText(),
+          ),
+        page.url(),
+      );
+      await page.getByText(/^Accueil$/i).first().click({ force: false }).catch(() => {});
+      await page.waitForTimeout(500);
+    } else {
+      check("phone_club_tab_hit_navigates", false, "no hit target");
+    }
 
     // --- Abandoned form: open club create, fill, leave ---
     await page.goto(`${BASE}/club/create`, {
@@ -321,13 +338,19 @@ async function main() {
       timeout: 60000,
     });
     await page.waitForTimeout(1000);
-    const gated = page.url() + (await page.locator("body").innerText());
+    const gatedUrl = page.url();
+    const gatedBody = await page.locator("body").innerText();
+    const privateLeaked =
+      /Enregistrer le club|Générer un code|Visibilité du club/i.test(gatedBody) &&
+      !/Connexion|Téléphone|déjà un compte|Recevoir un code/i.test(gatedBody);
+    const onAuthSurface =
+      /phone|onboarding|verify|login/i.test(gatedUrl) ||
+      /J'ai déjà un compte|Téléphone|Connexion|Recevoir un code/i.test(gatedBody);
+    // Point 11: exact unauthorized — reject permissive Club|Parametres|Accueil OR.
     check(
       "private_club_settings_gated_or_safe",
-      /phone|onboarding|Connexion|Téléphone|déjà|Club|Paramètres|Accueil/i.test(
-        gated,
-      ) && !/TypeError|Cannot read/i.test(gated),
-      page.url(),
+      onAuthSurface && !privateLeaked && !/TypeError|Cannot read/i.test(gatedBody),
+      gatedUrl + " | " + gatedBody.slice(0, 100),
     );
     await shot(page, "06-private-link-logged-out");
 
@@ -337,36 +360,48 @@ async function main() {
     await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 60000 });
     await page.waitForTimeout(800);
     const desk = await page.locator("body").innerText();
+    // Point 11: separate route smoke from accessibility — require chrome + enabled control.
+    const deskClubs = page.getByText(/^Clubs$/i).first();
+    const deskClubsBox = await deskClubs.boundingBox().catch(() => null);
     check(
       "desktop_home_readable",
-      desk.trim().length > 40 &&
-        /Accueil|On sort|Clubs|Profil|Mes sorties|Découvrir/i.test(desk),
-      desk.slice(0, 50),
+      /Accueil|On sort/i.test(desk) &&
+        /Clubs/i.test(desk) &&
+        Boolean(deskClubsBox) &&
+        deskClubsBox.width >= 24 &&
+        deskClubsBox.height >= 24,
+      JSON.stringify({ len: desk.trim().length, box: deskClubsBox }),
     );
     await shot(page, "07-home-desktop");
 
     await page.goto(`${BASE}/profile/settings`, { waitUntil: "networkidle" });
     await page.waitForTimeout(700);
     const deskSet = await page.locator("body").innerText();
-    check(
-      "desktop_settings_readable",
-      /Langue|Unités|Se déconnecter|Paramètres/i.test(deskSet),
-      deskSet.slice(0, 50),
-    );
     const deskLogout = page.getByText(/Se déconnecter/i).first();
     const dbox = await deskLogout.boundingBox().catch(() => null);
+    const logoutEnabled = await deskLogout.isEnabled().catch(() => false);
+    check(
+      "desktop_settings_readable",
+      /Langue/i.test(deskSet) &&
+        /Se déconnecter/i.test(deskSet) &&
+        Boolean(dbox) &&
+        dbox.width >= 20 &&
+        dbox.height >= 10 &&
+        logoutEnabled,
+      JSON.stringify({ box: dbox, logoutEnabled }),
+    );
     check(
       "desktop_logout_unobstructed",
-      !dbox || (dbox.width > 20 && dbox.height > 10),
-      dbox ? JSON.stringify(dbox) : "visible text",
+      Boolean(dbox) && dbox.width >= 20 && dbox.height >= 10 && logoutEnabled,
+      dbox ? JSON.stringify(dbox) : "FAIL: null boundingBox",
     );
     await shot(page, "08-settings-desktop");
 
-    // Demo failed-request analogue: wrong OTP already covered; note mock isolation
+    // Point 10/11: wrong OTP is auth-only — club fail harness is the club/outing analogue (journeys smoke).
     check(
       "demo_failed_request_analogue",
       report.checks.some((c) => c.id === "failed_otp_stays_off_tabs" && c.ok),
-      "wrong OTP handler = failed auth attempt on demo surface",
+      "OTP fail = auth only; club/outing fail covered in codex-journeys (not counted as substitute here)",
     );
   } catch (err) {
     check("verification_uncaught", false, err?.stack || String(err));

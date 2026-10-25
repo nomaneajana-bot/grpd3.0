@@ -140,7 +140,22 @@ async function createClub(page, { name, city, purpose }) {
   await page.getByTestId("club-create-submit").click({ force: true });
   await page.waitForTimeout(2200);
   const body = await page.locator("body").innerText();
-  return body.includes(name) || /Quitter|Organiser|Paramètres/i.test(body);
+  // Point 7: exact name + store id — reject generic Quitter/Organiser/Paramètres fallback.
+  const store = await page.evaluate((expectedName) => {
+    try {
+      const clubs = JSON.parse(localStorage.getItem("mock:clubs") || "{}");
+      const hit = Object.values(clubs).find((c) => c.name === expectedName);
+      return hit ? { id: hit.id, name: hit.name, city: hit.city, description: hit.description } : null;
+    } catch {
+      return null;
+    }
+  }, name);
+  const exactUi = body.includes(name);
+  return {
+    ok: Boolean(store?.id) && exactUi && store.name === name,
+    store,
+    bodySnippet: body.slice(0, 120),
+  };
 }
 
 async function main() {
@@ -165,8 +180,15 @@ async function main() {
       city: "Casablanca",
       purpose: `Marcher entre voisins ${TOKEN} — pas de course.`,
     });
-    check("create_club_a_walk_purpose", createdA, CLUB_A);
+    check(
+      "create_club_a_walk_purpose",
+      createdA.ok &&
+        createdA.store?.city === "Casablanca" &&
+        String(createdA.store?.description || "").includes(TOKEN),
+      JSON.stringify({ id: createdA.store?.id, name: createdA.store?.name }),
+    );
     report.ids.clubAName = CLUB_A;
+    report.ids.clubAId = createdA.store?.id ?? null;
     await shot(page, "01-club-a-created");
 
     // Edit club (name) via settings — uses updateClub → mock PATCH
@@ -259,16 +281,24 @@ async function main() {
       "club A focused",
     );
 
-    // Organise walk outing (club audience) — pace must not be forced
+    // Organise walk outing — CTA required (point 7: no direct-URL fallback as reachability).
     const organise = page.getByTestId("club-organise-outing-cta");
-    if (await organise.count()) {
-      await organise.click({ force: true });
-    } else {
-      await page.goto(`${BASE}/session/create?audience=club`, {
-        waitUntil: "networkidle",
-      });
+    const organiseVisible = (await organise.count()) > 0;
+    check(
+      "organise_cta_reachable_from_club",
+      organiseVisible,
+      organiseVisible ? "cta present" : "missing club-organise-outing-cta",
+    );
+    if (!organiseVisible) {
+      throw new Error("organise CTA missing — abort outing coverage");
     }
+    await organise.click({ force: true });
     await page.waitForTimeout(1000);
+    check(
+      "organise_nav_reached_create",
+      /session\/create|organiser|Nouvelle/i.test(page.url() + (await page.locator("body").innerText())),
+      page.url(),
+    );
     const walkBtn = page.getByTestId("session-mode-walking");
     if (await walkBtn.count()) {
       await walkBtn.click({ force: true });
@@ -376,12 +406,13 @@ async function main() {
       });
       await page.waitForTimeout(1500);
       const detail = await page.locator("body").innerText();
+      // Point 9: require full logistics (title AND structure AND spot when set), not OR.
       check(
         "member_sees_outing_detail",
-        detail.includes(OUTING_TITLE) ||
-          detail.includes(STRUCTURE) ||
+        detail.includes(OUTING_TITLE) &&
+          detail.includes(STRUCTURE) &&
           detail.includes(SPOT),
-        detail.slice(0, 100),
+        detail.slice(0, 140),
       );
 
       // Join attendance (≠ membership) via sticky CTA
@@ -484,16 +515,44 @@ async function main() {
       city: "Rabat",
       purpose: `Pratiquer le darija en marchant ${TOKEN}.`,
     });
-    check("create_club_b_language_purpose", createdB, CLUB_B);
+    check(
+      "create_club_b_language_purpose",
+      createdB.ok &&
+        createdB.store?.id &&
+        createdB.store.id !== report.ids.clubAId &&
+        createdB.store?.city === "Rabat",
+      JSON.stringify({ id: createdB.store?.id, name: createdB.store?.name }),
+    );
     report.ids.clubBName = CLUB_B;
+    report.ids.clubBId = createdB.store?.id ?? null;
     await page.goto(`${BASE}/club`, { waitUntil: "networkidle" });
     await page.waitForTimeout(1000);
     const hostTwo = await page.locator("body").innerText();
-    const twoClubsUi =
-      (await page.getByTestId("club-switcher").count()) > 0 ||
-      (hostTwo.includes(CLUB_B) &&
-        (hostTwo.includes(CLUB_A_RENAMED) || hostTwo.includes(CLUB_A)));
-    check("two_clubs_host_visible", twoClubsUi || createdB, "host multi-club");
+    const bothNames =
+      hostTwo.includes(CLUB_B) &&
+      (hostTwo.includes(CLUB_A_RENAMED) || hostTwo.includes(CLUB_A));
+    const storeBoth = await page.evaluate(
+      ({ aId, bId }) => {
+        try {
+          const clubs = JSON.parse(localStorage.getItem("mock:clubs") || "{}");
+          return Boolean(clubs[aId] && clubs[bId]);
+        } catch {
+          return false;
+        }
+      },
+      { aId: report.ids.clubAId, bId: report.ids.clubBId },
+    );
+    // Point 7: both clubs required — reject createdB-alone fallback.
+    check(
+      "two_clubs_host_visible",
+      bothNames && storeBoth && Boolean(report.ids.clubAId) && Boolean(report.ids.clubBId),
+      JSON.stringify({
+        bothNames,
+        storeBoth,
+        a: report.ids.clubAId,
+        b: report.ids.clubBId,
+      }),
+    );
     await shot(page, "10-two-clubs");
 
     // Reload persistence
