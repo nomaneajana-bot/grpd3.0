@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-25 (Africa/Casablanca)  
 **Working branch:** `cursor/codex-correction-mission-3184`  
-**Package HEAD:** `c754f9fd4489768216a9ca6114a14f2423c03253`  
+**Package HEAD:** `874ceabc17cdbdd0764eeda94239a6e607d1f88c` (code tip `c754f9f`)  
 **Preserved prior tip:** PR #32 `8196f3172325a7a9834d6f1c55b9bd2739c6c572` (Codex NOT accepted)  
 **Base visual tip:** `origin/cursor/stitch-home-detail-3184` @ `8cbfe83`  
 **Method:** `docs/PROJECT_METHOD.md` · `AGENTS.md`  

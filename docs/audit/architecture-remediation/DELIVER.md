@@ -2,7 +2,9 @@
 
 **Delivered:** 2026-10-25 (Africa/Casablanca)  
 **Branch:** `cursor/codex-correction-mission-3184`  
-**Final candidate SHA:** `c754f9fd4489768216a9ca6114a14f2423c03253` (run `git rev-parse HEAD` to confirm)  
+**Final candidate SHA:** `874ceabc17cdbdd0764eeda94239a6e607d1f88c` (docs/evidence stamp; code tip exercised `c754f9fd4489768216a9ca6114a14f2423c03253`)  
+**Run `git rev-parse HEAD` to confirm tip.**  
+
 **Preserved prior tip:** PR #32 `cursor/architecture-remediation-3184` @ `8196f3172325a7a9834d6f1c55b9bd2739c6c572` (Codex did **not** accept)  
 **Base visual tip:** `origin/cursor/stitch-home-detail-3184` @ `8cbfe83`  
 **PR (correction):** https://github.com/nomaneajana-bot/grpd3.0/pull/33  
