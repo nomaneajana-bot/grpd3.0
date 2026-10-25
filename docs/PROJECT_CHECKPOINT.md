@@ -3,7 +3,7 @@
 **Updated:** 2026-10-25 (Africa/Casablanca)  
 **Working branch:** `cursor/architecture-remediation-3184`  
 **Base visual tip:** `origin/cursor/stitch-home-detail-3184` @ `8cbfe83` (Stito Accueil + Détail + `/demo`)  
-**Remediation tip (code):** `6ffbcbc` (+ docs/evidence follow-ups)  
+**Remediation tip:** `5ad1f7c` (docs/evidence) · **API tested_sha:** `6ffbcbc`  
 **Prior blueprint-only tip (avenir tree):** `69f0ecb` / audited `3ba6775` — **not an ancestor of Stito tip**; does **not** cover later demo/Stito  
 **Method:** `docs/PROJECT_METHOD.md` · `AGENTS.md`  
 **Workflow preserved:** inventory → product rules → canonical issue register → bounded journey implementation/testing → independent Codex review
