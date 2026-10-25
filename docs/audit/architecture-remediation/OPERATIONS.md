@@ -39,6 +39,10 @@ Within each batch: record scope/issue IDs → implement → meaningful checks �
 
 See `BATCH_REGISTER.md` — each batch keeps `tested_sha` inside its evidence JSON. Do not equate demo PASS with hosted/UAT.
 
+## DELIVER
+
+See `DELIVER.md` — package HEAD, environments, before/after, blockers, STOP.
+
 ## Tip
 
-Branch `cursor/architecture-remediation-3184` · see latest `git rev-parse HEAD`.
+Branch `cursor/architecture-remediation-3184` · `cbdaadf` lineage · see `git rev-parse HEAD` after deliver commit.

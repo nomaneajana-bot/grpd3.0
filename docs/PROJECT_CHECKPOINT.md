@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-25 (Africa/Casablanca)  
 **Working branch:** `cursor/architecture-remediation-3184`  
-**Package HEAD:** `0c6b9813377c75b2aefba929d89a1314e142060b` (`0c6b981`) — `DELIVER.md`  
+**Package HEAD:** `git rev-parse HEAD` on this branch — see `DELIVER.md`  
 **Base visual tip:** `origin/cursor/stitch-home-detail-3184` @ `8cbfe83` (Stito Accueil + Détail + `/demo`)  
 **Prior blueprint-only tip (avenir tree):** `3ba6775` — **not an ancestor of Stito tip**  
 **Method:** `docs/PROJECT_METHOD.md` · `AGENTS.md`  
