@@ -9,7 +9,7 @@
 | Photo de profil | **Deferred / unsupported** | None (`showChevron={false}`) | Source retained; value states non-modifiable |
 | Langue | **Implemented** | Toggle fr↔en → `saveSettingsPreferences` | Already-supported store |
 | Unités | **Implemented** | Toggle km↔mi → `saveSettingsPreferences` | Already-supported store |
-| Notification toggles (4) | **Implemented (local prefs only)** | Persist locally | Caption: no push delivery — see notifications decision |
+| Notification toggles (4) | **Implemented (local prefs only)** | Persist locally | Caption: no push delivery — see `NOTIFICATIONS.md` / D4 |
 | Partager PR / stats | **Implemented** | Toggles + PR sync where applicable | Retained privacy controls |
 | Politique inter-groupes | **Implemented** (if member) | Navigates to club settings | Non-member: display-only hint |
 | Quitter le club | **Implemented** | Real `leaveClub` + confirm | Approved deliverable — **kept** |
