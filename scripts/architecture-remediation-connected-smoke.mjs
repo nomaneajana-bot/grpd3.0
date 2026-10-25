@@ -158,6 +158,16 @@ try {
     logoutJson?.data?.serverRevocation === "not_applicable_stateless_jwt",
     "honest revocation semantics",
   );
+  // Prove no server-side denylist: same Bearer still authorizes after logout ack.
+  const postLogout = await invoke("POST", "/api/v1/auth/logout", {
+    token,
+    body: {},
+  });
+  check(
+    "logout_token_still_valid_until_client_discard",
+    postLogout.statusCode === 200,
+    postLogout.statusCode,
+  );
 
   const unauthPatch = await invoke("PATCH", `/api/v1/clubs/${club.id}`, {
     body: { name: "Nope" },

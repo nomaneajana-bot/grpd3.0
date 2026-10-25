@@ -11,9 +11,10 @@
 | Manifest | `docs/audit/architecture-remediation/connected-evidence.json` |
 | Artifact | `/opt/cursor/artifacts/architecture-remediation-connected-smoke.json` |
 | Environment | `local_postgres_integration` |
-| Result | **15 PASS / 0 FAIL** |
+| Result | **16 PASS / 0 FAIL** |
 | Hosted claim | false |
-| Covers | logout authz + stateless ack; club PATCH authz/persist; member-group authz/persist/reload; unrelated club preserved |
+| Covers | logout authz + stateless ack + post-logout token still valid (no denylist); club PATCH; member-group persist/reload; unrelated club preserved |
+| Semantics | `LOGOUT_SEMANTICS.md` · `SETTINGS_DISPOSITION.md` |
 
 ## Demo web
 

@@ -327,10 +327,10 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 |-------|-------|
 | Route / journey | Settings → logout → phone/relogin |
 | Expected meaning | Local session+caches cleared; connected calls `/auth/logout`; never claim global revoke if only local; demo stays mock |
-| Observed behavior | `performLogout` + `POST /api/v1/auth/logout` (stateless JWT ack) + settings wiring; local PG smoke confirms 401 unauth + honest `not_applicable_stateless_jwt` |
+| Observed behavior | `performLogout` clears auth + login/onboarding + focused club + joined-session keys; connected `POST /auth/logout` ack; demo/mock never fetch live; failure Alert honest; token still valid post-ack until client discard (16/16 local PG incl. denylist proof) |
 | Capability | IMPLEMENTED (local + server ack); global denylist **NOT IMPLEMENTED** (honest copy) |
 | Owner | Cursor |
-| Evidence | `docs/audit/architecture-remediation/connected-evidence.json` |
+| Evidence | `docs/audit/architecture-remediation/LOGOUT_SEMANTICS.md` · `connected-evidence.json` |
 | Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-017 — P1 — FIXED AWAITING RETEST (settings honesty)

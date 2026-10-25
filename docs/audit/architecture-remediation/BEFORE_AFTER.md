@@ -8,7 +8,7 @@
 | Gap (report / inventory) | Before (stitch tip) | After (this package) | Verification |
 |---|---|---|---|
 | Connected vs mock contract | Mode resolver existed; blueprint still avenir-stale | D1–D2 recorded; inventory refreshed | Docs + `lib/api/mode.ts` |
-| `POST /auth/logout` | Client mock only; settings local clear | Route + dispatch + `performLogout` honesty | Connected smoke logout_* PASS |
+| `POST /auth/logout` | Client mock only; settings local clear | Route + dispatch + `performLogout`; JWT denylist **not** faked; demo isolated | Connected smoke logout_* 16/16 · `LOGOUT_SEMANTICS.md` |
 | Settings language/units | Supported store; UI stubs/alerts on older trees | Toggle rows persist prefs | See `SETTINGS_DISPOSITION.md` |
 | Settings legal/photo/support | Interactive fake / “Bientôt” toasts | Non-interactive **Hors MVP**; source retained; leave-club kept | `SETTINGS_DISPOSITION.md` · demo UI smoke deferred |
 | Notifications copy | Implied push-capable | Local prefs + no push claim | Code + awaiting demo smoke |

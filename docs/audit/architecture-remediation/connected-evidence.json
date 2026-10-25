@@ -1,12 +1,12 @@
 {
   "batch": "architecture-remediation-connected",
-  "tested_sha": "6ffbcbc7c081508d4cf8e20f53c7044c101b5d1b",
+  "tested_sha": "d6eaf4e8102e10b12284700d1d4a67205293285c",
   "environment": "local_postgres_integration",
   "hosted_claim": false,
   "native_claim": false,
   "uat_claim": false,
   "summary": {
-    "pass": 15,
+    "pass": 16,
     "fail": 0
   },
   "checks": [
@@ -31,6 +31,11 @@
       "detail": "honest revocation semantics"
     },
     {
+      "id": "logout_token_still_valid_until_client_discard",
+      "ok": true,
+      "detail": "200"
+    },
+    {
       "id": "patch_requires_auth",
       "ok": true,
       "detail": "401"
@@ -53,7 +58,7 @@
     {
       "id": "patch_persisted",
       "ok": true,
-      "detail": "Arch Renamed arch_mvo63mm6"
+      "detail": "Arch Renamed arch_mvo69oxu"
     },
     {
       "id": "member_group_requires_auth",

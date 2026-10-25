@@ -291,17 +291,23 @@ export default function SettingsScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const outcome = await performLogout();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Only when server call failed: local clear succeeded; do not claim global revoke.
       if (outcome.server === "failed") {
         Alert.alert("Déconnexion", outcome.userMessage);
       }
       router.replace("/(auth)/phone");
     } catch (error) {
       console.warn("Logout failed:", error);
+      // Last-resort local clear if orchestration threw mid-flight.
       try {
         await clearAuthData();
       } catch {
         /* ignore */
       }
+      Alert.alert(
+        "Déconnexion",
+        "Session effacée sur cet appareil. La révocation serveur n'a pas pu être confirmée.",
+      );
       router.replace("/(auth)/phone");
     } finally {
       setIsLoggingOut(false);

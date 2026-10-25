@@ -13,7 +13,7 @@ These are **working decisions** for this remediation package — not OCIF approv
 | D2 | Never silently fall back to mock on network/auth failure | ACTIVE (`lib/api/mode.ts` already enforces) |
 | D3 | Settings: implement language/units persistence already supported; remove misleading interactive stubs for unsupported rows (no eight fake toasts); retain source + document disposition — see `SETTINGS_DISPOSITION.md` | ACTIVE |
 | D4 | Notifications copy must not imply delivered push; local prefs only | ACTIVE |
-| D5 | Logout: always clear local session/caches; connected calls server logout; honest messaging if only local cleared | ACTIVE |
+| D5 | Logout: always clear local session/caches; connected calls server logout; honest messaging if only local cleared; JWT has no denylist — see `LOGOUT_SEMANTICS.md` | ACTIVE |
 | D6 | Demo logout stays on mock transport; never hits live services | ACTIVE |
 | D7 | `/profile/test-history` already redirects (Entraînement avancé removed) — keep deferred deep-link redirect | DEFERRED safe |
 | D8 | `/run/setup` — no in-repo connected `/runs` routes; keep deep-link with honest deferred/connected guard; not primary nav | DEFERRED / BLOCKED connected |

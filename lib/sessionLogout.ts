@@ -1,14 +1,26 @@
 /**
  * Logout orchestration — local clear always; connected server call when applicable.
  * Never claims global revocation for stateless JWT beyond "server acknowledged".
+ *
+ * Token invalidation semantics (connected HS256 JWT):
+ * - Server POST /auth/logout requires a valid Bearer and returns
+ *   `serverRevocation: "not_applicable_stateless_jwt"`.
+ * - There is no refresh-token denylist; a previously issued access token remains
+ *   cryptographically valid until expiry. Security relies on the client discarding
+ *   tokens (clearAuthData). Do not tell the user the server globally revoked.
+ * - Demo / mock logout uses mockApiRequest only (never live fetch).
  */
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { createApiClient, logout as apiLogout } from "@/lib/api";
 import {
   clearAuthData,
   getAuthData,
+  getAuthUser,
   getDeviceId,
 } from "@/lib/authStore";
 import { DEMO_MODE } from "@/lib/featureFlags";
+import { setFocusedClubId } from "@/lib/focusedClubStore";
 import { clearLoginOtpRequest, clearLoginPhone } from "@/lib/loginFlowStore";
 import { clearOnboardingState } from "@/lib/onboardingStore";
 import { resolveApiTransport } from "@/lib/api/mode";
@@ -20,8 +32,18 @@ export type LogoutOutcome = {
   userMessage: string;
 };
 
+/** Session / identity caches cleared on every logout path (best-effort). */
 async function clearUserLocalCaches(): Promise<void> {
+  // Capture userId before auth wipe for per-user joined-session key.
+  let userId: string | null = null;
+  try {
+    userId = (await getAuthUser())?.id ?? null;
+  } catch {
+    /* ignore */
+  }
+
   await clearAuthData();
+
   try {
     await clearLoginPhone();
   } catch {
@@ -34,6 +56,20 @@ async function clearUserLocalCaches(): Promise<void> {
   }
   try {
     await clearOnboardingState();
+  } catch {
+    /* ignore */
+  }
+  try {
+    await setFocusedClubId(null);
+  } catch {
+    /* ignore */
+  }
+  try {
+    // Legacy unscoped key + current user bucket (account isolation).
+    await AsyncStorage.removeItem("joinedSessions:v1");
+    if (userId) {
+      await AsyncStorage.removeItem(`joinedSessions:v1:${userId}`);
+    }
   } catch {
     /* ignore */
   }
