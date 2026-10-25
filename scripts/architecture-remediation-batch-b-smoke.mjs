@@ -174,19 +174,46 @@ async function logoutViaSettings(page) {
 }
 
 async function main() {
-  // Source-level: DEMO OTP gated
+  // Source-level: DEMO OTP gated — must NEVER authenticate when DEMO_MODE is false
   const mockSrc = fs.readFileSync("/workspace/lib/api/mock.ts", "utf8");
   check(
     "demo_otp_gated_in_source",
-    /DEMO_MODE\s*&&\s*input\.code\s*===\s*DEMO_OTP_CODE/.test(mockSrc) ||
-      /demoCodeOk\s*=\s*DEMO_MODE\s*&&/.test(mockSrc),
-    "mockOtpVerify requires DEMO_MODE",
+    /demoCodeOk\s*=\s*DEMO_MODE\s*&&\s*input\.code\s*===\s*DEMO_OTP_CODE/.test(
+      mockSrc,
+    ),
+    "mockOtpVerify requires DEMO_MODE && DEMO_OTP_CODE",
+  );
+  check(
+    "demo_otp_not_unconditional",
+    !/demoCodeOk\s*=\s*input\.code\s*===\s*DEMO_OTP_CODE\s*;/.test(mockSrc) &&
+      !/if\s*\(\s*input\.code\s*===\s*DEMO_OTP_CODE\s*\)/.test(mockSrc),
+    "000000 alone is not enough without DEMO_MODE",
   );
   const flagsSrc = fs.readFileSync("/workspace/lib/featureFlags.ts", "utf8");
   check(
     "demo_otp_constant_documented",
-    /DEMO_OTP_CODE\s*=\s*"000000"/.test(flagsSrc),
-    "000000 constant",
+    /DEMO_OTP_CODE\s*=\s*"000000"/.test(flagsSrc) &&
+      /OTP accepted for any phone when DEMO_MODE is on/.test(flagsSrc),
+    "000000 DEMO_MODE-only comment",
+  );
+  const settingsSrc = fs.readFileSync(
+    "/workspace/app/profile/settings.tsx",
+    "utf8",
+  );
+  check(
+    "settings_wires_performLogout",
+    /performLogout/.test(settingsSrc) &&
+      /handleLogout/.test(settingsSrc) &&
+      /onPress=\{\(\)\s*=>\s*void handleLogout\(\)\}/.test(settingsSrc),
+    "real logout handler, not stub",
+  );
+  const logoutSrc = fs.readFileSync("/workspace/lib/sessionLogout.ts", "utf8");
+  check(
+    "logout_clears_auth_and_caches",
+    /clearAuthData/.test(logoutSrc) &&
+      /clearOnboardingState/.test(logoutSrc) &&
+      /joinedSessions/.test(logoutSrc),
+    "truthful local clear",
   );
 
   const browser = await chromium.launch({ headless: true });
