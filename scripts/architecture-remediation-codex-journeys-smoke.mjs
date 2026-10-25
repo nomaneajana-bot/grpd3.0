@@ -743,15 +743,24 @@ async function main() {
 
     // Hit-testing: login again, Clubs tab must be visible + clickable
     await login(page, HOST);
-    const tabClubs = page.getByText(/^Clubs$/i).first();
-    const box = await tabClubs.boundingBox();
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(1000);
+    const tabClubs =
+      page.getByRole("tab", { name: /^Clubs$/i }).first();
+    const tabClubsFallback = page.getByText(/^Clubs$/i).last();
+    let box = await tabClubs.boundingBox().catch(() => null);
+    let target = tabClubs;
+    if (!box) {
+      box = await tabClubsFallback.boundingBox().catch(() => null);
+      target = tabClubsFallback;
+    }
     check(
       "p11_clubs_tab_hit_target",
       Boolean(box) && box.width >= 24 && box.height >= 24,
-      box ? JSON.stringify(box) : "null boundingBox",
+      box ? JSON.stringify(box) : `url=${page.url()}`,
     );
     if (box) {
-      await tabClubs.click({ force: false, timeout: 10000 });
+      await target.click({ force: false, timeout: 10000 });
       await page.waitForTimeout(900);
       check(
         "p11_clubs_tab_click_navigates",
@@ -762,6 +771,7 @@ async function main() {
         page.url(),
       );
     } else {
+      // Direct route is not a substitute for tab hit-testing — fail clearly.
       check("p11_clubs_tab_click_navigates", false, "no hit target");
     }
     await shot(page, "07-auth-gate");
