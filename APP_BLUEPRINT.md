@@ -3,7 +3,7 @@
 **Status:** Authoritative product-architecture reference for this repository.  
 **Codebase snapshot (initial audit):** git `3ba6775` (avenir-only — incomplete vs Stito/demo; **not an ancestor of the Stito tip**).  
 **Remediation base:** `cursor/architecture-remediation-3184` ← `cursor/stitch-home-detail-3184` @ `8cbfe83` (preserves Accueil/Détail Stito + `/demo`).  
-**Batch E reconciled tip:** `697bfe9` on `cursor/architecture-remediation-3184` (docs stamped 2026-10-25 Africa/Casablanca).  
+**Batch E reconciled tip:** branch `cursor/architecture-remediation-3184` HEAD (docs stamped 2026-10-25 Africa/Casablanca).  
 **Working decisions:** `docs/audit/architecture-remediation/WORKING_DECISIONS.md` (**not OCIF**).  
 **API inventory:** `docs/audit/architecture-remediation/CLIENT_API_INVENTORY.md`  
 **Canonical issue register (one):** `docs/product/ISSUE_REGISTER.md` — do not create a second register.  
