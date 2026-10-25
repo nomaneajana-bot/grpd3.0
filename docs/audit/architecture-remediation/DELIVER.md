@@ -2,8 +2,8 @@
 
 **Delivered:** 2026-10-25 (Africa/Casablanca)  
 **Branch:** `cursor/codex-correction-mission-3184`  
-**Final candidate SHA:** `874ceabc17cdbdd0764eeda94239a6e607d1f88c` (docs/evidence stamp; code tip exercised `c754f9fd4489768216a9ca6114a14f2423c03253`)  
-**Run `git rev-parse HEAD` to confirm tip.**  
+**Code tip (suites):** `c754f9fd4489768216a9ca6114a14f2423c03253`  
+**Package tip (this DELIVER + evidence):** branch HEAD — confirm with `git rev-parse HEAD` (stamp commits may follow).  
 
 **Preserved prior tip:** PR #32 `cursor/architecture-remediation-3184` @ `8196f3172325a7a9834d6f1c55b9bd2739c6c572` (Codex did **not** accept)  
 **Base visual tip:** `origin/cursor/stitch-home-detail-3184` @ `8cbfe83`  
