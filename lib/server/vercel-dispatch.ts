@@ -3,7 +3,9 @@
 
 import * as routeModule0 from "../../app/api/v1/health/route";
 import * as routeModuleAuthPinLogin from "../../app/api/v1/auth/pin/login/route";
+import * as routeModuleAuthLogout from "../../app/api/v1/auth/logout/route";
 import * as routeModule1 from "../../app/api/v1/clubs/route";
+import * as routeModuleMemberGroup from "../../app/api/v1/clubs/[id]/member-group/route";
 import * as routeModule2 from "../../app/api/v1/clubs/resolve/route";
 import * as routeModule3 from "../../app/api/v1/clubs/join/route";
 import * as routeModule4 from "../../app/api/v1/clubs/join-by-code/route";
@@ -57,6 +59,7 @@ function staticRoute(
 const STATIC_ROUTES: Record<string, RouteMatch> = Object.fromEntries([
   staticRoute("health", async () => routeModule0),
   staticRoute("auth/pin/login", async () => routeModuleAuthPinLogin),
+  staticRoute("auth/logout", async () => routeModuleAuthLogout),
   staticRoute("clubs", async () => routeModule1),
   staticRoute("clubs/resolve", async () => routeModule2),
   staticRoute("clubs/join", async () => routeModule3),
@@ -116,6 +119,12 @@ function matchDynamicRoute(segments: string[]): RouteMatch | null {
   if (a === "clubs" && b && c === "cancel-request") {
     return {
       load: asRouteModule(async () => routeModule16),
+      params: { id: b },
+    };
+  }
+  if (a === "clubs" && b && c === "member-group") {
+    return {
+      load: asRouteModule(async () => routeModuleMemberGroup),
       params: { id: b },
     };
   }

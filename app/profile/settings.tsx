@@ -40,6 +40,7 @@ import {
   saveRunnerProfile,
   type RunnerProfile,
 } from "@/lib/profileStore";
+import { performLogout } from "@/lib/sessionLogout";
 import {
   getSettingsPreferences,
   saveSettingsPreferences,
@@ -252,6 +253,30 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleLanguagePress = async () => {
+    const next = language === "fr" ? "en" : "fr";
+    setLanguage(next);
+    try {
+      await saveSettingsPreferences({ language: next });
+      Haptics.selectionAsync();
+    } catch (error) {
+      console.warn("Failed to save language:", error);
+      setLanguage(language);
+    }
+  };
+
+  const handleUnitsPress = async () => {
+    const next = units === "km" ? "mi" : "km";
+    setUnits(next);
+    try {
+      await saveSettingsPreferences({ units: next });
+      Haptics.selectionAsync();
+    } catch (error) {
+      console.warn("Failed to save units:", error);
+      setUnits(units);
+    }
+  };
+
   const handleLogout = async () => {
     const ok = await confirmAction({
       title: "Déconnexion",
@@ -264,11 +289,25 @@ export default function SettingsScreen() {
     setIsLoggingOut(true);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      await clearAuthData();
+      const outcome = await performLogout();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Only when server call failed: local clear succeeded; do not claim global revoke.
+      if (outcome.server === "failed") {
+        Alert.alert("Déconnexion", outcome.userMessage);
+      }
       router.replace("/(auth)/phone");
     } catch (error) {
       console.warn("Logout failed:", error);
+      // Last-resort local clear if orchestration threw mid-flight.
+      try {
+        await clearAuthData();
+      } catch {
+        /* ignore */
+      }
+      Alert.alert(
+        "Déconnexion",
+        "Session effacée sur cet appareil. La révocation serveur n'a pas pu être confirmée.",
+      );
       router.replace("/(auth)/phone");
     } finally {
       setIsLoggingOut(false);
@@ -340,10 +379,11 @@ export default function SettingsScreen() {
             }
             showChevron={false}
           />
+          {/* Photo upload unsupported in MVP — display-only, not interactive */}
           <SettingsNavRow
             title="Photo de profil"
-            value={`Initiale ${profileInitial}`}
-            comingSoon
+            value={`Initiale ${profileInitial} · non modifiable`}
+            showChevron={false}
           />
         </SettingsGroup>
 
@@ -352,19 +392,20 @@ export default function SettingsScreen() {
           <SettingsNavRow
             title="Langue"
             value={LANGUAGE_LABELS[language]}
-            comingSoon
+            onPress={() => void handleLanguagePress()}
           />
           <SettingsNavRow
             title="Unités"
             value={UNITS_LABELS[units]}
-            comingSoon
+            onPress={() => void handleUnitsPress()}
           />
         </SettingsGroup>
 
         <SettingsSectionLabel
           subtitle={
             <Text style={styles.notificationsCaption}>
-              Ce qui te parvient en notification push.
+              Préférences enregistrées sur cet appareil uniquement. Aucune
+              notification push n&apos;est délivrée pour l&apos;instant.
             </Text>
           }
         >
@@ -437,7 +478,8 @@ export default function SettingsScreen() {
           ) : (
             <SettingsNavRow
               title="Politique d'accès inter-groupes"
-              comingSoon
+              value="Rejoins un club d'abord"
+              showChevron={false}
             />
           )}
           <SettingsNavRow
@@ -449,9 +491,22 @@ export default function SettingsScreen() {
 
         <SettingsSectionLabel>À PROPOS</SettingsSectionLabel>
         <SettingsGroup>
-          <SettingsNavRow title="Conditions d'utilisation" comingSoon />
-          <SettingsNavRow title="Confidentialité" comingSoon />
-          <SettingsNavRow title="Contacter le support" comingSoon />
+          {/* Legal / support docs not shipped — non-interactive disposition */}
+          <SettingsNavRow
+            title="Conditions d'utilisation"
+            value="Hors MVP"
+            showChevron={false}
+          />
+          <SettingsNavRow
+            title="Confidentialité"
+            value="Hors MVP"
+            showChevron={false}
+          />
+          <SettingsNavRow
+            title="Contacter le support"
+            value="Hors MVP"
+            showChevron={false}
+          />
           <SettingsNavRow
             title="Version"
             value={versionLabel}

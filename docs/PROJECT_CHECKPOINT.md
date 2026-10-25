@@ -1,31 +1,41 @@
 # GRPD Project Checkpoint
 
-**Updated:** 2026-10-19  
-**Working branch:** `cursor/outing-detail-light-fix-3184` (PR #20)  
-**Outing-detail tested SHA:** `b2d323d6215f903cd4dab6ef2c17ddc39ee2a621` · **docs tip:** `6d5838d223e2b3b08d11cf8be5daa61b08dbd62a`  
-**Stitch six light refs:** copy-only from `origin/codex/stitch-six-reference-20261019` @ `64dc1d12a5742389a2bd1cdc22e8a83785a7f851` → `docs/design-reference/stitch-six-2026-10-17/`  
-**Outing-detail canonical PNG:** `.../grpd_d_tail_de_la_sortie_avant_inscription/screen.png`  
-**Handoff:** `docs/design-reference/stitch-six-2026-10-17/REVIEW_AND_HANDOFF.md`  
-**Base stack:** preserves Mes Sorties + homepage Accueil · **not** dark `renders/11`  
-**Method:** Adopted — see `docs/PROJECT_METHOD.md`
+**Updated:** 2026-10-25 (Africa/Casablanca)  
+**Working branch:** `cursor/architecture-remediation-3184`  
+**Package HEAD:** `git rev-parse HEAD` on this branch — see `DELIVER.md`  
+**Base visual tip:** `origin/cursor/stitch-home-detail-3184` @ `8cbfe83` (Stito Accueil + Détail + `/demo`)  
+**Prior blueprint-only tip (avenir tree):** `3ba6775` — **not an ancestor of Stito tip**  
+**Method:** `docs/PROJECT_METHOD.md` · `AGENTS.md`  
+**Workflow:** inventory → rules → issue register → bounded batches → **independent Codex review**
 
 ## Current phase
 
-**OUTING DETAIL vs Stitch six light — STOP for Codex re-review.**
-
-Bounded outing-detail correction only (contrast, compact no-photo hero, pace wrap, toast, French nav, Rejoindre CTA).  
-Join/cancel semantics unchanged. Homepage + Mes Sorties preserved. Demo/web only.
+**Architecture remediation — DELIVERED · STOP for Codex.**  
+Not production. Not OCIF. Not “everything fixed.”
 
 ### Exact next action
 
-1. **STOP — Codex** visual re-review against `grpd_d_tail_de_la_sortie_avant_inscription/screen.png` (+ handoff corrections).  
-2. No other screens (Organise / Clubs / Create / Invitations / Profile).  
-3. No merge / production / env / security / billing.
+1. **Codex independent review** of `docs/audit/architecture-remediation/` + tip.  
+2. No additional features / no production promotion from this agent on this package.  
+3. Hosted Preview (ISSUE-004/008) remains **BLOCKED** until authorized env.
+
+## Package deliverable
+
+`docs/audit/architecture-remediation/DELIVER.md`
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
-| Demo outing detail | **FIXED AWAITING RETEST** — smoke 34/34 · tip in evidence.json |
-| Demo Accueil / Mes Sorties | Preserved · FIXED AWAITING RETEST |
-| Hosted / native / UAT | Not claimed |
+| Demo Batch B | **19/19** @ `2f4f8cc` |
+| Demo Batch C | **19/19** |
+| Demo Batch D | **23/23** |
+| Demo VERIFICATION | **17/17** |
+| Orphans / avenir / notifications | **12 / 15 / 14** |
+| Connected local PG | **16/16** |
+| Integration PG + JWT | **22 + 11** |
+| Hosted / native / UAT | **Hosted BLOCKED** · native/UAT **not claimed** |
+
+## Issue IDs this package (FIXED AWAITING RETEST)
+
+ISSUE-007, ISSUE-016, ISSUE-017, ISSUE-018, ISSUE-019 → Codex.

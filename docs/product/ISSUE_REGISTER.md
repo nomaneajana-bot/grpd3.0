@@ -1,5 +1,6 @@
 # Issue Register (canonical)
 
+**Architecture remediation tip (FIXED AWAITING RETEST — DELIVERED · STOP for Codex):** branch `cursor/architecture-remediation-3184` (PR #32) · package `DELIVER.md` · base Stito `8cbfe83` · evidence `docs/audit/architecture-remediation/` · B 19/19 · C 19/19 · D 23/23 · connected 16/16 · VERIFICATION 17/17 · **not** avenir-only `3ba6775` · **this file is the only issue register** · **no OCIF / no everything-fixed**  
 **Outing detail light-fix tip (FIXED AWAITING RETEST — STOP Codex):** branch `cursor/outing-detail-light-fix-3184` (PR #20) · evidence `docs/audit/outing-detail-stito/` · smoke **34/34** · **demo web only** · canonical ref `docs/design-reference/stitch-six-2026-10-17/.../grpd_d_tail_de_la_sortie_avant_inscription/screen.png` from `64dc1d1` — **not** dark `renders/11`  
 **Prior rejected outing tip:** `2c1b981` / `e75122a` (PR #19) — ISSUE-015 **NOT accepted visually** (white-on-white / empty hero / pace / toast)  
 **Mes Sorties Stito tip (FIXED AWAITING RETEST):** PR #19 stack · preserved under PR #20  
@@ -112,17 +113,18 @@
 | Next action | Later batch; confirm if differentiation required; else remove dead ternary |
 | Status | **NOT CHECKED** |
 
-### ISSUE-007 — P2 — NOT CHECKED
+### ISSUE-007 — P2 — FIXED AWAITING RETEST (architecture remediation)
 | Field | Value |
 |-------|-------|
-| Route / journey | `/run/setup`, `/profile/test-history` |
-| Expected meaning | Reachable product surfaces or intentionally removed |
-| Observed behavior | Orphan screens — no inbound navigation found |
-| Capability | PARTIAL / unclear |
-| Owner | Nouamane |
-| Evidence | Inventory orphans |
-| Next action | Decide keep+link, hide, or delete in a later batch |
-| Status | **NOT CHECKED** |
+| Route / journey | `/run/setup`, `/profile/test-history`, `/club/group-edit` |
+| Expected meaning | Orphans disposed without inventing activity/coaching scope; group-edit params preserved |
+| Observed behavior | Scope check: neither test-history nor run/setup completes shipped MVP without new deps → deferred. `test-history` → profile; `run/setup` deep-link + connected honesty (`run-setup-deferred`); `group-edit` → `group-create?clubId&groupId` |
+| Capability | DEFERRED (safe deep-link) / NOT IMPLEMENTED connected runs / KEEP group-edit redirect |
+| Owner | Cursor |
+| Candidate SHA / env | `cursor/architecture-remediation-3184` · demo |
+| Evidence | `ORPHANS.md` · `orphans-evidence.json` **12/12** · `BATCH_D.md` · `WORKING_DECISIONS.md` D7–D9 |
+| Next action | Codex review disposition |
+| Status | **FIXED AWAITING RETEST** |
 
 ### ISSUE-008 — P2 — BLOCKED (hosted env/creds)
 | Field | Value |
@@ -321,19 +323,62 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 
 ---
 
+### ISSUE-016 — P1 — FIXED AWAITING RETEST (logout honesty + Batch B auth)
+| Field | Value |
+|-------|-------|
+| Route / journey | Onboarding entry → phone/OTP → home → settings logout → relogin (+ isolation) |
+| Expected meaning | Truthful auth states; retry on bad OTP; account isolation; demo OTP ≠ prod; local clear + connected logout ack |
+| Observed behavior | Demo UI **19/19** handlers; wrong OTP rejected; A/B isolation; `performLogout` wired; connected logout_* in PG **16/16**; `000000` requires `DEMO_MODE` |
+| Capability | IMPLEMENTED (demo UI + local PG); global denylist **NOT IMPLEMENTED** (honest); hosted **NOT claimed** |
+| Owner | Cursor |
+| Evidence | `BATCH_B.md` · `batch-b-evidence.json` **19/19** @ `2f4f8cc` · `LOGOUT_SEMANTICS.md` · `connected-evidence.json` |
+| Status | **FIXED AWAITING RETEST** |
+
+### ISSUE-017 — P1 — FIXED AWAITING RETEST (settings honesty + notifications D4)
+| Field | Value |
+|-------|-------|
+| Route / journey | `/profile/settings` (+ onboarding permissions copy) |
+| Expected meaning | Language/units persist; no fake interactive stubs; notifications describe local prefs only — no implied push delivery |
+| Observed behavior | Settings caption denies push; toggles persist `grpd_settings_prefs_v1`; onboarding subtitle states push not active; devices API missing connected |
+| Capability | IMPLEMENTED (local prefs) · push delivery **DEFERRED/BLOCKED** · phone-edit/photo/legal CMS **Hors MVP** |
+| Owner | Cursor |
+| Evidence | `NOTIFICATIONS.md` · `notifications-evidence.json` **14/14** · `SETTINGS_DISPOSITION.md` · Batch D |
+| Status | **FIXED AWAITING RETEST** |
+
+### ISSUE-018 — P1 — FIXED AWAITING RETEST (club PATCH + member-group)
+| Field | Value |
+|-------|-------|
+| Route / journey | Club settings save · group assign |
+| Expected meaning | Connected PATCH `/clubs/:id` + PUT `/clubs/:id/member-group` with authz |
+| Observed behavior | Routes + dispatch + `homeGroupId` migration; local PG smoke 15/15 (PATCH + member-group authz/persist/reload) |
+| Capability | IMPLEMENTED (local API); hosted **not** verified |
+| Owner | Cursor |
+| Evidence | `docs/audit/architecture-remediation/connected-evidence.json` |
+| Status | **FIXED AWAITING RETEST** |
+
+### ISSUE-019 — P2 — FIXED AWAITING RETEST (avenir enter CTA)
+| Field | Value |
+|-------|-------|
+| Route / journey | `/avenir` deep link |
+| Expected meaning | Vision page may stay marketing; working enter/return CTA respects auth (+ demo → `/demo`); no tab |
+| Observed behavior | Public deep link; CTA signed-in « Retour à l'accueil » → tabs; unsigned demo → `/demo`→tabs; no avenir tab |
+| Capability | IMPLEMENTED |
+| Owner | Cursor |
+| Evidence | `AVENIR.md` · `avenir-evidence.json` **15/15** · D10 |
+| Status | **FIXED AWAITING RETEST** |
+
+---
+
 ## Ranked remaining MVP gaps (from this register)
 
 | Rank | Issue | Why next / not next |
 |------|-------|---------------------|
-| — | **ISSUE-015 outing detail** | **STOP — Codex review now** (blocks Organise/Clubs/Create/Invitations/Profile visual port) |
-| — | ISSUE-013 / 014 Accueil + Mes Sorties | FIXED AWAITING RETEST — Codex with or after 015 |
-| 1 | ISSUE-004 hosted VERIFIED | Code+PG done; needs authorized Preview/Test |
-| 2 | ISSUE-008 hosted multi-context | Needs hosted creds (SSO today) |
-| 3 | ISSUE-012 keyboard open note | Keep open; harness_limitation |
-| 4 | ISSUE-006 dead social ternary | P2 after Nouamane |
-| 5 | ISSUE-007 orphans | P2 product decision |
-| 6 | ISSUE-009 lifecycle | NOT IMPLEMENTED |
-| — | Unresolved rules | Creator auto-attendance; public+club; admin-transfer UX |
+| — | **Architecture remediation package** | **STOP for Codex** after evidence on this branch |
+| 1 | ISSUE-004 / 008 hosted | Still BLOCKED without Preview auth |
+| 2 | ISSUE-016–019 | FIXED AWAITING RETEST — this package |
+| 3 | ISSUE-012 keyboard | Keep open |
+| 4 | ISSUE-006 / 009 | Deferred / NOT IMPLEMENTED |
+| — | Runs connected / push / coach remote | **BLOCKED/DEFERRED** by working decisions |
 
 ---
 
@@ -341,9 +386,9 @@ Preview `302 → vercel.com/sso-api`. Exact deployed SHA unread. Dual isolated b
 
 | Status | Count |
 |--------|------:|
-| VERIFIED (demo) | 7 (001, 002, 003, 005, 010 privacy, 010 participation, 011) |
-| FIXED AWAITING RETEST | 5 (004 hosted; 013 Accueil; 014 Mes Sorties; 015 outing detail; Batch A create) |
+| VERIFIED (demo) | 7 (001, 002, 003, 005, 010 privacy, 010 participation, 011) + 012 Tab |
+| FIXED AWAITING RETEST | 9 (004 hosted; 007 orphans; 013 Accueil; 014 Mes Sorties; 015 outing detail; 016 logout; 017 settings; 018 club PATCH/member-group; 019 avenir) + Batch A create |
 | FAILED | 0 |
-| NOT CHECKED | 3 (006, 007, 009) |
+| NOT CHECKED | 2 (006, 009) |
 | BLOCKED | 1 (008) |
-| OPEN (note) | 1 (012 keyboard) |
+| OPEN (note) | 012 full a11y remains open beyond Tab order |

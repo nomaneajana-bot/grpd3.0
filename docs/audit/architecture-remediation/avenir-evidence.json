@@ -1,0 +1,96 @@
+{
+  "batch": "architecture-remediation-avenir",
+  "issue_ids": [
+    "ISSUE-019",
+    "D10"
+  ],
+  "tested_sha": "1e9e98a03e1bbec42e1bf96e164270e2ada77ed2",
+  "environment": "demo",
+  "hosted_claim": false,
+  "forced_tab_addition": false,
+  "notes": {
+    "logged_out_demo_path": "Unsigned CTA → /demo (enterDemoHomeSession) → tabs. Non-demo unsigned → onboarding. Signed-in → /(tabs)."
+  },
+  "checks": [
+    {
+      "id": "no_avenir_tab",
+      "ok": true,
+      "detail": "tabs layout clean"
+    },
+    {
+      "id": "cta_signed_in_to_tabs",
+      "ok": true,
+      "detail": "auth branch"
+    },
+    {
+      "id": "cta_demo_or_onboarding",
+      "ok": true,
+      "detail": "unsigned branches"
+    },
+    {
+      "id": "avenir_public_exception",
+      "ok": true,
+      "detail": "auth gate"
+    },
+    {
+      "id": "avenir_loads_logged_out",
+      "ok": true,
+      "detail": "G R P D\nL'avenir de GrpD\nAujourd'hui nous réunissons des cou"
+    },
+    {
+      "id": "avenir_stays_on_route",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/avenir"
+    },
+    {
+      "id": "cta_present_logged_out",
+      "ok": true,
+      "detail": "CTA"
+    },
+    {
+      "id": "cta_label_logged_out",
+      "ok": true,
+      "detail": "Entrer dans l'app"
+    },
+    {
+      "id": "cta_logged_out_enters_app",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/"
+    },
+    {
+      "id": "avenir_loads_logged_in",
+      "ok": true,
+      "detail": "vision"
+    },
+    {
+      "id": "cta_present_logged_in",
+      "ok": true,
+      "detail": "CTA"
+    },
+    {
+      "id": "cta_label_logged_in",
+      "ok": true,
+      "detail": "Retour à l'accueil"
+    },
+    {
+      "id": "cta_logged_in_to_tabs",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/"
+    },
+    {
+      "id": "desktop_avenir_readable",
+      "ok": true,
+      "detail": "G R P D\nL'avenir de GrpD\nAujourd'hui nous réunisso"
+    },
+    {
+      "id": "desktop_cta_unobstructed",
+      "ok": true,
+      "detail": "{\"x\":380,\"y\":1649,\"width\":520,\"height\":48}"
+    }
+  ],
+  "summary": {
+    "passed": 15,
+    "failed": 0,
+    "total": 15
+  }
+}

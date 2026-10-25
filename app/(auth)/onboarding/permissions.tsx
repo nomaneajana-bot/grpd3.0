@@ -49,7 +49,7 @@ export default function OnboardingPermissionsScreen() {
       <PermissionToggleRow
         icon="notifications-outline"
         title="Notifications"
-        subtitle="Rappels de séances et messages du club"
+        subtitle="Préférence locale — la livraison push n'est pas active pour l'instant"
         value={notifs}
         onValueChange={(v) => void requestNotifs(v)}
       />

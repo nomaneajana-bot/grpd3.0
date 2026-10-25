@@ -20,12 +20,20 @@ import { Card } from "../../components/ui/Card";
 import { LocationSlider } from "../../components/ui/LocationSlider";
 import { borderRadius, colors, spacing, typography } from "../../constants/ui";
 import { ApiError, createApiClient, createOrMatchRun } from "../../lib/api";
+import { resolveApiTransport } from "../../lib/api/mode";
+import { DEMO_MODE } from "../../lib/featureFlags";
 import { getReferencePaces } from "../../lib/profileStore";
 import { upsertStoredRun } from "../../lib/runStore";
 import { RUN_TYPE_OPTIONS, type RunTypeId } from "../../lib/runTypes";
 import type { RunCreateInput, RunMatchResult } from "../../types/api";
 
+/**
+ * Matched-run create UI. Connected `/api/v1/runs` is not shipped — deep links
+ * stay safe with an honest deferred state outside demo/mock.
+ */
 export default function RunSetupScreen() {
+  const [transportReady, setTransportReady] = useState(false);
+  const [runsDeferred, setRunsDeferred] = useState(false);
   const [runType, setRunType] = useState<RunTypeId>("easy_run");
   const [distanceKm, setDistanceKm] = useState("");
   const [paceMin, setPaceMin] = useState("5");
@@ -58,6 +66,12 @@ export default function RunSetupScreen() {
       }
     };
     loadPaces();
+    void resolveApiTransport().then((t) => {
+      if (!isMounted) return;
+      // Connected has no /runs handlers — do not pretend the form can publish.
+      setRunsDeferred(t.mode === "connected" && !DEMO_MODE);
+      setTransportReady(true);
+    });
     return () => {
       isMounted = false;
     };
@@ -296,6 +310,38 @@ export default function RunSetupScreen() {
     const seconds = secondsPerKm % 60;
     return `${minutes}'${seconds.toString().padStart(2, "0")}/km`;
   };
+
+  if (transportReady && runsDeferred) {
+    return (
+      <View style={styles.container} testID="run-setup-deferred">
+        <View style={[styles.header, { padding: 24, gap: 12 }]}>
+          <Text style={styles.title}>Course libre (reporté)</Text>
+          <Text style={styles.subtitle}>
+            Le matching de courses libres n&apos;est pas disponible en mode
+            connecté pour l&apos;instant (pas d&apos;API /runs). Utilise une
+            sortie club depuis Accueil ou Mes sorties.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.replace("/(tabs)/my-sessions")}
+            style={{
+              marginTop: 16,
+              minHeight: 48,
+              borderRadius: 12,
+              backgroundColor: colors.accent.primary,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Retour à Mes sorties"
+          >
+            <Text style={{ color: "#fff", fontWeight: "700" }}>
+              Retour à Mes sorties
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
