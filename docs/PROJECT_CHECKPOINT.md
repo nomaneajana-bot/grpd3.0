@@ -15,17 +15,18 @@ Not a docs-only audit. Not production deploy. Not OCIF submission.
 
 ### Exact next action
 
-1. Remaining queue items (batch discipline note, VERIFICATION, orphans/avenir/notifications reminders, Batch B demo UI, DELIVER) then **STOP for Codex**.  
-2. No unrelated visual ports or production promotion. Batch E docs reconciliation **done** (blueprint tip truth + historical banners; sole `ISSUE_REGISTER`).
+1. Remaining queue: VERIFICATION · orphans/avenir/notif confirmations (already evidenced in D) · DELIVER · then **STOP for Codex**.  
+2. Batch discipline + Batch B demo UI **done**. No production promotion. No broad acceptance.
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
+| Demo web Batch B (auth→logout→relogin) | **16/16 PASS** — `batch-b-evidence.json` @ `cd42a80` |
 | Demo web Batch C (club→outing→join/leave) | **19/19 PASS** — `batch-c-evidence.json` |
 | Demo web Batch D (settings + orphans) | **23/23 PASS** — `batch-d-evidence.json` |
 | Connected API (local PG) | **16/16 PASS** — logout, PATCH club, member-group (`connected-evidence.json`) |
-| Hosted / native / UAT | **Not claimed** · **BLOCKED** without authorized env |
+| Hosted / native / UAT | **Not claimed** · **BLOCKED** without authorized env — unrelated batches continued |
 
 ## Working decisions
 

@@ -1,0 +1,105 @@
+{
+  "batch": "architecture-remediation-batch-b",
+  "issue_ids": [
+    "ISSUE-016",
+    "D5",
+    "D6",
+    "D11"
+  ],
+  "tested_sha": "cd42a80bd07fc78fd8d74c862654630b13d7b4a0",
+  "environment": "demo",
+  "hosted_claim": false,
+  "native_claim": false,
+  "uat_claim": false,
+  "ocif_claim": false,
+  "broad_acceptance": false,
+  "demo_otp_note": "OTP 000000 is DEMO_MODE-only (lib/api/mock.ts mockOtpVerify); never production auth",
+  "base": "http://127.0.0.1:38303",
+  "checks": [
+    {
+      "id": "demo_otp_gated_in_source",
+      "ok": true,
+      "detail": "mockOtpVerify requires DEMO_MODE"
+    },
+    {
+      "id": "demo_otp_constant_documented",
+      "ok": true,
+      "detail": "000000 constant"
+    },
+    {
+      "id": "onboarding_entry_loads",
+      "ok": true,
+      "detail": "G R P D\nSors.\nAvec les tiens.\nUne communauté calme pour marcher, parler ou couri"
+    },
+    {
+      "id": "phone_screen_reached",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/phone"
+    },
+    {
+      "id": "phone_empty_stays_or_errors",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/phone"
+    },
+    {
+      "id": "otp_screen_reached",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/verify"
+    },
+    {
+      "id": "wrong_otp_rejected",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/verify"
+    },
+    {
+      "id": "demo_otp_login_home",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/"
+    },
+    {
+      "id": "auth_persisted_after_login",
+      "ok": true,
+      "detail": "keys=mock:users,grpd_auth_user_v1,grpd_auth_tokens_v1"
+    },
+    {
+      "id": "logout_returns_auth_entry",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/phone"
+    },
+    {
+      "id": "logout_clears_local_tokens",
+      "ok": true,
+      "detail": "authKeys=mock:users"
+    },
+    {
+      "id": "relogin_same_user_home",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/"
+    },
+    {
+      "id": "login_user_b_home",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/"
+    },
+    {
+      "id": "account_isolation_b_not_a_dump",
+      "ok": true,
+      "detail": "B session distinct from A"
+    },
+    {
+      "id": "desktop_home_readable",
+      "ok": true,
+      "detail": "\nCasablanca\n\nY\nLUNDI 26 OCTOBRE\nOn sort ?\nCette semaine, a"
+    },
+    {
+      "id": "no_production_otp_claim",
+      "ok": true,
+      "detail": "evidence note set"
+    }
+  ],
+  "summary": {
+    "passed": 16,
+    "failed": 0,
+    "total": 16
+  }
+}

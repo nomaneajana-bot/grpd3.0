@@ -41,6 +41,19 @@
 | Script | `scripts/architecture-remediation-smoke.mjs` |
 | Status | Still available; Batch D supersedes settings/avenir deep-link checks for this package |
 
+## Demo web — Batch B auth → logout/relogin
+
+| Field | Value |
+|---|---|
+| Script | `scripts/architecture-remediation-batch-b-smoke.mjs` |
+| Manifest | `batch-b-evidence.json` · `BATCH_B.md` |
+| Environment | **demo** `http://127.0.0.1:38303` |
+| tested_sha | `cd42a80bd07fc78fd8d74c862654630b13d7b4a0` |
+| Result | **16 PASS / 0 FAIL** |
+| Screenshots | `docs/audit/architecture-remediation/batch-b/*.png` |
+| Hosted / native / UAT / OCIF | **false** |
+| DEMO OTP | `000000` DEMO_MODE-only — not production auth |
+
 ## Batch E — docs reconciliation
 
 | Field | Value |
