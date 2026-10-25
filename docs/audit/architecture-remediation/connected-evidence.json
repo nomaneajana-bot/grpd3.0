@@ -1,6 +1,6 @@
 {
   "batch": "architecture-remediation-connected",
-  "tested_sha": "f920e4a83fa82fe5ab17319aff0f18857a496198",
+  "tested_sha": "b9d47557d3ce233292285e8b288b4d5c964f1607",
   "environment": "local_postgres_integration",
   "hosted_claim": false,
   "native_claim": false,
@@ -58,7 +58,7 @@
     {
       "id": "patch_persisted",
       "ok": true,
-      "detail": "Arch Renamed arch_mvo6abif"
+      "detail": "Arch Renamed arch_mvo7lflz"
     },
     {
       "id": "member_group_requires_auth",

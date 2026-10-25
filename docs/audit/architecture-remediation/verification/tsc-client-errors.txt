@@ -1,0 +1,7 @@
+app/session/[id].tsx(1191,19): error TS18048: 'session' is possibly 'undefined'.
+app/session/[id].tsx(1191,49): error TS18048: 'session' is possibly 'undefined'.
+app/session/[id].tsx(1191,49): error TS18048: 'session.paceGroupsOverride' is possibly 'undefined'.
+app/session/[id].tsx(1194,14): error TS18048: 'session' is possibly 'undefined'.
+app/session/[id].tsx(1194,14): error TS18048: 'session.paceGroupsOverride' is possibly 'undefined'.
+count=5
+classification=pre-existing on stitch tip; dead false&& session.paceGroupsOverride block; not introduced by remediation

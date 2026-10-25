@@ -12,6 +12,7 @@
 | C | Club journeys two users | ISSUE-018 related | demo | `batch-c-evidence.json` | 19/19 | Done — awaiting Codex |
 | D | Settings + orphans + avenir CTA + notif honesty | ISSUE-007, 017, 019 | demo | `batch-d-evidence.json` | 23/23 | Done — awaiting Codex |
 | E | Docs reconcile; one register; historical preserved | docs / P0 | docs | tip commits on branch | Done | Done — awaiting Codex |
+| VERIFICATION | Interactive handlers + PG + typecheck/tests; hosted blocked | cross-cutting | demo + local PG | `verification-demo-evidence.json` · `connected-evidence.json` @ `b9d4755` | demo 17/17 · PG 16/16 · int 22 · JWT 11 | Done — awaiting Codex; **no** UAT/OCIF |
 
 ## Blocked (do not invent workarounds)
 

@@ -9,6 +9,7 @@ Batches under the authorized remediation package. Continue independently; blocke
 | **C** | Create → edit → invite → organise → join/cancel → leave; two users/clubs; membership ≠ attendance; walk ≠ forced pace | **Verified demo** 19/19 | `BATCH_C.md` · `batch-c-evidence.json` |
 | **D** | Settings + orphan dispositions; retained actions/deep links; honest unsupported | **Verified demo** 23/23 | `BATCH_D.md` · `batch-d-evidence.json` · `SETTINGS_DISPOSITION.md` |
 | **E** | Reconcile APP_BLUEPRINT / architecture.md / dead-routes / rule; one issue register | **Done** — tip truth in blueprint addendum; stale docs bannered (preserved); rule updated; register sole | `BATCH_E.md` · `APP_BLUEPRINT.md` |
+| **VERIFICATION** | Interactive handlers; invalid/dup/retry/abandon/reload/private links; local PG; typecheck/tests; hosted blocked | **Done** — demo **17/17** · connected **16/16** · integration **22** · JWT **11** · hosted **BLOCKED** | `VERIFICATION.md` · `verification-demo-evidence.json` |
 
 ## Cross-cutting (from decision defaults)
 

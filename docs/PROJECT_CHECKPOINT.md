@@ -15,18 +15,20 @@ Not a docs-only audit. Not production deploy. Not OCIF submission.
 
 ### Exact next action
 
-1. Remaining queue: VERIFICATION · orphans/avenir/notif confirmations (already evidenced in D) · DELIVER · then **STOP for Codex**.  
-2. Batch discipline + Batch B demo UI **done**. No production promotion. No broad acceptance.
+1. Remaining queue: orphans/avenir/notif confirmations (already evidenced in D) · Batch B already verified · **DELIVER** · then **STOP for Codex**.  
+2. **VERIFICATION done** (see `VERIFICATION.md`). No production promotion. No broad acceptance / OCIF.
 
 ## Surfaces
 
 | Surface | Status |
 |---------|--------|
+| Demo VERIFICATION (interactive handlers) | **17/17 PASS** — `verification-demo-evidence.json` @ `b9d4755` |
 | Demo web Batch B (auth→logout→relogin) | **16/16 PASS** — `batch-b-evidence.json` @ `cd42a80` |
 | Demo web Batch C (club→outing→join/leave) | **19/19 PASS** — `batch-c-evidence.json` |
 | Demo web Batch D (settings + orphans) | **23/23 PASS** — `batch-d-evidence.json` |
-| Connected API (local PG) | **16/16 PASS** — logout, PATCH club, member-group (`connected-evidence.json`) |
-| Hosted / native / UAT | **Not claimed** · **BLOCKED** without authorized env — unrelated batches continued |
+| Connected API (local PG) | **16/16 PASS** (re-run @ `b9d4755`) — logout, PATCH, member-group, unrelated preserve |
+| Integration PG + JWT unit | **22 + 11 PASS** |
+| Hosted / native / UAT | **Hosted BLOCKED** (Vercel Auth) · native/UAT **not claimed** |
 
 ## Working decisions
 

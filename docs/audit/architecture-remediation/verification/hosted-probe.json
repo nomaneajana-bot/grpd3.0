@@ -1,0 +1,21 @@
+{
+  "environment": "hosted_preview",
+  "hosted_claim": false,
+  "mutations_run": false,
+  "status": "BLOCKED",
+  "reason": "Vercel Authentication / no authorized isolated Preview env for this branch",
+  "probes": [
+    {
+      "url": "https://grpd3-0.vercel.app",
+      "result": "404 DEPLOYMENT_NOT_FOUND"
+    },
+    {
+      "url": "https://grpd30-git-cursor-green-home-ux-j-75ed8a-noas-projects-0b3f311d.vercel.app",
+      "result": "Protected by Vercel Authentication (historical preview; no mutations)"
+    }
+  ],
+  "native_claim": false,
+  "uat_claim": false,
+  "ocif_claim": false,
+  "tested_sha_tip": "ref: refs/heads/cursor/architecture-remediation-3184"
+}

@@ -1,0 +1,107 @@
+{
+  "batch": "architecture-remediation-verification-demo",
+  "tested_sha": "b9d47557d3ce233292285e8b288b4d5c964f1607",
+  "environment": "demo",
+  "hosted_claim": false,
+  "native_claim": false,
+  "uat_claim": false,
+  "ocif_claim": false,
+  "broad_acceptance": false,
+  "base": "http://127.0.0.1:38303",
+  "notes": {
+    "failed_requests_connected": "401/403 authz exercised in connected local PG smoke (logout/PATCH/member-group)",
+    "unrelated_records_connected": "unrelated_club_home_group_preserved in connected-evidence.json"
+  },
+  "checks": [
+    {
+      "id": "invalid_empty_phone_no_verify",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/phone"
+    },
+    {
+      "id": "invalid_short_phone_no_verify",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/phone"
+    },
+    {
+      "id": "duplicate_submit_single_verify",
+      "ok": true,
+      "detail": "landed http://127.0.0.1:38303/verify (not crashed)"
+    },
+    {
+      "id": "failed_otp_stays_off_tabs",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/verify"
+    },
+    {
+      "id": "retry_otp_reaches_home",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/"
+    },
+    {
+      "id": "phone_tabs_visible",
+      "ok": true,
+      "detail": "tabs/home chrome"
+    },
+    {
+      "id": "phone_club_tab_unobstructed",
+      "ok": true,
+      "detail": "text fallback ok"
+    },
+    {
+      "id": "abandoned_form_left_to_home",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/"
+    },
+    {
+      "id": "abandoned_form_no_auto_publish",
+      "ok": true,
+      "detail": "token absent from club hub"
+    },
+    {
+      "id": "reload_language_persists",
+      "ok": true,
+      "detail": "settings reload"
+    },
+    {
+      "id": "direct_club_admin_safe",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/club/admin"
+    },
+    {
+      "id": "direct_missing_session_safe",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/session/does-not-exist-verif"
+    },
+    {
+      "id": "private_club_settings_gated_or_safe",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/onboarding"
+    },
+    {
+      "id": "desktop_home_readable",
+      "ok": true,
+      "detail": "\nCasablanca\n\nY\nLUNDI 26 OCTOBRE\nOn sort ?\nCette "
+    },
+    {
+      "id": "desktop_settings_readable",
+      "ok": true,
+      "detail": "\nParamètres\nCOMPTE\nTéléphone\n+212 0708 06 03 37\nP"
+    },
+    {
+      "id": "desktop_logout_unobstructed",
+      "ok": true,
+      "detail": "{\"x\":582.5625,\"y\":1235,\"width\":114.859375,\"height\":20}"
+    },
+    {
+      "id": "demo_failed_request_analogue",
+      "ok": true,
+      "detail": "wrong OTP handler = failed auth attempt on demo surface"
+    }
+  ],
+  "summary": {
+    "passed": 17,
+    "failed": 0,
+    "total": 17
+  }
+}

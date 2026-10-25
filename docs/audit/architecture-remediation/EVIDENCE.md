@@ -65,6 +65,19 @@
 | Issue register | **single** — `docs/product/ISSUE_REGISTER.md` |
 | Historical evidence | Other `docs/audit/**` folders left intact |
 
+## VERIFICATION (package)
+
+| Field | Value |
+|---|---|
+| Doc | `VERIFICATION.md` |
+| Demo interactive | `verification-demo-evidence.json` **17/17** · `verification/*.png` |
+| Connected PG (re-run) | `connected-evidence.json` **16/16** @ tip `b9d4755…` |
+| Integration PG | **22/22** · artifact log |
+| Typecheck server | **PASS** |
+| Client `tsc` | **5 pre-existing** `TS18048` in `app/session/[id].tsx` — not fixed as remediation scope |
+| Hosted | **BLOCKED** · `verification/hosted-probe.json` |
+| Native / UAT / OCIF | **Not claimed** |
+
 ## Batch A — inventory + mode
 
 | Field | Value |
