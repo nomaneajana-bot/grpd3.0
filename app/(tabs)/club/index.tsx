@@ -364,43 +364,61 @@ export default function ClubScreen() {
           </View>
         ) : isApprovedMember && club ? (
           <>
-            {approvedMemberships.length > 1 ? (
-              <View style={styles.clubSwitcher} testID="club-switcher">
+            <View style={styles.clubSwitcher} testID="club-switcher">
+              <View style={styles.clubSwitcherHeader}>
                 <Text style={styles.clubSwitcherLabel}>MES CLUBS</Text>
-                <View style={styles.clubSwitcherRow}>
-                  {approvedMemberships.map((m) => {
-                    const active = m.clubId === primaryMembership?.clubId;
-                    return (
-                      <Pressable
-                        key={m.clubId}
-                        testID={`club-switch-${m.clubId}`}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
-                        accessibilityLabel={m.club?.name ?? m.clubId}
-                        onPress={() => {
-                          setFocusedClubId(m.clubId);
-                          void persistFocusedClubId(m.clubId);
-                        }}
-                        style={[
-                          styles.clubSwitcherChip,
-                          active && styles.clubSwitcherChipOn,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.clubSwitcherChipText,
-                            active && styles.clubSwitcherChipTextOn,
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {m.club?.name ?? "Club"}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                <Pressable
+                  testID="club-find-another"
+                  accessibilityRole="button"
+                  accessibilityLabel="Rejoindre un autre club"
+                  onPress={() => router.push("/(tabs)/club/access" as Href)}
+                  hitSlop={8}
+                >
+                  <Text style={styles.clubFindLink}>Trouver un club →</Text>
+                </Pressable>
               </View>
-            ) : null}
+              <View style={styles.clubSwitcherRow}>
+                {approvedMemberships.map((m) => {
+                  const active = m.clubId === primaryMembership?.clubId;
+                  return (
+                    <Pressable
+                      key={m.clubId}
+                      testID={`club-switch-${m.clubId}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={m.club?.name ?? m.clubId}
+                      onPress={() => {
+                        setFocusedClubId(m.clubId);
+                        void persistFocusedClubId(m.clubId);
+                      }}
+                      style={[
+                        styles.clubSwitcherChip,
+                        active && styles.clubSwitcherChipOn,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.clubSwitcherChipText,
+                          active && styles.clubSwitcherChipTextOn,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {m.club?.name ?? "Club"}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+                <Pressable
+                  testID="club-find-chip"
+                  accessibilityRole="button"
+                  accessibilityLabel="Rejoindre un autre club"
+                  onPress={() => router.push("/(tabs)/club/access" as Href)}
+                  style={styles.clubFindChip}
+                >
+                  <Text style={styles.clubFindChipText}>+ Rejoindre</Text>
+                </Pressable>
+              </View>
+            </View>
             <ClubOverviewCard
               clubName={club.name}
               memberCount={memberCount ?? 1}
@@ -588,6 +606,24 @@ export default function ClubScreen() {
                 </Pressable>
               </>
             ) : null}
+
+            <SectionHeader label="AUTRES CLUBS" />
+            <GroupedList>
+              <ClubNavCard
+                title="Rejoindre un autre club"
+                subtitle="Cherche par nom ou ouvre avec une clé"
+                icon="search-outline"
+                testID="club-join-another-nav"
+                onPress={() => router.push("/(tabs)/club/access" as Href)}
+              />
+              <ClubNavCard
+                title="Créer un club"
+                subtitle="Fonder un nouveau cadre"
+                icon="add-circle-outline"
+                testID="club-create-from-hub"
+                onPress={() => router.push("/(tabs)/club/create" as Href)}
+              />
+            </GroupedList>
 
             {isClubAdmin ? (
               <>
@@ -866,10 +902,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     gap: 8,
   },
+  clubSwitcherHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
   clubSwitcherLabel: {
     ...t.type.labelSm,
     color: t.textSecondary,
     textTransform: "uppercase",
+  },
+  clubFindLink: {
+    fontFamily: t.font.space.semibold,
+    color: t.primary,
+    fontSize: 13,
   },
   clubSwitcherRow: {
     flexDirection: "row",
@@ -896,6 +943,20 @@ const styles = StyleSheet.create({
   },
   clubSwitcherChipTextOn: {
     color: t.onPrimary,
+  },
+  clubFindChip: {
+    borderRadius: t.radiusChip,
+    borderWidth: 1,
+    borderColor: t.outlineVariant,
+    borderStyle: "dashed",
+    backgroundColor: t.surfaceContainerLow,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  clubFindChipText: {
+    color: t.primary,
+    fontSize: 13,
+    fontFamily: t.font.space.semibold,
   },
   quitZone: {
     paddingVertical: 32,
