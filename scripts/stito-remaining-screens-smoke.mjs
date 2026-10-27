@@ -197,7 +197,7 @@ async function main() {
     const invText = await page.locator("body").innerText();
     check(
       "invitations_title",
-      /Une clé, pas un annuaire|Tu as reçu une clé/i.test(invText),
+      /Rejoindre un club|Tu connais le nom|J'ai une clé/i.test(invText),
       "title",
     );
     check(
@@ -207,7 +207,9 @@ async function main() {
     );
     check(
       "invitations_membership_note",
-      /ne t.?inscrit à aucune sortie/i.test(invText),
+      /ne t.?inscrit à aucune sortie|pas.*inscription à une sortie/i.test(
+        invText,
+      ),
       "membership ≠ outing",
     );
     const invLight = await canvasIsLight(page);

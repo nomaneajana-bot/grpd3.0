@@ -498,7 +498,7 @@ function ConfirmedCard({
       <View style={styles.cardActions}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Se désister"
+          accessibilityLabel="Annuler ma participation"
           onPress={onCancel}
           style={({ pressed }) => [
             styles.desistBtn,
@@ -506,8 +506,7 @@ function ConfirmedCard({
           ]}
           testID={`mes-sorties-desist-${session.id}`}
         >
-          <Ionicons name="close" size={16} color={t.textSecondary} />
-          <Text style={styles.desistText}>Se désister</Text>
+          <Text style={styles.desistText}>Annuler</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"

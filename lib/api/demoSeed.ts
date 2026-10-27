@@ -29,14 +29,24 @@ export const MOCK_PINS_KEY = "mock:pins";
 export const MOCK_CLUBS_KEY = "mock:clubs";
 export const MOCK_MEMBERSHIPS_KEY = "mock:club_memberships";
 export const MOCK_OTP_KEY = "mock:otp";
-export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v1";
+/** Bump to force a one-time reseed of the richer Casablanca world. */
+export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v2";
+export const DEMO_SEED_VERSION = "2";
 
 export const DEMO_CLUB_ID = "club_casa_running";
 export const DEMO_CLUB_NAME = "Casa Running Club";
 export const DEMO_CLUB_CODE = "CASA2026";
 export const DEMO_CLUB_CITY = "Casablanca";
 export const DEMO_CLUB_DESCRIPTION =
-  "Club de course à pied — Ain Diab & Corniche";
+  "Club de course à pied — Ain Diab & Corniche. Sorties structurées et allures pour tous les niveaux.";
+
+export const DEMO_WALK_CLUB_ID = "club_casa_marche";
+export const DEMO_WALK_CLUB_NAME = "Casa Marche Douce";
+export const DEMO_WALK_CLUB_CODE = "MARCHE26";
+
+export const DEMO_LANG_CLUB_ID = "club_french_run_talk";
+export const DEMO_LANG_CLUB_NAME = "French Run & Talk";
+export const DEMO_LANG_CLUB_CODE = "FRTALK26";
 
 type DemoPerson = {
   userId: string;
@@ -280,7 +290,13 @@ function buildDemoSessions(): ApiSession[] {
     recommendedGroupId: string;
   };
 
-  const specs: Spec[] = [
+  type SpecExtra = Spec & {
+    clubId?: string | null;
+    purpose?: string;
+    pastDaysAgo?: number;
+  };
+
+  const specs: SpecExtra[] = [
     {
       id: "demo_sess_footing_corniche",
       title: "Footing Corniche",
@@ -296,6 +312,7 @@ function buildDemoSessions(): ApiSession[] {
       coachName: "Youssef Benali",
       coachPhone: "+212600000001",
       recommendedGroupId: "C",
+      purpose: "Se mettre en jambes sans se forcer — on discute un peu.",
     },
     {
       id: "demo_sess_fartlek_ain_diab",
@@ -312,6 +329,8 @@ function buildDemoSessions(): ApiSession[] {
       coachName: "Amélie Traoré",
       coachPhone: "+212600000002",
       recommendedGroupId: "B",
+      clubId: DEMO_CLUB_ID,
+      purpose: "Variations d’allure sur le front de mer.",
     },
     {
       id: "demo_sess_series_piste",
@@ -328,6 +347,8 @@ function buildDemoSessions(): ApiSession[] {
       coachName: "Youssef Benali",
       coachPhone: "+212600000001",
       recommendedGroupId: "A",
+      clubId: DEMO_CLUB_ID,
+      purpose: "Travail de vitesse — groupes A–D.",
     },
     {
       id: "demo_sess_footing_sunset",
@@ -344,6 +365,60 @@ function buildDemoSessions(): ApiSession[] {
       coachName: "Amélie Traoré",
       coachPhone: "+212600000002",
       recommendedGroupId: "D",
+      purpose: "Fin de journée, rythme conversation.",
+    },
+    {
+      id: "demo_sess_marche_parc",
+      title: "Marche au Parc de la Ligue Arabe",
+      spot: "Parc de la Ligue Arabe",
+      dayOffset: 1,
+      timeMinutes: 10 * 60,
+      typeLabel: "MARCHE",
+      volume: "60 min · pas pressé",
+      targetPace: "—",
+      estimatedDistanceKm: 4,
+      visibility: "members",
+      withPaceGroups: false,
+      coachName: "Amélie Traoré",
+      coachPhone: "+212600000002",
+      recommendedGroupId: "D",
+      clubId: DEMO_WALK_CLUB_ID,
+      purpose: "Marcher ensemble, se rencontrer — sans chrono.",
+    },
+    {
+      id: "demo_sess_marche_corniche",
+      title: "Marche Corniche du dimanche",
+      spot: "Corniche Ain Diab",
+      dayOffset: 4,
+      timeMinutes: 9 * 60 + 30,
+      typeLabel: "MARCHE",
+      volume: "75 min · café après",
+      targetPace: "—",
+      estimatedDistanceKm: 5,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Amélie Traoré",
+      coachPhone: "+212600000002",
+      recommendedGroupId: "D",
+      purpose: "Ouverte à tous — rythme marche.",
+    },
+    {
+      id: "demo_sess_french_run_talk",
+      title: "French Run & Talk — débutants",
+      spot: "Jardin de l’École de l’Air",
+      dayOffset: 2,
+      timeMinutes: 18 * 60,
+      typeLabel: "LANGUE",
+      volume: "40 min · pauses parlées",
+      targetPace: "6:30–7:30/km",
+      estimatedDistanceKm: 5,
+      visibility: "members",
+      withPaceGroups: false,
+      coachName: "Youssef Benali",
+      coachPhone: "+212600000001",
+      recommendedGroupId: "D",
+      clubId: DEMO_LANG_CLUB_ID,
+      purpose: "Courir doucement et parler français.",
     },
     {
       id: "demo_sess_fartlek_public",
@@ -360,6 +435,7 @@ function buildDemoSessions(): ApiSession[] {
       coachName: "Youssef Benali",
       coachPhone: "+212600000001",
       recommendedGroupId: "C",
+      purpose: "Ouvert Découvrir — allure progressive.",
     },
     {
       id: "demo_sess_series_members",
@@ -376,13 +452,52 @@ function buildDemoSessions(): ApiSession[] {
       coachName: "Amélie Traoré",
       coachPhone: "+212600000002",
       recommendedGroupId: "B",
+      clubId: DEMO_CLUB_ID,
+    },
+    {
+      id: "demo_sess_long_weekend",
+      title: "Sortie longue week-end",
+      spot: "Anfa — Twin Center",
+      dayOffset: 7,
+      timeMinutes: 8 * 60,
+      typeLabel: "LONG",
+      volume: "14 km · endurance",
+      targetPace: "5:20–6:20/km",
+      estimatedDistanceKm: 14,
+      visibility: "members",
+      withPaceGroups: true,
+      coachName: "Youssef Benali",
+      coachPhone: "+212600000001",
+      recommendedGroupId: "C",
+      clubId: DEMO_CLUB_ID,
+      purpose: "Endurance fondamentale — groupes selon allure.",
+    },
+    {
+      id: "demo_sess_past_footing",
+      title: "Footing déjà passé",
+      spot: "Parc Yasmina",
+      dayOffset: 0,
+      pastDaysAgo: 3,
+      timeMinutes: 18 * 60,
+      typeLabel: "FOOTING",
+      volume: "40 min",
+      targetPace: "5:45–6:45/km",
+      estimatedDistanceKm: 7,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Amélie Traoré",
+      coachPhone: "+212600000002",
+      recommendedGroupId: "D",
+      purpose: "Sortie passée — historique Mes Sorties.",
     },
   ];
 
   return specs.map((spec) => {
     const day = new Date(startOfToday.getTime() + spec.dayOffset * DAY_MS);
-    // If today's evening session already passed, push +7d for dayOffset 0
-    if (spec.dayOffset === 0) {
+    if (spec.pastDaysAgo != null) {
+      day.setDate(day.getDate() - spec.pastDaysAgo);
+    } else if (spec.dayOffset === 0) {
+      // If today's evening session already passed, push +7d for dayOffset 0
       const sessionMs = day.getTime() + spec.timeMinutes * 60 * 1000;
       if (sessionMs <= now.getTime()) {
         day.setDate(day.getDate() + 7);
@@ -395,7 +510,9 @@ function buildDemoSessions(): ApiSession[] {
 
     // Invariant (a): members ⇒ clubId; public must not inherit club context
     const clubId =
-      spec.visibility === "members" ? DEMO_CLUB_ID : null;
+      spec.visibility === "members"
+        ? (spec.clubId ?? DEMO_CLUB_ID)
+        : (spec.clubId ?? null);
 
     return {
       id: spec.id,
@@ -423,7 +540,9 @@ function buildDemoSessions(): ApiSession[] {
       paceGroups,
       hostGroupName: null,
       meetingPoint: spec.spot,
-      coachAdvice: "Arrive 10 min avant. Hydrate-toi. On part ensemble.",
+      coachAdvice:
+        spec.purpose ??
+        "Arrive 10 min avant. Hydrate-toi. On part ensemble.",
       coachPhone: spec.coachPhone,
       coachName: spec.coachName,
       attendanceStatus: null,
@@ -488,13 +607,228 @@ function applyRunnerCounts(
   });
 }
 
-/** Seed club, coaches, runners, sessions, and joined attendance. Idempotent. */
+async function seedDemoClubAdminSettings(): Promise<void> {
+  // Stable color-group ids so assignments survive reloads in the same seed.
+  const runGroups = [
+    {
+      id: "g_casa_rouge",
+      name: "Rouge — rapide",
+      colorKey: "red" as const,
+      sortOrder: 0,
+      active: true,
+      note: "Sub 4:45",
+    },
+    {
+      id: "g_casa_bleu",
+      name: "Bleu",
+      colorKey: "blue" as const,
+      sortOrder: 1,
+      active: true,
+      note: "4:45–5:30",
+    },
+    {
+      id: "g_casa_vert",
+      name: "Vert — confort",
+      colorKey: "green" as const,
+      sortOrder: 2,
+      active: true,
+      note: "5:30–6:30",
+    },
+    {
+      id: "g_casa_gris",
+      name: "Gris — ouvert",
+      colorKey: "grey" as const,
+      sortOrder: 3,
+      active: true,
+      note: "Sans chrono",
+    },
+  ];
+  const memberGroups: Record<string, string> = {
+    demo_coach_youssef: "g_casa_rouge",
+    demo_coach_amelie: "g_casa_bleu",
+    demo_runner_camille: "g_casa_rouge",
+    demo_runner_lucas: "g_casa_rouge",
+    demo_runner_chloe: "g_casa_bleu",
+    demo_runner_hugo: "g_casa_bleu",
+    demo_runner_lea: "g_casa_vert",
+    demo_runner_nathan: "g_casa_vert",
+    demo_runner_manon: "g_casa_vert",
+    demo_runner_louis: "g_casa_gris",
+    demo_runner_emma: "g_casa_gris",
+  };
+  const runAdmin = {
+    name: DEMO_CLUB_NAME,
+    description: DEMO_CLUB_DESCRIPTION,
+    visibility: "members" as const,
+    accessCode: DEMO_CLUB_CODE,
+    interGroupAccessEnabled: true,
+    defaultInterGroupPolicy: "warn" as const,
+    activityStructure: "run" as const,
+    memberOrgEnabled: true,
+    colorGroups: runGroups,
+    memberGroups,
+    groups: [
+      {
+        id: "A" as const,
+        paceLabel: "Sub 4:45",
+        active: true,
+        displayName: "Groupe A",
+        accessPolicy: "inherit" as const,
+      },
+      {
+        id: "B" as const,
+        paceLabel: "4:45–5:30",
+        active: true,
+        displayName: "Groupe B",
+        accessPolicy: "inherit" as const,
+      },
+      {
+        id: "C" as const,
+        paceLabel: "5:30–6:30",
+        active: true,
+        displayName: "Groupe C",
+        accessPolicy: "inherit" as const,
+      },
+      {
+        id: "D" as const,
+        paceLabel: "Ouvert",
+        active: true,
+        displayName: "Groupe D",
+        accessPolicy: "free" as const,
+      },
+    ],
+  };
+  await AsyncStorage.setItem(
+    `grpd_club_admin_v2_${DEMO_CLUB_ID}`,
+    JSON.stringify(runAdmin),
+  );
+
+  const walkAdmin = {
+    name: DEMO_WALK_CLUB_NAME,
+    description: "Marches conviviales à Casablanca — sans chrono.",
+    visibility: "members" as const,
+    accessCode: DEMO_WALK_CLUB_CODE,
+    interGroupAccessEnabled: true,
+    defaultInterGroupPolicy: "free" as const,
+    activityStructure: "walk" as const,
+    memberOrgEnabled: true,
+    colorGroups: [
+      {
+        id: "g_walk_conv",
+        name: "Conversation",
+        colorKey: "teal" as const,
+        sortOrder: 0,
+        active: true,
+      },
+      {
+        id: "g_walk_bin",
+        name: "Binômes",
+        colorKey: "amber" as const,
+        sortOrder: 1,
+        active: true,
+      },
+      {
+        id: "g_walk_open",
+        name: "Ouvert",
+        colorKey: "grey" as const,
+        sortOrder: 2,
+        active: true,
+      },
+    ],
+    memberGroups: {
+      demo_coach_amelie: "g_walk_conv",
+      demo_runner_lea: "g_walk_conv",
+      demo_runner_manon: "g_walk_bin",
+      demo_runner_emma: "g_walk_open",
+    },
+    groups: [
+      {
+        id: "A" as const,
+        paceLabel: "—",
+        active: false,
+        displayName: "Groupe A",
+        accessPolicy: "inherit" as const,
+      },
+      {
+        id: "B" as const,
+        paceLabel: "—",
+        active: false,
+        displayName: "Groupe B",
+        accessPolicy: "inherit" as const,
+      },
+      {
+        id: "C" as const,
+        paceLabel: "—",
+        active: false,
+        displayName: "Groupe C",
+        accessPolicy: "inherit" as const,
+      },
+      {
+        id: "D" as const,
+        paceLabel: "—",
+        active: false,
+        displayName: "Groupe D",
+        accessPolicy: "inherit" as const,
+      },
+    ],
+  };
+  await AsyncStorage.setItem(
+    `grpd_club_admin_v2_${DEMO_WALK_CLUB_ID}`,
+    JSON.stringify(walkAdmin),
+  );
+
+  const langAdmin = {
+    name: DEMO_LANG_CLUB_NAME,
+    description: "Courir doucement et parler français.",
+    visibility: "members" as const,
+    accessCode: DEMO_LANG_CLUB_CODE,
+    interGroupAccessEnabled: true,
+    defaultInterGroupPolicy: "free" as const,
+    activityStructure: "neutral" as const,
+    memberOrgEnabled: true,
+    colorGroups: [
+      {
+        id: "g_fr_a1",
+        name: "A1–A2",
+        colorKey: "purple" as const,
+        sortOrder: 0,
+        active: true,
+      },
+      {
+        id: "g_fr_b1",
+        name: "B1–B2",
+        colorKey: "blue" as const,
+        sortOrder: 1,
+        active: true,
+      },
+      {
+        id: "g_fr_open",
+        name: "Tous niveaux",
+        colorKey: "grey" as const,
+        sortOrder: 2,
+        active: true,
+      },
+    ],
+    memberGroups: {
+      demo_coach_youssef: "g_fr_b1",
+      demo_runner_camille: "g_fr_b1",
+      demo_runner_lucas: "g_fr_a1",
+    },
+    groups: walkAdmin.groups,
+  };
+  await AsyncStorage.setItem(
+    `grpd_club_admin_v2_${DEMO_LANG_CLUB_ID}`,
+    JSON.stringify(langAdmin),
+  );
+}
+
+/** Seed clubs, coaches, runners, sessions, and joined attendance. Idempotent. */
 export async function ensureDemoWorld(): Promise<Club & { code: string }> {
   const seeded = await AsyncStorage.getItem(MOCK_DEMO_SEEDED_KEY);
   const clubs = await readJson<MockClubMap>(MOCK_CLUBS_KEY, {});
   const existing = clubs[DEMO_CLUB_ID];
 
-  if (seeded === "1" && existing) {
+  if (seeded === DEMO_SEED_VERSION && existing) {
     return existing;
   }
 
@@ -509,7 +843,31 @@ export async function ensureDemoWorld(): Promise<Club & { code: string }> {
     createdById: "demo_coach_youssef",
     code: DEMO_CLUB_CODE,
   };
+  const walkClub: Club & { code: string } = {
+    id: DEMO_WALK_CLUB_ID,
+    name: DEMO_WALK_CLUB_NAME,
+    slug: "casa-marche-douce",
+    city: DEMO_CLUB_CITY,
+    description: "Marches conviviales — Corniche & parcs. Pas de chrono.",
+    visibility: "members",
+    createdAt: "2024-03-01T00:00:00.000Z",
+    createdById: "demo_coach_amelie",
+    code: DEMO_WALK_CLUB_CODE,
+  };
+  const langClub: Club & { code: string } = {
+    id: DEMO_LANG_CLUB_ID,
+    name: DEMO_LANG_CLUB_NAME,
+    slug: "french-run-talk",
+    city: DEMO_CLUB_CITY,
+    description: "On court doucement. On parle français.",
+    visibility: "members",
+    createdAt: "2024-04-01T00:00:00.000Z",
+    createdById: "demo_coach_youssef",
+    code: DEMO_LANG_CLUB_CODE,
+  };
   clubs[club.id] = club;
+  clubs[walkClub.id] = walkClub;
+  clubs[langClub.id] = langClub;
   await writeJson(MOCK_CLUBS_KEY, clubs);
 
   const memberships = await readJson<MockMembershipMap>(
@@ -528,6 +886,49 @@ export async function ensureDemoWorld(): Promise<Club & { code: string }> {
       sharePrs: true,
       prSummary: makePrSummary(person.paceSecondsPerKm),
       createdAt: "2024-02-01T00:00:00.000Z",
+    };
+  }
+  // Subset also in walk + language clubs
+  for (const person of DEMO_PEOPLE.filter((p) =>
+    [
+      "demo_coach_amelie",
+      "demo_runner_lea",
+      "demo_runner_manon",
+      "demo_runner_emma",
+    ].includes(p.userId),
+  )) {
+    const id = `membership_walk_${person.userId}`;
+    memberships[id] = {
+      id,
+      clubId: DEMO_WALK_CLUB_ID,
+      userId: person.userId,
+      role: person.role === "coach" ? "coach" : "member",
+      status: "approved",
+      displayName: person.displayName,
+      sharePrs: false,
+      prSummary: null,
+      createdAt: "2024-03-10T00:00:00.000Z",
+    };
+  }
+  for (const person of DEMO_PEOPLE.filter((p) =>
+    [
+      "demo_coach_youssef",
+      "demo_runner_camille",
+      "demo_runner_lucas",
+      "demo_runner_chloe",
+    ].includes(p.userId),
+  )) {
+    const id = `membership_lang_${person.userId}`;
+    memberships[id] = {
+      id,
+      clubId: DEMO_LANG_CLUB_ID,
+      userId: person.userId,
+      role: person.role === "coach" ? "coach" : "member",
+      status: "approved",
+      displayName: person.displayName,
+      sharePrs: true,
+      prSummary: makePrSummary(person.paceSecondsPerKm),
+      createdAt: "2024-04-10T00:00:00.000Z",
     };
   }
   await writeJson(MOCK_MEMBERSHIPS_KEY, memberships);
@@ -550,7 +951,8 @@ export async function ensureDemoWorld(): Promise<Club & { code: string }> {
   }
   await writeJson(MOCK_SESSIONS_KEY, sessionMap);
   await writeJson(MOCK_ATTENDANCE_KEY, attendanceMap);
-  await AsyncStorage.setItem(MOCK_DEMO_SEEDED_KEY, "1");
+  await seedDemoClubAdminSettings();
+  await AsyncStorage.setItem(MOCK_DEMO_SEEDED_KEY, DEMO_SEED_VERSION);
 
   return club;
 }
@@ -694,7 +1096,81 @@ export async function ensureDemoUserMembership(
       createdAt: new Date().toISOString(),
     };
   }
+  // Also member of walk club so Clubs hub feels multi-club when focusing
+  const walkExisting = Object.values(memberships).find(
+    (m) => m.userId === user.id && m.clubId === DEMO_WALK_CLUB_ID,
+  );
+  if (!walkExisting) {
+    memberships[`membership_walk_${user.id}`] = {
+      id: `membership_walk_${user.id}`,
+      clubId: DEMO_WALK_CLUB_ID,
+      userId: user.id,
+      role: "member",
+      status: "approved",
+      displayName: displayName ?? null,
+      sharePrs: false,
+      prSummary: null,
+      createdAt: new Date().toISOString(),
+    };
+  }
   await writeJson(MOCK_MEMBERSHIPS_KEY, memberships);
+
+  // Pre-join a couple of outings so Accueil / Mes Sorties look lived-in
+  const joinSessionIds = [
+    "demo_sess_footing_corniche",
+    "demo_sess_footing_sunset",
+    "demo_sess_past_footing",
+  ];
+  const attendance = await readJson<MockAttendanceMap>(MOCK_ATTENDANCE_KEY, {});
+  for (const sessionId of joinSessionIds) {
+    const attId = `att_${sessionId}_${user.id}`;
+    attendance[attId] = {
+      id: attId,
+      sessionId,
+      userId: user.id,
+      displayName: displayName ?? user.phone ?? "Toi",
+      groupId: "C",
+      status: "joined",
+    };
+  }
+  await writeJson(MOCK_ATTENDANCE_KEY, attendance);
+
+  try {
+    const joinedKey = `joinedSessions:v1:${user.id}`;
+    const existingJoined = await AsyncStorage.getItem(joinedKey);
+    const list: { sessionId: string; groupId: string }[] = existingJoined
+      ? JSON.parse(existingJoined)
+      : [];
+    const asArray = Array.isArray(list) ? list : [];
+    for (const sessionId of joinSessionIds) {
+      if (!asArray.some((j) => j.sessionId === sessionId)) {
+        asArray.push({ sessionId, groupId: "C" });
+      }
+    }
+    await AsyncStorage.setItem(joinedKey, JSON.stringify(asArray));
+  } catch {
+    /* ignore */
+  }
+
+  // Place demo user in Casa Running “Vert — confort”
+  try {
+    const raw = await AsyncStorage.getItem(`grpd_club_admin_v2_${DEMO_CLUB_ID}`);
+    if (raw) {
+      const admin = JSON.parse(raw) as {
+        memberGroups?: Record<string, string>;
+      };
+      admin.memberGroups = {
+        ...(admin.memberGroups ?? {}),
+        [user.id]: "g_casa_vert",
+      };
+      await AsyncStorage.setItem(
+        `grpd_club_admin_v2_${DEMO_CLUB_ID}`,
+        JSON.stringify(admin),
+      );
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 const DEMO_RESET_KEYS = [

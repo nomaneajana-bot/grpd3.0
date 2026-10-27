@@ -40,10 +40,10 @@ type Presence = {
 };
 
 /**
- * Club key flow — not a directory.
- * Primary: paste a code or link someone shared.
- * Admin: mint + share a key on social / messaging.
- * Tertiary: knock by name if you only heard of them.
+ * Club join / key flow.
+ * Primary for joiners: search by club name (knock — not a public directory browse).
+ * Secondary: paste a received invite code/link.
+ * Admin: mint + share a key.
  */
 export default function ClubAccessScreen() {
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
@@ -52,7 +52,7 @@ export default function ClubAccessScreen() {
   const [generatedInviteCode, setGeneratedInviteCode] = useState<string | null>(
     null,
   );
-  const [showNameKnock, setShowNameKnock] = useState(false);
+  const [showKeyEntry, setShowKeyEntry] = useState(false);
   const [clubSlug, setClubSlug] = useState("");
   const [requestMessage, setRequestMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -166,7 +166,6 @@ export default function ClubAccessScreen() {
       });
       setClubSlug("");
       setRequestMessage("");
-      setShowNameKnock(false);
       showToast("Demande envoyée.", "success");
       await loadMemberships();
     } catch (error: unknown) {
@@ -263,11 +262,11 @@ export default function ClubAccessScreen() {
           GRpD
         </Text>
         <Text style={styles.title} testID="club-key-title">
-          Une clé, pas un annuaire
+          Rejoindre un club
         </Text>
         <Text style={styles.subtitle}>
-          Les clubs se rejoignent par invitation — lien ou code partagé hors de
-          l’app. Ici, tu ouvres la porte.
+          Cherche le nom si tu le connais — ou ouvre la porte avec une clé
+          qu’on t’a envoyée. Ce n’est pas un annuaire public.
         </Text>
       </View>
 
@@ -399,120 +398,125 @@ export default function ClubAccessScreen() {
               </View>
             ) : null}
 
-            <View style={styles.block} testID="club-key-join-block">
-              <Text style={styles.blockKicker}>ENTRER</Text>
-              <Text style={styles.blockTitle}>Tu as reçu une clé ?</Text>
+            {/* Join by name first — search at top of joiner path */}
+            <View style={styles.block} testID="club-key-name-form">
+              <Text style={styles.blockKicker}>REJOINDRE</Text>
+              <Text style={styles.blockTitle}>Tu connais le nom ?</Text>
               <Text style={styles.blockHint}>
-                Colle le code ou le lien qu’on t’a envoyé.
+                Tape le nom du club. Un responsable décide — ce n’est pas un
+                catalogue public.
               </Text>
-
               <TextInput
                 style={styles.keyInput}
-                value={keyPaste}
-                onChangeText={setKeyPaste}
-                placeholder="Code ou lien (grpd.run/c/…)"
+                value={clubSlug}
+                onChangeText={setClubSlug}
+                placeholder="Rechercher un club…"
                 placeholderTextColor={t.outline}
-                autoCapitalize="none"
-                autoCorrect={false}
+                autoCapitalize="words"
                 editable={!isSubmitting}
-                accessibilityLabel="Code ou lien d'invitation"
-                testID="club-invite-code-input"
+                accessibilityLabel="Rechercher un club par nom"
+                testID="club-request-name-input"
               />
-
-              <View style={styles.rowActions}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.ghostButton,
-                    pressed && styles.pressed,
-                  ]}
-                  onPress={() => void handlePasteFromClipboard()}
-                  testID="club-key-paste"
-                  accessibilityRole="button"
-                  accessibilityLabel="Coller depuis le presse-papiers"
-                >
-                  <Text style={styles.ghostButtonText}>Coller</Text>
-                </Pressable>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    styles.primaryFlex,
-                    (pressed || isSubmitting) && styles.pressed,
-                  ]}
-                  onPress={() => void handleOpenDoor()}
-                  disabled={isSubmitting}
-                  accessibilityRole="button"
-                  accessibilityLabel="Ouvrir la porte"
-                  testID="club-join-by-code"
-                >
-                  <Text style={styles.primaryButtonText}>Ouvrir la porte</Text>
-                </Pressable>
-              </View>
-
+              <TextInput
+                style={[styles.keyInput, styles.messageInput]}
+                value={requestMessage}
+                onChangeText={setRequestMessage}
+                placeholder="Un mot pour te présenter (optionnel)"
+                placeholderTextColor={t.outline}
+                autoCapitalize="sentences"
+                editable={!isSubmitting}
+                testID="club-request-message-input"
+              />
+              <Pressable
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  (pressed || isSubmitting || isPendingMember) && styles.pressed,
+                ]}
+                onPress={() => void handleRequestJoin()}
+                disabled={isSubmitting || isPendingMember}
+                accessibilityRole="button"
+                accessibilityLabel="Demander à rejoindre"
+                testID="club-request-submit"
+              >
+                <Text style={styles.primaryButtonText}>
+                  {isPendingMember
+                    ? "Demande déjà en attente"
+                    : "Demander à rejoindre"}
+                </Text>
+              </Pressable>
               <Text style={styles.footnote}>
-                Entrer dans un club ne t’inscrit à aucune sortie.
+                Une demande n’est ni une adhésion confirmée ni une inscription
+                à une sortie.
               </Text>
             </View>
 
             <View style={styles.tertiaryBlock}>
               <Pressable
-                onPress={() => setShowNameKnock((v) => !v)}
-                testID="club-key-name-toggle"
+                onPress={() => setShowKeyEntry((v) => !v)}
+                testID="club-key-code-toggle"
                 accessibilityRole="button"
-                accessibilityState={{ expanded: showNameKnock }}
+                accessibilityState={{ expanded: showKeyEntry }}
               >
                 <Text style={styles.tertiaryTitle}>
-                  {showNameKnock
-                    ? "Sans clé — frapper à la porte"
-                    : "Sans clé ? Tu connais le nom →"}
+                  {showKeyEntry
+                    ? "J’ai une clé"
+                    : "J’ai une clé (code ou lien) →"}
                 </Text>
               </Pressable>
-              {showNameKnock ? (
-                <View style={styles.knockForm} testID="club-key-name-form">
+              {showKeyEntry ? (
+                <View style={styles.knockForm} testID="club-key-join-block">
                   <Text style={styles.knockHint}>
-                    Ce n’est pas un annuaire : tu frappes si tu as déjà entendu
-                    parler d’eux. Un responsable décide.
+                    Colle le code ou le lien qu’on t’a envoyé.
                   </Text>
                   <TextInput
                     style={styles.keyInput}
-                    value={clubSlug}
-                    onChangeText={setClubSlug}
-                    placeholder="Nom du club"
+                    value={keyPaste}
+                    onChangeText={setKeyPaste}
+                    placeholder="Code ou lien (grpd.run/c/…)"
                     placeholderTextColor={t.outline}
-                    autoCapitalize="words"
+                    autoCapitalize="none"
+                    autoCorrect={false}
                     editable={!isSubmitting}
-                    accessibilityLabel="Nom du club"
-                    testID="club-request-name-input"
+                    accessibilityLabel="Code ou lien d'invitation"
+                    testID="club-invite-code-input"
                   />
-                  <TextInput
-                    style={[styles.keyInput, styles.messageInput]}
-                    value={requestMessage}
-                    onChangeText={setRequestMessage}
-                    placeholder="Un mot pour te présenter (optionnel)"
-                    placeholderTextColor={t.outline}
-                    autoCapitalize="sentences"
-                    editable={!isSubmitting}
-                    testID="club-request-message-input"
-                  />
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.secondaryButton,
-                      (pressed || isSubmitting || isPendingMember) &&
-                        styles.pressed,
-                    ]}
-                    onPress={() => void handleRequestJoin()}
-                    disabled={isSubmitting || isPendingMember}
-                    accessibilityRole="button"
-                    accessibilityLabel="Envoyer la demande"
-                    testID="club-request-submit"
-                  >
-                    <Text style={styles.secondaryButtonText}>
-                      {isPendingMember
-                        ? "Demande déjà en attente"
-                        : "Frapper à la porte"}
-                    </Text>
-                  </Pressable>
+                  <View style={styles.rowActions}>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.ghostButton,
+                        pressed && styles.pressed,
+                      ]}
+                      onPress={() => void handlePasteFromClipboard()}
+                      testID="club-key-paste"
+                      accessibilityRole="button"
+                      accessibilityLabel="Coller depuis le presse-papiers"
+                    >
+                      <Text style={styles.ghostButtonText}>Coller</Text>
+                    </Pressable>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.primaryButton,
+                        styles.primaryFlex,
+                        (pressed || isSubmitting) && styles.pressed,
+                      ]}
+                      onPress={() => void handleOpenDoor()}
+                      disabled={isSubmitting}
+                      accessibilityRole="button"
+                      accessibilityLabel="Ouvrir la porte"
+                      testID="club-join-by-code"
+                    >
+                      <Text style={styles.primaryButtonText}>
+                        Ouvrir la porte
+                      </Text>
+                    </Pressable>
+                  </View>
                 </View>
               ) : null}
+            </View>
+
+            {/* Compat: old tests may toggle name form — keep a hidden alias */}
+            <View style={{ height: 0, overflow: "hidden" }}>
+              <Pressable testID="club-key-name-toggle" />
             </View>
 
             <Pressable

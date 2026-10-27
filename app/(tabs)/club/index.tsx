@@ -30,6 +30,7 @@ import {
   getMyMemberships,
   leaveClub,
   listSessions,
+  setClubMemberGroup,
 } from "@/lib/api";
 import {
   buildClubActivityFeed,
@@ -218,6 +219,21 @@ export default function ClubScreen() {
     try {
       const memberGroups = { ...adminSettings.memberGroups };
       if (groupId) {
+        const client = createApiClient();
+        const eligibleFromLegacy = (adminSettings.groups ?? [])
+          .filter((g) => g.active !== false)
+          .map((g) => g.id);
+        const eligibleFromColor = (adminSettings.colorGroups ?? [])
+          .filter((g) => g.active !== false)
+          .map((g) => g.id);
+        const eligibleGroupIds = [
+          ...new Set([...eligibleFromLegacy, ...eligibleFromColor]),
+        ];
+        await setClubMemberGroup(client, primaryMembership.clubId, {
+          userId: authUserId,
+          groupId,
+          ...(eligibleGroupIds.length > 0 ? { eligibleGroupIds } : {}),
+        });
         memberGroups[authUserId] = groupId;
       } else {
         delete memberGroups[authUserId];
@@ -308,7 +324,7 @@ export default function ClubScreen() {
     ? `Membre confirmé${foundedYear ? ` · Fondé ${foundedYear}` : ""}`
     : isPendingMember
       ? "Demande en attente"
-      : "Invitation · pas d’annuaire";
+      : "Rejoindre · créer · clé";
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -348,43 +364,61 @@ export default function ClubScreen() {
           </View>
         ) : isApprovedMember && club ? (
           <>
-            {approvedMemberships.length > 1 ? (
-              <View style={styles.clubSwitcher} testID="club-switcher">
+            <View style={styles.clubSwitcher} testID="club-switcher">
+              <View style={styles.clubSwitcherHeader}>
                 <Text style={styles.clubSwitcherLabel}>MES CLUBS</Text>
-                <View style={styles.clubSwitcherRow}>
-                  {approvedMemberships.map((m) => {
-                    const active = m.clubId === primaryMembership?.clubId;
-                    return (
-                      <Pressable
-                        key={m.clubId}
-                        testID={`club-switch-${m.clubId}`}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
-                        accessibilityLabel={m.club?.name ?? m.clubId}
-                        onPress={() => {
-                          setFocusedClubId(m.clubId);
-                          void persistFocusedClubId(m.clubId);
-                        }}
-                        style={[
-                          styles.clubSwitcherChip,
-                          active && styles.clubSwitcherChipOn,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.clubSwitcherChipText,
-                            active && styles.clubSwitcherChipTextOn,
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {m.club?.name ?? "Club"}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                <Pressable
+                  testID="club-find-another"
+                  accessibilityRole="button"
+                  accessibilityLabel="Rejoindre un autre club"
+                  onPress={() => router.push("/(tabs)/club/access" as Href)}
+                  hitSlop={8}
+                >
+                  <Text style={styles.clubFindLink}>Trouver un club →</Text>
+                </Pressable>
               </View>
-            ) : null}
+              <View style={styles.clubSwitcherRow}>
+                {approvedMemberships.map((m) => {
+                  const active = m.clubId === primaryMembership?.clubId;
+                  return (
+                    <Pressable
+                      key={m.clubId}
+                      testID={`club-switch-${m.clubId}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={m.club?.name ?? m.clubId}
+                      onPress={() => {
+                        setFocusedClubId(m.clubId);
+                        void persistFocusedClubId(m.clubId);
+                      }}
+                      style={[
+                        styles.clubSwitcherChip,
+                        active && styles.clubSwitcherChipOn,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.clubSwitcherChipText,
+                          active && styles.clubSwitcherChipTextOn,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {m.club?.name ?? "Club"}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+                <Pressable
+                  testID="club-find-chip"
+                  accessibilityRole="button"
+                  accessibilityLabel="Rejoindre un autre club"
+                  onPress={() => router.push("/(tabs)/club/access" as Href)}
+                  style={styles.clubFindChip}
+                >
+                  <Text style={styles.clubFindChipText}>+ Rejoindre</Text>
+                </Pressable>
+              </View>
+            </View>
             <ClubOverviewCard
               clubName={club.name}
               memberCount={memberCount ?? 1}
@@ -573,6 +607,24 @@ export default function ClubScreen() {
               </>
             ) : null}
 
+            <SectionHeader label="AUTRES CLUBS" />
+            <GroupedList>
+              <ClubNavCard
+                title="Rejoindre un autre club"
+                subtitle="Cherche par nom ou ouvre avec une clé"
+                icon="search-outline"
+                testID="club-join-another-nav"
+                onPress={() => router.push("/(tabs)/club/access" as Href)}
+              />
+              <ClubNavCard
+                title="Créer un club"
+                subtitle="Fonder un nouveau cadre"
+                icon="add-circle-outline"
+                testID="club-create-from-hub"
+                onPress={() => router.push("/(tabs)/club/create" as Href)}
+              />
+            </GroupedList>
+
             {isClubAdmin ? (
               <>
                 <SectionHeader label="ADMINISTRATION" />
@@ -589,6 +641,17 @@ export default function ClubScreen() {
                     icon="people-outline"
                     onPress={() => router.push("/(tabs)/club/admin" as Href)}
                   />
+                  {isMemberOrgEnabled(adminSettings) ? (
+                    <ClubNavCard
+                      title="Affecter les membres"
+                      subtitle="Une fois — ils restent jusqu’au prochain changement"
+                      icon="people-circle-outline"
+                      testID="club-assign-members-nav"
+                      onPress={() =>
+                        router.push("/(tabs)/club/settings" as Href)
+                      }
+                    />
+                  ) : null}
                   <ClubNavCard
                     title="Paramètres du club"
                     subtitle="Nom, groupes, politique"
@@ -680,11 +743,11 @@ export default function ClubScreen() {
           <View style={styles.keyEmpty} testID="club-key-empty">
             <Text style={styles.keyEmptyBrand}>GRpD</Text>
             <Text style={styles.keyEmptyTitle}>
-              Tes clubs arrivent par invitation
+              Rejoins ou crée ton premier club
             </Text>
             <Text style={styles.keyEmptySub}>
-              Pas d’annuaire ici. Quelqu’un te partage une clé — lien ou code —
-              et tu ouvres la porte dans l’app.
+              Cherche un club par son nom, ou ouvre la porte avec une clé
+              qu’on t’a envoyée. Pas d’annuaire public.
             </Text>
             <Pressable
               style={({ pressed }) => [
@@ -693,10 +756,10 @@ export default function ClubScreen() {
               ]}
               onPress={() => router.push("/(tabs)/club/access" as Href)}
               accessibilityRole="button"
-              accessibilityLabel="J'ai une clé"
+              accessibilityLabel="Rejoindre un club"
               testID="club-key-enter"
             >
-              <Text style={styles.primaryButtonText}>J’ai une clé</Text>
+              <Text style={styles.primaryButtonText}>Rejoindre un club</Text>
             </Pressable>
             <Pressable
               testID="club-create-entry"
@@ -839,10 +902,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     gap: 8,
   },
+  clubSwitcherHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
   clubSwitcherLabel: {
     ...t.type.labelSm,
     color: t.textSecondary,
     textTransform: "uppercase",
+  },
+  clubFindLink: {
+    fontFamily: t.font.space.semibold,
+    color: t.primary,
+    fontSize: 13,
   },
   clubSwitcherRow: {
     flexDirection: "row",
@@ -869,6 +943,20 @@ const styles = StyleSheet.create({
   },
   clubSwitcherChipTextOn: {
     color: t.onPrimary,
+  },
+  clubFindChip: {
+    borderRadius: t.radiusChip,
+    borderWidth: 1,
+    borderColor: t.outlineVariant,
+    borderStyle: "dashed",
+    backgroundColor: t.surfaceContainerLow,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  clubFindChipText: {
+    color: t.primary,
+    fontSize: 13,
+    fontFamily: t.font.space.semibold,
   },
   quitZone: {
     paddingVertical: 32,

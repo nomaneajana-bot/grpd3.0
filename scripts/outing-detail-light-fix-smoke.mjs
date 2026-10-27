@@ -211,7 +211,7 @@ async function main() {
     const joinCta = page.getByTestId("stito-join-cta");
     await joinCta.click({ force: true });
     await page.waitForTimeout(1800);
-    if (!(await page.getByText(/inscrit|Place réservée|Se désister/i).count())) {
+    if (!(await page.getByText(/inscrit|Place réservée|Annuler ma participation|Se désister/i).count())) {
       const alt = page.getByText(/Rejoindre la sortie|M'inscrire à cette sortie|Rejoindre/i);
       if (await alt.count()) {
         await alt.last().click({ force: true });
@@ -220,7 +220,7 @@ async function main() {
     }
     const bodyAfterJoin = await page.locator("body").innerText();
     const joinedUi =
-      /Se désister|Place réservée|Tu es inscrit|Inscription enregistrée|Confirmé/i.test(
+      /Annuler ma participation|Se désister|Place réservée|Tu es inscrit|Inscription enregistrée|Confirmé/i.test(
         bodyAfterJoin,
       );
     check("joined_on_detail", joinedUi, "joined UI");
@@ -290,7 +290,7 @@ async function main() {
     );
     const bodyReload = await page.locator("body").innerText();
     const stillJoined =
-      /Se désister|Place réservée · tu peux/i.test(bodyReload) &&
+      /Annuler ma participation|Se désister|Place réservée · tu peux|Tu es inscrit/i.test(bodyReload) &&
       !/Rejoindre la sortie|M'inscrire à cette sortie/i.test(bodyReload);
     const joinAgain = /Rejoindre la sortie|M'inscrire à cette sortie/i.test(bodyReload);
     check("reload_not_joined", joinAgain || !stillJoined, `joinAgain=${joinAgain}`);

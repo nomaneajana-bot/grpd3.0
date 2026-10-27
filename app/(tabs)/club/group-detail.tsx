@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
 
+import { AssignMemberGroupSheet } from "@/components/club/AssignMemberGroupSheet";
 import { GroupMemberRow } from "@/components/club/GroupMemberRow";
 import { InterGroupPolicyInfoBox } from "@/components/club/InterGroupPolicyInfoBox";
 import { InterGroupPolicyPicker } from "@/components/club/InterGroupPolicyPicker";
@@ -42,8 +43,10 @@ import {
   type ClubPaceGroupId,
 } from "@/lib/clubPaceGroups";
 import {
+  isMemberOrgEnabled,
   memberAssignedGroupId,
   memberGroupColor,
+  sortedActiveColorGroups,
 } from "@/lib/clubMemberGroups";
 import { groupPolicyInfoText } from "@/lib/interGroupPolicy";
 import { useUnsavedChangesGuard } from "@/lib/useUnsavedChangesGuard";
@@ -183,11 +186,9 @@ export default function ClubGroupDetailScreen() {
     }
   };
 
-  const handleAssignMember = async (
-    member: ClubRosterMember,
-    targetGroupId: ClubPaceGroupId,
-  ) => {
-    if (!clubId || !settings) return;
+  const handleAssignMember = async (targetGroupId: string | null) => {
+    if (!clubId || !settings || !changeMember) return;
+    const member = changeMember;
     try {
       const client = createApiClient();
       const eligibleFromLegacy = (settings.groups ?? [])
@@ -199,28 +200,40 @@ export default function ClubGroupDetailScreen() {
       const eligibleGroupIds = [
         ...new Set([...eligibleFromLegacy, ...eligibleFromColor]),
       ];
-      await setClubMemberGroup(client, clubId, {
-        userId: member.userId,
-        groupId: targetGroupId,
-        ...(eligibleGroupIds.length > 0 ? { eligibleGroupIds } : {}),
-      });
+      const memberGroups = { ...settings.memberGroups };
+      if (targetGroupId) {
+        await setClubMemberGroup(client, clubId, {
+          userId: member.userId,
+          groupId: targetGroupId,
+          ...(eligibleGroupIds.length > 0 ? { eligibleGroupIds } : {}),
+        });
+        memberGroups[member.userId] = targetGroupId;
+      } else {
+        delete memberGroups[member.userId];
+      }
       const next = mergeClubAdminSettings({
         ...settings,
-        memberGroups: {
-          ...settings.memberGroups,
-          [member.userId]: targetGroupId,
-        },
+        memberGroups,
       });
       await saveClubAdminSettings(clubId, next);
       setSettings(next);
       setChangeMember(null);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      showToast("Membre mis à jour.", "success");
+      const label = targetGroupId
+        ? sortedActiveColorGroups(next).find((g) => g.id === targetGroupId)
+            ?.name ??
+          (targetGroupId.length === 1 ? `Groupe ${targetGroupId}` : "groupe")
+        : "Sans groupe";
+      showToast(`${member.displayName ?? member.userId} → ${label}`, "success");
     } catch (error) {
       console.warn("Assign member failed:", error);
       showToast("Impossible de changer le groupe.", "error");
     }
   };
+
+  const useColorOrg = Boolean(
+    colorGroup || (settings && isMemberOrgEnabled(settings)),
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -294,7 +307,8 @@ export default function ClubGroupDetailScreen() {
                   name={member.displayName ?? member.userId}
                   initials={initials(member.displayName ?? "?")}
                   memberSinceLabel={memberSinceLabel()}
-                  groupId={gid}
+                  groupId={useColorOrg ? undefined : gid}
+                  avatarColor={useColorOrg ? accentColor : undefined}
                   memberUserId={member.userId}
                   onChangePress={
                     hasAdminAccess
@@ -306,6 +320,7 @@ export default function ClubGroupDetailScreen() {
             )}
             {hasAdminAccess ? (
               <Pressable
+                testID="club-group-assign-from-detail"
                 style={({ pressed }) => [
                   styles.addMemberBtn,
                   pressed && styles.addMemberBtnPressed,
@@ -319,13 +334,21 @@ export default function ClubGroupDetailScreen() {
               >
                 <Text style={styles.addMemberIcon}>+</Text>
                 <Text style={styles.addMemberText}>
-                  Ajouter un membre au groupe
+                  Affecter depuis Paramètres du club
                 </Text>
               </Pressable>
             ) : null}
           </View>
 
-          {hasAdminAccess && settings ? (
+          {useColorOrg ? (
+            <Text style={styles.persistHint} testID="club-group-persist-hint">
+              Affectation club — le membre reste dans ce groupe jusqu&apos;à ce
+              qu&apos;un admin (ou lui-même) le change. Pas besoin de le
+              réaffecter à chaque sortie.
+            </Text>
+          ) : null}
+
+          {hasAdminAccess && settings && !useColorOrg ? (
             <>
               <SectionLabel>POLITIQUE D&apos;ACCÈS INTER-GROUPES</SectionLabel>
               <Text style={styles.policyQuestion}>
@@ -360,7 +383,7 @@ export default function ClubGroupDetailScreen() {
         </ScrollView>
       )}
 
-      {hasAdminAccess ? (
+      {hasAdminAccess && !useColorOrg ? (
         <View style={styles.footer}>
           <Pressable
             style={[styles.saveBtn, isSaving && styles.saveBtnDisabled]}
@@ -374,69 +397,86 @@ export default function ClubGroupDetailScreen() {
         </View>
       ) : null}
 
-      <Modal visible={changeMember != null} transparent animationType="fade">
-        <Pressable
-          style={styles.modalBackdrop}
-          onPress={() => setChangeMember(null)}
-          testID="club-group-assign-backdrop"
-        >
+      {settings && useColorOrg ? (
+        <AssignMemberGroupSheet
+          visible={changeMember != null}
+          memberName={
+            changeMember?.displayName?.trim() ||
+            changeMember?.userId ||
+            "Membre"
+          }
+          settings={settings}
+          currentGroupId={
+            changeMember
+              ? memberAssignedGroupId(changeMember.userId, settings)
+              : null
+          }
+          onSelect={(gidNext) => void handleAssignMember(gidNext)}
+          onClose={() => setChangeMember(null)}
+        />
+      ) : (
+        <Modal visible={changeMember != null} transparent animationType="fade">
           <Pressable
-            style={styles.modalCard}
-            onPress={(e) => e.stopPropagation()}
-            testID="club-group-assign-modal"
+            style={styles.modalBackdrop}
+            onPress={() => setChangeMember(null)}
+            testID="club-group-assign-backdrop"
           >
-            <Text style={styles.modalTitle}>Changer de groupe</Text>
-            {changeMember ? (
-              <Text style={styles.modalSub}>
-                {changeMember.displayName ?? changeMember.userId}
-              </Text>
-            ) : null}
-            <View style={styles.modalChips}>
-              {(["A", "B", "C", "D"] as const).map((id) => {
-                const chipDef = getClubPaceGroupDef(id);
-                const isCurrent =
-                  changeMember && settings
-                    ? assignMemberToClubGroup(changeMember, settings) === id
-                    : false;
-                return (
-                  <Pressable
-                    key={id}
-                    testID={`club-group-assign-${id}`}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Assigner au groupe ${id}`}
-                    accessibilityState={{ selected: Boolean(isCurrent) }}
-                    style={({ pressed }) => [
-                      styles.modalChip,
-                      isCurrent && styles.modalChipCurrent,
-                      pressed && styles.modalChipPressed,
-                    ]}
-                    onPress={() => {
-                      if (changeMember) {
-                        void handleAssignMember(changeMember, id);
-                      }
-                    }}
-                  >
-                    <View
-                      style={[
-                        styles.modalChipDot,
-                        { backgroundColor: chipDef.dotColor },
+            <Pressable
+              style={styles.modalCard}
+              onPress={(e) => e.stopPropagation()}
+              testID="club-group-assign-modal"
+            >
+              <Text style={styles.modalTitle}>Changer de groupe</Text>
+              {changeMember ? (
+                <Text style={styles.modalSub}>
+                  {changeMember.displayName ?? changeMember.userId}
+                </Text>
+              ) : null}
+              <View style={styles.modalChips}>
+                {(["A", "B", "C", "D"] as const).map((id) => {
+                  const chipDef = getClubPaceGroupDef(id);
+                  const isCurrent =
+                    changeMember && settings
+                      ? assignMemberToClubGroup(changeMember, settings) === id
+                      : false;
+                  return (
+                    <Pressable
+                      key={id}
+                      testID={`club-group-assign-${id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Assigner au groupe ${id}`}
+                      accessibilityState={{ selected: Boolean(isCurrent) }}
+                      style={({ pressed }) => [
+                        styles.modalChip,
+                        isCurrent && styles.modalChipCurrent,
+                        pressed && styles.modalChipPressed,
                       ]}
-                    />
-                    <Text
-                      style={[
-                        styles.modalChipText,
-                        isCurrent && styles.modalChipTextCurrent,
-                      ]}
+                      onPress={() => {
+                        void handleAssignMember(id);
+                      }}
                     >
-                      Groupe {id}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+                      <View
+                        style={[
+                          styles.modalChipDot,
+                          { backgroundColor: chipDef.dotColor },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.modalChipText,
+                          isCurrent && styles.modalChipTextCurrent,
+                        ]}
+                      >
+                        Groupe {id}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -499,6 +539,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   hint: { color: colors.text.secondary, fontSize: 13, paddingVertical: 12 },
+  persistHint: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 16,
+    paddingHorizontal: 2,
+  },
   addMemberBtn: {
     flexDirection: "row",
     alignItems: "center",

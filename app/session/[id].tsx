@@ -1488,13 +1488,10 @@ export default function SessionScreen() {
       {!isOrganizer ? (
         <StitoStickyJoinBar
           joined={hasStoredJoin}
-          busy={isJoiningOuting}
-          primaryLabel={
-            hasStoredJoin
-              ? "Inscrit·e (Se désister)"
-              : "Rejoindre la sortie"
-          }
-          onPrimary={hasStoredJoin ? openLeaveConfirm : () => void handleSave()}
+          busy={isJoiningOuting || isLeavingOuting}
+          primaryLabel="Rejoindre la sortie"
+          onPrimary={() => void handleSave()}
+          onCancelParticipation={openLeaveConfirm}
         />
       ) : null}
 
