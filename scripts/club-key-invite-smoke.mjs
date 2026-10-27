@@ -92,25 +92,20 @@ async function main() {
 
     check(
       "philosophy_title",
-      /Une clé, pas un annuaire/i.test(body),
+      /Rejoindre un club/i.test(body),
       body.slice(0, 160),
     );
     check(
-      "no_directory_primary",
-      !/Demander à rejoindre/i.test(body) ||
-        (await page.getByTestId("club-key-name-form").count()) === 0,
-      "name knock collapsed",
+      "join_by_name_first",
+      (await page.getByTestId("club-key-name-form").count()) > 0 &&
+        (await page.getByTestId("club-request-name-input").count()) > 0 &&
+        /Demander à rejoindre|Rechercher un club/i.test(body),
+      "name search at top",
     );
     check(
-      "enter_block",
-      (await page.getByTestId("club-key-join-block").count()) > 0 &&
-        /Tu as reçu une clé/i.test(body),
-      "enter",
-    );
-    check(
-      "open_door_cta",
-      (await page.getByTestId("club-join-by-code").count()) > 0,
-      "cta",
+      "no_public_directory_claim",
+      /pas un (annuaire|catalogue) public/i.test(body),
+      "honest non-directory",
     );
     check(
       "no_vip",
@@ -118,13 +113,14 @@ async function main() {
       "no vip",
     );
 
-    // Expand name knock — tertiary
-    await page.getByTestId("club-key-name-toggle").click({ force: true });
+    // Expand key entry — secondary to name search
+    await page.getByTestId("club-key-code-toggle").click({ force: true });
     await page.waitForTimeout(300);
     check(
-      "name_knock_expandable",
-      (await page.getByTestId("club-key-name-form").count()) > 0,
-      "knock form",
+      "key_entry_expandable",
+      (await page.getByTestId("club-key-join-block").count()) > 0 &&
+        (await page.getByTestId("club-join-by-code").count()) > 0,
+      "code entry",
     );
     await page.screenshot({
       path: path.join(OUT, "club-key-name-knock.png"),
@@ -152,8 +148,9 @@ async function main() {
     if ((await page.getByTestId("club-key-empty").count()) > 0) {
       check(
         "empty_has_key_cta",
-        (await page.getByTestId("club-key-enter").count()) > 0,
-        "J'ai une clé",
+        (await page.getByTestId("club-key-enter").count()) > 0 &&
+          /Rejoindre un club/i.test(body),
+        "Rejoindre un club",
       );
       check(
         "empty_no_code_form",

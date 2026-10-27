@@ -219,7 +219,7 @@ async function main() {
     check(
       "p2_outsider_no_admin",
       !/Enregistrer le club/i.test(out) &&
-        (/J'ai une clé|invitation|Créer/i.test(out) || Boolean(await page.getByTestId("club-key-empty").count())),
+        (/Rejoindre un club|J'ai une clé|invitation|Créer/i.test(out) || Boolean(await page.getByTestId("club-key-empty").count())),
       out.slice(0, 80),
     );
     await shot(page, "04-outsider");

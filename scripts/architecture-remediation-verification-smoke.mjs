@@ -242,7 +242,7 @@ async function main() {
       check(
         "phone_club_tab_hit_navigates",
         /club/i.test(page.url()) ||
-          /Quitter|Créer|J'ai une clé|Paramètres|Clubs/i.test(
+          /Quitter|Créer|Rejoindre un club|J'ai une clé|Paramètres|Clubs/i.test(
             await page.locator("body").innerText(),
           ),
         page.url(),

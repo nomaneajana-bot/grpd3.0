@@ -324,7 +324,7 @@ export default function ClubScreen() {
     ? `Membre confirmé${foundedYear ? ` · Fondé ${foundedYear}` : ""}`
     : isPendingMember
       ? "Demande en attente"
-      : "Invitation · pas d’annuaire";
+      : "Rejoindre · créer · clé";
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -707,11 +707,11 @@ export default function ClubScreen() {
           <View style={styles.keyEmpty} testID="club-key-empty">
             <Text style={styles.keyEmptyBrand}>GRpD</Text>
             <Text style={styles.keyEmptyTitle}>
-              Tes clubs arrivent par invitation
+              Rejoins ou crée ton premier club
             </Text>
             <Text style={styles.keyEmptySub}>
-              Pas d’annuaire ici. Quelqu’un te partage une clé — lien ou code —
-              et tu ouvres la porte dans l’app.
+              Cherche un club par son nom, ou ouvre la porte avec une clé
+              qu’on t’a envoyée. Pas d’annuaire public.
             </Text>
             <Pressable
               style={({ pressed }) => [
@@ -720,10 +720,10 @@ export default function ClubScreen() {
               ]}
               onPress={() => router.push("/(tabs)/club/access" as Href)}
               accessibilityRole="button"
-              accessibilityLabel="J'ai une clé"
+              accessibilityLabel="Rejoindre un club"
               testID="club-key-enter"
             >
-              <Text style={styles.primaryButtonText}>J’ai une clé</Text>
+              <Text style={styles.primaryButtonText}>Rejoindre un club</Text>
             </Pressable>
             <Pressable
               testID="club-create-entry"

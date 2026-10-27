@@ -765,7 +765,7 @@ async function main() {
       check(
         "p11_clubs_tab_click_navigates",
         /club/i.test(page.url()) ||
-          /Quitter|Créer|J'ai une clé|Paramètres/i.test(
+          /Quitter|Créer|Rejoindre un club|J'ai une clé|Paramètres/i.test(
             await page.locator("body").innerText(),
           ),
         page.url(),
