@@ -166,7 +166,6 @@ export default function ClubAccessScreen() {
       });
       setClubSlug("");
       setRequestMessage("");
-      setShowNameKnock(false);
       showToast("Demande envoyée.", "success");
       await loadMemberships();
     } catch (error: unknown) {
