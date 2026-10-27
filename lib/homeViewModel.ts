@@ -244,6 +244,38 @@ export function activityLabel(session: SessionData): string {
   return activityForSession(session) === "walk" ? "Marche" : "Course";
 }
 
+/**
+ * Display title for discovery / list surfaces.
+ * Collapses ALL-CAPS seed titles into sentence case without touching storage.
+ */
+export function displayOutingTitle(raw: string): string {
+  const t = raw.trim().replace(/\s+/g, " ");
+  if (!t) return t;
+  const letters = t.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ]/g, "");
+  const mostlyUpper =
+    letters.length >= 3 &&
+    letters === letters.toUpperCase() &&
+    letters !== letters.toLowerCase();
+  if (!mostlyUpper) return t;
+  const lower = t.toLocaleLowerCase("fr-FR");
+  return lower.charAt(0).toLocaleUpperCase("fr-FR") + lower.slice(1);
+}
+
+/** Day number + short weekday for discovery date column. */
+export function discoveryDateParts(session: SessionData): {
+  dayNum: string;
+  weekday: string;
+  month: string;
+} | null {
+  const d = parseLocalDate(session.dateISO);
+  if (!d) return null;
+  return {
+    dayNum: String(d.getDate()),
+    weekday: DAY_SHORT[d.getDay()]!.replace(/\.$/, ""),
+    month: MONTH_SHORT[d.getMonth()]!,
+  };
+}
+
 export function resolveCityLabel(params: {
   memberships: ClubMembership[];
   query: string;
