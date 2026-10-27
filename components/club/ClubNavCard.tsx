@@ -9,6 +9,7 @@ type ClubNavCardProps = {
   subtitle: string;
   icon?: keyof typeof Ionicons.glyphMap;
   badge?: number;
+  testID?: string;
   onPress: () => void;
 };
 
@@ -17,10 +18,12 @@ export function ClubNavCard({
   subtitle,
   icon = "settings-outline",
   badge,
+  testID,
   onPress,
 }: ClubNavCardProps) {
   return (
     <Pressable
+      testID={testID}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
       onPress={onPress}
     >

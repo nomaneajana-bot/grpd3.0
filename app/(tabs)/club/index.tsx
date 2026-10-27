@@ -30,6 +30,7 @@ import {
   getMyMemberships,
   leaveClub,
   listSessions,
+  setClubMemberGroup,
 } from "@/lib/api";
 import {
   buildClubActivityFeed,
@@ -218,6 +219,21 @@ export default function ClubScreen() {
     try {
       const memberGroups = { ...adminSettings.memberGroups };
       if (groupId) {
+        const client = createApiClient();
+        const eligibleFromLegacy = (adminSettings.groups ?? [])
+          .filter((g) => g.active !== false)
+          .map((g) => g.id);
+        const eligibleFromColor = (adminSettings.colorGroups ?? [])
+          .filter((g) => g.active !== false)
+          .map((g) => g.id);
+        const eligibleGroupIds = [
+          ...new Set([...eligibleFromLegacy, ...eligibleFromColor]),
+        ];
+        await setClubMemberGroup(client, primaryMembership.clubId, {
+          userId: authUserId,
+          groupId,
+          ...(eligibleGroupIds.length > 0 ? { eligibleGroupIds } : {}),
+        });
         memberGroups[authUserId] = groupId;
       } else {
         delete memberGroups[authUserId];
@@ -589,6 +605,17 @@ export default function ClubScreen() {
                     icon="people-outline"
                     onPress={() => router.push("/(tabs)/club/admin" as Href)}
                   />
+                  {isMemberOrgEnabled(adminSettings) ? (
+                    <ClubNavCard
+                      title="Affecter les membres"
+                      subtitle="Une fois — ils restent jusqu’au prochain changement"
+                      icon="people-circle-outline"
+                      testID="club-assign-members-nav"
+                      onPress={() =>
+                        router.push("/(tabs)/club/settings" as Href)
+                      }
+                    />
+                  ) : null}
                   <ClubNavCard
                     title="Paramètres du club"
                     subtitle="Nom, groupes, politique"

@@ -10,6 +10,8 @@ type GroupMemberRowProps = {
   initials: string;
   memberSinceLabel?: string;
   groupId?: ClubPaceGroupId;
+  /** Prefer this when using club color groups (not legacy A–D). */
+  avatarColor?: string;
   memberUserId?: string;
   onChangePress?: () => void;
 };
@@ -19,12 +21,13 @@ export function GroupMemberRow({
   initials,
   memberSinceLabel,
   groupId,
+  avatarColor: avatarColorProp,
   memberUserId,
   onChangePress,
 }: GroupMemberRowProps) {
-  const avatarColor = groupId
-    ? getClubPaceGroupDef(groupId).avatarColor
-    : colors.accent.primary;
+  const avatarColor =
+    avatarColorProp ??
+    (groupId ? getClubPaceGroupDef(groupId).avatarColor : colors.accent.primary);
 
   return (
     <View

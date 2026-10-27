@@ -2796,14 +2796,108 @@ export default function CreateSessionScreen() {
           ) : null}
         </View>
 
-        {/* Groupes & allures — hidden for walking (no running pace/workout/PR required). */}
+        {/* Club member org lives in Clubs — not re-assigned per outing. */}
+        {primaryClubId &&
+        isMemberOrgEnabled(clubAdminSettings) &&
+        sortedActiveColorGroups(clubAdminSettings).length > 0 ? (
+          <View
+            style={[styles.card, styles.groupsCard]}
+            testID="session-club-member-groups-note"
+          >
+            <View style={styles.cardHeaderRow}>
+              <Text style={styles.cardTitle}>Groupes du club</Text>
+            </View>
+            <Text style={styles.audienceNote}>
+              Les membres sont déjà affectés dans Clubs (Paramètres). Ils
+              restent dans leur groupe jusqu&apos;à ce qu&apos;un admin
+              change — tu n&apos;as pas à les réaffecter ici.
+            </Text>
+            <View style={styles.audienceChips}>
+              {sortedActiveColorGroups(clubAdminSettings).map((g) => {
+                const count = Object.values(
+                  clubAdminSettings?.memberGroups ?? {},
+                ).filter((id) => id === g.id).length;
+                return (
+                  <View key={g.id} style={styles.clubGroupPill}>
+                    <Text style={styles.clubGroupPillText}>
+                      {g.name}
+                      {count > 0 ? ` · ${count}` : ""}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+            <TouchableOpacity
+              testID="session-open-club-member-assign"
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push({
+                  pathname: "/(tabs)/club/settings",
+                  params: { clubId: primaryClubId },
+                } as import("expo-router").Href);
+              }}
+              style={styles.manageGroupsLink}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.manageGroupsLinkText}>
+                Gérer les affectations dans Clubs →
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : primaryClubId &&
+          sessionAudience === "club" &&
+          clubAdminSettings &&
+          !isMemberOrgEnabled(clubAdminSettings) ? (
+          <View
+            style={[styles.card, styles.groupsCard]}
+            testID="session-enable-club-groups-hint"
+          >
+            <Text style={styles.audienceNote}>
+              Pour affecter les membres une fois pour toutes (sans le refaire
+              à chaque sortie), active les groupes couleur dans Paramètres du
+              club.
+            </Text>
+            <TouchableOpacity
+              testID="session-enable-club-groups-cta"
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push({
+                  pathname: "/(tabs)/club/settings",
+                  params: { clubId: primaryClubId },
+                } as import("expo-router").Href);
+              }}
+              style={styles.manageGroupsLink}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.manageGroupsLinkText}>
+                Organiser les membres →
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {/* Per-outing allures only — hidden for walking; not member assignment. */}
         {sessionMode !== "walking" && (
           <View style={[styles.card, styles.groupsCard]} testID="session-pace-groups-card">
             <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardTitle}>Groupes & allures</Text>
+              <Text style={styles.cardTitle}>
+                {primaryClubId && isMemberOrgEnabled(clubAdminSettings)
+                  ? "Allures de cette sortie"
+                  : "Groupes & allures"}
+              </Text>
             </View>
+            {primaryClubId && isMemberOrgEnabled(clubAdminSettings) ? (
+              <Text style={styles.audienceNote}>
+                Optionnel — structure d&apos;allure pour cette sortie seulement.
+                L&apos;affectation des personnes reste dans le club.
+              </Text>
+            ) : null}
             <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>Utiliser des groupes d&apos;allure</Text>
+              <Text style={styles.fieldLabel}>
+                {primaryClubId && isMemberOrgEnabled(clubAdminSettings)
+                  ? "Proposer des allures A–D"
+                  : "Utiliser des groupes d'allure"}
+              </Text>
               <Switch
                 value={usePaceGroups}
                 onValueChange={setUsePaceGroups}
@@ -3333,6 +3427,28 @@ const styles = StyleSheet.create({
   },
   groupsCard: {
     marginBottom: 16,
+  },
+  clubGroupPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: _stito.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.85)",
+  },
+  clubGroupPillText: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  manageGroupsLink: {
+    marginTop: 12,
+    paddingVertical: 4,
+  },
+  manageGroupsLinkText: {
+    color: colors.text.accent,
+    fontSize: 14,
+    fontWeight: "600",
   },
   cardHeaderRow: {
     flexDirection: "row",

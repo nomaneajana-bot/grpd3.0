@@ -422,7 +422,12 @@ export default function ClubSettingsScreen() {
           {isMemberOrgEnabled(adminSettings) ? (
             <>
               <SectionLabel>AFFECTER LES MEMBRES</SectionLabel>
-              <View style={styles.card}>
+              <Text style={styles.fieldHint} testID="assign-persist-hint">
+                Une fois affecté, le membre reste dans ce groupe jusqu&apos;à
+                ce qu&apos;un admin (ou lui-même) le change — pas à chaque
+                sortie.
+              </Text>
+              <View style={styles.card} testID="assign-members-roster">
                 {roster.length === 0 ? (
                   <Text style={styles.hint}>Aucun membre approuvé.</Text>
                 ) : (
