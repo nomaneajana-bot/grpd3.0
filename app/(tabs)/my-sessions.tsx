@@ -470,7 +470,7 @@ function ConfirmedCard({
         </View>
         <View style={styles.inscritPill}>
           <Ionicons name="checkmark-circle" size={14} color={t.onSecondaryContainer} />
-          <Text style={styles.inscritText}>Inscrit·e</Text>
+          <Text style={styles.inscritText}>Inscrit</Text>
         </View>
       </View>
 

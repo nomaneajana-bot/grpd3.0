@@ -20,7 +20,7 @@ type Props = {
 /**
  * Docked RSVP — clear hierarchy:
  * open → primary “Rejoindre la sortie”
- * joined → calm status “Tu es inscrit·e” + separate “Annuler ma participation”
+ * joined → calm status “Tu es inscrit” + separate “Annuler ma participation”
  * (never one button that is both status and destructive)
  */
 export function StitoStickyJoinBar({
@@ -51,7 +51,7 @@ export function StitoStickyJoinBar({
         <View style={styles.joinedWrap} testID="stito-joined-status">
           <View style={styles.statusRow}>
             <Ionicons name="checkmark-circle" size={22} color={t.primary} />
-            <Text style={styles.statusText}>Tu es inscrit·e</Text>
+            <Text style={styles.statusText}>Tu es inscrit</Text>
           </View>
           {onCancelParticipation ? (
             <Pressable

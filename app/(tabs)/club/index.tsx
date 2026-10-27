@@ -487,10 +487,10 @@ export default function ClubScreen() {
                         testID={`club-outing-attendance-${session.id}`}
                       >
                         {attendance === "joined"
-                          ? "Tu es inscrit·e à cette sortie."
+                          ? "Tu es inscrit à cette sortie."
                           : attendance === "left"
                             ? "Tu as annulé ta participation."
-                            : "Tu n’es pas inscrit·e à cette sortie."}
+                            : "Tu n’es pas inscrit à cette sortie."}
                       </Text>
                       <Text style={styles.clubOutingLink}>Voir la sortie →</Text>
                     </Pressable>

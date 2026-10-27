@@ -1002,7 +1002,7 @@ export default function SessionScreen() {
 
         {joinedGroupId !== null && joinedGroup ? (
           <Text style={styles.joinedStatus}>
-            Tu es inscrit·e · {joinedGroup.label} · {joinedGroup.paceRange}
+            Tu es inscrit · {joinedGroup.label} · {joinedGroup.paceRange}
           </Text>
         ) : null}
 

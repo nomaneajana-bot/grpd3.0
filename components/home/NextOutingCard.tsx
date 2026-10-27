@@ -90,7 +90,7 @@ export function NextOutingCard({ session, onPress }: NextOutingCardProps) {
           {joined ? (
             <View style={styles.inscrit} testID="home-next-inscrit">
               <PulseDot />
-              <Text style={styles.inscritText}>Inscrit·e</Text>
+              <Text style={styles.inscritText}>Inscrit</Text>
             </View>
           ) : (
             <View />
