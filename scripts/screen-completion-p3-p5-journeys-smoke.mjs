@@ -290,7 +290,11 @@ async function main() {
       await page.waitForTimeout(1600);
     }
     const afterJoin = await page.locator("body").innerText();
-    check("p5_joined", /inscrit|désister/i.test(afterJoin), afterJoin.slice(0, 80));
+    check(
+      "p5_joined",
+      /inscrit|Annuler ma participation|désister/i.test(afterJoin),
+      afterJoin.slice(0, 80),
+    );
     await shot(page, "05-joined");
 
     await page.goto(`${BASE}/my-sessions`, { waitUntil: "networkidle" });
@@ -317,7 +321,7 @@ async function main() {
     );
     check(
       "p5_cancel_names_outing_or_clear",
-      modalText.includes(OUTING) || /désister|annul/i.test(modalText),
+      modalText.includes(OUTING) || /annul|participation|désister/i.test(modalText),
       modalText.slice(0, 100),
     );
     if (await modal.count()) {

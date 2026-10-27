@@ -423,7 +423,7 @@ async function main() {
       }
       const afterJoin = await page.locator("body").innerText();
       const joinedAtt =
-        /Inscrit|Se désister|désister/i.test(afterJoin) ||
+        /Inscrit|Annuler ma participation|Se désister|désister/i.test(afterJoin) ||
         Boolean(await page.getByTestId("stito-join-cta").count());
       check(
         "member_join_attendance",

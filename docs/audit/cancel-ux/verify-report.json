@@ -1,0 +1,33 @@
+{
+  "steps": [
+    {
+      "demo": true,
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "detailUrl": "http://127.0.0.1:8081/session/demo_sess_footing_sunset"
+    },
+    {
+      "hasStatusBefore": true
+    }
+  ],
+  "joined": {
+    "hasStatus": true,
+    "hasTuEs": true,
+    "hasCancelLink": true,
+    "hasOldDesist": false,
+    "hasConflated": false
+  },
+  "modal": {
+    "hasModal": true,
+    "titleOk": true,
+    "clarifyClub": true,
+    "confirm": true,
+    "keep": true
+  },
+  "mySessions": {
+    "hasAnnuler": true,
+    "hasOldDesist": false
+  },
+  "pass": true
+}
