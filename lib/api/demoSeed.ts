@@ -30,8 +30,8 @@ export const MOCK_CLUBS_KEY = "mock:clubs";
 export const MOCK_MEMBERSHIPS_KEY = "mock:club_memberships";
 export const MOCK_OTP_KEY = "mock:otp";
 /** Bump to force a one-time reseed of the richer Casablanca world. */
-export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v2";
-export const DEMO_SEED_VERSION = "2";
+export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v3";
+export const DEMO_SEED_VERSION = "3";
 
 export const DEMO_CLUB_ID = "club_casa_running";
 export const DEMO_CLUB_NAME = "Casa Running Club";
@@ -164,28 +164,28 @@ const PACE_GROUPS_ABCD: NonNullable<ApiSession["paceGroups"]> = [
     id: "A",
     label: "Groupe A",
     paceRange: "4'00–4'30/km",
-    runnersCount: 0,
+    runnersCount: 2,
     avgPaceSecondsPerKm: 255,
   },
   {
     id: "B",
     label: "Groupe B",
     paceRange: "4'30–5'30/km",
-    runnersCount: 0,
+    runnersCount: 4,
     avgPaceSecondsPerKm: 300,
   },
   {
     id: "C",
     label: "Groupe C",
     paceRange: "5'30–6'30/km",
-    runnersCount: 0,
+    runnersCount: 5,
     avgPaceSecondsPerKm: 360,
   },
   {
     id: "D",
     label: "Groupe D",
     paceRange: "6'30+/km",
-    runnersCount: 0,
+    runnersCount: 3,
     avgPaceSecondsPerKm: 420,
   },
 ];
@@ -294,6 +294,8 @@ function buildDemoSessions(): ApiSession[] {
     clubId?: string | null;
     purpose?: string;
     pastDaysAgo?: number;
+    genderRestriction?: "women_only" | "none";
+    openRunners?: number;
   };
 
   const specs: SpecExtra[] = [
@@ -366,6 +368,25 @@ function buildDemoSessions(): ApiSession[] {
       coachPhone: "+212600000002",
       recommendedGroupId: "D",
       purpose: "Fin de journée, rythme conversation.",
+      openRunners: 9,
+    },
+    {
+      id: "demo_sess_reprise_femmes",
+      title: "Reprise 100% femmes",
+      spot: "Corniche El Hank",
+      dayOffset: 1,
+      timeMinutes: 19 * 60,
+      typeLabel: "FOOTING",
+      volume: "45 min · allure facile",
+      targetPace: "5:30–6:30/km",
+      estimatedDistanceKm: 8,
+      visibility: "public",
+      withPaceGroups: true,
+      coachName: "Amélie Traoré",
+      coachPhone: "+212600000002",
+      recommendedGroupId: "C",
+      purpose: "Reprise douce, uniquement entre femmes — ambiance bienveillante.",
+      genderRestriction: "women_only",
     },
     {
       id: "demo_sess_marche_parc",
@@ -401,6 +422,7 @@ function buildDemoSessions(): ApiSession[] {
       coachPhone: "+212600000002",
       recommendedGroupId: "D",
       purpose: "Ouverte à tous — rythme marche.",
+      openRunners: 11,
     },
     {
       id: "demo_sess_french_run_talk",
@@ -436,6 +458,7 @@ function buildDemoSessions(): ApiSession[] {
       coachPhone: "+212600000001",
       recommendedGroupId: "C",
       purpose: "Ouvert Découvrir — allure progressive.",
+      openRunners: 7,
     },
     {
       id: "demo_sess_series_members",
@@ -506,7 +529,17 @@ function buildDemoSessions(): ApiSession[] {
     const dateISO = isoDate(day);
     const paceGroups = spec.withPaceGroups
       ? PACE_GROUPS_ABCD.map((g) => ({ ...g }))
-      : [];
+      : spec.openRunners && spec.openRunners > 0
+        ? [
+            {
+              id: "open",
+              label: "Ouvert",
+              paceRange: spec.targetPace || "—",
+              runnersCount: spec.openRunners,
+              avgPaceSecondsPerKm: 330,
+            },
+          ]
+        : [];
 
     // Invariant (a): members ⇒ clubId; public must not inherit club context
     const clubId =
@@ -528,7 +561,7 @@ function buildDemoSessions(): ApiSession[] {
       recommendedGroupId: spec.recommendedGroupId,
       clubId,
       visibility: spec.visibility,
-      genderRestriction: "none",
+      genderRestriction: spec.genderRestriction ?? "none",
       hostUserId:
         spec.coachName === "Youssef Benali"
           ? "demo_coach_youssef"

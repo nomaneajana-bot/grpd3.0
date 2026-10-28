@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { homeTheme as h } from "@/constants/homeTheme";
 import type { HomeActivityFilter } from "@/lib/homeViewModel";
@@ -15,15 +15,10 @@ type DiscoveryFiltersProps = {
   onChange: (v: HomeActivityFilter) => void;
 };
 
-/** Stitch understated text filters — pills without icon noise. */
+/** Underline text tabs — no pill cluster. */
 export function DiscoveryFilters({ value, onChange }: DiscoveryFiltersProps) {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.row}
-      testID="home-discovery-filters"
-    >
+    <View style={styles.row} testID="home-discovery-filters">
       {FILTERS.map((f) => {
         const on = value === f.id;
         return (
@@ -34,49 +29,57 @@ export function DiscoveryFilters({ value, onChange }: DiscoveryFiltersProps) {
             accessibilityLabel={f.label}
             onPress={() => onChange(f.id)}
             style={({ pressed }) => [
-              styles.chip,
-              on && styles.chipOn,
-              pressed && { opacity: 0.9 },
+              styles.tab,
+              pressed && { opacity: 0.85 },
             ]}
             testID={`home-filter-${f.id}`}
           >
-            <Text style={[styles.chipText, on && styles.chipTextOn]}>
+            <Text style={[styles.tabText, on && styles.tabTextOn]}>
               {f.label}
             </Text>
+            <View style={[styles.underline, on && styles.underlineOn]} />
           </Pressable>
         );
       })}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
-    gap: 8,
-    paddingTop: 4,
-    paddingBottom: 8,
+    alignItems: "flex-end",
+    gap: 4,
+    paddingTop: 2,
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(190,202,190,0.45)",
   },
-  chip: {
-    minHeight: 32,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: h.radiusChip,
-    backgroundColor: "rgba(232,232,233,0.65)",
+  tab: {
+    minHeight: 36,
+    paddingHorizontal: 12,
+    paddingTop: 6,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-end",
+    gap: 8,
   },
-  chipOn: {
-    backgroundColor: h.primary,
-  },
-  chipText: {
+  tabText: {
     fontFamily: h.font.hanken.medium,
-    fontSize: 12,
-    lineHeight: 16,
-    color: h.textSecondary,
+    fontSize: 14,
+    lineHeight: 18,
+    color: h.outline,
   },
-  chipTextOn: {
+  tabTextOn: {
     fontFamily: h.font.hanken.semibold,
-    color: h.onPrimary,
+    color: h.primary,
+  },
+  underline: {
+    height: 2,
+    alignSelf: "stretch",
+    borderRadius: 1,
+    backgroundColor: "transparent",
+  },
+  underlineOn: {
+    backgroundColor: h.primary,
   },
 });

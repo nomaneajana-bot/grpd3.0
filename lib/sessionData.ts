@@ -199,7 +199,7 @@ export function apiSessionToSessionData(api: {
 export const SESSION_MAP: Record<string, SessionData> = {
   "reprise-femmes-corniche": {
     id: "reprise-femmes-corniche",
-    title: "REPRISE 100% FEMMES",
+    title: "Reprise 100% femmes",
     spot: "Corniche El Hank",
     dateLabel: "MERCREDI 12 NOVEMBRE · 19:00",
     dateISO: "2025-11-12",
@@ -209,6 +209,9 @@ export const SESSION_MAP: Record<string, SessionData> = {
     targetPace: "5:30–6:30/km",
     estimatedDistanceKm: 8,
     genderRestriction: "women_only",
+    coachName: "Amélie Traoré",
+    coachAdvice:
+      "Reprise douce, uniquement entre femmes — ambiance bienveillante.",
     paceGroups: [
       {
         id: "A",
@@ -243,8 +246,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
   },
   "marina-fartlek-long": {
     id: "marina-fartlek-long",
-    title: "FARTLEK LONG",
-    spot: "Spot 1",
+    title: "Fartlek long",
+    spot: "Marina Casablanca",
     dateLabel: "LUNDI 10 NOVEMBRE 06:00",
     dateISO: "2025-11-10",
     timeMinutes: 360, // 06:00
@@ -285,7 +288,7 @@ export const SESSION_MAP: Record<string, SessionData> = {
     recommendedGroupId: "C",
     workout: {
       id: "marina-fartlek-long-workout",
-      title: "FARTLEK LONG",
+      title: "Fartlek long",
       warmup: {
         id: "warmup",
         label: "Échauffement",
@@ -337,8 +340,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
   },
   "marina-fartlek-court": {
     id: "marina-fartlek-court",
-    title: "FARTLEK COURT",
-    spot: "Spot 2",
+    title: "Fartlek court",
+    spot: "Parc de la Ligue Arabe",
     dateLabel: "MARDI 11 NOVEMBRE 18:00",
     dateISO: "2025-11-11",
     timeMinutes: 1080, // 18:00
@@ -379,7 +382,7 @@ export const SESSION_MAP: Record<string, SessionData> = {
     recommendedGroupId: "B",
     workout: {
       id: "marina-fartlek-court-workout",
-      title: "FARTLEK COURT",
+      title: "Fartlek court",
       warmup: {
         id: "warmup",
         label: "Échauffement",
@@ -431,8 +434,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
   },
   "explore-fartlek-progressif": {
     id: "explore-fartlek-progressif",
-    title: "FARTLEK PROGRESSIF",
-    spot: "Spot 1",
+    title: "Fartlek progressif",
+    spot: "Anfa Park",
     dateLabel: "MERCREDI 12 NOVEMBRE 18:00",
     dateISO: "2025-11-12",
     timeMinutes: 1080, // 18:00
@@ -440,6 +443,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
     volume: "4:00 effort x 5 · Récup 2:30",
     targetPace: "5:10–5:40/km",
     estimatedDistanceKm: 8,
+    coachName: "Youssef Benali",
+    coachAdvice: "Jeux d'allure progressifs — on monte ensemble sans se cramer.",
     paceGroups: [
       {
         id: "A",
@@ -473,7 +478,7 @@ export const SESSION_MAP: Record<string, SessionData> = {
     recommendedGroupId: "B",
     workout: {
       id: "explore-fartlek-progressif-workout",
-      title: "FARTLEK PROGRESSIF",
+      title: "Fartlek progressif",
       warmup: {
         id: "warmup",
         label: "Échauffement",
@@ -525,8 +530,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
   },
   "explore-sortie-longue-facile": {
     id: "explore-sortie-longue-facile",
-    title: "SORTIE LONGUE FACILE",
-    spot: "Spot 2",
+    title: "Sortie longue facile",
+    spot: "Corniche Ain Diab",
     dateLabel: "SAMEDI 15 NOVEMBRE 07:00",
     dateISO: "2025-11-15",
     timeMinutes: 420, // 07:00
@@ -534,6 +539,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
     volume: "1h30 sortie continue",
     targetPace: "5:30–6:10/km",
     estimatedDistanceKm: 15,
+    coachName: "Youssef Benali",
+    coachAdvice: "Endurance conversationnelle — on garde de la marge jusqu'au bout.",
     paceGroups: [
       {
         id: "A",
@@ -567,7 +574,7 @@ export const SESSION_MAP: Record<string, SessionData> = {
     recommendedGroupId: "B",
     workout: {
       id: "explore-sortie-longue-facile-workout",
-      title: "SORTIE LONGUE FACILE",
+      title: "Sortie longue facile",
       main: {
         id: "main",
         label: "Sortie continue",

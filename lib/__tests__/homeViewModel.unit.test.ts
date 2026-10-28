@@ -1,5 +1,7 @@
 import {
   buildHomeStats,
+  discoveryDateParts,
+  displayOutingTitle,
   filterDiscoverySessions,
   formatHomeDayEyebrow,
   resolveHomeMode,
@@ -150,5 +152,21 @@ describe("homeViewModel", () => {
     const a = session({ id: "a", dateISO: "2099-01-02", timeMinutes: 600 });
     const b = session({ id: "b", dateISO: "2099-01-02", timeMinutes: 480 });
     expect(sessionSortKey(b) < sessionSortKey(a)).toBe(true);
+  });
+
+  it("displayOutingTitle sentence-cases ALL CAPS, leaves mixed alone", () => {
+    expect(displayOutingTitle("FARTLEK PROGRESSIF")).toBe("Fartlek progressif");
+    expect(displayOutingTitle("Footing coucher de soleil")).toBe(
+      "Footing coucher de soleil",
+    );
+    expect(displayOutingTitle("REPRISE 100% FEMMES")).toBe("Reprise 100% femmes");
+  });
+
+  it("discoveryDateParts from ISO", () => {
+    // 2026-10-28 is a Wednesday
+    const parts = discoveryDateParts(
+      session({ id: "d", dateISO: "2026-10-28", timeMinutes: 1080 }),
+    );
+    expect(parts).toEqual({ dayNum: "28", weekday: "Mer", month: "oct." });
   });
 });

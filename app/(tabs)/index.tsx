@@ -233,9 +233,14 @@ export default function HomeScreen() {
         />
 
         <View ref={discoveryAnchorRef} collapsable={false} style={styles.section}>
-          <Text style={styles.sectionTitle} testID="home-discovery-title">
-            Sorties à découvrir
-          </Text>
+          <View style={styles.discoveryHead}>
+            <Text style={styles.sectionTitle} testID="home-discovery-title">
+              Sorties à découvrir
+            </Text>
+            <Text style={styles.sectionSupport}>
+              Qui part, où, à quelle allure — rejoins en un tap.
+            </Text>
+          </View>
 
           <DiscoveryFilters
             value={activityFilter}
@@ -263,12 +268,11 @@ export default function HomeScreen() {
             <ActivityIndicator color={h.primary} style={{ marginVertical: 24 }} />
           ) : discovery.length ? (
             <View style={styles.list} testID="home-discovery-list">
-              {discovery.map((s, i) => (
+              {discovery.map((s) => (
                 <OutingRow
                   key={s.id}
                   session={s}
                   onPress={() => openSession(s.id)}
-                  showRule={i < discovery.length - 1}
                 />
               ))}
             </View>
@@ -309,13 +313,21 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   section: { gap: h.space.sm, marginTop: 4 },
+  discoveryHead: { gap: 4, marginBottom: 2 },
   sectionTitle: {
     fontFamily: h.font.space.bold,
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: -0.3,
     color: h.text,
   },
-  list: { marginTop: 4 },
+  sectionSupport: {
+    fontFamily: h.font.hanken.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    color: h.textSecondary,
+  },
+  list: { marginTop: 8, gap: 14 },
   errorBox: {
     backgroundColor: "#FDECEA",
     borderRadius: h.radiusDiscovery,
