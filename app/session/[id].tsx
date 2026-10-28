@@ -330,6 +330,8 @@ export default function SessionScreen() {
       ? session.recommendedGroupId
       : null,
   );
+  /** Quiet allure: collapsed by default — join uses home/recommended without a picker wall. */
+  const [allurePickerOpen, setAllurePickerOpen] = useState(false);
   // Track joined group ID
   const [joinedGroupId, setJoinedGroupId] = useState<string | null>(null);
   // Track whether a saved joined session exists in AsyncStorage
@@ -401,6 +403,24 @@ export default function SessionScreen() {
     })();
   }, [session, joinedGroupId, selectedGroupId, linkedWorkout]);
 
+  // Prefer club home group when it matches this outing's allures (persistent groups).
+  useEffect(() => {
+    if (hasStoredJoin || !session?.paceGroups?.length || !memberHomeGroupId) {
+      return;
+    }
+    if (!session.paceGroups.some((g) => g.id === memberHomeGroupId)) return;
+    setSelectedGroupId((prev) => {
+      if (!prev || prev === session.recommendedGroupId) return memberHomeGroupId;
+      return prev;
+    });
+  }, [
+    memberHomeGroupId,
+    hasStoredJoin,
+    session?.id,
+    session?.recommendedGroupId,
+    session?.paceGroups,
+  ]);
+
   useEffect(() => {
     if (!session) return;
     let cancelled = false;
@@ -409,8 +429,16 @@ export default function SessionScreen() {
       const savedJoined = await getJoinedSession(session.id);
       if (cancelled) return;
       const apiStatus = session.attendanceStatus ?? null;
+      const homeMatch =
+        memberHomeGroupId &&
+        session.paceGroups.some((g) => g.id === memberHomeGroupId)
+          ? memberHomeGroupId
+          : null;
       const defaultId =
-        session.recommendedGroupId || session.paceGroups[0]?.id || null;
+        homeMatch ||
+        session.recommendedGroupId ||
+        session.paceGroups[0]?.id ||
+        null;
       // Per-user API/mock attendance wins over device-global joinedSessions
       // (local store is not keyed by userId — must not show host join to participant).
       if (apiStatus === "joined") {
@@ -1187,122 +1215,109 @@ export default function SessionScreen() {
 
         {/* Purpose section already surfaces coachAdvice — skip duplicate note card. */}
 
-        {/* Stitch pace-group override panel omitted — RSVP is the sticky dock. */}
+        {/* Quiet allure — default home/recommended; optional change. Not a pre-join wall. */}
         {session.paceGroups.length > 0 ? (
-          /* Legacy: Pace groups card for backward compatibility */
-          <View style={styles.card}>
-            <View style={styles.groupsHeader}>
-              <Text style={styles.cardLabel}>
-                Choisis ton groupe (tu peux changer ensuite)
-              </Text>
-              <Text style={styles.groupsSubtext}>
-                Choisis l’allure qui te convient aujourd’hui.
-              </Text>
-            </View>
+          <View style={styles.allureCard} testID="session-allure-card">
             {(() => {
-              const recommendedGroup = session.paceGroups.find(
-                (g) => g.id === session.recommendedGroupId,
-              );
+              const activeId =
+                (hasStoredJoin ? joinedGroupId : selectedGroupId) ||
+                session.recommendedGroupId ||
+                session.paceGroups[0]?.id ||
+                null;
+              const active =
+                session.paceGroups.find((g) => g.id === activeId) ??
+                session.paceGroups[0];
+              if (!active) return null;
+              const fromHome =
+                Boolean(memberHomeGroupId) && active.id === memberHomeGroupId;
               return (
                 <>
-                  {recommendedGroup && (
-                    <View style={styles.compatStrip}>
-                      <Text style={styles.compatStripTitle}>
-                        TA COMPATIBILITÉ
+                  <Text style={styles.allureEyebrow}>
+                    {hasStoredJoin
+                      ? "Ton allure pour cette sortie"
+                      : "Allure prévue"}
+                  </Text>
+                  <View style={styles.allureSummaryRow}>
+                    <View style={styles.allureSummaryText}>
+                      <Text
+                        style={styles.allureTitle}
+                        testID="session-allure-summary"
+                      >
+                        {active.label} · {active.paceRange}
                       </Text>
-                      <Text style={styles.compatStripText}>
-                        Parfait pour toi ·{" "}
-                        <Text style={styles.compatStripTextStrong}>
-                          {recommendedGroup.label} ·{" "}
-                          {recommendedGroup.paceRange}
-                        </Text>
+                      <Text style={styles.allureHint}>
+                        {hasStoredJoin
+                          ? "Tu peux encore la changer si besoin."
+                          : fromHome
+                            ? "Depuis ton groupe club — tu peux ajuster."
+                            : "Préremplie pour toi — tu peux ajuster."}
                       </Text>
                     </View>
-                  )}
-                  <View style={styles.groupsList}>
-                    {session.paceGroups.map((group, index) => {
-                      const isRecommended =
-                        group.id === session.recommendedGroupId;
-                      const isSelected = group.id === selectedGroupId;
-                      const animatedStyle = isRecommended
-                        ? {
-                            transform: [
-                              {
-                                scale: pulseAnim.interpolate({
-                                  inputRange: [0, 1],
-                                  outputRange: [1, 1.02],
-                                }),
-                              },
-                            ],
-                          }
-                        : undefined;
-                      return (
-                        <View key={group.id}>
-                          <Animated.View style={animatedStyle}>
-                            <TouchableOpacity
-                              style={[
-                                styles.groupRow,
-                                isSelected && styles.groupRowSelected,
-                                isRecommended && styles.groupRowRecommended,
-                              ]}
-                              activeOpacity={0.8}
-                              onPress={() => setSelectedGroupId(group.id)}
-                              accessibilityRole="button"
-                              accessibilityLabel={`Groupe ${group.label}`}
-                              testID={`session-group-${group.id}`}
-                            >
-                              <View style={styles.groupLeft}>
-                                <View style={styles.groupLabelRow}>
-                                  <Text style={styles.groupLabel}>
-                                    {group.label}
-                                  </Text>
-                                  {isRecommended && (
-                                    <View style={styles.recommendedTag}>
-                                      <Text style={styles.recommendedTagText}>
-                                        Recommandé
-                                      </Text>
-                                    </View>
-                                  )}
-                                </View>
-                                <Text style={styles.groupPace}>
-                                  {group.paceRange}
-                                </Text>
-                              </View>
-                              <View style={styles.groupRight}>
-                                {isSelected && (
-                                  <View style={styles.selectedCheck}>
-                                    <Text style={styles.selectedCheckText}>
-                                      ✓
-                                    </Text>
-                                  </View>
-                                )}
-                                <View style={styles.runnersBadge}>
-                                  <Text style={styles.runnersBadgeText}>
-                                    {group.runnersCount} coureurs
-                                  </Text>
-                                </View>
-                              </View>
-                            </TouchableOpacity>
-                          </Animated.View>
-                        </View>
-                      );
-                    })}
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        allurePickerOpen
+                          ? "Masquer les allures"
+                          : "Changer d'allure"
+                      }
+                      onPress={() => setAllurePickerOpen((o) => !o)}
+                      style={({ pressed }) => [
+                        styles.allureChangeBtn,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                      testID="session-allure-change"
+                    >
+                      <Text style={styles.allureChangeText}>
+                        {allurePickerOpen ? "Fermer" : "Changer"}
+                      </Text>
+                    </Pressable>
                   </View>
+
+                  {allurePickerOpen ? (
+                    <View style={styles.allureList}>
+                      {session.paceGroups.map((group) => {
+                        const isSelected = group.id === selectedGroupId;
+                        const isHome =
+                          memberHomeGroupId != null &&
+                          group.id === memberHomeGroupId;
+                        return (
+                          <Pressable
+                            key={group.id}
+                            style={({ pressed }) => [
+                              styles.allureOption,
+                              isSelected && styles.allureOptionSelected,
+                              pressed && { opacity: 0.92 },
+                            ]}
+                            onPress={() => {
+                              setSelectedGroupId(group.id);
+                              setAllurePickerOpen(false);
+                            }}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: isSelected }}
+                            accessibilityLabel={`${group.label}, ${group.paceRange}`}
+                            testID={`session-group-${group.id}`}
+                          >
+                            <View style={styles.allureOptionLeft}>
+                              <Text style={styles.allureOptionLabel}>
+                                {group.label}
+                                {isHome ? " · ton groupe" : ""}
+                              </Text>
+                              <Text style={styles.allureOptionPace}>
+                                {group.paceRange}
+                              </Text>
+                            </View>
+                            <Text style={styles.allureOptionCount}>
+                              {group.runnersCount} inscrit
+                              {group.runnersCount === 1 ? "" : "s"}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  ) : null}
                 </>
               );
             })()}
-            {/* Show saved status if already joined */}
-            {joinedGroup && (
-              <>
-                <View style={styles.divider} />
-                <View style={styles.savedStatus}>
-                  <Text style={styles.savedStatusText}>
-                    Inscription enregistrée · {joinedGroup.label} ·{" "}
-                    {joinedGroup.paceRange}
-                  </Text>
-                </View>
-              </>
-            )}
           </View>
         ) : null}
 
@@ -1939,6 +1954,100 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     marginBottom: 12,
+  },
+  allureCard: {
+    backgroundColor: stitoTheme.card,
+    borderRadius: stitoTheme.radiusMain,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.85)",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 12,
+    gap: 10,
+  },
+  allureEyebrow: {
+    fontFamily: stitoTheme.font.hanken.semibold,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.3,
+    color: stitoTheme.textSecondary,
+    textTransform: "uppercase",
+  },
+  allureSummaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  allureSummaryText: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  allureTitle: {
+    fontFamily: stitoTheme.font.space.semibold,
+    fontSize: 17,
+    lineHeight: 22,
+    color: stitoTheme.text,
+  },
+  allureHint: {
+    fontFamily: stitoTheme.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: stitoTheme.outline,
+  },
+  allureChangeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: "rgba(0,95,52,0.1)",
+    minHeight: 36,
+    justifyContent: "center",
+  },
+  allureChangeText: {
+    fontFamily: stitoTheme.font.hanken.semibold,
+    fontSize: 13,
+    color: stitoTheme.primary,
+  },
+  allureList: {
+    gap: 8,
+    marginTop: 4,
+  },
+  allureOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: stitoTheme.surfaceContainerLow,
+  },
+  allureOptionSelected: {
+    backgroundColor: "rgba(0,95,52,0.12)",
+    borderWidth: 1.5,
+    borderColor: stitoTheme.primary,
+  },
+  allureOptionLeft: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  allureOptionLabel: {
+    fontFamily: stitoTheme.font.hanken.semibold,
+    fontSize: 14,
+    lineHeight: 18,
+    color: stitoTheme.text,
+  },
+  allureOptionPace: {
+    fontFamily: stitoTheme.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: stitoTheme.textSecondary,
+  },
+  allureOptionCount: {
+    fontFamily: stitoTheme.font.hanken.medium,
+    fontSize: 12,
+    color: stitoTheme.outline,
   },
   groupsHeader: {
     flexDirection: "column",
