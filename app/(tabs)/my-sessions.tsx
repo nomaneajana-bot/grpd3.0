@@ -50,7 +50,7 @@ import {
 } from "@/lib/sessionData";
 import { getSessionDateForSort } from "@/lib/sessionLogic";
 
-const HOST_TONES = [t.primary, "#333E35", "#576158"] as const;
+const HOST_TONES = [t.primary, "#167A47", "#333E35", "#3F4941", "#005F34"] as const;
 
 function hostTone(name: string): string {
   let h = 0;
@@ -733,8 +733,10 @@ function PastCard({
   const dist = distanceLabel(session);
   const pace = compactPaceLine(paceLabel(session), isWalk);
   const loc = locationLabel(session);
+  const dur = volumeBit(session.volume);
   const initials = initialsFromName(host) || (isWalk ? "M" : "C");
   const tone = hostTone(host);
+  const evening = (session.timeMinutes ?? 0) >= 16 * 60;
 
   return (
     <Pressable
@@ -744,13 +746,27 @@ function PastCard({
       style={({ pressed }) => [
         styles.pastCard,
         isWalk && styles.pastCardWalk,
+        evening && !isWalk && styles.pastCardEvening,
         pressed && { opacity: 0.92 },
       ]}
       testID={`mes-sorties-past-${session.id}`}
     >
       <View style={styles.liveRow}>
-        <View style={[styles.dateRail, styles.dateRailPast]}>
-          <Text style={styles.dateWeekday}>{date?.weekday ?? "—"}</Text>
+        <View
+          style={[
+            styles.dateRail,
+            styles.dateRailPast,
+            evening && styles.dateRailEvening,
+          ]}
+        >
+          <Text
+            style={[
+              styles.dateWeekday,
+              evening && styles.dateWeekdayEvening,
+            ]}
+          >
+            {date?.weekday ?? "—"}
+          </Text>
           <Text style={[styles.dateDay, styles.dateDayPast]}>
             {date?.dayNum ?? "·"}
           </Text>
@@ -777,7 +793,11 @@ function PastCard({
                     {activity}
                   </Text>
                 </View>
-                {time ? <Text style={styles.pastTime}>{time}</Text> : null}
+                {time ? (
+                  <View style={[styles.timeBadge, styles.timeBadgePast]}>
+                    <Text style={styles.timeBadgeText}>{time}</Text>
+                  </View>
+                ) : null}
               </View>
             </View>
             <View style={styles.doneMark} accessibilityLabel="Terminée">
@@ -811,9 +831,9 @@ function PastCard({
               </Text>
             </View>
             <View style={styles.metricCol}>
-              <Text style={styles.metricLabel}>Lieu</Text>
+              <Text style={styles.metricLabel}>Durée</Text>
               <Text style={styles.metricValue} numberOfLines={1}>
-                {loc ? loc.split("—")[0]!.trim().split(",")[0]!.trim() : "—"}
+                {dur ?? "—"}
               </Text>
             </View>
           </View>
@@ -1062,7 +1082,10 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   dateRailPast: {
-    backgroundColor: t.surfaceContainerLow,
+    backgroundColor: "rgba(0,95,52,0.08)",
+  },
+  dateRailEvening: {
+    backgroundColor: "rgba(51,62,53,0.12)",
   },
   dateWeekday: {
     fontFamily: t.font.hanken.semibold,
@@ -1070,6 +1093,9 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     color: t.primary,
     textTransform: "uppercase",
+  },
+  dateWeekdayEvening: {
+    color: "#333E35",
   },
   dateDay: {
     fontFamily: t.font.space.bold,
@@ -1145,6 +1171,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,95,52,0.1)",
     minWidth: 52,
     alignItems: "center",
+  },
+  timeBadgePast: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    minWidth: 48,
   },
   timeBadgeText: {
     fontFamily: t.font.space.bold,
@@ -1321,7 +1352,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(232,232,233,0.75)",
     borderLeftWidth: 3,
-    borderLeftColor: t.primary,
+    borderLeftColor: t.secondaryFixedDim,
     shadowColor: "#1A1C1D",
     shadowOpacity: 0.03,
     shadowRadius: 10,
@@ -1331,19 +1362,15 @@ const styles = StyleSheet.create({
   pastCardWalk: {
     borderLeftColor: "#576158",
   },
+  pastCardEvening: {
+    borderLeftColor: t.primary,
+  },
   pastTitle: {
     fontFamily: t.font.space.bold,
     fontSize: 17,
     lineHeight: 22,
     letterSpacing: -0.3,
     color: t.text,
-  },
-  pastTime: {
-    fontFamily: t.font.space.semibold,
-    fontSize: 12,
-    lineHeight: 14,
-    color: t.outline,
-    fontVariant: ["tabular-nums"],
   },
   doneMark: {
     width: 28,
