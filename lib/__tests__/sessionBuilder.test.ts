@@ -192,4 +192,37 @@ describe('sessionBuilder', () => {
     });
     expect(result.session.coachName).toBeUndefined();
   });
+
+  it('uses organiser card metrics without inventing distance', () => {
+    const result = buildSessionFromForm({
+      spot: 'Marina',
+      dateISO: futureISO(),
+      timeLabel: '18:00',
+      sessionType: 'FARTLEK',
+      groupConfigs: [],
+      title: 'Fartlek Corniche',
+      purpose: 'Jeux d’allure',
+      structureNotes: 'échauffement · 6×1 min',
+      estimatedDistanceKm: 8,
+      targetPace: '5:10–5:40/km',
+      durationMinutes: 50,
+    });
+    expect(result.session.estimatedDistanceKm).toBe(8);
+    expect(result.session.targetPace).toBe('5:10–5:40/km');
+    expect(result.session.volume).toBe('50 min · échauffement · 6×1 min');
+  });
+
+  it('does not invent km when distance omitted', () => {
+    const result = buildSessionFromForm({
+      spot: 'Marina',
+      dateISO: futureISO(),
+      timeLabel: '18:00',
+      sessionType: 'SORTIE LONGUE',
+      groupConfigs: [],
+      title: 'Longue',
+      purpose: 'Endurance',
+    });
+    expect(result.session.estimatedDistanceKm).toBe(0);
+    expect(result.session.targetPace).toBe('Allure libre');
+  });
 });

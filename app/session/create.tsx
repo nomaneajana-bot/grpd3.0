@@ -1597,6 +1597,10 @@ export default function CreateSessionScreen() {
    * (replaces FARTLEK/SORTIE/SEUIL chips + associated-workout picker).
    */
   const [structureNotes, setStructureNotes] = useState("");
+  /** Card metrics — what Découvrir / Mes Sorties / Clubs show. */
+  const [distanceKmText, setDistanceKmText] = useState("");
+  const [paceText, setPaceText] = useState("");
+  const [durationMinText, setDurationMinText] = useState("");
   /** Inline validation (web Alert dialogs are unreliable for harness). */
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -2043,7 +2047,26 @@ export default function CreateSessionScreen() {
             setSessionMode("workout");
           }
           setSelectedWorkoutId(null);
-          setStructureNotes(existingSession.volume?.trim() || "");
+          const rawVolume = existingSession.volume?.trim() || "";
+          const durationMatch = rawVolume.match(/^(\d+)\s*min\b/i);
+          if (durationMatch) {
+            setDurationMinText(durationMatch[1]!);
+            const rest = rawVolume
+              .replace(/^\d+\s*min\s*[·•\-–]?\s*/i, "")
+              .trim();
+            setStructureNotes(rest);
+          } else {
+            setStructureNotes(rawVolume);
+          }
+          if (existingSession.estimatedDistanceKm > 0) {
+            setDistanceKmText(
+              String(existingSession.estimatedDistanceKm).replace(".", ","),
+            );
+          }
+          const pace = existingSession.targetPace?.trim() || "";
+          if (pace && !/^allure\s+libre$/i.test(pace) && pace !== "—") {
+            setPaceText(pace.replace(/\s*\/\s*km$/i, ""));
+          }
           if (existingSession.coachAdvice?.trim()) {
             setOutingPurpose(existingSession.coachAdvice.trim());
           }
@@ -2122,6 +2145,9 @@ export default function CreateSessionScreen() {
         selectedMinute,
         sessionMode,
         structureNotes,
+        distanceKmText,
+        paceText,
+        durationMinText,
         sessionAudience,
         usePaceGroups,
         groupConfigs,
@@ -2135,6 +2161,9 @@ export default function CreateSessionScreen() {
       selectedMinute,
       sessionMode,
       structureNotes,
+      distanceKmText,
+      paceText,
+      durationMinText,
       sessionAudience,
       usePaceGroups,
       groupConfigs,
@@ -2249,6 +2278,37 @@ export default function CreateSessionScreen() {
       }
       setFormError(null);
 
+      const distanceParsed = (() => {
+        const t = distanceKmText.trim().replace(",", ".");
+        if (!t) return null;
+        const n = Number(t);
+        if (!Number.isFinite(n) || n <= 0 || n > 100) return null;
+        return Math.round(n * 10) / 10;
+      })();
+      if (distanceKmText.trim() && distanceParsed == null) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError("Distance invalide — ex. 8 ou 8,5 km.");
+        return;
+      }
+      const durationParsed = (() => {
+        const n = parseInt(durationMinText.trim(), 10);
+        if (!Number.isFinite(n) || n <= 0 || n > 600) return null;
+        return n;
+      })();
+      if (durationMinText.trim() && durationParsed == null) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError("Durée invalide — ex. 45 (minutes).");
+        return;
+      }
+      const paceTrimmed = paceText.trim();
+      const targetPaceExplicit = !paceTrimmed
+        ? null
+        : /^libre$/i.test(paceTrimmed)
+          ? "Allure libre"
+          : /\/\s*km$/i.test(paceTrimmed) || /allure/i.test(paceTrimmed)
+            ? paceTrimmed
+            : `${paceTrimmed}/km`;
+
       // Per-outing A–D removed from organise — publish without session pace groups.
       const submittedGroups: typeof groupConfigs = [];
       const walkTitle = outingTitle.trim() || null;
@@ -2273,6 +2333,9 @@ export default function CreateSessionScreen() {
           title: walkTitle,
           purpose: walkPurpose,
           structureNotes: structureTrimmed,
+          estimatedDistanceKm: distanceParsed,
+          targetPace: targetPaceExplicit,
+          durationMinutes: durationParsed,
           organizerName,
         });
         const sessionWithAudience = {
@@ -2305,6 +2368,9 @@ export default function CreateSessionScreen() {
           title: walkTitle,
           purpose: walkPurpose,
           structureNotes: structureTrimmed,
+          estimatedDistanceKm: distanceParsed,
+          targetPace: targetPaceExplicit,
+          durationMinutes: durationParsed,
           organizerName,
         });
 
@@ -2514,8 +2580,8 @@ export default function CreateSessionScreen() {
           {/* Same detail fields for every type (Marche block parity). */}
           <View style={styles.walkMetaBlock} testID="session-detail-fields">
             <Text style={[styles.cardSubtitle, styles.sessionTypeSubtitle]}>
-              Indique un titre, l&apos;objectif et le lieu — ils apparaîtront sur
-              la fiche de la sortie.
+              Titre, objectif et métriques — ce que les gens voient sur
+              Découvrir, Mes Sorties et Clubs.
             </Text>
             <Text style={styles.fieldLabel}>Titre</Text>
             <TextInput
@@ -2566,6 +2632,64 @@ export default function CreateSessionScreen() {
                 {formError}
               </Text>
             ) : null}
+          </View>
+        </View>
+
+        {/* Card metrics — feed the Mes Sorties / club / discovery strips */}
+        <View style={styles.card} testID="session-card-metrics">
+          <Text style={styles.cardLabel}>SUR LES CARTES</Text>
+          <Text style={styles.cardSubtitle}>
+            Distance, allure et durée — les trois chiffres que les gens scannent
+            en premier. Laisse vide si tu ne sais pas encore.
+          </Text>
+          <View style={styles.metricsRow}>
+            <View style={styles.metricField}>
+              <Text style={styles.fieldLabel}>Distance (km)</Text>
+              <TextInput
+                style={styles.metricInput}
+                value={distanceKmText}
+                onChangeText={setDistanceKmText}
+                placeholder="8"
+                placeholderTextColor={colors.text.tertiary}
+                keyboardType="decimal-pad"
+                testID="session-distance-input"
+                accessibilityLabel="Distance en kilomètres"
+              />
+            </View>
+            <View style={styles.metricField}>
+              <Text style={styles.fieldLabel}>
+                {sessionMode === "walking" ? "Rythme" : "Allure"}
+              </Text>
+              <TextInput
+                style={styles.metricInput}
+                value={paceText}
+                onChangeText={setPaceText}
+                placeholder={
+                  sessionMode === "walking" ? "Libre" : "5:30–6:30"
+                }
+                placeholderTextColor={colors.text.tertiary}
+                autoCapitalize="none"
+                testID="session-pace-input"
+                accessibilityLabel={
+                  sessionMode === "walking"
+                    ? "Rythme de la marche"
+                    : "Allure de la course"
+                }
+              />
+            </View>
+            <View style={styles.metricField}>
+              <Text style={styles.fieldLabel}>Durée (min)</Text>
+              <TextInput
+                style={styles.metricInput}
+                value={durationMinText}
+                onChangeText={setDurationMinText}
+                placeholder="45"
+                placeholderTextColor={colors.text.tertiary}
+                keyboardType="number-pad"
+                testID="session-duration-input"
+                accessibilityLabel="Durée en minutes"
+              />
+            </View>
           </View>
         </View>
 
@@ -3107,6 +3231,26 @@ const styles = StyleSheet.create({
   walkTextArea: {
     minHeight: 72,
     textAlignVertical: "top",
+  },
+  metricsRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  metricField: {
+    flex: 1,
+    minWidth: 0,
+  },
+  metricInput: {
+    backgroundColor: colors.background.input,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "600",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginTop: 6,
   },
   formErrorText: {
     marginTop: 12,

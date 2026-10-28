@@ -81,6 +81,11 @@ export function buildSessionFromForm(params: {
    */
   structureNotes?: string | null;
   /**
+   * Optional duration in minutes — surfaces as « 45 min » on Mes Sorties /
+   * club cards (metric strip). Prefixed into `volume` when set.
+   */
+  durationMinutes?: number | null;
+  /**
    * Optional spoken language label when relevant (e.g. walk + language).
    * Never invent a default language (no mandatory English).
    */
@@ -139,11 +144,6 @@ export function buildSessionFromForm(params: {
 
   const isWalk =
     sessionType.includes("MARCHE") || sessionType.includes("WALKING");
-  const isCasual =
-    isWalk ||
-    sessionType.includes("COURSE LIBRE") ||
-    sessionType.includes("LIBRE") ||
-    sessionType.includes("DÉCOUVERTE");
 
   // Language is optional and only applied when the creator filled it (no English default).
   const typeLabel =
@@ -152,9 +152,21 @@ export function buildSessionFromForm(params: {
       : sessionType.toUpperCase();
 
   const structureNotes = params.structureNotes?.trim() || "";
+  const durationMinutes =
+    params.durationMinutes != null &&
+    Number.isFinite(params.durationMinutes) &&
+    params.durationMinutes > 0
+      ? Math.round(params.durationMinutes)
+      : null;
+  const durationBit = durationMinutes != null ? `${durationMinutes} min` : "";
+
   let volume = "Séance personnalisée";
-  if (structureNotes) {
+  if (structureNotes && durationBit) {
+    volume = `${durationBit} · ${structureNotes}`;
+  } else if (structureNotes) {
     volume = structureNotes;
+  } else if (durationBit) {
+    volume = durationBit;
   } else if (sessionType.includes("STRUCTUR")) {
     volume = "Workout structuré";
   } else if (sessionType.includes("FARTLEK")) {
@@ -212,32 +224,25 @@ export function buildSessionFromForm(params: {
     }
   }
 
-  // Never invent pace/distance for walks or casual modes without groups
+  // Prefer organiser-entered pace; else first active group; else libre.
+  // Never invent a numeric pace when the form left it blank.
   let targetPace =
     params.targetPace?.trim() ||
     (paceGroups.length > 0
-      ? formatPaceLabel(paceGroups[0].avgPaceSecondsPerKm)
+      ? formatPaceLabel(paceGroups[0]!.avgPaceSecondsPerKm)
       : "");
-  if (!targetPace && !isCasual) {
-    targetPace = "Allure libre";
-  }
   if (!targetPace) {
     targetPace = "Allure libre";
   }
 
+  // Prefer organiser-entered distance. Do not invent km for card metrics.
   let estimatedDistanceKm = params.estimatedDistanceKm ?? null;
-  if (estimatedDistanceKm == null) {
-    if (isWalk || isCasual) {
-      estimatedDistanceKm = 0; // unknown — do not invent 10 km
-    } else if (sessionType.includes("SORTIE")) {
-      estimatedDistanceKm = 12;
-    } else if (sessionType.includes("SEUIL")) {
-      estimatedDistanceKm = 8;
-    } else if (paceGroups.length > 0) {
-      estimatedDistanceKm = 10;
-    } else {
-      estimatedDistanceKm = 0;
-    }
+  if (
+    estimatedDistanceKm == null ||
+    !Number.isFinite(estimatedDistanceKm) ||
+    estimatedDistanceKm < 0
+  ) {
+    estimatedDistanceKm = 0;
   }
 
   const paceGroupsOverride: SessionGroupOverride[] = groupConfigs
