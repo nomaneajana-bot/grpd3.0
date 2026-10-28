@@ -21,20 +21,24 @@ type AssignMemberGroupSheetProps = {
   memberName: string;
   settings: ClubAdminSettings;
   currentGroupId: string | null;
+  /** When true, current selection is mixed — no chip pre-selected. */
+  mixedCurrent?: boolean;
   onSelect: (groupId: string | null) => void;
   onClose: () => void;
 };
 
-/** Light bottom sheet to assign a member to one colour group (or none). */
+/** Light bottom sheet to assign one or many members to a colour group. */
 export function AssignMemberGroupSheet({
   visible,
   memberName,
   settings,
   currentGroupId,
+  mixedCurrent = false,
   onSelect,
   onClose,
 }: AssignMemberGroupSheetProps) {
   const groups = sortedActiveColorGroups(settings);
+  const effectiveCurrent = mixedCurrent ? null : currentGroupId;
 
   return (
     <Modal
@@ -49,18 +53,20 @@ export function AssignMemberGroupSheet({
           <Text style={styles.kicker}>
             {memberName === "Moi" ? "MON GROUPE" : "AFFECTER"}
           </Text>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={styles.title} numberOfLines={2}>
             {memberName}
           </Text>
           <Text style={styles.sub}>
-            Choisis un groupe couleur — un seul, ou aucun.
+            {mixedCurrent
+              ? "Choisis un groupe pour tout le monde sélectionné — ou aucun."
+              : "Choisis un groupe couleur — un seul, ou aucun."}
           </Text>
           <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
             {groups.map((g) => (
               <GroupChip
                 key={g.id}
                 group={g}
-                selected={currentGroupId === g.id}
+                selected={effectiveCurrent === g.id}
                 onPress={() => onSelect(g.id)}
               />
             ))}
@@ -69,14 +75,16 @@ export function AssignMemberGroupSheet({
               onPress={() => onSelect(null)}
               style={({ pressed }) => [
                 styles.noneRow,
-                currentGroupId == null && styles.noneSelected,
+                !mixedCurrent && effectiveCurrent == null && styles.noneSelected,
                 pressed && { opacity: 0.85 },
               ]}
             >
               <Text
                 style={[
                   styles.noneText,
-                  currentGroupId == null && styles.noneTextSelected,
+                  !mixedCurrent &&
+                    effectiveCurrent == null &&
+                    styles.noneTextSelected,
                 ]}
               >
                 Sans groupe
