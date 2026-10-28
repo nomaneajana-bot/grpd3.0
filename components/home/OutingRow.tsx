@@ -6,8 +6,8 @@ import { homeTheme as h } from "@/constants/homeTheme";
 import {
   activityLabel,
   confirmedParticipantCount,
+  discoveryDateParts,
   displayOutingTitle,
-  formatDiscoveryWhen,
   formatTimeLabel,
   initialsFromName,
 } from "@/lib/homeViewModel";
@@ -24,31 +24,25 @@ type OutingRowProps = {
 const AVATAR_TONES = [h.primary, "#333E35", "#576158"] as const;
 
 /**
- * Discovery feed card — Strava clarity + Rams restraint, app-true only:
- * host, when/where, labels (activity / femmes), metrics, inscrits, Rejoindre.
- * No maps, photos, kudos, or comments.
+ * Discovery feed card — tiny UX polish:
+ * scan time first, full pace (no /… truncation), labels that matter, clear Rejoindre.
  */
 export function OutingRow({ session, onPress }: OutingRowProps) {
   const host =
     session.coachName?.trim() || session.hostGroupName?.trim() || null;
   const spot = session.meetingPoint?.trim() || session.spot?.trim() || "";
   const time = formatTimeLabel(session.timeMinutes);
-  const whenLine = [formatDiscoveryWhen(session).replace(/,\s*/, " · "), spot]
-    .filter(Boolean)
-    .join(" · ");
+  const date = discoveryDateParts(session);
+  const dayBit = date
+    ? `${date.weekday}. ${date.dayNum} ${date.month}`
+    : null;
+  const whereLine = [dayBit, spot].filter(Boolean).join(" · ");
   const dist =
     session.estimatedDistanceKm > 0
       ? `${String(session.estimatedDistanceKm).replace(".", ",")} km`
-      : null;
-  const pace =
-    session.targetPace &&
-    session.targetPace !== "—" &&
-    !/^0:00/i.test(session.targetPace)
-      ? session.targetPace.startsWith("Allure")
-        ? session.targetPace.replace(/^Allure\s+/i, "")
-        : session.targetPace
-      : "Libre";
-  const volumeBit = shortVolume(session.volume);
+      : "—";
+  const pace = compactPace(session.targetPace, activityForSession(session) === "walk");
+  const durationBit = shortDuration(session.volume);
   const isWalk = activityForSession(session) === "walk";
   const activity = activityLabel(session);
   const title = displayOutingTitle(session.title);
@@ -60,11 +54,12 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
   const joined = session.attendanceStatus === "joined";
   const count = confirmedParticipantCount(session);
   const hostInitials = initialsFromName(host) || (isWalk ? "M" : "C");
+  const ctaLabel = joined ? "Voir" : "Rejoindre";
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Voir ${title}`}
+      accessibilityLabel={`${ctaLabel} ${title}${time ? `, ${time}` : ""}${spot ? `, ${spot}` : ""}`}
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       testID={`home-outing-row-${session.id}`}
@@ -81,9 +76,14 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
             {host || "Organisateur"}
           </Text>
           <Text style={styles.when} numberOfLines={1}>
-            {whenLine || time || "À venir"}
+            {whereLine || "À venir"}
           </Text>
         </View>
+        {time ? (
+          <View style={styles.timeBadge} testID={`home-outing-time-${session.id}`}>
+            <Text style={styles.timeBadgeText}>{time}</Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.labels} testID={`home-outing-labels-${session.id}`}>
@@ -121,9 +121,9 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
       ) : null}
 
       <View style={styles.metrics} testID={`home-outing-metrics-${session.id}`}>
-        <Metric label="Distance" value={dist || "—"} />
+        <Metric label="Distance" value={dist} />
         <Metric label={isWalk ? "Rythme" : "Allure"} value={pace} />
-        <Metric label={volumeBit ? "Volume" : "Départ"} value={volumeBit || time || "—"} />
+        <Metric label="Durée" value={durationBit || "—"} />
       </View>
 
       <View style={styles.footer}>
@@ -167,12 +167,12 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
           testID={`home-outing-cta-${session.id}`}
         >
           <Ionicons
-            name={joined ? "checkmark" : "add"}
+            name={joined ? "arrow-forward" : "add"}
             size={16}
-            color={joined ? h.text : h.onPrimary}
+            color={joined ? h.primary : h.onPrimary}
           />
           <Text style={[styles.ctaText, joined && styles.ctaTextJoined]}>
-            {joined ? "Voir" : "Rejoindre"}
+            {ctaLabel}
           </Text>
         </View>
       </View>
@@ -181,23 +181,47 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
+  const tight = value.length > 10;
   return (
     <View style={styles.metricCol}>
       <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={styles.metricValue} numberOfLines={1}>
+      <Text
+        style={[styles.metricValue, tight && styles.metricValueTight]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
+      >
         {value}
       </Text>
     </View>
   );
 }
 
-function shortVolume(volume: string | undefined): string | null {
+/** Pace that fits a 3-col metric without trailing "/…" */
+function compactPace(
+  raw: string | undefined,
+  walk: boolean,
+): string {
+  if (!raw || raw === "—" || /^0:00/i.test(raw)) {
+    return walk ? "Libre" : "Libre";
+  }
+  let p = raw.replace(/^Allure\s+/i, "").trim();
+  p = p.replace(/\s*\/\s*km$/i, "");
+  // "5:10–5:40/km" → "5:10–5:40"
+  p = p.replace(/\/km\b/gi, "");
+  return p || "Libre";
+}
+
+function shortDuration(volume: string | undefined): string | null {
   const v = (volume ?? "").trim();
   if (!v) return null;
-  // Prefer a compact duration / structure bit, not a long sentence.
-  if (v.length <= 18) return v;
-  const m = v.match(/^(\d+\s*(?:min|h|km|×|x)[^·,]*)/i);
-  return m ? m[1]!.trim() : null;
+  const min = v.match(/(\d+)\s*min/i);
+  if (min) return `${min[1]} min`;
+  const hour = v.match(/(\d+)\s*h(?:\s*(\d+))?/i);
+  if (hour) {
+    return hour[2] ? `${hour[1]}h${hour[2]}` : `${hour[1]} h`;
+  }
+  return null;
 }
 
 const styles = StyleSheet.create({
@@ -214,7 +238,6 @@ const styles = StyleSheet.create({
   },
   cardPressed: {
     opacity: 0.96,
-    transform: [{ scale: 0.995 }],
   },
   hostRow: {
     flexDirection: "row",
@@ -246,11 +269,26 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     color: h.textSecondary,
   },
+  timeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: "rgba(0,95,52,0.1)",
+    minWidth: 54,
+    alignItems: "center",
+  },
+  timeBadgeText: {
+    fontFamily: h.font.space.bold,
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: -0.2,
+    color: h.primary,
+    fontVariant: ["tabular-nums"],
+  },
   labels: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 6,
-    marginTop: 2,
   },
   chip: {
     paddingHorizontal: 8,
@@ -327,7 +365,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginTop: 2,
   },
   metricCol: {
     flex: 1,
@@ -348,6 +385,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     letterSpacing: -0.2,
     color: h.text,
+  },
+  metricValueTight: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   footer: {
     flexDirection: "row",
@@ -407,21 +448,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     backgroundColor: h.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 10,
-    minHeight: 36,
+    minHeight: 40,
   },
   ctaJoined: {
-    backgroundColor: h.mutedSurface,
+    backgroundColor: "rgba(0,95,52,0.1)",
   },
   ctaText: {
     fontFamily: h.font.hanken.semibold,
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 16,
     color: h.onPrimary,
   },
   ctaTextJoined: {
-    color: h.text,
+    color: h.primary,
   },
 });
