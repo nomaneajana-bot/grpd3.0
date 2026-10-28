@@ -1,7 +1,7 @@
 import React from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { borderRadius, colors, hairline, typography } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 import type { ClubPaceGroupId } from "@/lib/clubPaceGroups";
 import { getClubPaceGroupDef } from "@/lib/clubPaceGroups";
 
@@ -16,6 +16,10 @@ type GroupMemberRowProps = {
   onChangePress?: () => void;
 };
 
+/**
+ * Quiet roster row — whole row is the hit target when admin can move members.
+ * No repeated "Changer" pills.
+ */
 export function GroupMemberRow({
   name,
   initials,
@@ -27,15 +31,10 @@ export function GroupMemberRow({
 }: GroupMemberRowProps) {
   const avatarColor =
     avatarColorProp ??
-    (groupId ? getClubPaceGroupDef(groupId).avatarColor : colors.accent.primary);
+    (groupId ? getClubPaceGroupDef(groupId).avatarColor : t.primary);
 
-  return (
-    <View
-      style={styles.row}
-      testID={
-        memberUserId ? `club-group-member-${memberUserId}` : undefined
-      }
-    >
+  const body = (
+    <>
       <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
         <Text style={styles.avatarText}>{initials}</Text>
       </View>
@@ -49,8 +48,19 @@ export function GroupMemberRow({
           </Text>
         ) : null}
       </View>
-      {onChangePress ? (
+      {onChangePress ? <Text style={styles.chevron}>›</Text> : null}
+    </>
+  );
+
+  if (onChangePress) {
+    return (
+      <View
+        testID={
+          memberUserId ? `club-group-member-${memberUserId}` : undefined
+        }
+      >
         <Pressable
+          style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
           testID={
             memberUserId
               ? `club-group-member-change-${memberUserId}`
@@ -59,16 +69,22 @@ export function GroupMemberRow({
           onPress={onChangePress}
           accessibilityRole="button"
           accessibilityLabel={`Changer le groupe de ${name}`}
-          hitSlop={8}
-          style={({ pressed }) => [
-            styles.changeBtn,
-            pressed && styles.changeBtnPressed,
-            Platform.OS === "web" && styles.changeBtnWeb,
-          ]}
+          hitSlop={4}
         >
-          <Text style={styles.changeText}>Changer</Text>
+          {body}
         </Pressable>
-      ) : null}
+      </View>
+    );
+  }
+
+  return (
+    <View
+      style={styles.row}
+      testID={
+        memberUserId ? `club-group-member-${memberUserId}` : undefined
+      }
+    >
+      {body}
     </View>
   );
 }
@@ -78,56 +94,47 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingVertical: 10,
-    borderBottomWidth: hairline,
-    borderBottomColor: colors.border.default,
+    paddingVertical: 12,
+    minHeight: t.touchMin,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(232,232,233,0.95)",
+  },
+  rowPressed: {
+    opacity: 0.72,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
   avatarText: {
-    color: colors.text.primary,
-    fontSize: 13,
-    fontWeight: "700",
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontFamily: t.font.space.bold,
   },
   meta: {
     flex: 1,
     minWidth: 0,
   },
   name: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.md,
-    fontWeight: "600",
+    color: t.text,
+    fontSize: 15,
+    fontFamily: t.font.space.semibold,
   },
   sub: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
+    color: t.outline,
+    fontSize: 12,
+    fontFamily: t.font.hanken.regular,
     marginTop: 2,
   },
-  changeBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: borderRadius.pill,
-    backgroundColor: colors.accent.primaryDim,
-    borderWidth: hairline,
-    borderColor: colors.border.active,
-    flexShrink: 0,
-  },
-  changeBtnPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.98 }],
-  },
-  changeBtnWeb: {
-    cursor: "pointer",
-  },
-  changeText: {
-    color: colors.text.accent,
-    fontSize: typography.sizes.sm,
-    fontWeight: "700",
+  chevron: {
+    color: t.outline,
+    fontSize: 22,
+    fontFamily: t.font.space.bold,
+    paddingLeft: 4,
+    lineHeight: 24,
   },
 });
