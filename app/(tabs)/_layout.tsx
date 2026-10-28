@@ -102,13 +102,16 @@ export default function TabLayout() {
         listeners={({ navigation }) => ({
           // Nested club screens (settings, group-detail, …) stay mounted when the
           // Clubs tab is already focused — pop back to the hub on re-press.
+          // Deep links can leave a single non-index route at stack index 0.
           tabPress: (e) => {
             const state = navigation.getState();
             const clubRoute = state.routes.find((r) => r.name === "club");
             const nested = clubRoute?.state;
+            if (!nested?.routes?.length) return;
             const nestedIndex =
-              nested && typeof nested.index === "number" ? nested.index : 0;
-            if (nestedIndex > 0) {
+              typeof nested.index === "number" ? nested.index : 0;
+            const activeName = nested.routes[nestedIndex]?.name;
+            if (activeName && activeName !== "index") {
               e.preventDefault();
               navigation.navigate("club", { screen: "index" });
             }
