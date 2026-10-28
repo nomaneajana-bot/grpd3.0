@@ -200,9 +200,9 @@ async function main() {
     );
     check(
       "session_pace_not_member_assign",
-      /Allures de cette sortie|affectation des personnes reste/i.test(createBody) ||
-        (await page.getByTestId("session-pace-groups-card").count()) === 0,
-      "pace clarified or hidden",
+      (await page.getByTestId("session-pace-groups-card").count()) === 0 &&
+        !/Utiliser des groupes d'allure|Groupes & allures/i.test(createBody),
+      "per-outing A–D card gone",
     );
     check(
       "session_manage_assign_cta",

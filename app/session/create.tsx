@@ -7,7 +7,6 @@ import {
     Pressable,
     ScrollView,
     StyleSheet,
-    Switch,
     Text,
     TextInput,
     TouchableOpacity,
@@ -1605,7 +1604,9 @@ export default function CreateSessionScreen() {
   const [hasLoadedExistingSession, setHasLoadedExistingSession] =
     useState(false);
 
-  const [usePaceGroups, setUsePaceGroups] = useState(true);
+  // Session A–D allure config removed from organise — club member groups cover assignment;
+  // join uses quiet allure / open. Keep flag false so publish never rebuilds empty A–D rows.
+  const [usePaceGroups, setUsePaceGroups] = useState(false);
 
   // Group pace configuration state
   const [groupConfigs, setGroupConfigs] = useState<SessionGroupConfig[]>([
@@ -2086,10 +2087,8 @@ export default function CreateSessionScreen() {
           },
         );
         setGroupConfigs(newGroupConfigs);
-        const hasEnabledGroups =
-          overrideGroups.some((g) => g.isActive) ||
-          (existingSession.paceGroups ?? []).length > 0;
-        setUsePaceGroups(hasEnabledGroups);
+        // Do not revive per-outing A–D UI — edits publish without session pace groups.
+        setUsePaceGroups(false);
 
         setSessionAudience(
           fieldsToSessionAudience(
@@ -2250,16 +2249,9 @@ export default function CreateSessionScreen() {
       }
       setFormError(null);
 
-      // Build effective groups from groupConfigs — walks never require pace groups.
-      const effectiveGroups = groupConfigs
-        .filter((g) => g.isActive && g.paceSecondsPerKm !== null)
-        .map((g) => ({
-          ...g,
-          effectivePaceSecondsPerKm: g.paceSecondsPerKm! as number,
-        }));
+      // Per-outing A–D removed from organise — publish without session pace groups.
+      const submittedGroups: typeof groupConfigs = [];
       const walkSkipsPace = sessionMode === "walking";
-      const submittedGroups =
-        walkSkipsPace || !usePaceGroups ? [] : effectiveGroups;
       const walkTitle = outingTitle.trim() || null;
       const walkPurpose = outingPurpose.trim() || null;
       const organizerName =
@@ -2328,7 +2320,7 @@ export default function CreateSessionScreen() {
           targetPace: session.targetPace,
           estimatedDistanceKm: session.estimatedDistanceKm,
           recommendedGroupId: session.recommendedGroupId || "open",
-          paceGroups: walkSkipsPace || !usePaceGroups ? [] : session.paceGroups,
+          paceGroups: [],
           clubId: publishClubId,
           visibility: sessionVisibility,
           genderRestriction: audienceFields.genderRestriction,
@@ -2876,170 +2868,7 @@ export default function CreateSessionScreen() {
           </View>
         ) : null}
 
-        {/* Per-outing allures only — hidden for walking; not member assignment. */}
-        {sessionMode !== "walking" && (
-          <View style={[styles.card, styles.groupsCard]} testID="session-pace-groups-card">
-            <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardTitle}>
-                {primaryClubId && isMemberOrgEnabled(clubAdminSettings)
-                  ? "Allures de cette sortie"
-                  : "Groupes & allures"}
-              </Text>
-            </View>
-            {primaryClubId && isMemberOrgEnabled(clubAdminSettings) ? (
-              <Text style={styles.audienceNote}>
-                Optionnel — structure d&apos;allure pour cette sortie seulement.
-                L&apos;affectation des personnes reste dans le club.
-              </Text>
-            ) : null}
-            <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>
-                {primaryClubId && isMemberOrgEnabled(clubAdminSettings)
-                  ? "Proposer des allures A–D"
-                  : "Utiliser des groupes d'allure"}
-              </Text>
-              <Switch
-                value={usePaceGroups}
-                onValueChange={setUsePaceGroups}
-                trackColor={{ false: _stito.outlineVariant, true: colors.accent.primary }}
-                thumbColor="#ffffff"
-              />
-            </View>
-            {usePaceGroups && groupConfigs.map((group, index) => {
-              const paceSeconds = group.paceSecondsPerKm ?? null;
-              const adminPaceLabel = clubAdminGroups?.find(
-                (g) => g.id === group.id,
-              )?.paceLabel;
-              const adminInactive =
-                clubAdminGroups?.find((g) => g.id === group.id)?.active ===
-                false;
-
-              // Display pace
-              const paceDisplayStr = paceSeconds
-                ? formatPaceLabel(paceSeconds)
-                : "—";
-
-              // Interval fields were tied to associated-workout templates — removed.
-              const isIntervalWorkout = false;
-
-              // Format duration helper
-              const formatDuration = (seconds: number | null): string => {
-                if (seconds === null) return "—";
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                return `${mins}:${secs.toString().padStart(2, "0")}`;
-              };
-
-              return (
-                <View key={group.id}>
-                  {index > 0 && <View style={styles.groupRowDivider} />}
-                  <View style={styles.groupRow}>
-                    <TouchableOpacity
-                      onPress={() => toggleGroupActive(group.id)}
-                      style={[
-                        styles.groupToggle,
-                        group.isActive && styles.groupToggleActive,
-                        adminInactive && styles.groupToggleInactive,
-                      ]}
-                      activeOpacity={0.7}
-                      disabled={adminInactive}
-                    >
-                      <Text style={styles.groupToggleText}>{group.id}</Text>
-                    </TouchableOpacity>
-                    {adminPaceLabel ? (
-                      <Text style={styles.groupAdminPace} numberOfLines={1}>
-                        {adminPaceLabel}
-                      </Text>
-                    ) : null}
-                    <Text style={styles.groupLabel}>
-                      {`Groupe ${group.id}`}
-                    </Text>
-                    {group.isActive && (
-                      <TouchableOpacity
-                        onPress={() => openGroupPacePicker(group.id)}
-                        style={styles.groupPaceChip}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.groupPaceChipText}>
-                          Allure: {paceDisplayStr}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  {/* Interval settings row for fartlek/series */}
-                  {group.isActive && isIntervalWorkout && (
-                    <View style={styles.groupIntervalRow}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setNumberPickerTarget({
-                            groupId: group.id,
-                            type: "reps",
-                          });
-                          setNumberPickerValue(group.reps);
-                        }}
-                        style={styles.groupIntervalChip}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.groupIntervalChipText}>
-                          Répétitions: {group.reps ?? "—"}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          // If effort is distance-based, show distance picker, otherwise duration picker
-                          if (
-                            group.effortDistanceKm !== null &&
-                            group.effortDistanceKm !== undefined
-                          ) {
-                            setDistancePickerTarget({
-                              groupId: group.id,
-                              type: "effort",
-                            });
-                            setDistancePickerValue(group.effortDistanceKm);
-                          } else {
-                            setDurationPickerTarget({
-                              groupId: group.id,
-                              type: "effort",
-                            });
-                            setDurationPickerValue(group.effortDurationSeconds);
-                          }
-                        }}
-                        style={styles.groupIntervalChip}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.groupIntervalChipText}>
-                          Effort:{" "}
-                          {group.effortDistanceKm !== null &&
-                          group.effortDistanceKm !== undefined
-                            ? group.effortDistanceKm < 1
-                              ? `${Math.round(group.effortDistanceKm * 1000)}m`
-                              : `${group.effortDistanceKm} km`
-                            : formatDuration(group.effortDurationSeconds)}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setDurationPickerTarget({
-                            groupId: group.id,
-                            type: "recovery",
-                          });
-                          setDurationPickerValue(group.recoveryDurationSeconds);
-                        }}
-                        style={styles.groupIntervalChip}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.groupIntervalChipText}>
-                          Récup:{" "}
-                          {formatDuration(group.recoveryDurationSeconds) ?? "—"}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        )}
+        {/* Per-outing A–D « Groupes & allures » removed — club member groups + quiet allure. */}
 
         {formError ? (
           <Text
@@ -3118,26 +2947,6 @@ export default function CreateSessionScreen() {
           setSelectedMinute(minute);
         }}
       />
-      {/* Group pace picker */}
-      {groupPacePickerTargetId !== null && (
-        <PaceWheelPicker
-          visible={groupPacePickerTargetId !== null}
-          title={`Allure du groupe ${groupPacePickerTargetId}`}
-          initialSecondsPerKm={groupPacePickerValue}
-          onClose={() => setGroupPacePickerTargetId(null)}
-          onConfirm={(secondsPerKm) => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setGroupConfigs((prev) =>
-              prev.map((g) =>
-                g.id === groupPacePickerTargetId
-                  ? { ...g, paceSecondsPerKm: secondsPerKm }
-                  : g,
-              ),
-            );
-            setGroupPacePickerTargetId(null);
-          }}
-        />
-      )}
       {/* Duration picker for effort/recovery */}
       {durationPickerTarget !== null && (
         <DurationWheelPicker
