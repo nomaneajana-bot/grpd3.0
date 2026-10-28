@@ -54,8 +54,10 @@ function volumeBit(volume: string | undefined): string | null {
   if (min) return `${min[1]} min`;
   const hour = v.match(/(\d+)\s*h(?:\s*(\d+))?/i);
   if (hour) return hour[2] ? `${hour[1]}h${hour[2]}` : `${hour[1]} h`;
+  // "14 km · endurance" is distance/format — not a duration
   const first = v.split("·")[0]?.trim() ?? "";
-  return first && first.length <= 18 ? first : null;
+  if (!first || first.length > 18 || /\bkm\b/i.test(first)) return null;
+  return first;
 }
 
 /**
