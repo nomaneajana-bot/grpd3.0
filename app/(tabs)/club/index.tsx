@@ -617,20 +617,9 @@ export default function ClubScreen() {
                     icon="people-outline"
                     onPress={() => router.push("/(tabs)/club/admin" as Href)}
                   />
-                  {isMemberOrgEnabled(adminSettings) ? (
-                    <ClubNavCard
-                      title="Affecter les membres"
-                      subtitle="Une fois — ils restent jusqu’au prochain changement"
-                      icon="people-circle-outline"
-                      testID="club-assign-members-nav"
-                      onPress={() =>
-                        router.push("/(tabs)/club/settings" as Href)
-                      }
-                    />
-                  ) : null}
                   <ClubNavCard
                     title="Paramètres du club"
-                    subtitle="Nom, groupes, politique"
+                    subtitle="Nom, groupes, affectations"
                     icon="settings-outline"
                     testID="club-settings-nav"
                     onPress={() => router.push("/(tabs)/club/settings" as Href)}
