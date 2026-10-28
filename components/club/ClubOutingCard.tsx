@@ -85,7 +85,7 @@ export function ClubOutingCard({
   const time = formatTimeLabel(session.timeMinutes);
   const dist = distanceLabel(session);
   const pace = compactPace(paceLabel(session), isWalk);
-  const dur = volumeBit(session.volume);
+  const volume = volumeBit(session.volume);
   const loc = locationLabel(session);
   const initials = initialsFromName(host) || (isWalk ? "M" : "C");
   const tone = hostTone(host);
