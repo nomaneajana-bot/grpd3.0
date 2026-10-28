@@ -1,5 +1,5 @@
 import { type Href, router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -44,9 +44,12 @@ import {
 import { getFocusedClubId } from "@/lib/focusedClubStore";
 import type { Club, ClubRosterMember, ClubVisibility } from "@/types/api";
 
+type AssignFilter = "all" | "none" | string;
+
 /**
  * Club settings — Stito light admin surface.
- * Edit club identity, invite code, member colour groups, assign roster.
+ * Edit club identity, invite code, member colour groups, assign roster
+ * (single tap or multi-select batch).
  */
 export default function ClubSettingsScreen() {
   const { clubId: clubIdParam } = useLocalSearchParams<{ clubId?: string }>();
@@ -69,8 +72,68 @@ export default function ClubSettingsScreen() {
   const [assignMember, setAssignMember] = useState<ClubRosterMember | null>(
     null,
   );
+  const [assignFilter, setAssignFilter] = useState<AssignFilter>("all");
+  const [multiSelect, setMultiSelect] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [batchSheetOpen, setBatchSheetOpen] = useState(false);
+  const [isBatchAssigning, setIsBatchAssigning] = useState(false);
 
   const { toast, showToast, hideToast } = useToast();
+
+  const colorGroups = useMemo(
+    () => sortedActiveColorGroups(adminSettings),
+    [adminSettings],
+  );
+
+  const filteredRoster = useMemo(() => {
+    if (assignFilter === "all") return roster;
+    if (assignFilter === "none") {
+      return roster.filter(
+        (m) => !memberAssignedGroupId(m.userId, adminSettings),
+      );
+    }
+    return roster.filter(
+      (m) => memberAssignedGroupId(m.userId, adminSettings) === assignFilter,
+    );
+  }, [roster, assignFilter, adminSettings]);
+
+  const unassignedCount = useMemo(
+    () =>
+      roster.filter((m) => !memberAssignedGroupId(m.userId, adminSettings))
+        .length,
+    [roster, adminSettings],
+  );
+
+  const selectedMembers = useMemo(
+    () => roster.filter((m) => selectedIds.includes(m.userId)),
+    [roster, selectedIds],
+  );
+
+  const batchMixedCurrent = useMemo(() => {
+    if (selectedMembers.length < 2) return false;
+    const first = memberAssignedGroupId(
+      selectedMembers[0]!.userId,
+      adminSettings,
+    );
+    return selectedMembers.some(
+      (m) => memberAssignedGroupId(m.userId, adminSettings) !== first,
+    );
+  }, [selectedMembers, adminSettings]);
+
+  const batchCurrentGroupId = useMemo(() => {
+    if (selectedMembers.length === 0 || batchMixedCurrent) return null;
+    return memberAssignedGroupId(selectedMembers[0]!.userId, adminSettings);
+  }, [selectedMembers, batchMixedCurrent, adminSettings]);
+
+  const eligibleGroupIds = useMemo(() => {
+    const legacy = (adminSettings.groups ?? [])
+      .filter((g) => g.active !== false)
+      .map((g) => g.id);
+    const color = (adminSettings.colorGroups ?? [])
+      .filter((g) => g.active !== false)
+      .map((g) => g.id);
+    return [...new Set([...legacy, ...color])];
+  }, [adminSettings]);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -247,33 +310,69 @@ export default function ClubSettingsScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const handleAssignMember = async (groupId: string | null) => {
-    if (!clubId || !assignMember) return;
-    const userId = assignMember.userId;
-    const memberName = assignMember.displayName ?? userId;
-    try {
-      const memberGroups = { ...adminSettings.memberGroups };
+  const exitMultiSelect = () => {
+    setMultiSelect(false);
+    setSelectedIds([]);
+    setBatchSheetOpen(false);
+  };
+
+  const toggleSelected = (userId: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
+    );
+  };
+
+  const selectVisible = () => {
+    setSelectedIds(filteredRoster.map((m) => m.userId));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  /** Smart path: focus unassigned, select them all, open batch sheet. */
+  const startAssignUnassigned = () => {
+    const ids = roster
+      .filter((m) => !memberAssignedGroupId(m.userId, adminSettings))
+      .map((m) => m.userId);
+    if (ids.length === 0) {
+      showToast("Tout le monde a déjà un groupe.", "success");
+      return;
+    }
+    setAssignFilter("none");
+    setMultiSelect(true);
+    setSelectedIds(ids);
+    setBatchSheetOpen(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const applyGroupToUserIds = async (
+    userIds: string[],
+    groupId: string | null,
+  ) => {
+    if (!clubId || userIds.length === 0) return;
+    const client = createApiClient();
+    const memberGroups = { ...adminSettings.memberGroups };
+    for (const userId of userIds) {
       if (groupId) {
-        memberGroups[userId] = groupId;
-        const client = createApiClient();
-        const eligibleFromLegacy = (adminSettings.groups ?? [])
-          .filter((g) => g.active !== false)
-          .map((g) => g.id);
-        const eligibleFromColor = (adminSettings.colorGroups ?? [])
-          .filter((g) => g.active !== false)
-          .map((g) => g.id);
-        const eligibleGroupIds = [
-          ...new Set([...eligibleFromLegacy, ...eligibleFromColor]),
-        ];
         await setClubMemberGroup(client, clubId, {
           userId,
           groupId,
           ...(eligibleGroupIds.length > 0 ? { eligibleGroupIds } : {}),
         });
+        memberGroups[userId] = groupId;
       } else {
         delete memberGroups[userId];
       }
-      await persistSettings({ ...adminSettings, memberGroups });
+    }
+    await persistSettings({ ...adminSettings, memberGroups });
+  };
+
+  const handleAssignMember = async (groupId: string | null) => {
+    if (!clubId || !assignMember) return;
+    const userId = assignMember.userId;
+    const memberName = assignMember.displayName ?? userId;
+    try {
+      await applyGroupToUserIds([userId], groupId);
       const groupName = groupId
         ? adminSettings.colorGroups?.find((g) => g.id === groupId)?.name ??
           "groupe"
@@ -285,6 +384,33 @@ export default function ClubSettingsScreen() {
       showToast("Impossible d'affecter le membre.", "error");
     } finally {
       setAssignMember(null);
+    }
+  };
+
+  const handleBatchAssign = async (groupId: string | null) => {
+    if (!clubId || selectedIds.length === 0) return;
+    setIsBatchAssigning(true);
+    try {
+      await applyGroupToUserIds(selectedIds, groupId);
+      const groupName = groupId
+        ? adminSettings.colorGroups?.find((g) => g.id === groupId)?.name ??
+          "groupe"
+        : "Sans groupe";
+      const n = selectedIds.length;
+      showToast(
+        n === 1
+          ? `1 membre → ${groupName}`
+          : `${n} membres → ${groupName}`,
+        "success",
+      );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      exitMultiSelect();
+    } catch (error) {
+      console.warn("Batch assign failed:", error);
+      showToast("Impossible d'affecter la sélection.", "error");
+    } finally {
+      setIsBatchAssigning(false);
+      setBatchSheetOpen(false);
     }
   };
 
@@ -484,16 +610,143 @@ export default function ClubSettingsScreen() {
 
           {isMemberOrgEnabled(adminSettings) ? (
             <>
-              <Text style={styles.sectionLabel}>AFFECTER LES MEMBRES</Text>
+              <View style={styles.assignHeaderRow}>
+                <Text style={[styles.sectionLabel, styles.assignHeaderLabel]}>
+                  AFFECTER LES MEMBRES
+                </Text>
+                <Pressable
+                  testID="assign-multi-toggle"
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    multiSelect
+                      ? "Terminer la sélection"
+                      : "Sélectionner plusieurs"
+                  }
+                  onPress={() => {
+                    if (multiSelect) {
+                      exitMultiSelect();
+                    } else {
+                      setMultiSelect(true);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }
+                  }}
+                  hitSlop={8}
+                >
+                  <Text style={styles.assignModeLink}>
+                    {multiSelect ? "Terminer" : "Sélectionner"}
+                  </Text>
+                </Pressable>
+              </View>
               <Text style={styles.assignHint} testID="assign-persist-hint">
                 Une fois affecté, le membre reste dans ce groupe jusqu&apos;à ce
                 qu&apos;un admin (ou lui-même) le change — pas à chaque sortie.
               </Text>
-              <View style={styles.card} testID="assign-members-roster">
-                {roster.length === 0 ? (
-                  <Text style={styles.emptyRoster}>Aucun membre approuvé.</Text>
+
+              {unassignedCount > 0 ? (
+                <Pressable
+                  testID="assign-unassigned-smart"
+                  accessibilityRole="button"
+                  accessibilityLabel={`Affecter ${unassignedCount} sans groupe`}
+                  onPress={startAssignUnassigned}
+                  style={({ pressed }) => [
+                    styles.smartAssignBtn,
+                    pressed && { opacity: 0.88 },
+                  ]}
+                >
+                  <Text style={styles.smartAssignBtnTxt}>
+                    Affecter les {unassignedCount} sans groupe →
+                  </Text>
+                </Pressable>
+              ) : null}
+
+              <View style={styles.filterRow} testID="assign-filter-row">
+                {(
+                  [
+                    { id: "all" as const, label: "Tous" },
+                    {
+                      id: "none" as const,
+                      label:
+                        unassignedCount > 0
+                          ? `Sans groupe (${unassignedCount})`
+                          : "Sans groupe",
+                    },
+                    ...colorGroups.map((g) => ({
+                      id: g.id,
+                      label: g.name,
+                    })),
+                  ] as { id: AssignFilter; label: string }[]
+                ).map((chip) => {
+                  const active = assignFilter === chip.id;
+                  return (
+                    <Pressable
+                      key={chip.id}
+                      testID={`assign-filter-${chip.id}`}
+                      onPress={() => {
+                        setAssignFilter(chip.id);
+                        if (multiSelect) setSelectedIds([]);
+                      }}
+                      style={[
+                        styles.filterChip,
+                        active && styles.filterChipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.filterChipTxt,
+                          active && styles.filterChipTxtActive,
+                        ]}
+                      >
+                        {chip.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {multiSelect ? (
+                <View style={styles.multiToolbar} testID="assign-multi-toolbar">
+                  <Pressable
+                    testID="assign-select-visible"
+                    onPress={selectVisible}
+                    hitSlop={8}
+                  >
+                    <Text style={styles.multiToolbarLink}>
+                      Tout ({filteredRoster.length})
+                    </Text>
+                  </Pressable>
+                  {selectedIds.length > 0 ? (
+                    <Pressable
+                      testID="assign-clear-selection"
+                      onPress={() => setSelectedIds([])}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.multiToolbarMuted}>Effacer</Text>
+                    </Pressable>
+                  ) : (
+                    <Text style={styles.multiToolbarMuted}>
+                      Coche les membres, puis Affecter
+                    </Text>
+                  )}
+                </View>
+              ) : null}
+
+              <View
+                style={[
+                  styles.card,
+                  selectedIds.length > 0 && multiSelect
+                    ? { marginBottom: 88 }
+                    : null,
+                ]}
+                testID="assign-members-roster"
+              >
+                {filteredRoster.length === 0 ? (
+                  <Text style={styles.emptyRoster} testID="assign-roster-empty">
+                    {roster.length === 0
+                      ? "Aucun membre approuvé."
+                      : "Personne dans ce filtre."}
+                  </Text>
                 ) : (
-                  roster.map((member, index) => {
+                  filteredRoster.map((member, index) => {
                     const assigned = memberAssignedGroupId(
                       member.userId,
                       adminSettings,
@@ -501,22 +754,44 @@ export default function ClubSettingsScreen() {
                     const group = adminSettings.colorGroups?.find(
                       (g) => g.id === assigned,
                     );
+                    const selected = selectedIds.includes(member.userId);
                     return (
                       <Pressable
                         key={member.userId}
                         testID={`assign-member-${member.userId}`}
-                        onPress={() => setAssignMember(member)}
+                        onPress={() => {
+                          if (multiSelect) {
+                            toggleSelected(member.userId);
+                          } else {
+                            setAssignMember(member);
+                          }
+                        }}
                         style={({ pressed }) => [
                           styles.memberRow,
                           index > 0 && styles.memberRowBorder,
                           pressed && { opacity: 0.85 },
+                          selected && styles.memberRowSelected,
                         ]}
                       >
+                        {multiSelect ? (
+                          <View
+                            style={[
+                              styles.checkBox,
+                              selected && styles.checkBoxOn,
+                            ]}
+                            testID={`assign-check-${member.userId}`}
+                          >
+                            {selected ? (
+                              <Text style={styles.checkMark}>✓</Text>
+                            ) : null}
+                          </View>
+                        ) : null}
                         <Text style={styles.memberName} numberOfLines={1}>
                           {member.displayName ?? member.userId}
                         </Text>
                         <Text style={styles.memberGroupHint}>
-                          {group ? group.name : "Sans groupe"} →
+                          {group ? group.name : "Sans groupe"}
+                          {multiSelect ? "" : " →"}
                         </Text>
                       </Pressable>
                     );
@@ -527,7 +802,7 @@ export default function ClubSettingsScreen() {
           ) : null}
 
           <AssignMemberGroupSheet
-            visible={Boolean(assignMember)}
+            visible={Boolean(assignMember) && !batchSheetOpen}
             memberName={
               assignMember?.displayName?.trim() ||
               assignMember?.userId ||
@@ -542,8 +817,51 @@ export default function ClubSettingsScreen() {
             onSelect={(gid) => void handleAssignMember(gid)}
             onClose={() => setAssignMember(null)}
           />
+
+          <AssignMemberGroupSheet
+            visible={batchSheetOpen}
+            memberName={
+              selectedIds.length === 1
+                ? selectedMembers[0]?.displayName?.trim() ||
+                  selectedMembers[0]?.userId ||
+                  "1 membre"
+                : `${selectedIds.length} membres`
+            }
+            settings={adminSettings}
+            currentGroupId={batchCurrentGroupId}
+            mixedCurrent={batchMixedCurrent}
+            onSelect={(gid) => {
+              if (!isBatchAssigning) void handleBatchAssign(gid);
+            }}
+            onClose={() => setBatchSheetOpen(false)}
+          />
         </ScrollView>
       )}
+
+      {multiSelect && selectedIds.length > 0 && hasAdminAccess ? (
+        <View style={styles.batchBar} testID="assign-batch-bar">
+          <Text style={styles.batchBarCount}>
+            {selectedIds.length} sélectionné
+            {selectedIds.length > 1 ? "s" : ""}
+          </Text>
+          <Pressable
+            testID="assign-batch-open"
+            accessibilityRole="button"
+            accessibilityLabel="Affecter la sélection"
+            disabled={isBatchAssigning}
+            onPress={() => setBatchSheetOpen(true)}
+            style={({ pressed }) => [
+              styles.batchBarBtn,
+              pressed && { opacity: 0.9 },
+              isBatchAssigning && { opacity: 0.6 },
+            ]}
+          >
+            <Text style={styles.batchBarBtnTxt}>
+              {isBatchAssigning ? "…" : "Affecter"}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -740,12 +1058,87 @@ const styles = StyleSheet.create({
     fontFamily: t.font.space.bold,
     fontSize: 14,
   },
+  assignHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  assignHeaderLabel: {
+    marginTop: 0,
+    marginBottom: 0,
+    flex: 1,
+  },
+  assignModeLink: {
+    color: t.primary,
+    fontFamily: t.font.space.semibold,
+    fontSize: 14,
+  },
   assignHint: {
     fontFamily: t.font.hanken.regular,
     fontSize: 13,
     lineHeight: 18,
     color: t.textSecondary,
+    marginBottom: 10,
+  },
+  smartAssignBtn: {
+    alignSelf: "flex-start",
+    marginBottom: 12,
+    minHeight: 40,
+    justifyContent: "center",
+  },
+  smartAssignBtnTxt: {
+    color: t.primary,
+    fontFamily: t.font.space.bold,
+    fontSize: 14,
+  },
+  filterRow: {
+    gap: 8,
+    paddingBottom: 10,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: t.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.95)",
+  },
+  filterChipActive: {
+    backgroundColor: "rgba(0,95,52,0.1)",
+    borderColor: "rgba(0,95,52,0.35)",
+  },
+  filterChipTxt: {
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 13,
+    color: t.textSecondary,
+  },
+  filterChipTxtActive: {
+    color: t.primary,
+  },
+  multiToolbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 8,
+    gap: 12,
+  },
+  multiToolbarLink: {
+    color: t.primary,
+    fontFamily: t.font.space.semibold,
+    fontSize: 13,
+  },
+  multiToolbarMuted: {
+    color: t.outline,
+    fontFamily: t.font.hanken.regular,
+    fontSize: 12,
+    flexShrink: 1,
+    textAlign: "right",
   },
   emptyRoster: {
     fontFamily: t.font.hanken.regular,
@@ -763,6 +1156,29 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: "rgba(232,232,233,0.9)",
   },
+  memberRowSelected: {
+    backgroundColor: "rgba(0,95,52,0.04)",
+  },
+  checkBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: t.outlineVariant,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  checkBoxOn: {
+    backgroundColor: t.primary,
+    borderColor: t.primary,
+  },
+  checkMark: {
+    color: t.onPrimary,
+    fontSize: 13,
+    fontFamily: t.font.space.bold,
+    lineHeight: 16,
+  },
   memberName: {
     flex: 1,
     fontFamily: t.font.space.semibold,
@@ -773,5 +1189,37 @@ const styles = StyleSheet.create({
     fontFamily: t.font.hanken.medium,
     fontSize: 13,
     color: t.primary,
+  },
+  batchBar: {
+    position: "absolute",
+    left: t.space.lg,
+    right: t.space.lg,
+    bottom: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    backgroundColor: t.text,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 56,
+  },
+  batchBarCount: {
+    color: "#FFFFFF",
+    fontFamily: t.font.hanken.medium,
+    fontSize: 14,
+    flex: 1,
+  },
+  batchBarBtn: {
+    backgroundColor: t.primaryFixed,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  batchBarBtnTxt: {
+    color: t.primary,
+    fontFamily: t.font.space.bold,
+    fontSize: 14,
   },
 });
