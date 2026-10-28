@@ -7,7 +7,6 @@ import {
     Pressable,
     ScrollView,
     StyleSheet,
-    Switch,
     Text,
     TextInput,
     TouchableOpacity,
@@ -1598,6 +1597,10 @@ export default function CreateSessionScreen() {
    * (replaces FARTLEK/SORTIE/SEUIL chips + associated-workout picker).
    */
   const [structureNotes, setStructureNotes] = useState("");
+  /** Card metrics — what Découvrir / Mes Sorties / Clubs show. */
+  const [distanceKmText, setDistanceKmText] = useState("");
+  const [paceText, setPaceText] = useState("");
+  const [durationMinText, setDurationMinText] = useState("");
   /** Inline validation (web Alert dialogs are unreliable for harness). */
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -1605,7 +1608,9 @@ export default function CreateSessionScreen() {
   const [hasLoadedExistingSession, setHasLoadedExistingSession] =
     useState(false);
 
-  const [usePaceGroups, setUsePaceGroups] = useState(true);
+  // Session A–D allure config removed from organise — club member groups cover assignment;
+  // join uses quiet allure / open. Keep flag false so publish never rebuilds empty A–D rows.
+  const [usePaceGroups, setUsePaceGroups] = useState(false);
 
   // Group pace configuration state
   const [groupConfigs, setGroupConfigs] = useState<SessionGroupConfig[]>([
@@ -2042,7 +2047,26 @@ export default function CreateSessionScreen() {
             setSessionMode("workout");
           }
           setSelectedWorkoutId(null);
-          setStructureNotes(existingSession.volume?.trim() || "");
+          const rawVolume = existingSession.volume?.trim() || "";
+          const durationMatch = rawVolume.match(/^(\d+)\s*min\b/i);
+          if (durationMatch) {
+            setDurationMinText(durationMatch[1]!);
+            const rest = rawVolume
+              .replace(/^\d+\s*min\s*[·•\-–]?\s*/i, "")
+              .trim();
+            setStructureNotes(rest);
+          } else {
+            setStructureNotes(rawVolume);
+          }
+          if (existingSession.estimatedDistanceKm > 0) {
+            setDistanceKmText(
+              String(existingSession.estimatedDistanceKm).replace(".", ","),
+            );
+          }
+          const pace = existingSession.targetPace?.trim() || "";
+          if (pace && !/^allure\s+libre$/i.test(pace) && pace !== "—") {
+            setPaceText(pace.replace(/\s*\/\s*km$/i, ""));
+          }
           if (existingSession.coachAdvice?.trim()) {
             setOutingPurpose(existingSession.coachAdvice.trim());
           }
@@ -2086,10 +2110,8 @@ export default function CreateSessionScreen() {
           },
         );
         setGroupConfigs(newGroupConfigs);
-        const hasEnabledGroups =
-          overrideGroups.some((g) => g.isActive) ||
-          (existingSession.paceGroups ?? []).length > 0;
-        setUsePaceGroups(hasEnabledGroups);
+        // Do not revive per-outing A–D UI — edits publish without session pace groups.
+        setUsePaceGroups(false);
 
         setSessionAudience(
           fieldsToSessionAudience(
@@ -2123,6 +2145,9 @@ export default function CreateSessionScreen() {
         selectedMinute,
         sessionMode,
         structureNotes,
+        distanceKmText,
+        paceText,
+        durationMinText,
         sessionAudience,
         usePaceGroups,
         groupConfigs,
@@ -2136,6 +2161,9 @@ export default function CreateSessionScreen() {
       selectedMinute,
       sessionMode,
       structureNotes,
+      distanceKmText,
+      paceText,
+      durationMinText,
       sessionAudience,
       usePaceGroups,
       groupConfigs,
@@ -2250,16 +2278,39 @@ export default function CreateSessionScreen() {
       }
       setFormError(null);
 
-      // Build effective groups from groupConfigs — walks never require pace groups.
-      const effectiveGroups = groupConfigs
-        .filter((g) => g.isActive && g.paceSecondsPerKm !== null)
-        .map((g) => ({
-          ...g,
-          effectivePaceSecondsPerKm: g.paceSecondsPerKm! as number,
-        }));
-      const walkSkipsPace = sessionMode === "walking";
-      const submittedGroups =
-        walkSkipsPace || !usePaceGroups ? [] : effectiveGroups;
+      const distanceParsed = (() => {
+        const t = distanceKmText.trim().replace(",", ".");
+        if (!t) return null;
+        const n = Number(t);
+        if (!Number.isFinite(n) || n <= 0 || n > 100) return null;
+        return Math.round(n * 10) / 10;
+      })();
+      if (distanceKmText.trim() && distanceParsed == null) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError("Distance invalide — ex. 8 ou 8,5 km.");
+        return;
+      }
+      const durationParsed = (() => {
+        const n = parseInt(durationMinText.trim(), 10);
+        if (!Number.isFinite(n) || n <= 0 || n > 600) return null;
+        return n;
+      })();
+      if (durationMinText.trim() && durationParsed == null) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError("Durée invalide — ex. 45 (minutes).");
+        return;
+      }
+      const paceTrimmed = paceText.trim();
+      const targetPaceExplicit = !paceTrimmed
+        ? null
+        : /^libre$/i.test(paceTrimmed)
+          ? "Allure libre"
+          : /\/\s*km$/i.test(paceTrimmed) || /allure/i.test(paceTrimmed)
+            ? paceTrimmed
+            : `${paceTrimmed}/km`;
+
+      // Per-outing A–D removed from organise — publish without session pace groups.
+      const submittedGroups: typeof groupConfigs = [];
       const walkTitle = outingTitle.trim() || null;
       const walkPurpose = outingPurpose.trim() || null;
       const organizerName =
@@ -2282,6 +2333,9 @@ export default function CreateSessionScreen() {
           title: walkTitle,
           purpose: walkPurpose,
           structureNotes: structureTrimmed,
+          estimatedDistanceKm: distanceParsed,
+          targetPace: targetPaceExplicit,
+          durationMinutes: durationParsed,
           organizerName,
         });
         const sessionWithAudience = {
@@ -2314,6 +2368,9 @@ export default function CreateSessionScreen() {
           title: walkTitle,
           purpose: walkPurpose,
           structureNotes: structureTrimmed,
+          estimatedDistanceKm: distanceParsed,
+          targetPace: targetPaceExplicit,
+          durationMinutes: durationParsed,
           organizerName,
         });
 
@@ -2328,7 +2385,7 @@ export default function CreateSessionScreen() {
           targetPace: session.targetPace,
           estimatedDistanceKm: session.estimatedDistanceKm,
           recommendedGroupId: session.recommendedGroupId || "open",
-          paceGroups: walkSkipsPace || !usePaceGroups ? [] : session.paceGroups,
+          paceGroups: [],
           clubId: publishClubId,
           visibility: sessionVisibility,
           genderRestriction: audienceFields.genderRestriction,
@@ -2523,8 +2580,8 @@ export default function CreateSessionScreen() {
           {/* Same detail fields for every type (Marche block parity). */}
           <View style={styles.walkMetaBlock} testID="session-detail-fields">
             <Text style={[styles.cardSubtitle, styles.sessionTypeSubtitle]}>
-              Indique un titre, l&apos;objectif et le lieu — ils apparaîtront sur
-              la fiche de la sortie.
+              Titre, objectif et métriques — ce que les gens voient sur
+              Découvrir, Mes Sorties et Clubs.
             </Text>
             <Text style={styles.fieldLabel}>Titre</Text>
             <TextInput
@@ -2575,6 +2632,64 @@ export default function CreateSessionScreen() {
                 {formError}
               </Text>
             ) : null}
+          </View>
+        </View>
+
+        {/* Card metrics — feed the Mes Sorties / club / discovery strips */}
+        <View style={styles.card} testID="session-card-metrics">
+          <Text style={styles.cardLabel}>SUR LES CARTES</Text>
+          <Text style={styles.cardSubtitle}>
+            Distance, allure et durée — les trois chiffres que les gens scannent
+            en premier. Laisse vide si tu ne sais pas encore.
+          </Text>
+          <View style={styles.metricsRow}>
+            <View style={styles.metricField}>
+              <Text style={styles.fieldLabel}>Distance (km)</Text>
+              <TextInput
+                style={styles.metricInput}
+                value={distanceKmText}
+                onChangeText={setDistanceKmText}
+                placeholder="8"
+                placeholderTextColor={colors.text.tertiary}
+                keyboardType="decimal-pad"
+                testID="session-distance-input"
+                accessibilityLabel="Distance en kilomètres"
+              />
+            </View>
+            <View style={styles.metricField}>
+              <Text style={styles.fieldLabel}>
+                {sessionMode === "walking" ? "Rythme" : "Allure"}
+              </Text>
+              <TextInput
+                style={styles.metricInput}
+                value={paceText}
+                onChangeText={setPaceText}
+                placeholder={
+                  sessionMode === "walking" ? "Libre" : "5:30–6:30"
+                }
+                placeholderTextColor={colors.text.tertiary}
+                autoCapitalize="none"
+                testID="session-pace-input"
+                accessibilityLabel={
+                  sessionMode === "walking"
+                    ? "Rythme de la marche"
+                    : "Allure de la course"
+                }
+              />
+            </View>
+            <View style={styles.metricField}>
+              <Text style={styles.fieldLabel}>Durée (min)</Text>
+              <TextInput
+                style={styles.metricInput}
+                value={durationMinText}
+                onChangeText={setDurationMinText}
+                placeholder="45"
+                placeholderTextColor={colors.text.tertiary}
+                keyboardType="number-pad"
+                testID="session-duration-input"
+                accessibilityLabel="Durée en minutes"
+              />
+            </View>
           </View>
         </View>
 
@@ -2876,170 +2991,7 @@ export default function CreateSessionScreen() {
           </View>
         ) : null}
 
-        {/* Per-outing allures only — hidden for walking; not member assignment. */}
-        {sessionMode !== "walking" && (
-          <View style={[styles.card, styles.groupsCard]} testID="session-pace-groups-card">
-            <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardTitle}>
-                {primaryClubId && isMemberOrgEnabled(clubAdminSettings)
-                  ? "Allures de cette sortie"
-                  : "Groupes & allures"}
-              </Text>
-            </View>
-            {primaryClubId && isMemberOrgEnabled(clubAdminSettings) ? (
-              <Text style={styles.audienceNote}>
-                Optionnel — structure d&apos;allure pour cette sortie seulement.
-                L&apos;affectation des personnes reste dans le club.
-              </Text>
-            ) : null}
-            <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>
-                {primaryClubId && isMemberOrgEnabled(clubAdminSettings)
-                  ? "Proposer des allures A–D"
-                  : "Utiliser des groupes d'allure"}
-              </Text>
-              <Switch
-                value={usePaceGroups}
-                onValueChange={setUsePaceGroups}
-                trackColor={{ false: _stito.outlineVariant, true: colors.accent.primary }}
-                thumbColor="#ffffff"
-              />
-            </View>
-            {usePaceGroups && groupConfigs.map((group, index) => {
-              const paceSeconds = group.paceSecondsPerKm ?? null;
-              const adminPaceLabel = clubAdminGroups?.find(
-                (g) => g.id === group.id,
-              )?.paceLabel;
-              const adminInactive =
-                clubAdminGroups?.find((g) => g.id === group.id)?.active ===
-                false;
-
-              // Display pace
-              const paceDisplayStr = paceSeconds
-                ? formatPaceLabel(paceSeconds)
-                : "—";
-
-              // Interval fields were tied to associated-workout templates — removed.
-              const isIntervalWorkout = false;
-
-              // Format duration helper
-              const formatDuration = (seconds: number | null): string => {
-                if (seconds === null) return "—";
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                return `${mins}:${secs.toString().padStart(2, "0")}`;
-              };
-
-              return (
-                <View key={group.id}>
-                  {index > 0 && <View style={styles.groupRowDivider} />}
-                  <View style={styles.groupRow}>
-                    <TouchableOpacity
-                      onPress={() => toggleGroupActive(group.id)}
-                      style={[
-                        styles.groupToggle,
-                        group.isActive && styles.groupToggleActive,
-                        adminInactive && styles.groupToggleInactive,
-                      ]}
-                      activeOpacity={0.7}
-                      disabled={adminInactive}
-                    >
-                      <Text style={styles.groupToggleText}>{group.id}</Text>
-                    </TouchableOpacity>
-                    {adminPaceLabel ? (
-                      <Text style={styles.groupAdminPace} numberOfLines={1}>
-                        {adminPaceLabel}
-                      </Text>
-                    ) : null}
-                    <Text style={styles.groupLabel}>
-                      {`Groupe ${group.id}`}
-                    </Text>
-                    {group.isActive && (
-                      <TouchableOpacity
-                        onPress={() => openGroupPacePicker(group.id)}
-                        style={styles.groupPaceChip}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.groupPaceChipText}>
-                          Allure: {paceDisplayStr}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  {/* Interval settings row for fartlek/series */}
-                  {group.isActive && isIntervalWorkout && (
-                    <View style={styles.groupIntervalRow}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setNumberPickerTarget({
-                            groupId: group.id,
-                            type: "reps",
-                          });
-                          setNumberPickerValue(group.reps);
-                        }}
-                        style={styles.groupIntervalChip}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.groupIntervalChipText}>
-                          Répétitions: {group.reps ?? "—"}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          // If effort is distance-based, show distance picker, otherwise duration picker
-                          if (
-                            group.effortDistanceKm !== null &&
-                            group.effortDistanceKm !== undefined
-                          ) {
-                            setDistancePickerTarget({
-                              groupId: group.id,
-                              type: "effort",
-                            });
-                            setDistancePickerValue(group.effortDistanceKm);
-                          } else {
-                            setDurationPickerTarget({
-                              groupId: group.id,
-                              type: "effort",
-                            });
-                            setDurationPickerValue(group.effortDurationSeconds);
-                          }
-                        }}
-                        style={styles.groupIntervalChip}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.groupIntervalChipText}>
-                          Effort:{" "}
-                          {group.effortDistanceKm !== null &&
-                          group.effortDistanceKm !== undefined
-                            ? group.effortDistanceKm < 1
-                              ? `${Math.round(group.effortDistanceKm * 1000)}m`
-                              : `${group.effortDistanceKm} km`
-                            : formatDuration(group.effortDurationSeconds)}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setDurationPickerTarget({
-                            groupId: group.id,
-                            type: "recovery",
-                          });
-                          setDurationPickerValue(group.recoveryDurationSeconds);
-                        }}
-                        style={styles.groupIntervalChip}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.groupIntervalChipText}>
-                          Récup:{" "}
-                          {formatDuration(group.recoveryDurationSeconds) ?? "—"}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        )}
+        {/* Per-outing A–D « Groupes & allures » removed — club member groups + quiet allure. */}
 
         {formError ? (
           <Text
@@ -3118,26 +3070,6 @@ export default function CreateSessionScreen() {
           setSelectedMinute(minute);
         }}
       />
-      {/* Group pace picker */}
-      {groupPacePickerTargetId !== null && (
-        <PaceWheelPicker
-          visible={groupPacePickerTargetId !== null}
-          title={`Allure du groupe ${groupPacePickerTargetId}`}
-          initialSecondsPerKm={groupPacePickerValue}
-          onClose={() => setGroupPacePickerTargetId(null)}
-          onConfirm={(secondsPerKm) => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setGroupConfigs((prev) =>
-              prev.map((g) =>
-                g.id === groupPacePickerTargetId
-                  ? { ...g, paceSecondsPerKm: secondsPerKm }
-                  : g,
-              ),
-            );
-            setGroupPacePickerTargetId(null);
-          }}
-        />
-      )}
       {/* Duration picker for effort/recovery */}
       {durationPickerTarget !== null && (
         <DurationWheelPicker
@@ -3299,6 +3231,26 @@ const styles = StyleSheet.create({
   walkTextArea: {
     minHeight: 72,
     textAlignVertical: "top",
+  },
+  metricsRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  metricField: {
+    flex: 1,
+    minWidth: 0,
+  },
+  metricInput: {
+    backgroundColor: colors.background.input,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "600",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginTop: 6,
   },
   formErrorText: {
     marginTop: 12,
