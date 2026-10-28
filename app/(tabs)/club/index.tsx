@@ -632,6 +632,7 @@ export default function ClubScreen() {
                     title="Paramètres du club"
                     subtitle="Nom, groupes, politique"
                     icon="settings-outline"
+                    testID="club-settings-nav"
                     onPress={() => router.push("/(tabs)/club/settings" as Href)}
                   />
                 </GroupedList>
