@@ -1153,7 +1153,11 @@ export function buildParticipantsResult(
   };
 }
 
-/** Attach the logged-in user as an approved club member (no profile group). */
+/**
+ * Attach the logged-in demo user to Casa Running as an approved coach
+ * so Paramètres du club / admin surfaces are reachable in demo.
+ * Still a plain member of the walk club (multi-club hub).
+ */
 export async function ensureDemoUserMembership(
   user: AuthUser,
   displayName?: string,
@@ -1168,6 +1172,7 @@ export async function ensureDemoUserMembership(
   );
   if (existing) {
     existing.status = "approved";
+    existing.role = "coach";
     if (displayName) existing.displayName = displayName;
     memberships[existing.id] = existing;
   } else {
@@ -1176,7 +1181,7 @@ export async function ensureDemoUserMembership(
       id,
       clubId: DEMO_CLUB_ID,
       userId: user.id,
-      role: "member",
+      role: "coach",
       status: "approved",
       displayName: displayName ?? null,
       sharePrs: true,
