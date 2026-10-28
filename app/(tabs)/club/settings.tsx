@@ -1,4 +1,4 @@
-import { type Href, router, Stack, useFocusEffect } from "expo-router";
+import { type Href, router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -14,10 +14,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
 
-import { NavRow } from "@/components/ui/NavRow";
-import { SectionLabel } from "@/components/redesign/SectionLabel";
+import { AssignMemberGroupSheet } from "@/components/club/AssignMemberGroupSheet";
 import { Toast } from "@/components/ui/Toast";
-import { borderRadius, colors, spacing, typography } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 import { useToast } from "@/hooks/useToast";
 import {
   createApiClient,
@@ -33,7 +32,6 @@ import {
   saveClubAdminSettings,
   type ClubAdminSettings,
 } from "@/lib/clubAdminStore";
-import { AssignMemberGroupSheet } from "@/components/club/AssignMemberGroupSheet";
 import {
   isMemberOrgEnabled,
   memberAssignedGroupId,
@@ -43,9 +41,17 @@ import {
   sortedActiveColorGroups,
   starterTemplates,
 } from "@/lib/clubMemberGroups";
+import { getFocusedClubId } from "@/lib/focusedClubStore";
 import type { Club, ClubRosterMember, ClubVisibility } from "@/types/api";
 
+/**
+ * Club settings — Stito light admin surface.
+ * Edit club identity, invite code, member colour groups, assign roster.
+ */
 export default function ClubSettingsScreen() {
+  const { clubId: clubIdParam } = useLocalSearchParams<{ clubId?: string }>();
+  const routeClubId = Array.isArray(clubIdParam) ? clubIdParam[0] : clubIdParam;
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasAdminAccess, setHasAdminAccess] = useState(false);
@@ -71,11 +77,18 @@ export default function ClubSettingsScreen() {
     try {
       const client = createApiClient();
       const { memberships } = await getMyMemberships(client);
-      const adminMembership = (memberships ?? []).find(
-        (m) =>
-          m.status === "approved" &&
-          (m.role === "admin" || m.role === "coach"),
+      const approved = (memberships ?? []).filter((m) => m.status === "approved");
+      const focused = routeClubId || (await getFocusedClubId());
+      const adminCandidates = approved.filter(
+        (m) => m.role === "admin" || m.role === "coach",
       );
+      const adminMembership =
+        (focused
+          ? adminCandidates.find((m) => m.clubId === focused)
+          : null) ??
+        adminCandidates[0] ??
+        null;
+
       setHasAdminAccess(Boolean(adminMembership));
 
       if (!adminMembership?.clubId) {
@@ -113,7 +126,7 @@ export default function ClubSettingsScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [showToast]);
+  }, [routeClubId, showToast]);
 
   useFocusEffect(
     useCallback(() => {
@@ -237,12 +250,11 @@ export default function ClubSettingsScreen() {
   const handleAssignMember = async (groupId: string | null) => {
     if (!clubId || !assignMember) return;
     const userId = assignMember.userId;
-    const name = assignMember.displayName ?? userId;
+    const memberName = assignMember.displayName ?? userId;
     try {
       const memberGroups = { ...adminSettings.memberGroups };
       if (groupId) {
         memberGroups[userId] = groupId;
-        // Persist homeGroupId: legacy A–D and opt-in color-group ids.
         const client = createApiClient();
         const eligibleFromLegacy = (adminSettings.groups ?? [])
           .filter((g) => g.active !== false)
@@ -266,7 +278,7 @@ export default function ClubSettingsScreen() {
         ? adminSettings.colorGroups?.find((g) => g.id === groupId)?.name ??
           "groupe"
         : "Sans groupe";
-      showToast(`${name} → ${groupName}`, "success");
+      showToast(`${memberName} → ${groupName}`, "success");
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (error) {
       console.warn("Member group assign failed:", error);
@@ -277,33 +289,66 @@ export default function ClubSettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <Stack.Screen options={{ headerShown: false }} />
       {toast ? (
-        <Toast message={toast.message} variant={toast.variant} onDismiss={hideToast} />
+        <Toast
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={hideToast}
+        />
       ) : null}
 
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backRow}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backRow}
+          accessibilityRole="button"
+          accessibilityLabel="Retour"
+          testID="club-settings-back"
+        >
           <Text style={styles.backIcon}>←</Text>
           <Text style={styles.backLabel}>Retour</Text>
         </Pressable>
         <Text style={styles.screenTitle}>Paramètres du club</Text>
+        {club?.name ? (
+          <Text style={styles.screenSubtitle}>{club.name}</Text>
+        ) : !isLoading && !hasAdminAccess ? (
+          <Text style={styles.screenSubtitle}>
+            Espace réservé aux administrateurs et coaches du club.
+          </Text>
+        ) : null}
       </View>
 
       {isLoading ? (
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={colors.accent.primary} />
+        <View style={styles.loadingWrap} testID="club-settings-loading">
+          <ActivityIndicator size="large" color={t.primary} />
         </View>
       ) : !hasAdminAccess ? (
-        <View style={styles.content}>
-          <Text style={styles.hint}>
-            Espace réservé aux administrateurs et coachs du club.
-          </Text>
+        <View style={styles.deniedWrap} testID="club-settings-denied">
+          <View style={styles.deniedCard}>
+            <Text style={styles.deniedTitle}>Réservé aux coaches</Text>
+            <Text style={styles.deniedBody}>
+              Seuls les administrateurs et coaches du club peuvent modifier le
+              nom, la clé d&apos;invitation et les groupes membres.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Retour aux clubs"
+              onPress={() => router.replace("/(tabs)/club" as Href)}
+              style={styles.deniedCta}
+              testID="club-settings-denied-cta"
+            >
+              <Text style={styles.deniedCtaText}>Retour aux clubs</Text>
+            </Pressable>
+          </View>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content}>
-          <SectionLabel>MODIFIER LE CLUB</SectionLabel>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          testID="club-settings-form"
+        >
+          <Text style={styles.sectionLabel}>MODIFIER LE CLUB</Text>
           <View style={styles.card}>
             <Text style={styles.fieldLabel}>Nom</Text>
             <TextInput
@@ -311,7 +356,8 @@ export default function ClubSettingsScreen() {
               value={name}
               onChangeText={setName}
               placeholder="Nom du club"
-              placeholderTextColor={colors.text.tertiary}
+              placeholderTextColor={t.outline}
+              testID="club-settings-name"
             />
             <Text style={styles.fieldLabel}>Description</Text>
             <TextInput
@@ -319,23 +365,23 @@ export default function ClubSettingsScreen() {
               value={description}
               onChangeText={setDescription}
               placeholder="Description"
-              placeholderTextColor={colors.text.tertiary}
+              placeholderTextColor={t.outline}
               multiline
+              testID="club-settings-description"
             />
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Visibilité privée</Text>
+                <Text style={styles.fieldLabelInline}>Visibilité privée</Text>
                 <Text style={styles.fieldHint}>
                   Club visible uniquement sur invitation.
                 </Text>
               </View>
               <Switch
                 value={visibility === "members"}
-                onValueChange={(v) =>
-                  setVisibility(v ? "members" : "public")
-                }
-                trackColor={{ false: colors.surface.s4, true: colors.accent.primary }}
+                onValueChange={(v) => setVisibility(v ? "members" : "public")}
+                trackColor={{ false: t.surfaceContainerHigh, true: t.primary }}
                 thumbColor="#fff"
+                testID="club-settings-visibility"
               />
             </View>
             <Text style={styles.fieldLabel}>Code d&apos;accès</Text>
@@ -345,17 +391,23 @@ export default function ClubSettingsScreen() {
                 value={accessCode}
                 onChangeText={setAccessCode}
                 placeholder="Code invitation"
-                placeholderTextColor={colors.text.tertiary}
+                placeholderTextColor={t.outline}
                 autoCapitalize="characters"
+                testID="club-settings-access-code"
               />
-              <Pressable style={styles.codeBtn} onPress={handleRegenerateCode}>
+              <Pressable
+                style={styles.codeBtn}
+                onPress={() => void handleRegenerateCode()}
+                testID="club-settings-regen-code"
+              >
                 <Text style={styles.codeBtnTxt}>Générer</Text>
               </Pressable>
             </View>
             <Pressable
               style={[styles.primaryBtn, isSaving && styles.primaryBtnDisabled]}
-              onPress={handleSaveClub}
+              onPress={() => void handleSaveClub()}
               disabled={isSaving}
+              testID="club-settings-save"
             >
               <Text style={styles.primaryBtnTxt}>
                 {isSaving ? "Enregistrement…" : "Enregistrer le club"}
@@ -363,13 +415,13 @@ export default function ClubSettingsScreen() {
             </Pressable>
           </View>
 
-          <SectionLabel>ORGANISER LES MEMBRES</SectionLabel>
+          <Text style={styles.sectionLabel}>ORGANISER LES MEMBRES</Text>
           <View style={styles.card} testID="member-org-settings">
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Groupes couleur</Text>
+                <Text style={styles.fieldLabelInline}>Groupes couleur</Text>
                 <Text style={styles.fieldHint}>
-                  Optionnel — nom + couleur, sans imposer l’allure. Off =
+                  Optionnel — nom + couleur, sans imposer l&apos;allure. Off =
                   aucune section GROUPES sur le hub.
                 </Text>
               </View>
@@ -378,8 +430,8 @@ export default function ClubSettingsScreen() {
                 value={isMemberOrgEnabled(adminSettings)}
                 onValueChange={(v) => void handleToggleMemberOrg(v)}
                 trackColor={{
-                  false: colors.surface.s4,
-                  true: colors.accent.primary,
+                  false: t.surfaceContainerHigh,
+                  true: t.primary,
                 }}
                 thumbColor="#fff"
               />
@@ -388,25 +440,36 @@ export default function ClubSettingsScreen() {
             {isMemberOrgEnabled(adminSettings) ? (
               <>
                 {sortedActiveColorGroups(adminSettings).map((g) => (
-                  <NavRow
+                  <Pressable
                     key={g.id}
-                    title={g.name}
-                    subtitle={g.note?.trim() || "Groupe membres"}
-                    left={
-                      <View
-                        style={[
-                          styles.dot,
-                          { backgroundColor: memberGroupColor(g.colorKey) },
-                        ]}
-                      />
-                    }
+                    accessibilityRole="button"
+                    accessibilityLabel={`Groupe ${g.name}`}
                     onPress={() =>
                       router.push({
                         pathname: "/(tabs)/club/group-detail",
                         params: { clubId: clubId ?? "", groupId: g.id },
                       } as Href)
                     }
-                  />
+                    style={({ pressed }) => [
+                      styles.groupRow,
+                      pressed && { opacity: 0.9 },
+                    ]}
+                    testID={`member-org-group-${g.id}`}
+                  >
+                    <View
+                      style={[
+                        styles.dot,
+                        { backgroundColor: memberGroupColor(g.colorKey) },
+                      ]}
+                    />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.groupName}>{g.name}</Text>
+                      <Text style={styles.groupNote} numberOfLines={1}>
+                        {g.note?.trim() || "Groupe membres"}
+                      </Text>
+                    </View>
+                    <Text style={styles.chevron}>›</Text>
+                  </Pressable>
                 ))}
                 <Pressable
                   testID="member-org-add-group"
@@ -421,17 +484,16 @@ export default function ClubSettingsScreen() {
 
           {isMemberOrgEnabled(adminSettings) ? (
             <>
-              <SectionLabel>AFFECTER LES MEMBRES</SectionLabel>
-              <Text style={styles.fieldHint} testID="assign-persist-hint">
-                Une fois affecté, le membre reste dans ce groupe jusqu&apos;à
-                ce qu&apos;un admin (ou lui-même) le change — pas à chaque
-                sortie.
+              <Text style={styles.sectionLabel}>AFFECTER LES MEMBRES</Text>
+              <Text style={styles.assignHint} testID="assign-persist-hint">
+                Une fois affecté, le membre reste dans ce groupe jusqu&apos;à ce
+                qu&apos;un admin (ou lui-même) le change — pas à chaque sortie.
               </Text>
               <View style={styles.card} testID="assign-members-roster">
                 {roster.length === 0 ? (
-                  <Text style={styles.hint}>Aucun membre approuvé.</Text>
+                  <Text style={styles.emptyRoster}>Aucun membre approuvé.</Text>
                 ) : (
-                  roster.map((member) => {
+                  roster.map((member, index) => {
                     const assigned = memberAssignedGroupId(
                       member.userId,
                       adminSettings,
@@ -446,6 +508,7 @@ export default function ClubSettingsScreen() {
                         onPress={() => setAssignMember(member)}
                         style={({ pressed }) => [
                           styles.memberRow,
+                          index > 0 && styles.memberRowBorder,
                           pressed && { opacity: 0.85 },
                         ]}
                       >
@@ -486,47 +549,122 @@ export default function ClubSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.background.primary },
+  safeArea: { flex: 1, backgroundColor: t.canvas },
   header: {
-    paddingHorizontal: spacing.screenHorizontal,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingHorizontal: t.space.lg,
+    paddingTop: t.space.md,
+    paddingBottom: t.space.sm,
   },
-  backRow: { flexDirection: "row", alignItems: "center", marginBottom: spacing.sm },
-  backIcon: { color: colors.text.accent, fontSize: 18, marginRight: 6 },
-  backLabel: { color: colors.text.accent, fontSize: 16, fontWeight: "500" },
+  backRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: t.space.sm,
+    minHeight: 44,
+  },
+  backIcon: { color: t.primary, fontSize: 18, marginRight: 6 },
+  backLabel: {
+    color: t.primary,
+    fontSize: 16,
+    fontFamily: t.font.hanken.medium,
+  },
   screenTitle: {
-    color: colors.text.primary,
-    fontSize: typography.sizes["2xl"],
-    fontWeight: "700",
+    ...t.type.pageTitle,
+    color: t.text,
+    fontSize: 26,
+  },
+  screenSubtitle: {
+    marginTop: 4,
+    fontFamily: t.font.hanken.regular,
+    fontSize: 14,
+    color: t.textSecondary,
   },
   content: {
-    paddingHorizontal: spacing.screenHorizontal,
-    paddingBottom: spacing.xl,
+    paddingHorizontal: t.space.lg,
+    paddingBottom: 40,
   },
   loadingWrap: { paddingVertical: 48, alignItems: "center" },
-  hint: { color: colors.text.secondary, fontSize: 14, lineHeight: 20 },
+  deniedWrap: {
+    paddingHorizontal: t.space.lg,
+    paddingTop: t.space.lg,
+  },
+  deniedCard: {
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
+    padding: 20,
+    gap: 12,
+  },
+  deniedTitle: {
+    fontFamily: t.font.space.bold,
+    fontSize: 18,
+    color: t.text,
+  },
+  deniedBody: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    color: t.textSecondary,
+  },
+  deniedCta: {
+    marginTop: 4,
+    alignSelf: "flex-start",
+    backgroundColor: t.primary,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  deniedCtaText: {
+    fontFamily: t.font.space.bold,
+    fontSize: 14,
+    color: t.onPrimary,
+  },
+  sectionLabel: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    color: t.outline,
+    marginTop: 8,
+    marginBottom: 8,
+  },
   card: {
-    backgroundColor: colors.surface.s3,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
+    padding: 16,
+    marginBottom: 16,
   },
   fieldLabel: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
-    fontWeight: "600",
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 13,
+    color: t.textSecondary,
     marginBottom: 6,
     marginTop: 8,
   },
-  fieldHint: { color: colors.text.tertiary, fontSize: 11, marginTop: 2 },
-  input: {
-    backgroundColor: colors.background.input,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: colors.text.primary,
+  fieldLabelInline: {
+    fontFamily: t.font.hanken.semibold,
     fontSize: 14,
+    color: t.text,
+  },
+  fieldHint: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 12,
+    lineHeight: 16,
+    color: t.outline,
+    marginTop: 2,
+  },
+  input: {
+    backgroundColor: t.surfaceContainerLow,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(232,232,233,0.9)",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    color: t.text,
+    fontFamily: t.font.hanken.medium,
+    fontSize: 15,
   },
   inputMultiline: { minHeight: 72, textAlignVertical: "top" },
   switchRow: {
@@ -537,63 +675,103 @@ const styles = StyleSheet.create({
   },
   codeRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   codeBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: borderRadius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border.medium,
+    borderColor: "rgba(0,95,52,0.25)",
+    backgroundColor: "rgba(0,95,52,0.08)",
   },
-  codeBtnTxt: { color: colors.text.accent, fontSize: 12, fontWeight: "600" },
+  codeBtnTxt: {
+    color: t.primary,
+    fontSize: 13,
+    fontFamily: t.font.space.semibold,
+  },
   primaryBtn: {
     marginTop: 16,
-    backgroundColor: colors.accent.primary,
-    borderRadius: borderRadius.pill,
-    paddingVertical: 12,
+    backgroundColor: t.primary,
+    borderRadius: 14,
+    paddingVertical: 14,
     alignItems: "center",
   },
   primaryBtnDisabled: { opacity: 0.7 },
-  primaryBtnTxt: { color: colors.text.primary, fontWeight: "600", fontSize: 15 },
-  dot: { width: 10, height: 10, borderRadius: 5 },
-  memberRow: {
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border.default,
+  primaryBtnTxt: {
+    color: t.onPrimary,
+    fontFamily: t.font.space.bold,
+    fontSize: 15,
   },
-  memberName: {
-    color: colors.text.primary,
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
+  groupRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(232,232,233,0.9)",
+    marginTop: 4,
   },
-  groupPicker: { flexDirection: "row", gap: 6 },
-  groupChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: borderRadius.pill,
-    borderWidth: 1,
-    borderColor: colors.border.default,
+  dot: { width: 12, height: 12, borderRadius: 6 },
+  groupName: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 15,
+    color: t.text,
   },
-  groupChipPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.96 }],
+  groupNote: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 12,
+    color: t.outline,
+    marginTop: 2,
   },
-  groupChipTxt: { color: colors.text.secondary, fontSize: 12, fontWeight: "700" },
+  chevron: {
+    fontFamily: t.font.space.bold,
+    fontSize: 20,
+    color: t.outline,
+  },
   addGroupBtn: {
     marginTop: 12,
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: colors.border.active,
-    borderRadius: borderRadius.md,
+    borderColor: "rgba(0,95,52,0.35)",
+    borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
   },
   addGroupBtnTxt: {
-    color: colors.text.accent,
-    fontWeight: "700",
+    color: t.primary,
+    fontFamily: t.font.space.bold,
     fontSize: 14,
   },
-  memberGroupHint: {
-    color: colors.text.secondary,
+  assignHint: {
+    fontFamily: t.font.hanken.regular,
     fontSize: 13,
+    lineHeight: 18,
+    color: t.textSecondary,
+    marginBottom: 8,
+  },
+  emptyRoster: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 14,
+    color: t.textSecondary,
+  },
+  memberRow: {
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  memberRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(232,232,233,0.9)",
+  },
+  memberName: {
+    flex: 1,
+    fontFamily: t.font.space.semibold,
+    fontSize: 14,
+    color: t.text,
+  },
+  memberGroupHint: {
+    fontFamily: t.font.hanken.medium,
+    fontSize: 13,
+    color: t.primary,
   },
 });
