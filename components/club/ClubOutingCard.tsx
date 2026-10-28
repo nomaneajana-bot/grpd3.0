@@ -47,17 +47,25 @@ function compactPace(raw: string | null | undefined, walk: boolean): string {
   );
 }
 
-function volumeBit(volume: string | undefined): string | null {
+function volumeBit(
+  volume: string | undefined,
+): { kind: "duration" | "format"; value: string } | null {
   const v = (volume ?? "").trim();
   if (!v) return null;
   const min = v.match(/(\d+)\s*min/i);
-  if (min) return `${min[1]} min`;
+  if (min) return { kind: "duration", value: `${min[1]} min` };
   const hour = v.match(/(\d+)\s*h(?:\s*(\d+))?/i);
-  if (hour) return hour[2] ? `${hour[1]}h${hour[2]}` : `${hour[1]} h`;
-  // "14 km · endurance" is distance/format — not a duration
-  const first = v.split("·")[0]?.trim() ?? "";
-  if (!first || first.length > 18 || /\bkm\b/i.test(first)) return null;
-  return first;
+  if (hour) {
+    return {
+      kind: "duration",
+      value: hour[2] ? `${hour[1]}h${hour[2]}` : `${hour[1]} h`,
+    };
+  }
+  // "14 km · endurance" → format from the non-km segment
+  const parts = v.split("·").map((p) => p.trim()).filter(Boolean);
+  const format = parts.find((p) => !/\bkm\b/i.test(p) && p.length <= 18);
+  if (format) return { kind: "format", value: format };
+  return null;
 }
 
 /**
