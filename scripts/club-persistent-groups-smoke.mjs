@@ -165,14 +165,19 @@ async function main() {
     );
     await shot(page, "02-after-assign");
 
-    // Club hub shows assign nav
+    // Club hub: assign lives inside Paramètres (no duplicate Affecter nav)
     await page.goto(`${BASE}/club`, { waitUntil: "networkidle" });
     await page.waitForTimeout(900);
     check(
-      "hub_assign_nav",
-      (await page.getByTestId("club-assign-members-nav").count()) > 0 ||
-        /Affecter les membres/i.test(await page.locator("body").innerText()),
+      "hub_settings_nav",
+      (await page.getByTestId("club-settings-nav").count()) > 0 ||
+        /Paramètres du club/i.test(await page.locator("body").innerText()),
       "nav",
+    );
+    check(
+      "hub_no_duplicate_assign_nav",
+      (await page.getByTestId("club-assign-members-nav").count()) === 0,
+      "Affecter les membres removed from ADMINISTRATION",
     );
     await shot(page, "03-hub-groups");
 
