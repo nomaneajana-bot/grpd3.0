@@ -158,6 +158,7 @@ export default function ClubGroupDetailScreen() {
 
   const { tryLeave, markLeaving } = useUnsavedChangesGuard({
     isDirty: hasAdminAccess && isDirty,
+    leaveHref: "/(tabs)/club" as Href,
   });
 
   const handleSave = async () => {

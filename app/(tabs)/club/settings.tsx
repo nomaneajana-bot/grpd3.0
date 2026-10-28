@@ -427,7 +427,10 @@ export default function ClubSettingsScreen() {
 
       <View style={styles.header}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            // Always land on the Clubs hub — router.back() can exit the tab on web.
+            router.navigate("/(tabs)/club" as Href);
+          }}
           style={styles.backRow}
           accessibilityRole="button"
           accessibilityLabel="Retour"
