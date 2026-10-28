@@ -238,7 +238,7 @@ export default function HomeScreen() {
               Sorties à découvrir
             </Text>
             <Text style={styles.sectionSupport}>
-              Ouvertes près de toi — course ou marche.
+              Qui part, où, à quelle allure — rejoins en un tap.
             </Text>
           </View>
 
@@ -268,12 +268,11 @@ export default function HomeScreen() {
             <ActivityIndicator color={h.primary} style={{ marginVertical: 24 }} />
           ) : discovery.length ? (
             <View style={styles.list} testID="home-discovery-list">
-              {discovery.map((s, i) => (
+              {discovery.map((s) => (
                 <OutingRow
                   key={s.id}
                   session={s}
                   onPress={() => openSession(s.id)}
-                  showRule={i < discovery.length - 1}
                 />
               ))}
             </View>
@@ -328,7 +327,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: h.textSecondary,
   },
-  list: { marginTop: 6 },
+  list: { marginTop: 8, gap: 14 },
   errorBox: {
     backgroundColor: "#FDECEA",
     borderRadius: h.radiusDiscovery,

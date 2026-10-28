@@ -209,6 +209,9 @@ export const SESSION_MAP: Record<string, SessionData> = {
     targetPace: "5:30–6:30/km",
     estimatedDistanceKm: 8,
     genderRestriction: "women_only",
+    coachName: "Amélie Traoré",
+    coachAdvice:
+      "Reprise douce, uniquement entre femmes — ambiance bienveillante.",
     paceGroups: [
       {
         id: "A",
@@ -440,6 +443,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
     volume: "4:00 effort x 5 · Récup 2:30",
     targetPace: "5:10–5:40/km",
     estimatedDistanceKm: 8,
+    coachName: "Youssef Benali",
+    coachAdvice: "Jeux d'allure progressifs — on monte ensemble sans se cramer.",
     paceGroups: [
       {
         id: "A",
@@ -534,6 +539,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
     volume: "1h30 sortie continue",
     targetPace: "5:30–6:10/km",
     estimatedDistanceKm: 15,
+    coachName: "Youssef Benali",
+    coachAdvice: "Endurance conversationnelle — on garde de la marge jusqu'au bout.",
     paceGroups: [
       {
         id: "A",
