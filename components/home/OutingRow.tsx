@@ -123,7 +123,10 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
       <View style={styles.metrics} testID={`home-outing-metrics-${session.id}`}>
         <Metric label="Distance" value={dist} />
         <Metric label={isWalk ? "Rythme" : "Allure"} value={pace} />
-        <Metric label="Durée" value={durationBit || "—"} />
+        <Metric
+          label={durationBit?.kind === "format" ? "Format" : "Durée"}
+          value={durationBit?.value || "—"}
+        />
       </View>
 
       <View style={styles.footer}>
@@ -212,15 +215,22 @@ function compactPace(
   return p || "Libre";
 }
 
-function shortDuration(volume: string | undefined): string | null {
+function shortDuration(
+  volume: string | undefined,
+): { kind: "duration" | "format"; value: string } | null {
   const v = (volume ?? "").trim();
   if (!v) return null;
   const min = v.match(/(\d+)\s*min/i);
-  if (min) return `${min[1]} min`;
+  if (min) return { kind: "duration", value: `${min[1]} min` };
   const hour = v.match(/(\d+)\s*h(?:\s*(\d+))?/i);
   if (hour) {
-    return hour[2] ? `${hour[1]}h${hour[2]}` : `${hour[1]} h`;
+    return {
+      kind: "duration",
+      value: hour[2] ? `${hour[1]}h${hour[2]}` : `${hour[1]} h`,
+    };
   }
+  const first = v.split("·")[0]?.trim() ?? "";
+  if (first && first.length <= 18) return { kind: "format", value: first };
   return null;
 }
 
