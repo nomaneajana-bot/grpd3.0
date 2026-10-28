@@ -1,0 +1,34 @@
+{
+  "cards": 5,
+  "hasMetrics": true,
+  "hasDate": true,
+  "hasLong": true,
+  "pass": true,
+  "steps": [
+    {
+      "id": "club_outing_cards",
+      "ok": true,
+      "detail": "5"
+    },
+    {
+      "id": "metrics",
+      "ok": true,
+      "detail": "Distance/Allure/Durée"
+    },
+    {
+      "id": "date_rail",
+      "ok": true,
+      "detail": "weekday/month"
+    },
+    {
+      "id": "long_session",
+      "ok": true,
+      "detail": "LONG / Sortie longue"
+    },
+    {
+      "id": "long_card_testid",
+      "ok": true,
+      "detail": "demo_sess_past_long"
+    }
+  ]
+}

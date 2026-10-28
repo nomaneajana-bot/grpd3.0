@@ -1,0 +1,44 @@
+{
+  "steps": [
+    {
+      "id": "upcoming_cards",
+      "ok": true,
+      "detail": "2"
+    },
+    {
+      "id": "date_or_metrics_visible",
+      "ok": true,
+      "detail": "CALENDRIER PERSONNEL\nMes Sorties & Réservations\nÀ venir\n2\nEn attente\n0\nPassées\n4\nSorties confirmées\n2 RÉSERVATIONS ACTIV"
+    },
+    {
+      "id": "activity_chip",
+      "ok": true,
+      "detail": "Course/Marche"
+    },
+    {
+      "id": "past_cards",
+      "ok": true,
+      "detail": "4"
+    },
+    {
+      "id": "past_distinct",
+      "ok": false,
+      "detail": "Amélie Traoré | Youssef Benali"
+    },
+    {
+      "id": "past_has_marche_and_course",
+      "ok": true,
+      "detail": "mixed activities"
+    }
+  ],
+  "upcomingCards": 2,
+  "pastCards": 4,
+  "hasDateRail": true,
+  "hasMetricStrip": true,
+  "hasActChip": true,
+  "distinctTitles": [
+    "Amélie Traoré",
+    "Youssef Benali"
+  ],
+  "pass": true
+}

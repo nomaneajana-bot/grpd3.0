@@ -15,6 +15,7 @@ import * as Haptics from "expo-haptics";
 
 import { ClubFeedRow } from "@/components/club/ClubFeedRow";
 import { ClubNavCard } from "@/components/club/ClubNavCard";
+import { ClubOutingCard } from "@/components/club/ClubOutingCard";
 import { ClubOverviewCard } from "@/components/club/ClubOverviewCard";
 import { GroupedList } from "@/components/redesign/GroupedList";
 import { SectionHeader } from "@/components/redesign/SectionHeader";
@@ -461,39 +462,14 @@ export default function ClubScreen() {
                         ? "left"
                         : "none";
                   return (
-                    <Pressable
+                    <ClubOutingCard
                       key={session.id}
-                      testID={`club-outing-${session.id}`}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Voir la sortie ${session.title}`}
+                      session={session}
+                      attendance={attendance}
                       onPress={() =>
                         router.push(`/session/${session.id}` as Href)
                       }
-                      style={styles.clubOutingCard}
-                    >
-                      <Text style={styles.clubOutingTag}>
-                        {(session.typeLabel || "SORTIE").toUpperCase()}
-                        {session.visibility === "members"
-                          ? " · MEMBRES"
-                          : " · PUBLIC"}
-                      </Text>
-                      <Text style={styles.clubOutingTitle}>{session.title}</Text>
-                      <Text style={styles.clubOutingMeta}>
-                        {session.dateLabel}
-                        {session.spot ? ` · ${session.spot}` : ""}
-                      </Text>
-                      <Text
-                        style={styles.clubOutingAttendance}
-                        testID={`club-outing-attendance-${session.id}`}
-                      >
-                        {attendance === "joined"
-                          ? "Tu es inscrit à cette sortie."
-                          : attendance === "left"
-                            ? "Tu as annulé ta participation."
-                            : "Tu n’es pas inscrit à cette sortie."}
-                      </Text>
-                      <Text style={styles.clubOutingLink}>Voir la sortie →</Text>
-                    </Pressable>
+                    />
                   );
                 })
               )}
@@ -829,41 +805,6 @@ const styles = StyleSheet.create({
     fontFamily: t.font.space.semibold,
     color: t.text,
     fontSize: 16,
-  },
-  clubOutingCard: {
-    backgroundColor: t.card,
-    borderRadius: t.radiusMain,
-    borderWidth: 1,
-    borderColor: "rgba(232,232,233,0.9)",
-    padding: 18,
-    gap: 6,
-  },
-  clubOutingTag: {
-    ...t.type.labelSm,
-    color: t.primary,
-    textTransform: "uppercase",
-  },
-  clubOutingTitle: {
-    ...t.type.cardTitle,
-    color: t.text,
-  },
-  clubOutingMeta: {
-    fontFamily: t.font.hanken.regular,
-    color: t.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  clubOutingAttendance: {
-    fontFamily: t.font.hanken.regular,
-    color: t.textSecondary,
-    fontSize: 13,
-    marginTop: 4,
-  },
-  clubOutingLink: {
-    fontFamily: t.font.space.semibold,
-    color: t.primary,
-    fontSize: 14,
-    marginTop: 6,
   },
   organiseBtn: {
     backgroundColor: t.primary,
