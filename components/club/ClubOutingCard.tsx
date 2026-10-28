@@ -217,9 +217,11 @@ export function ClubOutingCard({
               </Text>
             </View>
             <View style={styles.metricCol}>
-              <Text style={styles.metricLabel}>Durée</Text>
+              <Text style={styles.metricLabel}>
+                {volume?.kind === "format" ? "Format" : "Durée"}
+              </Text>
               <Text style={styles.metricValue} numberOfLines={1}>
-                {dur ?? "—"}
+                {volume?.value ?? "—"}
               </Text>
             </View>
           </View>
