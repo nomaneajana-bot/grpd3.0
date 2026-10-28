@@ -14,7 +14,7 @@ import {
   type ClubColorGroup,
 } from "@/lib/clubMemberGroups";
 import type { ClubAdminSettings } from "@/lib/clubAdminStore";
-import { borderRadius, colors, hairline, spacing, typography } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 
 type AssignMemberGroupSheetProps = {
   visible: boolean;
@@ -25,6 +25,7 @@ type AssignMemberGroupSheetProps = {
   onClose: () => void;
 };
 
+/** Light bottom sheet to assign a member to one colour group (or none). */
 export function AssignMemberGroupSheet({
   visible,
   memberName,
@@ -36,9 +37,15 @@ export function AssignMemberGroupSheet({
   const groups = sortedActiveColorGroups(settings);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+          <View style={styles.handle} />
           <Text style={styles.kicker}>
             {memberName === "Moi" ? "MON GROUPE" : "AFFECTER"}
           </Text>
@@ -66,10 +73,22 @@ export function AssignMemberGroupSheet({
                 pressed && { opacity: 0.85 },
               ]}
             >
-              <Text style={styles.noneText}>Sans groupe</Text>
+              <Text
+                style={[
+                  styles.noneText,
+                  currentGroupId == null && styles.noneTextSelected,
+                ]}
+              >
+                Sans groupe
+              </Text>
             </Pressable>
           </ScrollView>
-          <Pressable onPress={onClose} style={styles.cancel}>
+          <Pressable
+            onPress={onClose}
+            style={styles.cancel}
+            accessibilityRole="button"
+            accessibilityLabel="Annuler"
+          >
             <Text style={styles.cancelText}>Annuler</Text>
           </Pressable>
         </Pressable>
@@ -94,7 +113,10 @@ function GroupChip({
       onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
-        selected && { borderColor: color, backgroundColor: `${color}22` },
+        selected && {
+          borderColor: color,
+          backgroundColor: `${color}14`,
+        },
         pressed && { opacity: 0.9 },
       ]}
     >
@@ -107,7 +129,7 @@ function GroupChip({
           </Text>
         ) : null}
       </View>
-      {selected ? <Text style={styles.check}>✓</Text> : null}
+      {selected ? <Text style={[styles.check, { color }]}>✓</Text> : null}
     </Pressable>
   );
 }
@@ -115,35 +137,46 @@ function GroupChip({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    backgroundColor: "rgba(26,28,29,0.4)",
     justifyContent: "flex-end",
   },
   sheet: {
-    backgroundColor: colors.background.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: spacing.screenHorizontal,
-    paddingTop: 20,
+    backgroundColor: t.card,
+    borderTopLeftRadius: t.radiusXl,
+    borderTopRightRadius: t.radiusXl,
+    paddingHorizontal: t.space.lg,
+    paddingTop: 10,
     paddingBottom: 28,
     maxHeight: "72%",
   },
+  handle: {
+    alignSelf: "center",
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: t.surfaceContainerHigh,
+    marginBottom: 14,
+  },
   kicker: {
-    color: colors.text.accent,
+    color: t.primary,
     fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.4,
-    marginBottom: 8,
+    fontFamily: t.font.space.semibold,
+    letterSpacing: 0.8,
+    marginBottom: 6,
   },
   title: {
-    color: colors.text.primary,
-    fontSize: 24,
-    fontWeight: "800",
+    color: t.text,
+    fontSize: 22,
+    fontFamily: t.font.space.bold,
+    letterSpacing: -0.3,
   },
   sub: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
+    color: t.textSecondary,
+    fontSize: 13,
+    fontFamily: t.font.hanken.regular,
+    lineHeight: 18,
     marginTop: 6,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   list: { maxHeight: 360 },
   chip: {
@@ -152,49 +185,62 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 14,
     paddingHorizontal: 12,
-    borderRadius: borderRadius.lg,
-    borderWidth: hairline,
-    borderColor: colors.border.default,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.95)",
+    backgroundColor: t.surfaceContainerLow,
     marginBottom: 8,
+    minHeight: t.touchMin,
   },
-  dot: { width: 14, height: 14, borderRadius: 7 },
-  chipText: { flex: 1 },
+  dot: { width: 12, height: 12, borderRadius: 6 },
+  chipText: { flex: 1, minWidth: 0 },
   chipName: {
-    color: colors.text.primary,
-    fontWeight: "700",
-    fontSize: typography.sizes.base,
+    color: t.text,
+    fontFamily: t.font.space.semibold,
+    fontSize: 15,
   },
   chipNote: {
-    color: colors.text.tertiary,
-    fontSize: typography.sizes.sm,
+    color: t.outline,
+    fontFamily: t.font.hanken.regular,
+    fontSize: 12,
     marginTop: 2,
   },
   check: {
-    color: colors.accent.primary,
-    fontWeight: "800",
+    fontFamily: t.font.space.bold,
     fontSize: 16,
   },
   noneRow: {
     paddingVertical: 14,
     paddingHorizontal: 12,
-    borderRadius: borderRadius.lg,
-    borderWidth: hairline,
-    borderColor: colors.border.default,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.95)",
+    backgroundColor: t.surfaceContainerLow,
     marginTop: 4,
+    minHeight: t.touchMin,
+    justifyContent: "center",
   },
   noneSelected: {
-    borderColor: colors.accent.primary,
+    borderColor: "rgba(0,95,52,0.35)",
+    backgroundColor: "rgba(0,95,52,0.08)",
   },
   noneText: {
-    color: colors.text.secondary,
-    fontWeight: "600",
+    color: t.textSecondary,
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 14,
+  },
+  noneTextSelected: {
+    color: t.primary,
   },
   cancel: {
     alignItems: "center",
     paddingTop: 16,
+    minHeight: 44,
+    justifyContent: "center",
   },
   cancelText: {
-    color: colors.text.secondary,
-    fontWeight: "600",
+    color: t.outline,
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 15,
   },
 });
