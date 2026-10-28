@@ -2251,7 +2251,6 @@ export default function CreateSessionScreen() {
 
       // Per-outing A–D removed from organise — publish without session pace groups.
       const submittedGroups: typeof groupConfigs = [];
-      const walkSkipsPace = sessionMode === "walking";
       const walkTitle = outingTitle.trim() || null;
       const walkPurpose = outingPurpose.trim() || null;
       const organizerName =
