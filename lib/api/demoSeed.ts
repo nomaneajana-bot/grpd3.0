@@ -30,8 +30,8 @@ export const MOCK_CLUBS_KEY = "mock:clubs";
 export const MOCK_MEMBERSHIPS_KEY = "mock:club_memberships";
 export const MOCK_OTP_KEY = "mock:otp";
 /** Bump to force a one-time reseed of the richer Casablanca world. */
-export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v3";
-export const DEMO_SEED_VERSION = "3";
+export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v4";
+export const DEMO_SEED_VERSION = "4";
 
 export const DEMO_CLUB_ID = "club_casa_running";
 export const DEMO_CLUB_NAME = "Casa Running Club";
@@ -497,7 +497,7 @@ function buildDemoSessions(): ApiSession[] {
     },
     {
       id: "demo_sess_past_footing",
-      title: "Footing déjà passé",
+      title: "Footing Parc Yasmina",
       spot: "Parc Yasmina",
       dayOffset: 0,
       pastDaysAgo: 3,
@@ -511,7 +511,62 @@ function buildDemoSessions(): ApiSession[] {
       coachName: "Amélie Traoré",
       coachPhone: "+212600000002",
       recommendedGroupId: "D",
-      purpose: "Sortie passée — historique Mes Sorties.",
+      purpose: "Allure conversation autour du parc.",
+    },
+    {
+      id: "demo_sess_past_marche",
+      title: "Marche douce Ain Diab",
+      spot: "Corniche Ain Diab",
+      dayOffset: 0,
+      pastDaysAgo: 6,
+      timeMinutes: 10 * 60,
+      typeLabel: "MARCHE",
+      volume: "60 min · pas pressé",
+      targetPace: "—",
+      estimatedDistanceKm: 5,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Amélie Traoré",
+      coachPhone: "+212600000002",
+      recommendedGroupId: "D",
+      purpose: "Marche ensemble, sans chrono — café après.",
+    },
+    {
+      id: "demo_sess_past_long",
+      title: "Sortie longue Anfa",
+      spot: "Anfa — Twin Center",
+      dayOffset: 0,
+      pastDaysAgo: 10,
+      timeMinutes: 8 * 60,
+      typeLabel: "LONG",
+      volume: "14 km · endurance",
+      targetPace: "5:20–6:20/km",
+      estimatedDistanceKm: 14,
+      visibility: "members",
+      withPaceGroups: true,
+      coachName: "Youssef Benali",
+      coachPhone: "+212600000001",
+      recommendedGroupId: "C",
+      clubId: DEMO_CLUB_ID,
+      purpose: "Endurance fondamentale — groupes selon allure.",
+    },
+    {
+      id: "demo_sess_past_sunset",
+      title: "Footing coucher de soleil",
+      spot: "Corniche — Café Maure",
+      dayOffset: 0,
+      pastDaysAgo: 14,
+      timeMinutes: 18 * 60 + 30,
+      typeLabel: "FOOTING",
+      volume: "50 min · conversation",
+      targetPace: "6:00–7:00/km",
+      estimatedDistanceKm: 8,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Youssef Benali",
+      coachPhone: "+212600000001",
+      recommendedGroupId: "C",
+      purpose: "Fin de journée sur la corniche.",
     },
   ];
 
@@ -1153,6 +1208,9 @@ export async function ensureDemoUserMembership(
     "demo_sess_footing_corniche",
     "demo_sess_footing_sunset",
     "demo_sess_past_footing",
+    "demo_sess_past_marche",
+    "demo_sess_past_long",
+    "demo_sess_past_sunset",
   ];
   const attendance = await readJson<MockAttendanceMap>(MOCK_ATTENDANCE_KEY, {});
   for (const sessionId of joinSessionIds) {

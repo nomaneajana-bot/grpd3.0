@@ -36,11 +36,43 @@ import {
 } from "@/lib/mesSortiesViewModel";
 import { setMesSortiesBadgeCount } from "@/lib/mesSortiesBadge";
 import {
+  activityLabel,
+  discoveryDateParts,
+  displayOutingTitle,
+  formatTimeLabel,
+  initialsFromName,
+} from "@/lib/homeViewModel";
+import { activityForSession } from "@/lib/experiences";
+import {
   apiSessionToSessionData,
   getAllSessionsIncludingStored,
   type SessionData,
 } from "@/lib/sessionData";
 import { getSessionDateForSort } from "@/lib/sessionLogic";
+
+const HOST_TONES = [t.primary, "#333E35", "#576158"] as const;
+
+function hostTone(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h + name.charCodeAt(i) * (i + 1)) % 97;
+  return HOST_TONES[h % HOST_TONES.length]!;
+}
+
+function compactPaceLine(raw: string | null | undefined, walk: boolean): string {
+  if (!raw || raw === "—" || /^0:00/i.test(raw)) return walk ? "Libre" : "Libre";
+  return raw.replace(/^Allure\s+/i, "").replace(/\s*\/\s*km$/i, "").replace(/\/km\b/gi, "").trim() || "Libre";
+}
+
+function volumeBit(volume: string | undefined): string | null {
+  const v = (volume ?? "").trim();
+  if (!v) return null;
+  const min = v.match(/(\d+)\s*min/i);
+  if (min) return `${min[1]} min`;
+  const hour = v.match(/(\d+)\s*h(?:\s*(\d+))?/i);
+  if (hour) return hour[2] ? `${hour[1]}h${hour[2]}` : `${hour[1]} h`;
+  const first = v.split("·")[0]?.trim() ?? "";
+  return first && first.length <= 18 ? first : null;
+}
 
 /**
  * Mes Sorties — Noa-Stito visual fidelity, real join/leave/API data.
@@ -499,44 +531,93 @@ function ConfirmedCard({
   onDetails: () => void;
   onCancel: () => void;
 }) {
+  const host = clubOrHostLabel(session);
+  const isWalk = activityForSession(session) === "walk";
+  const activity = activityLabel(session);
+  const title = displayOutingTitle(session.title);
+  const date = discoveryDateParts(session);
+  const time = formatTimeLabel(session.timeMinutes);
+  const dist = distanceLabel(session);
+  const pace = compactPaceLine(paceLabel(session), isWalk);
+  const dur = volumeBit(session.volume);
+  const initials = initialsFromName(host) || (isWalk ? "M" : "C");
+  const tone = hostTone(host);
+
   return (
     <View style={styles.card} testID={`mes-sorties-confirmed-${session.id}`}>
-      <View style={styles.cardTop}>
-        <View style={styles.cardTopLeft}>
-          <View style={styles.metaRow}>
-            <Text style={styles.clubLabel} numberOfLines={1}>
-              {clubOrHostLabel(session)}
-            </Text>
-            <Text style={styles.dot}>·</Text>
-            <Text style={styles.discipline}>{disciplineMeta(session)}</Text>
-          </View>
-          <Text style={styles.cardTitle} numberOfLines={2}>
-            {session.title}
-          </Text>
+      <View style={styles.liveRow}>
+        <View style={styles.dateRail} accessibilityLabel={formatOutingDateCompact(session)}>
+          <Text style={styles.dateWeekday}>{date?.weekday ?? "—"}</Text>
+          <Text style={styles.dateDay}>{date?.dayNum ?? "·"}</Text>
+          <Text style={styles.dateMonth}>{date?.month ?? ""}</Text>
         </View>
-        <View style={styles.inscritPill}>
-          <Ionicons name="checkmark-circle" size={14} color={t.onSecondaryContainer} />
-          <Text style={styles.inscritText}>Inscrit</Text>
-        </View>
-      </View>
 
-      <View style={styles.pillGrid}>
-        <View style={styles.infoPill}>
-          <Ionicons name="calendar-outline" size={20} color={t.primary} />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.infoPillEyebrow}>DATE & HEURE</Text>
-            <Text style={styles.infoPillValue} numberOfLines={1}>
-              {formatOutingDateCompact(session)}
-            </Text>
+        <View style={styles.liveBody}>
+          <View style={styles.hostRow}>
+            <View style={[styles.hostAvatar, { backgroundColor: tone }]}>
+              <Text style={styles.hostAvatarText}>{initials}</Text>
+            </View>
+            <View style={styles.hostTextCol}>
+              <Text style={styles.hostName} numberOfLines={1}>
+                {host}
+              </Text>
+              <View style={styles.chipRow}>
+                <View style={[styles.actChip, isWalk ? styles.actChipWalk : styles.actChipRun]}>
+                  <Text
+                    style={[
+                      styles.actChipText,
+                      isWalk ? styles.actChipTextWalk : styles.actChipTextRun,
+                    ]}
+                  >
+                    {activity}
+                  </Text>
+                </View>
+                <View style={styles.inscritPill}>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={13}
+                    color={t.onSecondaryContainer}
+                  />
+                  <Text style={styles.inscritText}>Inscrit</Text>
+                </View>
+              </View>
+            </View>
+            {time ? (
+              <View style={styles.timeBadge}>
+                <Text style={styles.timeBadgeText}>{time}</Text>
+              </View>
+            ) : null}
           </View>
-        </View>
-        <View style={styles.infoPill}>
-          <Ionicons name="location-outline" size={20} color={t.primary} />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.infoPillEyebrow}>RENDEZ-VOUS</Text>
-            <Text style={styles.infoPillValue} numberOfLines={1}>
-              {locationLabel(session) || "—"}
-            </Text>
+
+          <Text style={styles.cardTitle} numberOfLines={2}>
+            {title}
+          </Text>
+          <Text style={styles.spotLine} numberOfLines={1}>
+            {locationLabel(session) || "Lieu à préciser"}
+          </Text>
+
+          <View style={styles.metricStrip}>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>Distance</Text>
+              <Text style={styles.metricValue} numberOfLines={1}>
+                {dist ?? "—"}
+              </Text>
+            </View>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>{isWalk ? "Rythme" : "Allure"}</Text>
+              <Text
+                style={[styles.metricValue, pace.length > 10 && styles.metricValueTight]}
+                numberOfLines={1}
+              >
+                {pace}
+              </Text>
+            </View>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>Durée</Text>
+              <Text style={styles.metricValue} numberOfLines={1}>
+                {dur ?? "—"}
+              </Text>
+            </View>
           </View>
         </View>
       </View>
@@ -643,34 +724,100 @@ function PastCard({
   session: SessionData;
   onPress: () => void;
 }) {
+  const host = clubOrHostLabel(session);
+  const isWalk = activityForSession(session) === "walk";
+  const activity = activityLabel(session);
+  const title = displayOutingTitle(session.title);
+  const date = discoveryDateParts(session);
+  const time = formatTimeLabel(session.timeMinutes);
   const dist = distanceLabel(session);
-  const pace = paceLabel(session);
+  const pace = compactPaceLine(paceLabel(session), isWalk);
+  const loc = locationLabel(session);
+  const initials = initialsFromName(host) || (isWalk ? "M" : "C");
+  const tone = hostTone(host);
+
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={session.title}
+      accessibilityLabel={`${title}, ${formatOutingDateCompact(session)}`}
       onPress={onPress}
-      style={({ pressed }) => [styles.pastCard, pressed && { opacity: 0.92 }]}
+      style={({ pressed }) => [
+        styles.pastCard,
+        isWalk && styles.pastCardWalk,
+        pressed && { opacity: 0.92 },
+      ]}
       testID={`mes-sorties-past-${session.id}`}
     >
-      <View>
-        <Text style={styles.clubLabel} numberOfLines={1}>
-          {clubOrHostLabel(session)}
-        </Text>
-        <Text style={styles.pastTitle} numberOfLines={2}>
-          {session.title}
-        </Text>
-        <Text style={styles.pastMeta} numberOfLines={1}>
-          {[formatOutingDateCompact(session), locationLabel(session)]
-            .filter(Boolean)
-            .join(" · ")}
-        </Text>
-      </View>
-      <View style={styles.pastFoot}>
-        <Text style={styles.pastPace}>
-          {pace ? `Allure : ${pace}` : disciplineMeta(session)}
-        </Text>
-        <Text style={styles.pastDist}>{dist ?? "—"}</Text>
+      <View style={styles.liveRow}>
+        <View style={[styles.dateRail, styles.dateRailPast]}>
+          <Text style={styles.dateWeekday}>{date?.weekday ?? "—"}</Text>
+          <Text style={[styles.dateDay, styles.dateDayPast]}>
+            {date?.dayNum ?? "·"}
+          </Text>
+          <Text style={styles.dateMonth}>{date?.month ?? ""}</Text>
+        </View>
+
+        <View style={styles.liveBody}>
+          <View style={styles.hostRow}>
+            <View style={[styles.hostAvatar, styles.hostAvatarPast, { backgroundColor: tone }]}>
+              <Text style={styles.hostAvatarText}>{initials}</Text>
+            </View>
+            <View style={styles.hostTextCol}>
+              <Text style={styles.hostName} numberOfLines={1}>
+                {host}
+              </Text>
+              <View style={styles.chipRow}>
+                <View style={[styles.actChip, isWalk ? styles.actChipWalk : styles.actChipRun]}>
+                  <Text
+                    style={[
+                      styles.actChipText,
+                      isWalk ? styles.actChipTextWalk : styles.actChipTextRun,
+                    ]}
+                  >
+                    {activity}
+                  </Text>
+                </View>
+                {time ? <Text style={styles.pastTime}>{time}</Text> : null}
+              </View>
+            </View>
+            <View style={styles.doneMark} accessibilityLabel="Terminée">
+              <Ionicons name="checkmark-circle" size={22} color={t.primary} />
+            </View>
+          </View>
+
+          <Text style={styles.pastTitle} numberOfLines={2}>
+            {title}
+          </Text>
+          {loc ? (
+            <Text style={styles.spotLine} numberOfLines={1}>
+              {loc}
+            </Text>
+          ) : null}
+
+          <View style={styles.metricStrip}>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>Distance</Text>
+              <Text style={styles.metricValueStrong} numberOfLines={1}>
+                {dist ?? "—"}
+              </Text>
+            </View>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>{isWalk ? "Rythme" : "Allure"}</Text>
+              <Text
+                style={[styles.metricValue, pace.length > 10 && styles.metricValueTight]}
+                numberOfLines={1}
+              >
+                {pace}
+              </Text>
+            </View>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>Lieu</Text>
+              <Text style={styles.metricValue} numberOfLines={1}>
+                {loc ? loc.split("—")[0]!.trim().split(",")[0]!.trim() : "—"}
+              </Text>
+            </View>
+          </View>
+        </View>
       </View>
     </Pressable>
   );
@@ -890,10 +1037,122 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: t.surfaceContainerLowest,
     borderRadius: t.radiusMain,
-    padding: 20,
-    gap: 16,
+    padding: 16,
+    gap: 14,
     borderWidth: 1,
     borderColor: "rgba(232,232,233,0.75)",
+    shadowColor: "#1A1C1D",
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  liveRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 12,
+  },
+  dateRail: {
+    width: 52,
+    borderRadius: 14,
+    backgroundColor: "rgba(0,95,52,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    gap: 2,
+  },
+  dateRailPast: {
+    backgroundColor: t.surfaceContainerLow,
+  },
+  dateWeekday: {
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 11,
+    lineHeight: 14,
+    color: t.primary,
+    textTransform: "uppercase",
+  },
+  dateDay: {
+    fontFamily: t.font.space.bold,
+    fontSize: 24,
+    lineHeight: 28,
+    letterSpacing: -0.6,
+    color: t.primary,
+    fontVariant: ["tabular-nums"],
+  },
+  dateDayPast: {
+    color: t.text,
+  },
+  dateMonth: {
+    fontFamily: t.font.hanken.medium,
+    fontSize: 11,
+    lineHeight: 14,
+    color: t.outline,
+  },
+  liveBody: { flex: 1, minWidth: 0, gap: 8 },
+  hostRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  hostAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hostAvatarPast: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  hostAvatarText: {
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 12,
+    color: t.onPrimary,
+  },
+  hostTextCol: { flex: 1, minWidth: 0, gap: 4 },
+  hostName: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 14,
+    lineHeight: 18,
+    color: t.text,
+  },
+  chipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  actChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  actChipRun: { backgroundColor: "rgba(0,95,52,0.1)" },
+  actChipWalk: { backgroundColor: "rgba(63,73,65,0.12)" },
+  actChipText: {
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  actChipTextRun: { color: t.primary },
+  actChipTextWalk: { color: t.textSecondary },
+  timeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: "rgba(0,95,52,0.1)",
+    minWidth: 52,
+    alignItems: "center",
+  },
+  timeBadgeText: {
+    fontFamily: t.font.space.bold,
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: -0.2,
+    color: t.primary,
+    fontVariant: ["tabular-nums"],
   },
   cardTop: {
     flexDirection: "row",
@@ -910,19 +1169,70 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   dot: { ...t.type.labelSm, color: t.textSecondary },
-  discipline: { ...t.type.labelSm, color: t.textSecondary, fontFamily: t.font.space.semibold },
-  cardTitle: { ...t.type.cardTitle, color: t.text },
+  discipline: {
+    ...t.type.labelSm,
+    color: t.textSecondary,
+    fontFamily: t.font.space.semibold,
+  },
+  cardTitle: {
+    fontFamily: t.font.space.bold,
+    fontSize: 18,
+    lineHeight: 24,
+    letterSpacing: -0.3,
+    color: t.text,
+  },
+  spotLine: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.textSecondary,
+    marginTop: -2,
+  },
+  metricStrip: {
+    flexDirection: "row",
+    gap: 8,
+    backgroundColor: t.surfaceContainerLow,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  metricCol: { flex: 1, minWidth: 0, gap: 2 },
+  metricLabel: {
+    fontFamily: t.font.hanken.medium,
+    fontSize: 10,
+    lineHeight: 13,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    color: t.outline,
+  },
+  metricValue: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: -0.2,
+    color: t.text,
+  },
+  metricValueTight: { fontSize: 12, lineHeight: 16 },
+  metricValueStrong: {
+    fontFamily: t.font.space.bold,
+    fontSize: 16,
+    lineHeight: 20,
+    letterSpacing: -0.3,
+    color: t.primary,
+  },
   inscritPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: t.radiusChip,
-    backgroundColor: "rgba(118,252,167,0.6)",
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: "rgba(118,252,167,0.45)",
   },
   inscritText: {
-    ...t.type.labelSm,
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 11,
+    lineHeight: 14,
     color: t.onSecondaryContainer,
   },
   pendingPill: {
@@ -935,28 +1245,6 @@ const styles = StyleSheet.create({
     backgroundColor: t.surfaceContainerHigh,
   },
   pendingText: { ...t.type.labelSm, color: t.textSecondary },
-  pillGrid: { flexDirection: "row", gap: 10 },
-  infoPill: {
-    flex: 1,
-    backgroundColor: t.surfaceContainerLow,
-    borderRadius: 12,
-    padding: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    minHeight: 56,
-  },
-  infoPillEyebrow: {
-    ...t.type.labelSm,
-    color: t.textSecondary,
-    textTransform: "uppercase",
-    fontSize: 9,
-  },
-  infoPillValue: {
-    ...t.type.labelMd,
-    color: t.text,
-    fontFamily: t.font.space.bold,
-  },
   cardActions: {
     flexDirection: "row",
     alignItems: "center",
@@ -980,7 +1268,7 @@ const styles = StyleSheet.create({
   detailsBtn: {
     height: 36,
     paddingHorizontal: 16,
-    borderRadius: t.radiusChip,
+    borderRadius: 10,
     backgroundColor: t.surfaceContainer,
     flexDirection: "row",
     alignItems: "center",
@@ -1029,28 +1317,40 @@ const styles = StyleSheet.create({
   pastCard: {
     backgroundColor: t.surfaceContainerLowest,
     borderRadius: t.radiusMain,
-    padding: 16,
-    gap: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: "rgba(232,232,233,0.75)",
+    borderLeftWidth: 3,
+    borderLeftColor: t.primary,
+    shadowColor: "#1A1C1D",
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  pastCardWalk: {
+    borderLeftColor: "#576158",
   },
   pastTitle: {
-    ...t.type.cardTitle,
-    fontSize: 16,
+    fontFamily: t.font.space.bold,
+    fontSize: 17,
+    lineHeight: 22,
+    letterSpacing: -0.3,
     color: t.text,
-    marginTop: 4,
   },
-  pastMeta: { ...t.type.bodySm, color: t.outline, fontSize: 12, marginTop: 6 },
-  pastFoot: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(232,232,233,0.9)",
-    paddingTop: 10,
-    flexDirection: "row",
+  pastTime: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 12,
+    lineHeight: 14,
+    color: t.outline,
+    fontVariant: ["tabular-nums"],
+  },
+  doneMark: {
+    width: 28,
+    height: 28,
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
   },
-  pastPace: { ...t.type.bodySm, color: t.outline, fontSize: 12 },
-  pastDist: { ...t.type.stat, color: t.text },
   empty: {
     backgroundColor: t.surfaceContainerLow,
     borderRadius: t.radiusMain,
