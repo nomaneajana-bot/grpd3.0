@@ -19,8 +19,7 @@ import { SettingsGroup } from "@/components/settings/SettingsGroup";
 import { SettingsNavRow } from "@/components/settings/SettingsNavRow";
 import { SettingsSectionLabel } from "@/components/settings/SettingsSectionLabel";
 import { SettingsToggleRow } from "@/components/settings/SettingsToggleRow";
-import { profileTheme } from "@/constants/profileTheme";
-import { colors, typography } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 import {
   createApiClient,
   getMyMemberships,
@@ -167,6 +166,18 @@ export default function SettingsScreen() {
   useEffect(() => {
     void loadSettings();
   }, [loadSettings]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const prevBody = document.body.style.backgroundColor;
+    const prevHtml = document.documentElement.style.backgroundColor;
+    document.body.style.backgroundColor = t.canvas;
+    document.documentElement.style.backgroundColor = t.canvas;
+    return () => {
+      document.body.style.backgroundColor = prevBody;
+      document.documentElement.style.backgroundColor = prevHtml;
+    };
+  }, []);
 
   const primaryMembership =
     memberships.find((m) => m.status === "approved") ?? memberships[0] ?? null;
@@ -359,7 +370,7 @@ export default function SettingsScreen() {
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityLabel="Retour"
         >
-          <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={22} color={t.text} />
         </TouchableOpacity>
         <Text style={styles.screenTitle}>Paramètres</Text>
       </View>
@@ -551,10 +562,10 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.canvas,
   },
   header: {
-    paddingHorizontal: profileTheme.screenPaddingHorizontal,
+    paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
     gap: 16,
@@ -563,41 +574,45 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.surface.s3,
+    backgroundColor: t.card,
+    borderWidth: 1,
+    borderColor: "rgba(190,202,190,0.45)",
     alignItems: "center",
     justifyContent: "center",
   },
   screenTitle: {
-    color: colors.text.primary,
-    fontSize: typography.sizes["3xl"],
-    fontWeight: "700",
+    color: t.text,
+    fontSize: 28,
+    fontFamily: t.font.space.bold,
     letterSpacing: -0.3,
   },
   scroll: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: profileTheme.screenPaddingHorizontal,
+    paddingHorizontal: 20,
     paddingBottom: 48,
   },
   notificationsCaption: {
-    fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
+    fontSize: 13,
+    fontFamily: t.font.hanken.regular,
+    color: t.textSecondary,
     lineHeight: 18,
   },
   clubSubtitle: {
-    fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
+    fontSize: 13,
+    fontFamily: t.font.hanken.regular,
+    color: t.textSecondary,
     lineHeight: 18,
   },
   clubName: {
-    color: colors.text.primary,
-    fontWeight: "700",
+    color: t.text,
+    fontFamily: t.font.space.bold,
   },
   logoutButton: {
     marginTop: 24,
     marginBottom: 8,
-    backgroundColor: "#2A1218",
+    backgroundColor: t.errorContainer,
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: "center",
@@ -606,9 +621,9 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   logoutText: {
-    color: colors.accent.error,
-    fontSize: typography.sizes.base,
-    fontWeight: "700",
+    color: t.onErrorContainer,
+    fontSize: 16,
+    fontFamily: t.font.space.bold,
   },
   loadingState: {
     flex: 1,
@@ -616,7 +631,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   loadingText: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.base,
+    color: t.text,
+    fontSize: 16,
+    fontFamily: t.font.hanken.regular,
   },
 });

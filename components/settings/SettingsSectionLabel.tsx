@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { colors, typography } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 
 type SettingsSectionLabelProps = {
   children: string;
@@ -27,10 +27,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   label: {
-    fontSize: typography.sizes.xs,
-    fontWeight: "600",
-    color: colors.text.secondary,
-    letterSpacing: 0.6,
+    fontSize: 11,
+    fontFamily: t.font.hanken.semibold,
+    color: t.outline,
+    letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   subtitle: {

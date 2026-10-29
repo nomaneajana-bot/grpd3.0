@@ -2,7 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { colors, typography } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 
 type SettingsNavRowProps = {
   title: string;
@@ -49,11 +49,7 @@ export function SettingsNavRow({
           </Text>
         ) : null}
         {showChevron && actionable ? (
-          <Ionicons
-            name="chevron-forward"
-            size={18}
-            color={colors.text.tertiary}
-          />
+          <Ionicons name="chevron-forward" size={18} color={t.outline} />
         ) : null}
       </View>
     </>
@@ -91,21 +87,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 13,
     gap: 8,
+    backgroundColor: t.card,
   },
   pressed: {
     opacity: 0.7,
   },
   title: {
     flex: 1,
-    fontSize: typography.sizes.base,
-    fontWeight: "600",
-    color: colors.text.primary,
+    fontSize: 16,
+    fontFamily: t.font.space.semibold,
+    color: t.text,
   },
   titleDestructive: {
-    color: colors.accent.error,
+    color: t.error,
   },
   titleMuted: {
-    color: colors.text.secondary,
+    color: t.textSecondary,
   },
   right: {
     flexDirection: "row",
@@ -115,12 +112,13 @@ const styles = StyleSheet.create({
     maxWidth: "55%",
   },
   value: {
-    fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
+    fontSize: 14,
+    fontFamily: t.font.hanken.regular,
+    color: t.textSecondary,
     textAlign: "right",
   },
   valueMuted: {
-    color: colors.text.tertiary,
+    color: t.outline,
     fontStyle: "italic",
   },
 });

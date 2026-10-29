@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 
-import { profileTheme } from "@/constants/profileTheme";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 
 type SettingsGroupProps = {
   children: React.ReactNode;
@@ -23,13 +23,15 @@ export function SettingsGroup({ children }: SettingsGroupProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: profileTheme.cardBackground,
-    borderRadius: profileTheme.cardRadius,
+    backgroundColor: t.card,
+    borderRadius: 18,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(190,202,190,0.4)",
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(190,202,190,0.55)",
     marginLeft: 16,
   },
 });
