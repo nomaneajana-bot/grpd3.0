@@ -18,6 +18,9 @@ export function StitoPurposeSection({
   languageLabel,
   timeline,
 }: Props) {
+  const hasProgramme =
+    Boolean(structureText) || Boolean(timeline && timeline.length > 0);
+
   return (
     <View style={styles.wrap} testID="stito-purpose-section">
       <View style={styles.block}>
@@ -32,12 +35,11 @@ export function StitoPurposeSection({
         ) : null}
       </View>
 
-      {structureText || (timeline && timeline.length > 0) ? (
-        <View style={styles.block}>
-          <View style={styles.rule} />
+      {hasProgramme ? (
+        <View style={styles.programme}>
           <Text style={styles.eyebrow}>Au programme</Text>
           {structureText ? (
-            <Text style={styles.body} testID="session-structure-text">
+            <Text style={styles.programmeBody} testID="session-structure-text">
               {structureText}
             </Text>
           ) : null}
@@ -63,25 +65,34 @@ export function StitoPurposeSection({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 22 },
+  wrap: { gap: 14 },
   block: { gap: 6 },
-  rule: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(190,202,190,0.45)",
-    marginBottom: 16,
+  programme: {
+    gap: 6,
+    backgroundColor: t.surfaceContainerLow,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   eyebrow: {
-    fontFamily: t.font.space.bold,
-    fontSize: 10,
-    letterSpacing: 1.6,
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.4,
     textTransform: "uppercase",
     color: t.outline,
-    marginBottom: 2,
   },
   body: {
     fontFamily: t.font.hanken.regular,
-    fontSize: 17,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 23,
+    color: t.text,
+  },
+  programmeBody: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 15,
+    lineHeight: 21,
+    letterSpacing: -0.15,
     color: t.text,
   },
   lang: {
@@ -90,7 +101,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: t.primary,
   },
-  timeline: { marginTop: 4, gap: 14 },
+  timeline: { marginTop: 4, gap: 12 },
   step: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
   stepTime: {
     fontFamily: t.font.space.bold,

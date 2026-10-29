@@ -1117,7 +1117,6 @@ export default function SessionScreen() {
                 isMembersOnly={session.visibility === "members"}
                 gpsAvailable={Boolean(session.meetingPointGPS)}
               />
-              <View style={styles.stitoRule} />
               {session.clubId &&
               (session.visibility == null || session.visibility === "public") ? (
                 <View testID="session-soft-club-row" collapsable={false}>
@@ -1155,15 +1154,12 @@ export default function SessionScreen() {
               session.hostGroupName?.trim() ? (
                 <View testID="session-target-group-row" style={{ height: 0 }} />
               ) : null}
-              <View style={styles.stitoRule} />
               <StitoAccessNote visibility={session.visibility} />
-              <View style={styles.stitoRule} />
               <StitoPurposeSection
                 purposeText={purposeText}
                 structureText={languageOnly || !vol ? null : vol}
                 languageLabel={languageOnly ? vol : null}
               />
-              <View style={styles.stitoRule} />
               <StitoParticipantsCard
                 joinedCount={joinedCount}
                 names={participantNames}
@@ -1621,9 +1617,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   stitoStory: {
-    gap: 22,
-    marginBottom: 20,
-    paddingTop: 20,
+    gap: 16,
+    marginBottom: 16,
+    paddingTop: 12,
   },
   stitoRule: {
     height: StyleSheet.hairlineWidth,
