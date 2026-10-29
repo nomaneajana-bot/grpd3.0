@@ -324,7 +324,7 @@ export default function MySessionsScreen() {
               ]}
               testID="mes-sorties-create"
             >
-              <Ionicons name="add" size={18} color={t.onPrimary} />
+              <Text style={styles.createBtnPlus}>+</Text>
               <Text style={styles.createBtnText}>Créer</Text>
             </Pressable>
           </View>
@@ -888,7 +888,7 @@ function EmptyUpcoming({
         ]}
         testID="mes-sorties-empty-create"
       >
-        <Ionicons name="add" size={18} color={t.onPrimary} />
+        <Text style={styles.createBtnPlus}>+</Text>
         <Text style={styles.exploreText}>Créer une sortie</Text>
       </Pressable>
       <Pressable
@@ -966,16 +966,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     minHeight: 40,
-    paddingHorizontal: 14,
+    maxWidth: 168,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 14,
     backgroundColor: t.primary,
     marginTop: 2,
+    flexShrink: 0,
+  },
+  createBtnPlus: {
+    color: t.onPrimary,
+    fontFamily: t.font.space.bold,
+    fontSize: 18,
+    lineHeight: 18,
+    marginTop: -1,
   },
   createBtnText: {
     color: t.onPrimary,
     fontFamily: t.font.space.bold,
-    fontSize: 14,
+    fontSize: 12,
+    lineHeight: 14,
+    flexShrink: 1,
   },
   eyebrow: {
     ...t.type.labelSm,
