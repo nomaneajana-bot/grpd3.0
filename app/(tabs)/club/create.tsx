@@ -12,11 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
 
-import {
-  StitoAction,
-  StitoBack,
-  stitoChrome as t,
-} from "@/components/stito/StitoUI";
+import { StitoAction, stitoChrome as t } from "@/components/stito/StitoUI";
 import { CitySlider } from "@/components/ui/CitySlider";
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
@@ -32,8 +28,8 @@ import { setFocusedClubId } from "@/lib/focusedClubStore";
 import type { ClubVisibility } from "@/types/api";
 
 /**
- * Créer un club — light Stito, aligned with Clubs access / Paramètres.
- * Visibility maps only to supported enums: public | members.
+ * Créer un club — same light Stito language as Clubs access / Paramètres.
+ * Open sections (no numbered wizard), radio access, text back.
  */
 export default function ClubCreateScreen() {
   const { idea } = useLocalSearchParams<{ idea?: string }>();
@@ -106,7 +102,11 @@ export default function ClubCreateScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} testID="club-create-screen" edges={["top", "bottom"]}>
+    <SafeAreaView
+      style={styles.safe}
+      testID="club-create-screen"
+      edges={["top", "bottom"]}
+    >
       <Stack.Screen options={{ headerShown: false }} />
 
       {toast ? (
@@ -119,35 +119,42 @@ export default function ClubCreateScreen() {
         />
       ) : null}
 
+      <View style={styles.header}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backRow}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Retour"
+          testID="club-create-back"
+        >
+          <Text style={styles.backIcon}>‹</Text>
+          <Text style={styles.backLabel}>Clubs</Text>
+        </Pressable>
+        <Text style={styles.brand}>GRpD</Text>
+        <Text style={styles.title} testID="club-create-heading">
+          Fonder un club.
+        </Text>
+        <Text style={styles.lede}>
+          Un cadre bienveillant pour tes sorties régulières — marche, course ou
+          autre.
+        </Text>
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         testID="club-create-scroll"
       >
-        <StitoBack onPress={() => router.back()} />
-
-        <View style={styles.hero}>
-          <Text style={styles.eyebrow}>Nouveau club</Text>
-          <Text style={styles.title} testID="club-create-heading">
-            Fonder un club.
-          </Text>
-          <Text style={styles.body}>
-            Un cadre bienveillant pour tes sorties régulières — marche, course
-            ou autre.
-          </Text>
-        </View>
-
         {fromIdea ? (
-          <Text
-            style={styles.ideaHint}
-            testID="club-create-idea-hint"
-          >
+          <Text style={styles.ideaHint} testID="club-create-idea-hint">
             À partir de l’idée « {fromIdea.subtitle} » — tu peux tout modifier.
           </Text>
         ) : null}
 
-        <View style={styles.block}>
+        <View style={styles.section}>
+          <Text style={styles.kicker}>Identité</Text>
           <Text style={styles.fieldLabel}>Nom du club</Text>
           <TextInput
             style={styles.input}
@@ -184,11 +191,11 @@ export default function ClubCreateScreen() {
           />
         </View>
 
-        <View style={styles.block}>
+        <View style={styles.section}>
+          <Text style={styles.kicker}>Esprit</Text>
           <Text style={styles.fieldLabel}>Pourquoi vous retrouver</Text>
           <Text style={styles.hint} testID="club-purpose-hint">
-            Langues, quartier, rencontres… À toi de choisir. Aucun thème
-            imposé.
+            Langues, quartier, rencontres… À toi de choisir.
           </Text>
           <TextInput
             style={[styles.input, styles.textarea]}
@@ -206,8 +213,9 @@ export default function ClubCreateScreen() {
           />
         </View>
 
-        <View style={styles.block}>
-          <Text style={styles.fieldLabel}>Accès au club</Text>
+        <View style={styles.section}>
+          <Text style={styles.kicker}>Accès</Text>
+          <Text style={styles.fieldLabel}>Qui peut rejoindre</Text>
           <View style={styles.choiceStack}>
             <Pressable
               testID="club-visibility-members"
@@ -295,13 +303,16 @@ export default function ClubCreateScreen() {
           disabled={isSubmitting}
           testID="club-create-submit"
         />
-        <StitoAction
-          label="Annuler"
-          secondary
+        <Pressable
           onPress={() => router.back()}
           disabled={isSubmitting}
+          accessibilityRole="button"
+          accessibilityLabel="Annuler"
           testID="club-create-cancel"
-        />
+          style={styles.cancelLink}
+        >
+          <Text style={styles.cancelText}>Annuler</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -309,16 +320,33 @@ export default function ClubCreateScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: t.canvas },
-  content: {
-    padding: 24,
-    paddingBottom: 40,
-    width: "100%",
-    maxWidth: 960,
-    alignSelf: "center",
-    gap: 20,
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 12,
+    gap: 4,
   },
-  hero: { gap: 6, paddingBottom: 4 },
-  eyebrow: {
+  backRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    minHeight: 44,
+    marginBottom: 8,
+    alignSelf: "flex-start",
+  },
+  backIcon: {
+    fontFamily: t.font.space.bold,
+    fontSize: 28,
+    lineHeight: 30,
+    color: t.primary,
+    marginTop: -2,
+  },
+  backLabel: {
+    fontFamily: t.font.hanken.medium,
+    fontSize: 16,
+    color: t.primary,
+  },
+  brand: {
     ...t.type.labelSm,
     color: t.primary,
     textTransform: "uppercase",
@@ -327,13 +355,23 @@ const styles = StyleSheet.create({
   title: {
     ...t.type.pageTitle,
     color: t.text,
+    marginTop: 2,
   },
-  body: {
+  lede: {
     fontFamily: t.font.hanken.regular,
     fontSize: 15,
     lineHeight: 22,
     color: t.textSecondary,
     maxWidth: 420,
+    marginTop: 4,
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    width: "100%",
+    maxWidth: 960,
+    alignSelf: "center",
+    gap: 18,
   },
   ideaHint: {
     fontFamily: t.font.hanken.medium,
@@ -341,35 +379,40 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: t.primary,
   },
-  block: {
-    backgroundColor: t.card,
-    borderRadius: t.radiusMain,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "rgba(232,232,233,0.9)",
+  section: {
     gap: 8,
+    paddingTop: 4,
+    paddingBottom: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(190,202,190,0.45)",
+  },
+  kicker: {
+    ...t.type.labelSm,
+    color: t.outline,
+    textTransform: "uppercase",
+    marginTop: 10,
+    marginBottom: 2,
   },
   fieldLabel: {
     color: t.text,
-    fontSize: 12,
-    fontFamily: t.font.space.bold,
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
+    fontSize: 13,
+    fontFamily: t.font.space.semibold,
+    letterSpacing: 0.1,
   },
   hint: {
     fontFamily: t.font.hanken.regular,
     fontSize: 13,
     lineHeight: 18,
     color: t.textSecondary,
-    marginBottom: 4,
   },
   input: {
     color: t.text,
-    backgroundColor: t.surfaceContainerLow,
+    backgroundColor: t.card,
     borderWidth: 1,
-    borderColor: t.outlineVariant,
+    borderColor: "rgba(190,202,190,0.55)",
     borderRadius: 14,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 16,
     fontFamily: t.font.hanken.regular,
   },
@@ -383,8 +426,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     padding: 14,
-    borderRadius: 14,
-    backgroundColor: t.surfaceContainerLow,
+    borderRadius: 16,
+    backgroundColor: t.card,
     borderWidth: 1,
     borderColor: "rgba(232,232,233,0.95)",
   },
@@ -425,10 +468,21 @@ const styles = StyleSheet.create({
     backgroundColor: t.onPrimary,
   },
   footnote: {
-    marginTop: 8,
+    marginTop: 4,
     fontFamily: t.font.hanken.regular,
     fontSize: 13,
     lineHeight: 18,
     color: t.textSecondary,
+  },
+  cancelLink: {
+    alignItems: "center",
+    paddingVertical: 12,
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  cancelText: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 14,
+    color: t.outline,
   },
 });
