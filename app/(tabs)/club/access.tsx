@@ -54,7 +54,6 @@ export default function ClubAccessScreen() {
   );
   const [showKeyEntry, setShowKeyEntry] = useState(false);
   const [clubSlug, setClubSlug] = useState("");
-  const [requestMessage, setRequestMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
   const [inviteClubId, setInviteClubId] = useState<string | null>(null);
@@ -154,9 +153,7 @@ export default function ClubAccessScreen() {
     setPresence(null);
     try {
       const client = createApiClient();
-      const result = await requestClubJoinBySlug(client, clubSlug.trim(), {
-        message: requestMessage.trim() || undefined,
-      });
+      const result = await requestClubJoinBySlug(client, clubSlug.trim());
       const club = result.membership?.club;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setPresence({
@@ -165,7 +162,6 @@ export default function ClubAccessScreen() {
         mode: "pending",
       });
       setClubSlug("");
-      setRequestMessage("");
       showToast("Demande envoyée.", "success");
       await loadMemberships();
     } catch (error: unknown) {
@@ -310,16 +306,6 @@ export default function ClubAccessScreen() {
                 editable={!isSubmitting}
                 accessibilityLabel="Rechercher un club par nom"
                 testID="club-request-name-input"
-              />
-              <TextInput
-                style={[styles.keyInput, styles.messageInput]}
-                value={requestMessage}
-                onChangeText={setRequestMessage}
-                placeholder="Un mot pour te présenter (optionnel)"
-                placeholderTextColor={t.outline}
-                autoCapitalize="sentences"
-                editable={!isSubmitting}
-                testID="club-request-message-input"
               />
               <Pressable
                 style={({ pressed }) => [
@@ -712,10 +698,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: t.font.hanken.regular,
     marginBottom: 10,
-  },
-  messageInput: {
-    minHeight: 64,
-    textAlignVertical: "top",
   },
   footnoteInPill: {
     color: t.outline,
