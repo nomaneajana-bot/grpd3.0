@@ -82,6 +82,43 @@ export function formatHomeDayEyebrow(
   return `${DAY_NAMES[d.getDay()]} ${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`;
 }
 
+/** Short chip for day picker: « Sam. 31 ». */
+export function formatHomeDayChip(
+  dateISO: string | null | undefined,
+  now = new Date(),
+): string {
+  const d = parseLocalDate(dateISO) ?? now;
+  return `${DAY_SHORT[d.getDay()]} ${d.getDate()}`;
+}
+
+export type HomeDayOption = {
+  iso: string;
+  chip: string;
+  eyebrow: string;
+};
+
+/** Next N local calendar days starting today. */
+export function buildHomeDayOptions(
+  count = 7,
+  now = new Date(),
+): HomeDayOption[] {
+  const out: HomeDayOption[] = [];
+  for (let i = 0; i < count; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    out.push({
+      iso,
+      chip: formatHomeDayChip(iso, d),
+      eyebrow: formatHomeDayEyebrow(iso, d),
+    });
+  }
+  return out;
+}
+
+export function toLocalDateISO(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export function formatDiscoveryWhen(session: SessionData): string {
   const d = parseLocalDate(session.dateISO);
   const time = formatTimeLabel(session.timeMinutes);
@@ -206,12 +243,18 @@ export function filterDiscoverySessions(
   filter: HomeActivityFilter,
   query: string,
   nextOutingId: string | null,
+  dayISO?: string | null,
 ): SessionData[] {
   const q = query.trim().toLowerCase();
+  const day = dayISO?.slice(0, 10) || null;
   return sessions
     .filter((s) => isUpcoming(s))
     .filter((s) => s.visibility !== "members")
     .filter((s) => (nextOutingId ? s.id !== nextOutingId : true))
+    .filter((s) => {
+      if (!day) return true;
+      return (s.dateISO ?? "").slice(0, 10) === day;
+    })
     .filter((s) => {
       if (filter === "all") return true;
       return activityForSession(s) === filter;

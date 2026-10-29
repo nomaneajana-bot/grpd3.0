@@ -1,14 +1,23 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
 
+import { DaySlider } from "@/components/home/DaySlider";
 import { CitySlider } from "@/components/ui/CitySlider";
 import { homeTheme as h } from "@/constants/homeTheme";
+import {
+  buildHomeDayOptions,
+  formatHomeDayEyebrow,
+  type HomeDayOption,
+} from "@/lib/homeViewModel";
 
 type HomeHeaderProps = {
   cityLabel: string;
-  dayEyebrow: string;
+  /** Selected discovery day YYYY-MM-DD */
+  selectedDayISO: string;
+  onDayChange: (iso: string) => void;
+  dayOptions?: HomeDayOption[];
   query: string;
   onQueryChange: (q: string) => void;
   onCityPress: () => void;
@@ -20,17 +29,26 @@ type HomeHeaderProps = {
 };
 
 /**
- * Stitch Accueil top — low chrome city + mark, editorial greeting.
- * City slider appears on demand (no search field clutter).
+ * Stitch Accueil top — city + mark, selectable day, editorial greeting.
  */
 export function HomeHeader({
   cityLabel,
-  dayEyebrow,
+  selectedDayISO,
+  onDayChange,
+  dayOptions: dayOptionsProp,
   onCitySelect,
   onQueryChange,
   profileInitial = "Y",
 }: HomeHeaderProps) {
   const [cityOpen, setCityOpen] = useState(false);
+  const [dayOpen, setDayOpen] = useState(false);
+  const dayOptions = useMemo(
+    () => dayOptionsProp ?? buildHomeDayOptions(7),
+    [dayOptionsProp],
+  );
+  const dayEyebrow =
+    dayOptions.find((d) => d.iso === selectedDayISO)?.eyebrow ??
+    formatHomeDayEyebrow(selectedDayISO);
 
   return (
     <View style={styles.wrap} testID="home-header">
@@ -38,7 +56,10 @@ export function HomeHeader({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Ville : ${cityLabel}. Changer de ville`}
-          onPress={() => setCityOpen((v) => !v)}
+          onPress={() => {
+            setDayOpen(false);
+            setCityOpen((v) => !v);
+          }}
           style={({ pressed }) => [
             styles.cityBtn,
             pressed && { opacity: 0.85 },
@@ -83,9 +104,39 @@ export function HomeHeader({
       ) : null}
 
       <View style={styles.greeting}>
-        <Text style={styles.dayEyebrow} testID="home-day-eyebrow">
-          {dayEyebrow}
-        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Jour : ${dayEyebrow}. Changer de jour`}
+          accessibilityState={{ expanded: dayOpen }}
+          onPress={() => {
+            setCityOpen(false);
+            setDayOpen((v) => !v);
+          }}
+          style={({ pressed }) => [
+            styles.dayBtn,
+            pressed && { opacity: 0.85 },
+          ]}
+          testID="home-day-eyebrow"
+        >
+          <Text style={styles.dayEyebrow}>{dayEyebrow}</Text>
+          <Ionicons
+            name={dayOpen ? "chevron-up" : "chevron-down"}
+            size={16}
+            color={h.outline}
+          />
+        </Pressable>
+
+        {dayOpen ? (
+          <DaySlider
+            options={dayOptions}
+            value={selectedDayISO}
+            onChange={(iso) => {
+              onDayChange(iso);
+              setDayOpen(false);
+            }}
+          />
+        ) : null}
+
         <Text
           style={styles.title}
           accessibilityRole="header"
@@ -143,7 +194,15 @@ const styles = StyleSheet.create({
   greeting: {
     paddingTop: 0,
     paddingBottom: 0,
-    gap: 2,
+    gap: 4,
+  },
+  dayBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 4,
+    paddingVertical: 2,
+    paddingRight: 4,
   },
   dayEyebrow: {
     fontFamily: h.font.hanken.bold,
