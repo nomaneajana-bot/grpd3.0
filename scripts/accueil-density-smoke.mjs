@@ -1,5 +1,5 @@
 /**
- * Accueil density — next outing compact + discovery higher (demo web).
+ * Accueil density — discovery first + pinned next-outing dock (demo web).
  */
 import { chromium } from "playwright";
 import fs from "fs";
@@ -11,7 +11,7 @@ const OUT = "/opt/cursor/artifacts";
 fs.mkdirSync(OUT, { recursive: true });
 
 const report = {
-  batch: "accueil-density",
+  batch: "accueil-density-dock",
   tested_sha: execSync("git rev-parse HEAD", { encoding: "utf8" }).trim(),
   base: BASE,
   checks: [],
@@ -43,26 +43,16 @@ async function main() {
     );
     await page.waitForTimeout(1000);
 
-    const home = page.getByTestId("home-accueil");
-    check("home_accueil", Boolean(await home.count()), "Accueil");
+    check(
+      "home_accueil",
+      Boolean(await page.getByTestId("home-accueil").count()),
+      "Accueil",
+    );
 
-    const nextCard = page.getByTestId("home-next-outing-card");
-    const hasNext = Boolean(await nextCard.count());
-    check("next_outing_present", hasNext, "Ta prochaine sortie");
-
-    if (hasNext) {
-      const box = await nextCard.first().boundingBox();
-      report.metrics.nextCard = box;
-      const h = box?.height ?? 999;
-      // Was ~187px; target denser but still readable.
-      check(
-        "next_card_compact",
-        h > 90 && h <= 155,
-        `height=${Math.round(h)} (was ~187)`,
-      );
-    }
-
-    const discovery = page.getByTestId("home-discovery-title").locator("visible=true").first();
+    const discovery = page
+      .getByTestId("home-discovery-title")
+      .locator("visible=true")
+      .first();
     check(
       "discovery_title",
       /découvrir/i.test((await discovery.innerText().catch(() => "")) || ""),
@@ -70,14 +60,13 @@ async function main() {
     );
     const discBox = await discovery.boundingBox();
     report.metrics.discoveryTitle = discBox;
-    // Previously discovery section started ~511; aim for first viewport.
+    // Discovery immediately under header (no feed next-outing card).
     check(
-      "discovery_higher",
-      (discBox?.y ?? 999) < 420,
+      "discovery_near_top",
+      (discBox?.y ?? 999) < 220,
       `discoveryTitle.y=${Math.round(discBox?.y ?? -1)}`,
     );
 
-    // Measure discovery row before any scroll.
     const firstRow = page
       .locator('[data-testid^="home-outing-row-"]')
       .locator("visible=true")
@@ -86,43 +75,75 @@ async function main() {
       const rowBox = await firstRow.boundingBox();
       report.metrics.firstDiscoveryRow = rowBox;
       check(
-        "first_discovery_in_viewport",
-        (rowBox?.y ?? 999) > 0 && (rowBox?.y ?? 999) < 820,
+        "first_discovery_early",
+        (rowBox?.y ?? 999) > 0 && (rowBox?.y ?? 999) < 360,
         `row.y=${Math.round(rowBox?.y ?? -1)}`,
-      );
-      check(
-        "discovery_block_early",
-        (rowBox?.y ?? 999) > 0 && (rowBox?.y ?? 999) < 480,
-        `first row y=${Math.round(rowBox?.y ?? -1)} (was discovery@~511)`,
       );
     }
 
-    await shot(page, "accueil-density-viewport.png", false);
-
-    const organise = page
-      .getByTestId("home-organise-action")
+    const dock = page
+      .getByTestId("home-next-outing-dock")
       .locator("visible=true")
       .first();
-    check("organise_present", Boolean(await organise.count()), "Organiser");
-    const orderOk = await page.evaluate(() => {
-      const next = document.querySelector('[data-testid="home-next-outing-card"]');
-      const disc = [...document.querySelectorAll('[data-testid="home-discovery-title"]')].find(
-        (el) => el.getClientRects().length,
-      );
-      const org = [...document.querySelectorAll('[data-testid="home-organise-action"]')].find(
-        (el) => el.getClientRects().length,
-      );
-      if (!next || !disc || !org) return false;
-      const follows = (a, b) =>
-        !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
-      return follows(next, disc) && follows(disc, org);
-    });
-    check("dom_order_next_discovery_organise", orderOk, "next → discovery → organise");
+    const hasDock = Boolean(await dock.count());
+    check("next_dock_present", hasDock, "pinned dock");
 
-    await organise.scrollIntoViewIfNeeded().catch(() => {});
-    report.metrics.organise = await organise.boundingBox().catch(() => null);
+    if (hasDock) {
+      const dockBox = await dock.boundingBox();
+      report.metrics.dock = dockBox;
+      const card = page
+        .getByTestId("home-next-outing-card")
+        .locator("visible=true")
+        .first();
+      const cardBox = await card.boundingBox();
+      report.metrics.nextCard = cardBox;
+      check(
+        "dock_compact",
+        (cardBox?.height ?? 999) > 40 && (cardBox?.height ?? 999) <= 90,
+        `collapsed height=${Math.round(cardBox?.height ?? -1)}`,
+      );
+      check(
+        "dock_pinned_bottom",
+        (dockBox?.y ?? 0) > 600,
+        `dock.y=${Math.round(dockBox?.y ?? -1)}`,
+      );
+      check(
+        "dock_below_discovery",
+        (dockBox?.y ?? 0) > (discBox?.y ?? 999),
+        "dock under discovery",
+      );
 
-    await shot(page, "accueil-density-full.png", true);
+      // Expand peek
+      await page.getByTestId("home-next-outing-expand").locator("visible=true").first().click();
+      await page.waitForTimeout(400);
+      const expanded = page
+        .getByTestId("home-next-outing-expanded")
+        .locator("visible=true")
+        .first();
+      check(
+        "dock_expands",
+        Boolean(await expanded.count()),
+        "expanded meta + CTA",
+      );
+      await shot(page, "accueil-dock-expanded.png", false);
+
+      await page.getByTestId("home-next-outing-cta").locator("visible=true").first().click();
+      await page.waitForTimeout(1200);
+      const onDetail = await page.evaluate(
+        () =>
+          Boolean(document.querySelector('[data-testid="stito-outing-hero"]')) ||
+          /détail/i.test(document.body?.innerText || ""),
+      );
+      check("dock_opens_detail", onDetail, "session detail");
+    }
+
+    // Back for top viewport shot if still on detail
+    if ((await page.url()).includes("/session/")) {
+      await page.goBack({ waitUntil: "networkidle" }).catch(() => {});
+      await page.waitForTimeout(800);
+    }
+    await shot(page, "accueil-density-viewport.png", false);
+    await shot(page, "accueil-dock-full.png", true);
 
     const failed = report.checks.filter((c) => !c.ok).length;
     report.ok = failed === 0;
