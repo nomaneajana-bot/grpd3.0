@@ -8,18 +8,22 @@ type Props = {
   visibility: "public" | "members" | null | undefined;
 };
 
-/** Stitch accès row — check mark + one quiet sentence. */
+/** Soft access banner — one quiet sentence, no hairline chrome. */
 export function StitoAccessNote({ visibility }: Props) {
   const members = visibility === "members";
   return (
-    <View style={styles.row} testID="stito-access-note">
-      <Ionicons
-        name={members ? "lock-closed" : "checkmark-circle"}
-        size={20}
-        color={t.primary}
-        style={styles.icon}
-      />
-      <Text style={styles.text}>
+    <View
+      style={[styles.row, members && styles.rowMembers]}
+      testID="stito-access-note"
+    >
+      <View style={[styles.iconWrap, members && styles.iconWrapMembers]}>
+        <Ionicons
+          name={members ? "lock-closed" : "checkmark"}
+          size={16}
+          color={members ? t.textSecondary : t.primary}
+        />
+      </View>
+      <Text style={[styles.text, members && styles.textMembers]}>
         {members
           ? "Réservée aux membres du club — l’inscription suit les règles du club."
           : "Ouverte à tous — pas besoin d’adhérer au club pour s’inscrire."}
@@ -31,15 +35,35 @@ export function StitoAccessNote({ visibility }: Props) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "rgba(154,246,183,0.22)",
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  icon: { marginTop: 2 },
+  rowMembers: {
+    backgroundColor: t.surfaceContainerLow,
+  },
+  iconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(0,95,52,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconWrapMembers: {
+    backgroundColor: "rgba(111,122,112,0.15)",
+  },
   text: {
     flex: 1,
-    fontFamily: t.font.hanken.regular,
-    fontSize: 15,
-    lineHeight: 21,
+    fontFamily: t.font.hanken.medium,
+    fontSize: 14,
+    lineHeight: 20,
+    color: t.onSecondaryContainer,
+  },
+  textMembers: {
     color: t.textSecondary,
   },
 });
