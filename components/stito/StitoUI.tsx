@@ -4,7 +4,6 @@
  */
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 import { stitoTheme as t } from "@/constants/stitoTheme";
 
@@ -52,8 +51,10 @@ export function StitoBack({ onPress }: { onPress: () => void }) {
       onPress={onPress}
       style={stitoUi.back}
       hitSlop={8}
+      testID="stito-back"
     >
-      <Ionicons name="arrow-back" size={22} color={t.text} />
+      {/* Text chevron — Ionicons private-use glyphs show as tofu in web a11y trees. */}
+      <Text style={stitoUi.backChevron}>‹</Text>
     </Pressable>
   );
 }
@@ -154,11 +155,22 @@ export const stitoUi = StyleSheet.create({
     color: t.text,
   },
   back: {
-    padding: 12,
+    minWidth: 44,
+    minHeight: 44,
+    paddingHorizontal: 12,
     alignSelf: "flex-start",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: t.outlineVariant,
+    borderColor: "rgba(232,232,233,0.95)",
     borderRadius: 30,
     backgroundColor: t.card,
+  },
+  backChevron: {
+    fontFamily: t.font.space.bold,
+    fontSize: 28,
+    lineHeight: 30,
+    color: t.text,
+    marginTop: -2,
   },
 });
