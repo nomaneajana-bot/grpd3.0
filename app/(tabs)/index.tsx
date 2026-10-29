@@ -26,12 +26,13 @@ import {
   countApprovedClubs,
   countCompletedOutings,
   countConfirmedUpcoming,
+  buildHomeDayOptions,
   filterDiscoverySessions,
-  formatHomeDayEyebrow,
   joinedIdSet,
   resolveCityLabel,
   resolveHomeMode,
   selectNextOuting,
+  toLocalDateISO,
   type HomeActivityFilter,
 } from "@/lib/homeViewModel";
 import { getJoinedSessions } from "@/lib/joinedSessionsStore";
@@ -53,6 +54,8 @@ export default function HomeScreen() {
 
   const [activityFilter, setActivityFilter] =
     useState<HomeActivityFilter>("all");
+  const [selectedDayISO, setSelectedDayISO] = useState(() => toLocalDateISO());
+  const dayOptions = useMemo(() => buildHomeDayOptions(7), []);
   const [query, setQuery] = useState("");
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
@@ -146,16 +149,13 @@ export default function HomeScreen() {
         activityFilter,
         query,
         nextOuting?.id ?? null,
+        selectedDayISO,
       ),
-    [sessions, activityFilter, query, nextOuting?.id],
+    [sessions, activityFilter, query, nextOuting?.id, selectedDayISO],
   );
   const cityLabel = useMemo(
     () => resolveCityLabel({ memberships, query }),
     [memberships, query],
-  );
-  const dayEyebrow = useMemo(
-    () => formatHomeDayEyebrow(nextOuting?.dateISO ?? null),
-    [nextOuting?.dateISO],
   );
 
   useEffect(() => {
@@ -201,7 +201,9 @@ export default function HomeScreen() {
         >
           <HomeHeader
             cityLabel={cityLabel}
-            dayEyebrow={dayEyebrow}
+            selectedDayISO={selectedDayISO}
+            onDayChange={setSelectedDayISO}
+            dayOptions={dayOptions}
             query={query}
             onQueryChange={setQuery}
             onCityPress={() => {}}
@@ -218,15 +220,6 @@ export default function HomeScreen() {
             collapsable={false}
             style={styles.section}
           >
-            <View style={styles.discoveryHead}>
-              <Text style={styles.sectionTitle} testID="home-discovery-title">
-                Sorties à découvrir
-              </Text>
-              <Text style={styles.sectionSupport}>
-                Qui part, où, à quelle allure — rejoins en un tap.
-              </Text>
-            </View>
-
             <DiscoveryFilters
               value={activityFilter}
               onChange={setActivityFilter}
@@ -316,20 +309,6 @@ const styles = StyleSheet.create({
     marginVertical: 0,
   },
   section: { gap: h.space.sm, marginTop: 0 },
-  discoveryHead: { gap: 2, marginBottom: 0 },
-  sectionTitle: {
-    fontFamily: h.font.space.bold,
-    fontSize: 20,
-    lineHeight: 24,
-    letterSpacing: -0.3,
-    color: h.text,
-  },
-  sectionSupport: {
-    fontFamily: h.font.hanken.regular,
-    fontSize: 13,
-    lineHeight: 18,
-    color: h.textSecondary,
-  },
   list: { marginTop: 4, gap: 12 },
   errorBox: {
     backgroundColor: "#FDECEA",

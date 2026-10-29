@@ -49,22 +49,26 @@ async function main() {
       "Accueil",
     );
 
-    const discovery = page
-      .getByTestId("home-discovery-title")
+    const filters = page
+      .getByTestId("home-discovery-filters")
       .locator("visible=true")
       .first();
     check(
-      "discovery_title",
-      /découvrir/i.test((await discovery.innerText().catch(() => "")) || ""),
-      await discovery.innerText().catch(() => ""),
+      "discovery_filters",
+      Boolean(await filters.count()),
+      "Tout/Course/Marche",
     );
-    const discBox = await discovery.boundingBox();
-    report.metrics.discoveryTitle = discBox;
-    // Discovery immediately under header (no feed next-outing card).
+    const discBox = await filters.boundingBox();
+    report.metrics.discoveryFilters = discBox;
     check(
       "discovery_near_top",
-      (discBox?.y ?? 999) < 220,
-      `discoveryTitle.y=${Math.round(discBox?.y ?? -1)}`,
+      (discBox?.y ?? 999) < 280,
+      `filters.y=${Math.round(discBox?.y ?? -1)}`,
+    );
+    check(
+      "no_discovery_title",
+      (await page.getByTestId("home-discovery-title").count()) === 0,
+      "title removed",
     );
 
     const firstRow = page
