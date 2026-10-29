@@ -45,11 +45,20 @@ export async function resolveApiTransport(
 }
 
 /**
- * Throws an actionable error when connected mode has no API URL.
+ * Throws when connected mode has no API URL and same-origin is unavailable.
+ * Empty URL is OK on web (relative `/api/...` to the current origin — Vercel SPA + functions).
  * Call after resolve when useMock is false.
  */
 export function assertConnectedApiUrl(apiUrl: string): void {
-  if (apiUrl) return;
+  if (apiUrl.trim()) return;
+  // Expo web / browser: empty base → relative fetch against window.location.
+  if (
+    typeof globalThis !== "undefined" &&
+    typeof (globalThis as { window?: { location?: { origin?: string } } })
+      .window?.location?.origin === "string"
+  ) {
+    return;
+  }
   throw new ApiError(
     503,
     "Mode connecté: EXPO_PUBLIC_API_URL est manquant. " +

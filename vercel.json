@@ -1,5 +1,5 @@
 {
-  "buildCommand": "prisma generate && EXPO_PUBLIC_DEMO_MODE=true npm run build:web",
+  "buildCommand": "prisma generate && prisma migrate deploy && EXPO_PUBLIC_DEMO_MODE=false EXPO_PUBLIC_USE_MOCK_API=false npm run build:web",
   "outputDirectory": "dist",
   "devCommand": "npm run web",
   "installCommand": "npm install",

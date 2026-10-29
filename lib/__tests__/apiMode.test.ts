@@ -51,7 +51,7 @@ describe("api transport mode", () => {
     expect(isMockEnabled(undefined)).toBe(false);
   });
 
-  it("assertConnectedApiUrl throws actionable MISSING_API_URL", async () => {
+  it("assertConnectedApiUrl throws actionable MISSING_API_URL off-web", async () => {
     jest.resetModules();
     const { assertConnectedApiUrl } = await import("../api/mode");
     const { ApiError } = await import("../api/errors");
@@ -62,6 +62,20 @@ describe("api transport mode", () => {
       expect(e).toBeInstanceOf(ApiError);
       expect((e as InstanceType<typeof ApiError>).code).toBe("MISSING_API_URL");
       expect((e as Error).message).toMatch(/EXPO_PUBLIC_API_URL/);
+    }
+  });
+
+  it("assertConnectedApiUrl allows empty URL on web (same-origin)", async () => {
+    jest.resetModules();
+    const g = globalThis as { window?: { location: { origin: string } } };
+    const prev = g.window;
+    g.window = { location: { origin: "https://example.vercel.app" } };
+    try {
+      const { assertConnectedApiUrl } = await import("../api/mode");
+      expect(() => assertConnectedApiUrl("")).not.toThrow();
+    } finally {
+      if (prev === undefined) delete g.window;
+      else g.window = prev;
     }
   });
 
