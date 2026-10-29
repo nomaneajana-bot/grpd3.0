@@ -176,6 +176,27 @@ function makeInviteCode(slug: string): string {
   return code.slice(0, 8);
 }
 
+/** One-time invite tickets — burned after a successful join. */
+const MOCK_INVITE_TICKETS_KEY = 'mock:club_invite_tickets_v1';
+
+type InviteTicket = {
+  code: string;
+  clubId: string;
+  createdAt: string;
+  usedByUserId?: string;
+  usedAt?: string;
+};
+
+type InviteTicketMap = Record<string, InviteTicket>;
+
+async function readInviteTickets(): Promise<InviteTicketMap> {
+  return readJson<InviteTicketMap>(MOCK_INVITE_TICKETS_KEY, {});
+}
+
+async function writeInviteTickets(map: InviteTicketMap): Promise<void> {
+  await writeJson(MOCK_INVITE_TICKETS_KEY, map);
+}
+
 async function readJson<T>(key: string, fallback: T): Promise<T> {
   try {
     const raw = await AsyncStorage.getItem(key);
@@ -1166,9 +1187,45 @@ async function mockJoinByCode(
   if (!user) {
     throw new ApiError(401, 'Unauthorized');
   }
+  const rawCode = input.code.trim();
+  const codeKey = rawCode.toLowerCase();
   const clubs = await readClubs();
+
+  // Prefer one-time tickets minted via Générer.
+  const tickets = await readInviteTickets();
+  const ticket =
+    tickets[codeKey] ||
+    Object.values(tickets).find((t) => t.code.toLowerCase() === codeKey);
+  if (ticket) {
+    if (ticket.usedByUserId) {
+      throw new ApiError(410, 'Cette clé a déjà été utilisée.');
+    }
+    const club = clubs[ticket.clubId];
+    if (!club) {
+      throw new ApiError(404, 'Club not found');
+    }
+    const memberships = await readMemberships();
+    const hasAdmin = Object.values(memberships).some(
+      (m) => m.clubId === club.id && m.role === 'admin',
+    );
+    const membership = await upsertMembership({
+      userId: user.id,
+      clubId: club.id,
+      status: 'approved',
+      role: hasAdmin ? 'member' : 'admin',
+    });
+    tickets[ticket.code.toLowerCase()] = {
+      ...ticket,
+      usedByUserId: user.id,
+      usedAt: new Date().toISOString(),
+    };
+    await writeInviteTickets(tickets);
+    return { membership: { ...membership, club } };
+  }
+
+  // Standing club.code (demo seed keys like CASA2026) still works.
   const club = Object.values(clubs).find(
-    (c) => c.code.toLowerCase() === input.code.trim().toLowerCase(),
+    (c) => c.code.toLowerCase() === codeKey,
   );
   if (!club) {
     throw new ApiError(404, 'Club not found');
@@ -1215,17 +1272,53 @@ async function mockRequestJoin(
 }
 
 async function mockCreateInvite(clubId: string): Promise<{ code: string }> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+
   const clubs = await readClubs();
   const club = clubs[clubId];
   if (!club) {
     throw new ApiError(404, 'Club not found');
   }
-  if (!club.code) {
-    club.code = makeInviteCode(club.slug ?? club.name);
-    clubs[club.id] = club;
-    await writeJson(MOCK_CLUBS_KEY, clubs);
+
+  const memberships = await readMemberships();
+  const isAdmin = Object.values(memberships).some(
+    (m) =>
+      m.clubId === clubId &&
+      m.userId === user.id &&
+      m.status === 'approved' &&
+      (m.role === 'admin' || m.role === 'coach'),
+  );
+  if (!isAdmin) throw new ApiError(403, 'Forbidden');
+
+  // Always mint a fresh one-time ticket (not the standing club.code).
+  let code = makeInviteCode(club.slug ?? club.name);
+  const tickets = await readInviteTickets();
+  while (tickets[code.toLowerCase()]) {
+    code = makeInviteCode(`${club.slug ?? club.name}${Math.random()}`);
   }
-  return { code: club.code };
+  tickets[code.toLowerCase()] = {
+    code,
+    clubId,
+    createdAt: new Date().toISOString(),
+  };
+  await writeInviteTickets(tickets);
+
+  // Surface latest ticket on admin settings for the Paramètres field.
+  try {
+    const { getClubAdminSettings, saveClubAdminSettings } = await import(
+      '../clubAdminStore'
+    );
+    const settings = await getClubAdminSettings(clubId);
+    await saveClubAdminSettings(clubId, {
+      ...settings,
+      accessCode: code,
+    });
+  } catch {
+    /* settings optional */
+  }
+
+  return { code };
 }
 
 async function mockUpdateClub(
