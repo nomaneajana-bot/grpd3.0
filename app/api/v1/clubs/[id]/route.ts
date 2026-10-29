@@ -5,16 +5,16 @@ import { NextRequest } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { getAuthUserId, requireAuth } from "@/lib/server/auth-helpers";
+import { jsonOk, jsonError } from "../../../../../lib/server/api-response";
+import { getAuthUserId, requireAuth } from "../../../../../lib/server/auth-helpers";
 import {
   classifyClubViewer,
   shapeClubGetResponse,
   type ClubViewerKind,
-} from "@/lib/server/clubDetailPrivacy";
-import { prisma } from "@/lib/server/prisma";
-import { requireClubPermission } from "@/lib/server/role-checks";
-import { clubIdParamSchema } from "@/lib/server/validators";
+} from "../../../../../lib/server/clubDetailPrivacy";
+import { prisma } from "../../../../../lib/server/prisma";
+import { requireClubPermission } from "../../../../../lib/server/role-checks";
+import { clubIdParamSchema } from "../../../../../lib/server/validators";
 
 const patchSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),

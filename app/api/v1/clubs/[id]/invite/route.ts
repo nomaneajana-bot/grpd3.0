@@ -3,11 +3,11 @@
 import { NextRequest } from "next/server";
 import { MembershipRole } from "@prisma/client";
 import { randomBytes } from "crypto";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { requireClubPermission } from "@/lib/server/role-checks";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { clubIdParamSchema } from "@/lib/server/validators";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { requireClubPermission } from "../../../../../../lib/server/role-checks";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { clubIdParamSchema } from "../../../../../../lib/server/validators";
 
 function generateInviteCode(): string {
   return randomBytes(4).toString("hex").toUpperCase();

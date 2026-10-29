@@ -18,7 +18,7 @@ import {
   SessionVisibility,
   type PrismaClient,
 } from "@prisma/client";
-import { getLeaveUpdateData } from "@/lib/attendanceStatusLogic";
+import { getLeaveUpdateData } from "../attendanceStatusLogic";
 
 export type LeaveClubCode =
   | "UNAUTHORIZED"

@@ -1,11 +1,11 @@
 // GET /api/v1/sessions/:id/participants – list participants by group (permission-gated for members-only)
 
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { requireClubPermission } from "@/lib/server/role-checks";
-import { sessionIdParamSchema } from "@/lib/server/validators";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { requireClubPermission } from "../../../../../../lib/server/role-checks";
+import { sessionIdParamSchema } from "../../../../../../lib/server/validators";
 
 const VALID_GROUP_IDS = ["A", "B", "C", "D"] as const;
 type PaceGroupId = (typeof VALID_GROUP_IDS)[number];

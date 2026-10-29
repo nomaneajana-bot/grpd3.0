@@ -4,8 +4,8 @@
 
 import { NextRequest } from "next/server";
 
-import { jsonError, jsonOk } from "@/lib/server/api-response";
-import { requireAuth } from "@/lib/server/auth-helpers";
+import { jsonError, jsonOk } from "../../../../../lib/server/api-response";
+import { requireAuth } from "../../../../../lib/server/auth-helpers";
 
 export async function POST(req: NextRequest) {
   try {
