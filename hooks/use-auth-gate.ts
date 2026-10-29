@@ -146,10 +146,22 @@ export function useAuthGate(): {
       void checkAuth();
     }, 50);
 
+    // Fail open if AsyncStorage / auth never resolves (stuck Chargement…).
+    const failOpen = setTimeout(() => {
+      if (!isMounted) return;
+      setIsLoading((prev) => {
+        if (prev) {
+          console.warn("Auth gate timed out — releasing boot loading.");
+        }
+        return false;
+      });
+    }, 4000);
+
     return () => {
       isMounted = false;
       if (timeoutId) clearTimeout(timeoutId);
       clearTimeout(initTimeout);
+      clearTimeout(failOpen);
     };
   }, [pathname]);
 
