@@ -7,12 +7,14 @@ import {
     Platform,
     Pressable,
     ScrollView,
+    Share,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import * as Linking from "expo-linking";
 import { router, Stack, useLocalSearchParams } from "expo-router";
@@ -26,7 +28,7 @@ import { StitoLogisticsCard } from "../../components/outingDetail/StitoLogistics
 import { StitoParticipantsCard } from "../../components/outingDetail/StitoParticipantsCard";
 import { StitoAccessNote } from "../../components/outingDetail/StitoAccessNote";
 import { stitoTheme } from "../../constants/stitoTheme";
-import { formatTimeLabel } from "../../lib/homeViewModel";
+import { formatTimeLabel, initialsFromName } from "../../lib/homeViewModel";
 import { formatOutingDateTime } from "../../lib/mesSortiesViewModel";
 import {
   SessionRunnersPanel,
@@ -920,9 +922,22 @@ export default function SessionScreen() {
           >
             Détail de la sortie
           </Text>
-          <View style={styles.headerAvatarMark} accessibilityElementsHidden>
-            <Text style={styles.headerAvatarMarkText}>·</Text>
-          </View>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/profile" as import("expo-router").Href)}
+            style={styles.headerAvatarMark}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Ouvrir mon profil"
+            testID="session-profile-avatar"
+          >
+            <Text style={styles.headerAvatarMarkText}>
+              {(
+                initialsFromName(
+                  profile?.firstName?.trim() || profile?.name?.trim() || null,
+                ) || "M"
+              ).charAt(0)}
+            </Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.headerContextRow}>
           <Text style={styles.headerCityLabel} numberOfLines={1}>
@@ -932,56 +947,73 @@ export default function SessionScreen() {
               "Casablanca"
             ).toString()}
           </Text>
-          {isOrganizer ? (
+          <View style={styles.headerContextActions}>
+            {isOrganizer ? (
+              <TouchableOpacity
+                testID="session-modify-btn"
+                onPress={() => {
+                  router.push({
+                    pathname: "/session/create",
+                    params: { sessionId: session.id },
+                  });
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Modifier la sortie"
+              >
+                <Text style={styles.headerMenuAction}>Modifier</Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity
-              testID="session-modify-btn"
-              onPress={() => {
-                router.push({
-                  pathname: "/session/create",
-                  params: { sessionId: session.id },
-                });
-              }}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              accessibilityLabel="Modifier la sortie"
-            >
-              <Text style={styles.headerMenuAction}>Modifier</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
+              testID="session-share-btn"
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               onPress={() => {
-                const phoneNumber = session.coachPhone?.trim();
-                if (!phoneNumber) {
-                  showToast("Aucun contact pour cette sortie.", "error");
-                  return;
-                }
-                const message = encodeURIComponent(
-                  `Séance "${session.title}" — ${session.dateLabel}`,
-                );
-                const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
-                if (Platform.OS === "web") {
-                  void Linking.openURL(whatsappUrl);
-                  return;
-                }
-                Alert.alert("Séance", undefined, [
-                  {
-                    text: "Partager via WhatsApp",
-                    onPress: () => {
-                      Linking.openURL(whatsappUrl).catch(() => {
-                        showToast("Impossible d'ouvrir WhatsApp.", "error");
-                      });
-                    },
-                  },
-                  { text: "Annuler", style: "cancel" },
-                ]);
+                void (async () => {
+                  const title = session.title?.trim() || "Une sortie";
+                  const when = session.dateLabel?.trim() || "";
+                  const spot =
+                    session.spot?.trim() ||
+                    session.meetingPoint?.trim() ||
+                    "";
+                  const link =
+                    Platform.OS === "web" &&
+                    typeof window !== "undefined" &&
+                    session.id
+                      ? `${window.location.origin}/session/${session.id}`
+                      : "";
+                  const message = [
+                    "Rejoins-moi sur GRpD :",
+                    title,
+                    when,
+                    spot,
+                    link,
+                  ]
+                    .filter(Boolean)
+                    .join("\n");
+                  try {
+                    await Share.share({
+                      message,
+                      title,
+                      url:
+                        Platform.OS === "web" && link ? link : undefined,
+                    });
+                  } catch (error) {
+                    console.warn("Share failed:", error);
+                    showToast("Impossible de partager pour le moment.", "error");
+                  }
+                })();
               }}
               accessibilityRole="button"
-              accessibilityLabel="Plus d'actions"
+              accessibilityLabel="Partager la sortie"
+              style={styles.headerShareBtn}
             >
-              <Text style={styles.headerMenuDots}>···</Text>
+              <Ionicons
+                name="share-outline"
+                size={18}
+                color={stitoTheme.text}
+              />
             </TouchableOpacity>
-          )}
+          </View>
         </View>
       </View>
 
@@ -1686,11 +1718,20 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     textAlign: "left",
   },
-  headerMenuDots: {
-    color: stitoTheme.text,
-    fontSize: 18,
-    letterSpacing: 1,
-    fontWeight: "700",
+  headerContextActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  headerShareBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(190,202,190,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: stitoTheme.card,
   },
   headerMenuAction: {
     fontFamily: stitoTheme.font.hanken.medium,
