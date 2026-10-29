@@ -264,10 +264,6 @@ export default function ClubAccessScreen() {
         <Text style={styles.title} testID="club-key-title">
           Rejoindre un club
         </Text>
-        <Text style={styles.subtitle}>
-          Cherche le nom si tu le connais — ou ouvre la porte avec une clé
-          qu’on t’a envoyée. Ce n’est pas un annuaire public.
-        </Text>
       </View>
 
       <ScrollView
@@ -652,14 +648,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 32,
     letterSpacing: -0.4,
-  },
-  subtitle: {
-    color: t.textSecondary,
-    fontFamily: t.font.hanken.regular,
-    fontSize: 15,
-    lineHeight: 22,
-    marginTop: 10,
-    maxWidth: 340,
   },
   content: {
     paddingHorizontal: 20,
