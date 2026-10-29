@@ -268,6 +268,9 @@ async function main() {
     await page.getByTestId("club-key-name-toggle").click({ force: true });
     await page.waitForTimeout(400);
     await page.getByTestId("club-request-name-input").fill(CLUB);
+    await page.waitForSelector('[data-testid="club-search-results"]', {
+      timeout: 10000,
+    });
     await page.getByTestId("club-request-submit").click({ force: true });
     await page.waitForTimeout(2000);
     await page.goto(`${BASE}/club`, { waitUntil: "networkidle" });
@@ -364,6 +367,9 @@ async function main() {
     await page.getByTestId("club-key-name-toggle").click({ force: true });
     await page.waitForTimeout(300);
     await page.getByTestId("club-request-name-input").fill(CLUB);
+    await page.waitForSelector('[data-testid="club-search-results"]', {
+      timeout: 10000,
+    });
     await page.getByTestId("club-request-submit").click({ force: true });
     await page.waitForTimeout(1800);
     await page.goto(`${BASE}/club`, { waitUntil: "networkidle" });

@@ -205,6 +205,22 @@ export async function requestClubJoinBySlug(
   return requestClubJoin(client, raw, input);
 }
 
+/**
+ * Name knock lookup — only returns matches when the query is specific enough.
+ * Not a public catalogue browse (empty / short query → []).
+ */
+export async function searchClubsByName(
+  client: ApiClient,
+  query: string,
+): Promise<{ clubs: Club[] }> {
+  const q = query.trim();
+  if (q.length < 2) return { clubs: [] };
+  return await client.request<{ clubs: Club[] }>(
+    `/api/v1/clubs/search?q=${encodeURIComponent(q)}`,
+    { method: "GET" },
+  );
+}
+
 export async function approveClubMember(
   client: ApiClient,
   clubId: string,

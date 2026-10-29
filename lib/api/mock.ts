@@ -1243,6 +1243,31 @@ async function mockJoinByCode(
   return { membership: { ...membership, club } };
 }
 
+async function mockSearchClubs(query: string): Promise<{ clubs: Club[] }> {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return { clubs: [] };
+  const clubs = await readClubs();
+  const matches = Object.values(clubs)
+    .filter((c) => {
+      const name = (c.name || "").toLowerCase();
+      const slug = (c.slug || "").toLowerCase();
+      const city = (c.city || "").toLowerCase();
+      return name.includes(q) || slug.includes(q) || city.includes(q);
+    })
+    .slice(0, 8)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug ?? null,
+      city: c.city ?? null,
+      description: c.description ?? null,
+      visibility: c.visibility,
+      createdAt: c.createdAt,
+      createdById: c.createdById ?? null,
+    }));
+  return { clubs: matches };
+}
+
 async function mockRequestJoin(
   clubId: string,
   _input: ClubRequestInput,
@@ -1766,6 +1791,14 @@ export async function mockApiRequest<T>(
   }
   if (path === '/api/v1/clubs' && method === 'POST') {
     return (await mockCreateClub(body as ClubCreateInput & { slug?: string })) as T;
+  }
+  if (
+    (path === '/api/v1/clubs/search' || path.startsWith('/api/v1/clubs/search?')) &&
+    method === 'GET'
+  ) {
+    const qs = path.includes('?') ? path.split('?')[1] ?? '' : '';
+    const params = new URLSearchParams(qs);
+    return (await mockSearchClubs(params.get('q') ?? '')) as T;
   }
   if (path === '/api/v1/clubs/join-by-code' && method === 'POST') {
     return (await mockJoinByCode(body as ClubJoinByCodeInput)) as T;

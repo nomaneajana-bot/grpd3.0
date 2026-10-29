@@ -24,14 +24,15 @@ import {
   createClubInvite,
   getMyMemberships,
   joinClubByCode,
-  requestClubJoinBySlug,
+  requestClubJoin,
+  searchClubsByName,
 } from "@/lib/api";
 import {
   extractInviteCode,
   inviteShareMessage,
   inviteShareUrl,
 } from "@/lib/clubInviteKey";
-import type { ClubMembership } from "@/types/api";
+import type { Club, ClubMembership } from "@/types/api";
 
 type Presence = {
   name: string;
@@ -53,7 +54,9 @@ export default function ClubAccessScreen() {
     null,
   );
   const [showKeyEntry, setShowKeyEntry] = useState(false);
-  const [clubSlug, setClubSlug] = useState("");
+  const [clubQuery, setClubQuery] = useState("");
+  const [searchHits, setSearchHits] = useState<Club[]>([]);
+  const [searching, setSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
   const [inviteClubId, setInviteClubId] = useState<string | null>(null);
@@ -77,6 +80,35 @@ export default function ClubAccessScreen() {
   useEffect(() => {
     void loadMemberships();
   }, [loadMemberships]);
+
+  useEffect(() => {
+    const q = clubQuery.trim();
+    if (q.length < 2) {
+      setSearchHits([]);
+      setSearching(false);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          const client = createApiClient();
+          const result = await searchClubsByName(client, q);
+          if (!cancelled) setSearchHits(result.clubs ?? []);
+        } catch (error) {
+          console.warn("Club search failed:", error);
+          if (!cancelled) setSearchHits([]);
+        } finally {
+          if (!cancelled) setSearching(false);
+        }
+      })();
+    }, 280);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [clubQuery]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -144,24 +176,25 @@ export default function ClubAccessScreen() {
     }
   };
 
-  const handleRequestJoin = async () => {
-    if (!clubSlug.trim()) {
-      showToast("Indique le nom du club.", "error");
+  const handleRequestJoin = async (club: Club) => {
+    if (isPendingMember) {
+      showToast("Demande déjà en attente.", "error");
       return;
     }
     setIsSubmitting(true);
     setPresence(null);
     try {
       const client = createApiClient();
-      const result = await requestClubJoinBySlug(client, clubSlug.trim());
-      const club = result.membership?.club;
+      const result = await requestClubJoin(client, club.id);
+      const joined = result.membership?.club;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setPresence({
-        name: club?.name?.trim() || clubSlug.trim(),
-        city: club?.city ?? null,
+        name: joined?.name?.trim() || club.name,
+        city: joined?.city ?? club.city ?? null,
         mode: "pending",
       });
-      setClubSlug("");
+      setClubQuery("");
+      setSearchHits([]);
       showToast("Demande envoyée.", "success");
       await loadMemberships();
     } catch (error: unknown) {
@@ -288,18 +321,18 @@ export default function ClubAccessScreen() {
           </View>
         ) : (
           <>
-            {/* Top pill — Rejoindre by name */}
+            {/* Top pill — search then ask */}
             <View style={styles.pillPrimary} testID="club-key-name-form">
               <Text style={styles.pillKicker}>Rejoindre</Text>
               <Text style={styles.pillTitle}>Tu connais le nom ?</Text>
               <Text style={styles.pillHint}>
-                Tape le nom du club. Un responsable décide — ce n’est pas un
-                catalogue public.
+                Cherche le club, puis demande à le rejoindre. Un responsable
+                décide — ce n’est pas un catalogue public.
               </Text>
               <TextInput
                 style={styles.keyInput}
-                value={clubSlug}
-                onChangeText={setClubSlug}
+                value={clubQuery}
+                onChangeText={setClubQuery}
                 placeholder="Rechercher un club…"
                 placeholderTextColor={t.outline}
                 autoCapitalize="words"
@@ -307,23 +340,71 @@ export default function ClubAccessScreen() {
                 accessibilityLabel="Rechercher un club par nom"
                 testID="club-request-name-input"
               />
-              <Pressable
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  (pressed || isSubmitting || isPendingMember) && styles.pressed,
-                ]}
-                onPress={() => void handleRequestJoin()}
-                disabled={isSubmitting || isPendingMember}
-                accessibilityRole="button"
-                accessibilityLabel="Demander à rejoindre"
-                testID="club-request-submit"
-              >
-                <Text style={styles.primaryButtonText}>
-                  {isPendingMember
-                    ? "Demande déjà en attente"
-                    : "Demander à rejoindre"}
+
+              {clubQuery.trim().length > 0 && clubQuery.trim().length < 2 ? (
+                <Text style={styles.searchHint} testID="club-search-hint">
+                  Tape au moins 2 lettres.
                 </Text>
-              </Pressable>
+              ) : null}
+
+              {searching ? (
+                <Text style={styles.searchHint}>Recherche…</Text>
+              ) : null}
+
+              {!searching &&
+              clubQuery.trim().length >= 2 &&
+              searchHits.length === 0 ? (
+                <Text style={styles.searchEmpty} testID="club-search-empty">
+                  Aucun club trouvé pour « {clubQuery.trim()} ».
+                </Text>
+              ) : null}
+
+              {searchHits.length > 0 ? (
+                <View style={styles.results} testID="club-search-results">
+                  {searchHits.map((club, index) => (
+                    <View
+                      key={club.id}
+                      style={[
+                        styles.resultRow,
+                        index > 0 && styles.resultRowBorder,
+                      ]}
+                      testID={`club-search-hit-${club.id}`}
+                    >
+                      <View style={styles.resultText}>
+                        <Text style={styles.resultName} numberOfLines={1}>
+                          {club.name}
+                        </Text>
+                        {club.city ? (
+                          <Text style={styles.resultMeta} numberOfLines={1}>
+                            {club.city}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.askButton,
+                          (pressed || isSubmitting || isPendingMember) &&
+                            styles.pressed,
+                        ]}
+                        onPress={() => void handleRequestJoin(club)}
+                        disabled={isSubmitting || isPendingMember}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Demander à rejoindre ${club.name}`}
+                        testID={
+                          index === 0
+                            ? "club-request-submit"
+                            : `club-request-submit-${club.id}`
+                        }
+                      >
+                        <Text style={styles.askButtonText}>
+                          {isPendingMember ? "En attente" : "Demander"}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+
               <Text style={styles.footnoteInPill}>
                 Une demande n’est ni une adhésion confirmée ni une inscription
                 à une sortie.
@@ -705,6 +786,66 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     fontFamily: t.font.hanken.regular,
     marginTop: 10,
+  },
+  searchHint: {
+    color: t.outline,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: t.font.hanken.regular,
+    marginBottom: 8,
+  },
+  searchEmpty: {
+    color: t.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: t.font.hanken.regular,
+    marginBottom: 8,
+  },
+  results: {
+    borderRadius: 14,
+    backgroundColor: t.canvas,
+    borderWidth: 1,
+    borderColor: "rgba(190,202,190,0.55)",
+    overflow: "hidden",
+    marginBottom: 4,
+  },
+  resultRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  resultRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(190,202,190,0.55)",
+  },
+  resultText: { flex: 1, minWidth: 0, gap: 2 },
+  resultName: {
+    color: t.text,
+    fontFamily: t.font.space.semibold,
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  resultMeta: {
+    color: t.textSecondary,
+    fontFamily: t.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  askButton: {
+    backgroundColor: t.primary,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  askButtonText: {
+    color: t.onPrimary,
+    fontSize: 13,
+    fontFamily: t.font.space.bold,
   },
   keyToggleInPill: {
     marginTop: 14,
