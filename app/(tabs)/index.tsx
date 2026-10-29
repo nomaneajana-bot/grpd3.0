@@ -226,12 +226,6 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        <View style={styles.hairline} />
-
-        <OrganiseAction
-          onPress={() => router.push("/session/create" as Href)}
-        />
-
         <View ref={discoveryAnchorRef} collapsable={false} style={styles.section}>
           <View style={styles.discoveryHead}>
             <Text style={styles.sectionTitle} testID="home-discovery-title">
@@ -265,7 +259,7 @@ export default function HomeScreen() {
           ) : null}
 
           {loading && !sessions.length ? (
-            <ActivityIndicator color={h.primary} style={{ marginVertical: 24 }} />
+            <ActivityIndicator color={h.primary} style={{ marginVertical: 16 }} />
           ) : discovery.length ? (
             <View style={styles.list} testID="home-discovery-list">
               {discovery.map((s) => (
@@ -291,6 +285,12 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
+
+        <View style={styles.hairline} />
+
+        <OrganiseAction
+          onPress={() => router.push("/session/create" as Href)}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -300,34 +300,34 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: h.canvas },
   content: {
     paddingHorizontal: 20,
-    paddingTop: h.space.sm,
-    gap: h.space.lg,
+    paddingTop: h.space.xs,
+    gap: h.space.md,
     width: "100%",
     maxWidth: 960,
     alignSelf: "center",
   },
-  nextBlock: { gap: 8 },
+  nextBlock: { gap: 6 },
   hairline: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: "rgba(190,202,190,0.45)",
-    marginVertical: 4,
+    marginVertical: 0,
   },
-  section: { gap: h.space.sm, marginTop: 4 },
-  discoveryHead: { gap: 4, marginBottom: 2 },
+  section: { gap: h.space.sm, marginTop: 0 },
+  discoveryHead: { gap: 2, marginBottom: 0 },
   sectionTitle: {
     fontFamily: h.font.space.bold,
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 20,
+    lineHeight: 24,
     letterSpacing: -0.3,
     color: h.text,
   },
   sectionSupport: {
     fontFamily: h.font.hanken.regular,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
     color: h.textSecondary,
   },
-  list: { marginTop: 8, gap: 14 },
+  list: { marginTop: 4, gap: 12 },
   errorBox: {
     backgroundColor: "#FDECEA",
     borderRadius: h.radiusDiscovery,
