@@ -2,7 +2,7 @@
 
 ## Lien
 
-Production URL (rempli après deploy) — partagez uniquement ce lien.
+**https://grpd30.vercel.app** — partagez uniquement ce lien (Production, sans SSO Vercel).
 
 ## Connexion (sans SMS)
 
