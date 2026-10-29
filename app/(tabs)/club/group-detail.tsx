@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -85,6 +86,8 @@ export default function ClubGroupDetailScreen() {
   const [changeMember, setChangeMember] = useState<ClubRosterMember | null>(
     null,
   );
+  const [editName, setEditName] = useState("");
+  const [editNote, setEditNote] = useState("");
   const initialSnapshotRef = useRef<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
@@ -107,10 +110,17 @@ export default function ClubGroupDetailScreen() {
       setHasAdminAccess(Boolean(adminMembership));
       setRoster(rosterResult.members ?? []);
       setSettings(adminCfg);
+      const color = adminCfg.colorGroups?.find((g) => g.id === rawGroupId);
+      if (color) {
+        setEditName(color.name);
+        setEditNote(color.note?.trim() ?? "");
+      }
       const group = adminCfg.groups.find((g) => g.id === gid);
       setAccessPolicy(group?.accessPolicy ?? "inherit");
       initialSnapshotRef.current = JSON.stringify({
         accessPolicy: group?.accessPolicy ?? "inherit",
+        editName: color?.name ?? "",
+        editNote: color?.note?.trim() ?? "",
       });
     } catch (error) {
       console.warn("Failed to load group detail:", error);
@@ -118,7 +128,7 @@ export default function ClubGroupDetailScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [clubId, gid, showToast]);
+  }, [clubId, gid, rawGroupId, showToast]);
 
   useEffect(() => {
     void load();
@@ -152,9 +162,13 @@ export default function ClubGroupDetailScreen() {
   const isDirty = useMemo(() => {
     if (!initialSnapshotRef.current) return false;
     return (
-      JSON.stringify({ accessPolicy }) !== initialSnapshotRef.current
+      JSON.stringify({
+        accessPolicy,
+        editName: editName.trim(),
+        editNote: editNote.trim(),
+      }) !== initialSnapshotRef.current
     );
-  }, [accessPolicy]);
+  }, [accessPolicy, editName, editNote]);
 
   const { tryLeave, markLeaving } = useUnsavedChangesGuard({
     isDirty: hasAdminAccess && isDirty,
@@ -165,15 +179,39 @@ export default function ClubGroupDetailScreen() {
     if (!clubId || !settings) return;
     setIsSaving(true);
     try {
-      const next = mergeClubAdminSettings({
+      let next = mergeClubAdminSettings({
         ...settings,
         groups: settings.groups.map((g) =>
           g.id === gid ? { ...g, accessPolicy } : g,
         ),
       });
+      if (colorGroup) {
+        const trimmed = editName.trim();
+        if (!trimmed) {
+          showToast("Le nom du groupe est requis.", "error");
+          setIsSaving(false);
+          return;
+        }
+        next = mergeClubAdminSettings({
+          ...next,
+          colorGroups: (next.colorGroups ?? []).map((g) =>
+            g.id === rawGroupId
+              ? {
+                  ...g,
+                  name: trimmed,
+                  note: editNote.trim() || undefined,
+                }
+              : g,
+          ),
+        });
+      }
       await saveClubAdminSettings(clubId, next);
       setSettings(next);
-      initialSnapshotRef.current = JSON.stringify({ accessPolicy });
+      initialSnapshotRef.current = JSON.stringify({
+        accessPolicy,
+        editName: editName.trim(),
+        editNote: editNote.trim(),
+      });
       markLeaving();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast("Groupe enregistré.", "success");
@@ -306,6 +344,31 @@ export default function ClubGroupDetailScreen() {
           contentContainerStyle={styles.content}
           testID="club-group-detail-scroll"
         >
+          {hasAdminAccess && colorGroup ? (
+            <View style={styles.editCard} testID="club-group-edit-form">
+              <Text style={styles.sectionLabel}>NOM DU GROUPE</Text>
+              <TextInput
+                style={styles.input}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Ex. Rouge — rapide"
+                placeholderTextColor={t.outline}
+                testID="club-group-edit-name"
+              />
+              <Text style={[styles.sectionLabel, { marginTop: 14 }]}>
+                NOTE (OPTIONNEL)
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={editNote}
+                onChangeText={setEditNote}
+                placeholder="Ex. Sub 4:45"
+                placeholderTextColor={t.outline}
+                testID="club-group-edit-note"
+              />
+            </View>
+          ) : null}
+
           <Text style={styles.sectionLabel}>MEMBRES</Text>
           <View style={styles.listCard}>
             {membersInGroup.length === 0 ? (
@@ -396,12 +459,13 @@ export default function ClubGroupDetailScreen() {
         </ScrollView>
       )}
 
-      {hasAdminAccess && !useColorOrg ? (
+      {hasAdminAccess && (colorGroup || !useColorOrg) ? (
         <View style={styles.footer}>
           <Pressable
             style={[styles.saveBtn, isSaving && styles.saveBtnDisabled]}
             onPress={() => void handleSave()}
             disabled={isSaving}
+            testID="club-group-save"
           >
             <Text style={styles.saveBtnText}>
               {isSaving ? "Enregistrement…" : "Enregistrer"}
@@ -554,6 +618,26 @@ const styles = StyleSheet.create({
     color: t.outline,
     marginTop: 8,
     marginBottom: 8,
+  },
+  editCard: {
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  input: {
+    backgroundColor: t.surfaceContainerLow,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(232,232,233,0.9)",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    color: t.text,
+    fontFamily: t.font.hanken.medium,
+    fontSize: 15,
   },
   listCard: {
     backgroundColor: t.card,

@@ -105,7 +105,9 @@ export default function TabLayout() {
           // Deep links can leave a single non-index route at stack index 0.
           tabPress: (e) => {
             const state = navigation.getState();
-            const clubRoute = state.routes.find((r) => r.name === "club");
+            const clubRoute = state.routes.find(
+              (r: { name: string }) => r.name === "club",
+            );
             const nested = clubRoute?.state;
             if (!nested?.routes?.length) return;
             const nestedIndex =

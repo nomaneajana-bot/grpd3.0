@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
 import { AssignMemberGroupSheet } from "@/components/club/AssignMemberGroupSheet";
+import { SectionSegmentBar } from "@/components/ui/SectionSegmentBar";
 import { Toast } from "@/components/ui/Toast";
 import { stitoTheme as t } from "@/constants/stitoTheme";
 import { useToast } from "@/hooks/useToast";
@@ -45,6 +46,13 @@ import { getFocusedClubId } from "@/lib/focusedClubStore";
 import type { Club, ClubRosterMember, ClubVisibility } from "@/types/api";
 
 type AssignFilter = "all" | "none" | string;
+type SettingsSection = "club" | "groupes" | "affecter";
+
+const SETTINGS_SEGMENTS: { id: SettingsSection; label: string }[] = [
+  { id: "club", label: "Club" },
+  { id: "groupes", label: "Groupes" },
+  { id: "affecter", label: "Affecter" },
+];
 
 /**
  * Club settings — Stito light admin surface.
@@ -77,6 +85,8 @@ export default function ClubSettingsScreen() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [batchSheetOpen, setBatchSheetOpen] = useState(false);
   const [isBatchAssigning, setIsBatchAssigning] = useState(false);
+  const [settingsSection, setSettingsSection] =
+    useState<SettingsSection>("club");
 
   const { toast, showToast, hideToast } = useToast();
 
@@ -205,18 +215,18 @@ export default function ClubSettingsScreen() {
     setIsSaving(true);
     try {
       const client = createApiClient();
+      // Do not push one-time invite tickets into standing club.code.
       const updated = await updateClub(client, clubId, {
         name: name.trim(),
         description: description.trim() || null,
         visibility,
-        accessCode: accessCode.trim() || undefined,
       });
       const nextSettings: ClubAdminSettings = {
         ...adminSettings,
         name: updated.name,
         description: updated.description ?? "",
         visibility: updated.visibility,
-        accessCode: accessCode.trim(),
+        accessCode: adminSettings.accessCode ?? accessCode.trim(),
       };
       await saveClubAdminSettings(clubId, nextSettings);
       setAdminSettings(nextSettings);
@@ -240,10 +250,11 @@ export default function ClubSettingsScreen() {
       const next = { ...adminSettings, accessCode: code };
       setAdminSettings(next);
       await saveClubAdminSettings(clubId, next);
-      showToast("Nouveau code généré.", "success");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast("Clé unique créée — un membre, une fois.", "success");
     } catch (error) {
       console.warn("Invite code failed:", error);
-      showToast("Impossible de générer un code.", "error");
+      showToast("Impossible de générer une clé.", "error");
     }
   };
 
@@ -473,10 +484,22 @@ export default function ClubSettingsScreen() {
           </View>
         </View>
       ) : (
+        <View style={styles.formShell}>
+        <View style={styles.segmentWrap}>
+          <SectionSegmentBar
+            segments={SETTINGS_SEGMENTS}
+            value={settingsSection}
+            onChange={(id) => setSettingsSection(id as SettingsSection)}
+            testID="club-settings-segments"
+          />
+        </View>
+
         <ScrollView
           contentContainerStyle={styles.content}
           testID="club-settings-form"
         >
+          {settingsSection === "club" ? (
+            <>
           <Text style={styles.sectionLabel}>MODIFIER LE CLUB</Text>
           <View style={styles.card}>
             <Text style={styles.fieldLabel}>Nom</Text>
@@ -513,13 +536,17 @@ export default function ClubSettingsScreen() {
                 testID="club-settings-visibility"
               />
             </View>
-            <Text style={styles.fieldLabel}>Code d&apos;accès</Text>
+            <Text style={styles.fieldLabel}>Clé à usage unique</Text>
+            <Text style={styles.fieldHint}>
+              Générer une clé pour un membre — elle ne fonctionne qu&apos;une
+              fois.
+            </Text>
             <View style={styles.codeRow}>
               <TextInput
                 style={[styles.input, { flex: 1 }]}
                 value={accessCode}
-                onChangeText={setAccessCode}
-                placeholder="Code invitation"
+                editable={false}
+                placeholder="Appuie sur Générer"
                 placeholderTextColor={t.outline}
                 autoCapitalize="characters"
                 testID="club-settings-access-code"
@@ -543,7 +570,11 @@ export default function ClubSettingsScreen() {
               </Text>
             </Pressable>
           </View>
+            </>
+          ) : null}
 
+          {settingsSection === "groupes" ? (
+            <>
           <Text style={styles.sectionLabel}>ORGANISER LES MEMBRES</Text>
           <View style={styles.card} testID="member-org-settings">
             <View style={styles.switchRow}>
@@ -607,10 +638,17 @@ export default function ClubSettingsScreen() {
                 >
                   <Text style={styles.addGroupBtnTxt}>+ Créer un groupe</Text>
                 </Pressable>
+                <Text style={styles.groupEditHint}>
+                  Tape un groupe pour renommer et voir ses membres.
+                </Text>
               </>
             ) : null}
           </View>
+            </>
+          ) : null}
 
+          {settingsSection === "affecter" ? (
+            <>
           {isMemberOrgEnabled(adminSettings) ? (
             <>
               <View style={styles.assignHeaderRow}>
@@ -802,6 +840,24 @@ export default function ClubSettingsScreen() {
                 )}
               </View>
             </>
+          ) : (
+            <View style={styles.card} testID="assign-needs-groups">
+              <Text style={styles.emptyRoster}>
+                Active d&apos;abord les groupes couleur dans l&apos;onglet
+                Groupes.
+              </Text>
+              <Pressable
+                testID="assign-goto-groupes"
+                onPress={() => setSettingsSection("groupes")}
+                style={styles.smartAssignBtn}
+              >
+                <Text style={styles.smartAssignBtnTxt}>
+                  Aller à Groupes →
+                </Text>
+              </Pressable>
+            </View>
+          )}
+            </>
           ) : null}
 
           <AssignMemberGroupSheet
@@ -839,6 +895,7 @@ export default function ClubSettingsScreen() {
             onClose={() => setBatchSheetOpen(false)}
           />
         </ScrollView>
+        </View>
       )}
 
       {multiSelect && selectedIds.length > 0 && hasAdminAccess ? (
@@ -899,11 +956,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: t.textSecondary,
   },
+  formShell: { flex: 1 },
+  segmentWrap: {
+    paddingHorizontal: t.space.lg,
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(190,202,190,0.45)",
+  },
   content: {
     paddingHorizontal: t.space.lg,
     paddingBottom: 40,
   },
   loadingWrap: { paddingVertical: 48, alignItems: "center" },
+  groupEditHint: {
+    marginTop: 10,
+    fontFamily: t.font.hanken.regular,
+    fontSize: 12,
+    lineHeight: 16,
+    color: t.outline,
+  },
   deniedWrap: {
     paddingHorizontal: t.space.lg,
     paddingTop: t.space.lg,
