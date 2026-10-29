@@ -1,4 +1,5 @@
 import {
+  buildHomeDayOptions,
   buildHomeStats,
   discoveryDateParts,
   displayOutingTitle,
@@ -146,6 +147,14 @@ describe("homeViewModel", () => {
   it("formats day eyebrow from real ISO (not hardcoded May)", () => {
     // 2026-10-17 is a Saturday
     expect(formatHomeDayEyebrow("2026-10-17")).toBe("SAMEDI 17 OCTOBRE");
+  });
+
+  it("labels today's chip Aujourd'hui and others as short weekday", () => {
+    const now = new Date(2026, 9, 29); // Jeudi 29 octobre
+    const opts = buildHomeDayOptions(3, now);
+    expect(opts[0]?.chip).toBe("Aujourd'hui");
+    expect(opts[1]?.chip).toBe("Ven. 30");
+    expect(opts[2]?.chip).toBe("Sam. 31");
   });
 
   it("sorts by date then time", () => {

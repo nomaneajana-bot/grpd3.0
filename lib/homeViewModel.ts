@@ -82,12 +82,18 @@ export function formatHomeDayEyebrow(
   return `${DAY_NAMES[d.getDay()]} ${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`;
 }
 
-/** Short chip for day picker: « Sam. 31 ». */
+/** Short chip for day picker: « Sam. 31 » — today reads « Aujourd'hui ». */
 export function formatHomeDayChip(
   dateISO: string | null | undefined,
   now = new Date(),
 ): string {
   const d = parseLocalDate(dateISO) ?? now;
+  const todayIso = toLocalDateISO(now);
+  const iso =
+    dateISO && /^\d{4}-\d{2}-\d{2}/.test(dateISO)
+      ? dateISO.slice(0, 10)
+      : toLocalDateISO(d);
+  if (iso === todayIso) return "Aujourd'hui";
   return `${DAY_SHORT[d.getDay()]} ${d.getDate()}`;
 }
 
@@ -108,7 +114,7 @@ export function buildHomeDayOptions(
     const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     out.push({
       iso,
-      chip: formatHomeDayChip(iso, d),
+      chip: formatHomeDayChip(iso, now),
       eyebrow: formatHomeDayEyebrow(iso, d),
     });
   }
