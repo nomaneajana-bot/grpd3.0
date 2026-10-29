@@ -931,9 +931,11 @@ export default function SessionScreen() {
             testID="session-profile-avatar"
           >
             <Text style={styles.headerAvatarMarkText}>
-              {initialsFromName(
-                profile?.firstName?.trim() || profile?.name?.trim() || null,
-              )?.charAt(0) ?? "·"}
+              {(
+                initialsFromName(
+                  profile?.firstName?.trim() || profile?.name?.trim() || null,
+                ) || "M"
+              ).charAt(0)}
             </Text>
           </TouchableOpacity>
         </View>
