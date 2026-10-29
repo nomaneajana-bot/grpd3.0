@@ -307,11 +307,26 @@ export default function MySessionsScreen() {
         }
       >
         <View style={styles.headerBlock}>
-          <View style={styles.headerText}>
-            <Text style={styles.eyebrow}>CALENDRIER PERSONNEL</Text>
-            <Text style={styles.title} accessibilityRole="header">
-              Mes Sorties & Réservations
-            </Text>
+          <View style={styles.headerTop}>
+            <View style={styles.headerText}>
+              <Text style={styles.eyebrow}>CALENDRIER PERSONNEL</Text>
+              <Text style={styles.title} accessibilityRole="header">
+                Mes Sorties & Réservations
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Créer une sortie"
+              onPress={() => router.push("/session/create" as Href)}
+              style={({ pressed }) => [
+                styles.createBtn,
+                pressed && { opacity: 0.88 },
+              ]}
+              testID="mes-sorties-create"
+            >
+              <Text style={styles.createBtnPlus}>+</Text>
+              <Text style={styles.createBtnText}>Créer</Text>
+            </Pressable>
           </View>
 
           <View style={styles.segment} accessibilityRole="tablist">
@@ -865,16 +880,29 @@ function EmptyUpcoming({
       </Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Explorer les sorties"
-        onPress={onExplore}
+        accessibilityLabel="Créer une sortie"
+        onPress={() => router.push("/session/create" as Href)}
         style={({ pressed }) => [
           styles.exploreBtn,
           pressed && { opacity: 0.9 },
         ]}
+        testID="mes-sorties-empty-create"
+      >
+        <Text style={styles.createBtnPlus}>+</Text>
+        <Text style={styles.exploreText}>Créer une sortie</Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Explorer les sorties"
+        onPress={onExplore}
+        style={({ pressed }) => [
+          styles.exploreGhost,
+          pressed && { opacity: 0.9 },
+        ]}
         testID="mes-sorties-explore"
       >
-        <Ionicons name="compass-outline" size={18} color={t.onPrimary} />
-        <Text style={styles.exploreText}>Explorer les sorties</Text>
+        <Ionicons name="compass-outline" size={18} color={t.primary} />
+        <Text style={styles.exploreGhostText}>Explorer les sorties</Text>
       </Pressable>
       {pastCount > 0 && onOpenPast ? (
         <Pressable
@@ -926,13 +954,46 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(232,232,233,0.9)",
   },
-  headerText: { gap: 2 },
+  headerTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  headerText: { gap: 2, flex: 1, minWidth: 0 },
+  createBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    minHeight: 40,
+    maxWidth: 168,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: t.primary,
+    marginTop: 2,
+    flexShrink: 0,
+  },
+  createBtnPlus: {
+    color: t.onPrimary,
+    fontFamily: t.font.space.bold,
+    fontSize: 18,
+    lineHeight: 18,
+    marginTop: -1,
+  },
+  createBtnText: {
+    color: t.onPrimary,
+    fontFamily: t.font.space.bold,
+    fontSize: 12,
+    lineHeight: 14,
+    flexShrink: 1,
+  },
   eyebrow: {
     ...t.type.labelSm,
     color: t.outline,
     textTransform: "uppercase",
   },
-  title: { ...t.type.pageTitle, color: t.text },
+  title: { ...t.type.pageTitle, color: t.text, fontSize: 26 },
   segment: {
     flexDirection: "row",
     backgroundColor: t.surfaceContainerHigh,
@@ -1428,6 +1489,24 @@ const styles = StyleSheet.create({
   exploreText: {
     ...t.type.labelMd,
     color: t.onPrimary,
+    fontFamily: t.font.space.bold,
+    fontSize: 14,
+  },
+  exploreGhost: {
+    marginTop: 4,
+    minHeight: 44,
+    paddingHorizontal: 20,
+    borderRadius: t.radiusChip,
+    backgroundColor: t.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: "rgba(0,95,52,0.2)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  exploreGhostText: {
+    ...t.type.labelMd,
+    color: t.primary,
     fontFamily: t.font.space.bold,
     fontSize: 14,
   },
