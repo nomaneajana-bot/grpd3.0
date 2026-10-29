@@ -10,15 +10,14 @@ import {
 } from "react-native";
 import { router, useFocusEffect, type Href } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DiscoveryFilters } from "@/components/home/DiscoveryFilters";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { NewMemberIntro } from "@/components/home/NewMemberIntro";
 import {
-  NextOutingCard,
-  NextOutingSectionHeader,
-} from "@/components/home/NextOutingCard";
+  NEXT_OUTING_DOCK_COLLAPSED,
+  NextOutingDock,
+} from "@/components/home/NextOutingDock";
 import { OrganiseAction } from "@/components/home/OrganiseAction";
 import { OutingRow } from "@/components/home/OutingRow";
 import { homeTheme as h } from "@/constants/homeTheme";
@@ -46,11 +45,9 @@ import { getUserSessions } from "@/lib/sessionStore";
 import type { ClubMembership } from "@/types/api";
 
 /**
- * Authenticated Accueil — Google Stitch / Noa-Stito composition.
- * Tokens: constants/homeTheme.ts.
+ * Authenticated Accueil — discovery first, next outing pinned as dock.
  */
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
   const discoveryAnchorRef = useRef<View>(null);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -176,7 +173,8 @@ export default function HomeScreen() {
     });
   };
 
-  const tabBarReserve = 54 + Math.max(insets.bottom, 10) + 18;
+  const dockClearance = nextOuting ? NEXT_OUTING_DOCK_COLLAPSED + 20 : 0;
+  const scrollPadBottom = 28 + dockClearance;
 
   return (
     <SafeAreaView
@@ -184,150 +182,155 @@ export default function HomeScreen() {
       edges={["top"]}
       testID="home-accueil"
     >
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: tabBarReserve },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        refreshControl={
-          <RefreshControl
-            refreshing={loading}
-            onRefresh={() => void load()}
-            tintColor={h.primary}
-          />
-        }
-      >
-        <HomeHeader
-          cityLabel={cityLabel}
-          dayEyebrow={dayEyebrow}
-          query={query}
-          onQueryChange={setQuery}
-          onCityPress={() => {}}
-          onCitySelect={(city) => setQuery(city)}
-          profileInitial="Y"
-        />
-
-        {mode === "new_member" && !nextOuting ? (
-          <NewMemberIntro onSeeOutings={scrollToDiscovery} />
-        ) : null}
-
-        {nextOuting ? (
-          <View style={styles.nextBlock}>
-            <NextOutingSectionHeader
-              reserved={nextOuting.attendanceStatus === "joined"}
+      <View style={styles.frame}>
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: scrollPadBottom },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={() => void load()}
+              tintColor={h.primary}
             />
-            <NextOutingCard
-              session={nextOuting}
-              onPress={() => openSession(nextOuting.id)}
-            />
-          </View>
-        ) : null}
-
-        <View style={styles.hairline} />
-
-        <OrganiseAction
-          onPress={() => router.push("/session/create" as Href)}
-        />
-
-        <View ref={discoveryAnchorRef} collapsable={false} style={styles.section}>
-          <View style={styles.discoveryHead}>
-            <Text style={styles.sectionTitle} testID="home-discovery-title">
-              Sorties à découvrir
-            </Text>
-            <Text style={styles.sectionSupport}>
-              Qui part, où, à quelle allure — rejoins en un tap.
-            </Text>
-          </View>
-
-          <DiscoveryFilters
-            value={activityFilter}
-            onChange={setActivityFilter}
+          }
+        >
+          <HomeHeader
+            cityLabel={cityLabel}
+            dayEyebrow={dayEyebrow}
+            query={query}
+            onQueryChange={setQuery}
+            onCityPress={() => {}}
+            onCitySelect={(city) => setQuery(city)}
+            profileInitial="Y"
           />
 
-          {error ? (
-            <View style={styles.errorBox} testID="home-error">
-              <Text style={styles.errorText}>
-                Les sorties en ligne ne sont pas disponibles pour le moment.
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Réessayer"
-                onPress={() => void load()}
-                style={styles.retryBtn}
-                testID="home-retry"
-              >
-                <Text style={styles.retryText}>Réessayer</Text>
-              </Pressable>
-            </View>
+          {mode === "new_member" && !nextOuting ? (
+            <NewMemberIntro onSeeOutings={scrollToDiscovery} />
           ) : null}
 
-          {loading && !sessions.length ? (
-            <ActivityIndicator color={h.primary} style={{ marginVertical: 24 }} />
-          ) : discovery.length ? (
-            <View style={styles.list} testID="home-discovery-list">
-              {discovery.map((s) => (
-                <OutingRow
-                  key={s.id}
-                  session={s}
-                  onPress={() => openSession(s.id)}
-                />
-              ))}
-            </View>
-          ) : (
-            <View style={styles.empty} testID="home-discovery-empty">
-              <Text style={styles.emptyTitle}>
-                {query || activityFilter !== "all"
-                  ? "Pas encore de sortie pour cette recherche."
-                  : "Pas encore de sortie à découvrir."}
+          <View
+            ref={discoveryAnchorRef}
+            collapsable={false}
+            style={styles.section}
+          >
+            <View style={styles.discoveryHead}>
+              <Text style={styles.sectionTitle} testID="home-discovery-title">
+                Sorties à découvrir
               </Text>
-              <Text style={styles.emptyBody}>
-                {mode === "new_member"
-                  ? "Reviens bientôt, ou organise la première."
-                  : "Propose une marche ou une course et invite ton groupe."}
+              <Text style={styles.sectionSupport}>
+                Qui part, où, à quelle allure — rejoins en un tap.
               </Text>
             </View>
-          )}
-        </View>
-      </ScrollView>
+
+            <DiscoveryFilters
+              value={activityFilter}
+              onChange={setActivityFilter}
+            />
+
+            {error ? (
+              <View style={styles.errorBox} testID="home-error">
+                <Text style={styles.errorText}>
+                  Les sorties en ligne ne sont pas disponibles pour le moment.
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Réessayer"
+                  onPress={() => void load()}
+                  style={styles.retryBtn}
+                  testID="home-retry"
+                >
+                  <Text style={styles.retryText}>Réessayer</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {loading && !sessions.length ? (
+              <ActivityIndicator
+                color={h.primary}
+                style={{ marginVertical: 16 }}
+              />
+            ) : discovery.length ? (
+              <View style={styles.list} testID="home-discovery-list">
+                {discovery.map((s) => (
+                  <OutingRow
+                    key={s.id}
+                    session={s}
+                    onPress={() => openSession(s.id)}
+                  />
+                ))}
+              </View>
+            ) : (
+              <View style={styles.empty} testID="home-discovery-empty">
+                <Text style={styles.emptyTitle}>
+                  {query || activityFilter !== "all"
+                    ? "Pas encore de sortie pour cette recherche."
+                    : "Pas encore de sortie à découvrir."}
+                </Text>
+                <Text style={styles.emptyBody}>
+                  {mode === "new_member"
+                    ? "Reviens bientôt, ou organise la première."
+                    : "Propose une marche ou une course et invite ton groupe."}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.hairline} />
+
+          <OrganiseAction
+            onPress={() => router.push("/session/create" as Href)}
+          />
+        </ScrollView>
+
+        {nextOuting ? (
+          <NextOutingDock
+            session={nextOuting}
+            onOpenDetails={() => openSession(nextOuting.id)}
+            bottomOffset={10}
+          />
+        ) : null}
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: h.canvas },
+  frame: { flex: 1, position: "relative" },
   content: {
     paddingHorizontal: 20,
-    paddingTop: h.space.sm,
-    gap: h.space.lg,
+    paddingTop: h.space.xs,
+    gap: h.space.md,
     width: "100%",
     maxWidth: 960,
     alignSelf: "center",
   },
-  nextBlock: { gap: 8 },
   hairline: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: "rgba(190,202,190,0.45)",
-    marginVertical: 4,
+    marginVertical: 0,
   },
-  section: { gap: h.space.sm, marginTop: 4 },
-  discoveryHead: { gap: 4, marginBottom: 2 },
+  section: { gap: h.space.sm, marginTop: 0 },
+  discoveryHead: { gap: 2, marginBottom: 0 },
   sectionTitle: {
     fontFamily: h.font.space.bold,
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 20,
+    lineHeight: 24,
     letterSpacing: -0.3,
     color: h.text,
   },
   sectionSupport: {
     fontFamily: h.font.hanken.regular,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
     color: h.textSecondary,
   },
-  list: { marginTop: 8, gap: 14 },
+  list: { marginTop: 4, gap: 12 },
   errorBox: {
     backgroundColor: "#FDECEA",
     borderRadius: h.radiusDiscovery,

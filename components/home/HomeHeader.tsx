@@ -102,13 +102,13 @@ export function HomeHeader({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: h.space.md },
+  wrap: { gap: h.space.sm },
   topRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: h.space.xs,
-    paddingBottom: h.space.sm,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   cityBtn: {
     flexDirection: "row",
@@ -141,9 +141,9 @@ const styles = StyleSheet.create({
     color: h.onPrimary,
   },
   greeting: {
-    paddingTop: h.space.sm,
-    paddingBottom: 4,
-    gap: 6,
+    paddingTop: 0,
+    paddingBottom: 0,
+    gap: 2,
   },
   dayEyebrow: {
     fontFamily: h.font.hanken.bold,
@@ -155,15 +155,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: h.font.space.bold,
-    fontSize: 32,
-    lineHeight: 36,
-    letterSpacing: -0.9,
+    fontSize: 28,
+    lineHeight: 32,
+    letterSpacing: -0.7,
     color: h.text,
     fontWeight: "700",
   },
   sub: {
     ...h.type.bodySm,
     color: h.textSecondary,
-    marginTop: 2,
+    marginTop: 0,
   },
 });
