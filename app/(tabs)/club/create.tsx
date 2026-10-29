@@ -1,8 +1,9 @@
 import { type Href, router, Stack, useLocalSearchParams } from "expo-router";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
@@ -11,12 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
 
-import {
-  StitoAction,
-  StitoBack,
-  stitoUi as ui,
-  stitoChrome as t,
-} from "@/components/stito/StitoUI";
+import { StitoAction, stitoChrome as t } from "@/components/stito/StitoUI";
 import { CitySlider } from "@/components/ui/CitySlider";
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
@@ -32,9 +28,8 @@ import { setFocusedClubId } from "@/lib/focusedClubStore";
 import type { ClubVisibility } from "@/types/api";
 
 /**
- * Créer un club — Stito light.
- * Visibility maps only to supported enums: public | members.
- * No premature "Valide" badges; no third curated policy.
+ * Créer un club — same light Stito language as Clubs access / Paramètres.
+ * Open sections (no numbered wizard), radio access, text back.
  */
 export default function ClubCreateScreen() {
   const { idea } = useLocalSearchParams<{ idea?: string }>();
@@ -55,6 +50,18 @@ export default function ClubCreateScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitLock = useRef(false);
   const { toast, showToast, hideToast } = useToast();
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const prevBody = document.body.style.backgroundColor;
+    const prevHtml = document.documentElement.style.backgroundColor;
+    document.body.style.backgroundColor = t.canvas;
+    document.documentElement.style.backgroundColor = t.canvas;
+    return () => {
+      document.body.style.backgroundColor = prevBody;
+      document.documentElement.style.backgroundColor = prevHtml;
+    };
+  }, []);
 
   const handleSubmit = async () => {
     if (submitLock.current || isSubmitting) return;
@@ -95,10 +102,14 @@ export default function ClubCreateScreen() {
   };
 
   return (
-    <SafeAreaView style={ui.safe} testID="club-create-screen">
+    <SafeAreaView
+      style={styles.safe}
+      testID="club-create-screen"
+      edges={["top", "bottom"]}
+    >
       <Stack.Screen options={{ headerShown: false }} />
 
-      {toast && (
+      {toast ? (
         <Toast
           message={toast.message}
           variant={toast.variant}
@@ -106,41 +117,47 @@ export default function ClubCreateScreen() {
           tone="onLight"
           placement="top"
         />
-      )}
+      ) : null}
+
+      <View style={styles.header}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backRow}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Retour"
+          testID="club-create-back"
+        >
+          <Text style={styles.backIcon}>‹</Text>
+          <Text style={styles.backLabel}>Clubs</Text>
+        </Pressable>
+        <Text style={styles.brand}>GRpD</Text>
+        <Text style={styles.title} testID="club-create-heading">
+          Fonder un club.
+        </Text>
+        <Text style={styles.lede}>
+          Un cadre bienveillant pour tes sorties régulières — marche, course ou
+          autre.
+        </Text>
+      </View>
 
       <ScrollView
-        contentContainerStyle={ui.content}
+        contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         testID="club-create-scroll"
       >
-        <StitoBack onPress={() => router.back()} />
-
-        <View style={{ gap: 6 }}>
-          <Text style={ui.eyebrow}>Créer un club</Text>
-          <Text style={ui.title} testID="club-create-heading">
-            Fonder un club.
-          </Text>
-          <Text style={ui.body}>
-            Donne un cadre bienveillant à tes sorties régulières. Le sujet est
-            libre — marche, course ou autre.
-          </Text>
-        </View>
-
         {fromIdea ? (
-          <Text
-            style={[ui.eyebrow, { color: t.primary }]}
-            testID="club-create-idea-hint"
-          >
+          <Text style={styles.ideaHint} testID="club-create-idea-hint">
             À partir de l’idée « {fromIdea.subtitle} » — tu peux tout modifier.
           </Text>
         ) : null}
 
-        <View style={ui.card}>
-          <Text style={ui.label}>01 / Nom & localisation</Text>
-          <Text style={[ui.label, { marginTop: 4 }]}>Nom du club</Text>
+        <View style={styles.section}>
+          <Text style={styles.kicker}>Identité</Text>
+          <Text style={styles.fieldLabel}>Nom du club</Text>
           <TextInput
-            style={ui.input}
+            style={styles.input}
             value={name}
             onChangeText={setName}
             placeholder="Ex. English, outside"
@@ -153,9 +170,9 @@ export default function ClubCreateScreen() {
             testID="club-name-input"
           />
 
-          <Text style={[ui.label, { marginTop: 14 }]}>Ville</Text>
+          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Ville</Text>
           <TextInput
-            style={ui.input}
+            style={styles.input}
             value={city}
             onChangeText={setCity}
             placeholder="Casablanca"
@@ -174,13 +191,14 @@ export default function ClubCreateScreen() {
           />
         </View>
 
-        <View style={ui.card}>
-          <Text style={ui.label}>02 / Pourquoi vous retrouver</Text>
-          <Text style={[ui.body, { marginBottom: 8 }]} testID="club-purpose-hint">
-            Langues, quartier, rencontres… À toi de choisir. Aucun thème imposé.
+        <View style={styles.section}>
+          <Text style={styles.kicker}>Esprit</Text>
+          <Text style={styles.fieldLabel}>Pourquoi vous retrouver</Text>
+          <Text style={styles.hint} testID="club-purpose-hint">
+            Langues, quartier, rencontres… À toi de choisir.
           </Text>
           <TextInput
-            style={[ui.input, { minHeight: 96, textAlignVertical: "top" }]}
+            style={[styles.input, styles.textarea]}
             value={purpose}
             onChangeText={setPurpose}
             placeholder="Décris ce que vous voulez partager"
@@ -195,9 +213,10 @@ export default function ClubCreateScreen() {
           />
         </View>
 
-        <View style={ui.card}>
-          <Text style={ui.label}>03 / Accès au club</Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        <View style={styles.section}>
+          <Text style={styles.kicker}>Accès</Text>
+          <Text style={styles.fieldLabel}>Qui peut rejoindre</Text>
+          <View style={styles.choiceStack}>
             <Pressable
               testID="club-visibility-members"
               accessibilityRole="button"
@@ -206,17 +225,36 @@ export default function ClubCreateScreen() {
               accessibilityState={{ selected: visibility === "members" }}
               nativeID="club-create-field-visibility-members"
               onPress={() => setVisibility("members")}
-              style={[ui.chip, visibility === "members" && ui.chipOn]}
+              style={[
+                styles.choiceRow,
+                visibility === "members" && styles.choiceRowOn,
+              ]}
             >
-              <Text
+              <View style={styles.choiceCopy}>
+                <Text
+                  style={[
+                    styles.choiceTitle,
+                    visibility === "members" && styles.choiceTitleOn,
+                  ]}
+                >
+                  Sur invitation
+                </Text>
+                <Text style={styles.choiceBody}>
+                  Tu partages une clé — pas de catalogue public.
+                </Text>
+              </View>
+              <View
                 style={[
-                  ui.chipText,
-                  visibility === "members" && ui.chipTextOn,
+                  styles.radio,
+                  visibility === "members" && styles.radioOn,
                 ]}
               >
-                Sur invitation
-              </Text>
+                {visibility === "members" ? (
+                  <View style={styles.radioDot} />
+                ) : null}
+              </View>
             </Pressable>
+
             <Pressable
               testID="club-visibility-public"
               accessibilityRole="button"
@@ -224,19 +262,37 @@ export default function ClubCreateScreen() {
               accessibilityState={{ selected: visibility === "public" }}
               nativeID="club-create-field-visibility-public"
               onPress={() => setVisibility("public")}
-              style={[ui.chip, visibility === "public" && ui.chipOn]}
+              style={[
+                styles.choiceRow,
+                visibility === "public" && styles.choiceRowOn,
+              ]}
             >
-              <Text
+              <View style={styles.choiceCopy}>
+                <Text
+                  style={[
+                    styles.choiceTitle,
+                    visibility === "public" && styles.choiceTitleOn,
+                  ]}
+                >
+                  Public
+                </Text>
+                <Text style={styles.choiceBody}>
+                  Visible pour ceux qui cherchent ton club par son nom.
+                </Text>
+              </View>
+              <View
                 style={[
-                  ui.chipText,
-                  visibility === "public" && ui.chipTextOn,
+                  styles.radio,
+                  visibility === "public" && styles.radioOn,
                 ]}
               >
-                Public
-              </Text>
+                {visibility === "public" ? (
+                  <View style={styles.radioDot} />
+                ) : null}
+              </View>
             </Pressable>
           </View>
-          <Text style={[ui.body, { marginTop: 10 }]} testID="club-membership-note">
+          <Text style={styles.footnote} testID="club-membership-note">
             L’adhésion au club ne t’inscrit à aucune sortie.
           </Text>
         </View>
@@ -247,14 +303,186 @@ export default function ClubCreateScreen() {
           disabled={isSubmitting}
           testID="club-create-submit"
         />
-        <StitoAction
-          label="Annuler"
-          secondary
+        <Pressable
           onPress={() => router.back()}
           disabled={isSubmitting}
+          accessibilityRole="button"
+          accessibilityLabel="Annuler"
           testID="club-create-cancel"
-        />
+          style={styles.cancelLink}
+        >
+          <Text style={styles.cancelText}>Annuler</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: t.canvas },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 12,
+    gap: 4,
+  },
+  backRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    minHeight: 44,
+    marginBottom: 8,
+    alignSelf: "flex-start",
+  },
+  backIcon: {
+    fontFamily: t.font.space.bold,
+    fontSize: 28,
+    lineHeight: 30,
+    color: t.primary,
+    marginTop: -2,
+  },
+  backLabel: {
+    fontFamily: t.font.hanken.medium,
+    fontSize: 16,
+    color: t.primary,
+  },
+  brand: {
+    ...t.type.labelSm,
+    color: t.primary,
+    textTransform: "uppercase",
+    fontFamily: t.font.space.bold,
+  },
+  title: {
+    ...t.type.pageTitle,
+    color: t.text,
+    marginTop: 2,
+  },
+  lede: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 15,
+    lineHeight: 22,
+    color: t.textSecondary,
+    maxWidth: 420,
+    marginTop: 4,
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    width: "100%",
+    maxWidth: 960,
+    alignSelf: "center",
+    gap: 18,
+  },
+  ideaHint: {
+    fontFamily: t.font.hanken.medium,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.primary,
+  },
+  section: {
+    gap: 8,
+    paddingTop: 4,
+    paddingBottom: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(190,202,190,0.45)",
+  },
+  kicker: {
+    ...t.type.labelSm,
+    color: t.outline,
+    textTransform: "uppercase",
+    marginTop: 10,
+    marginBottom: 2,
+  },
+  fieldLabel: {
+    color: t.text,
+    fontSize: 13,
+    fontFamily: t.font.space.semibold,
+    letterSpacing: 0.1,
+  },
+  hint: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.textSecondary,
+  },
+  input: {
+    color: t.text,
+    backgroundColor: t.card,
+    borderWidth: 1,
+    borderColor: "rgba(190,202,190,0.55)",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    fontFamily: t.font.hanken.regular,
+  },
+  textarea: {
+    minHeight: 104,
+    textAlignVertical: "top",
+  },
+  choiceStack: { gap: 10, marginTop: 4 },
+  choiceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: t.card,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.95)",
+  },
+  choiceRowOn: {
+    backgroundColor: "rgba(0,95,52,0.06)",
+    borderColor: "rgba(0,95,52,0.35)",
+  },
+  choiceCopy: { flex: 1, minWidth: 0, gap: 2 },
+  choiceTitle: {
+    fontFamily: t.font.space.bold,
+    fontSize: 15,
+    color: t.text,
+  },
+  choiceTitleOn: { color: t.primary },
+  choiceBody: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 12,
+    lineHeight: 16,
+    color: t.outline,
+  },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: t.outlineVariant,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioOn: {
+    borderColor: t.primary,
+    backgroundColor: t.primary,
+  },
+  radioDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: t.onPrimary,
+  },
+  footnote: {
+    marginTop: 4,
+    fontFamily: t.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.textSecondary,
+  },
+  cancelLink: {
+    alignItems: "center",
+    paddingVertical: 12,
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  cancelText: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 14,
+    color: t.outline,
+  },
+});
