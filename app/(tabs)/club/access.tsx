@@ -296,14 +296,67 @@ export default function ClubAccessScreen() {
           </View>
         ) : (
           <>
+            {/* Top pill — Rejoindre by name */}
+            <View style={styles.pillPrimary} testID="club-key-name-form">
+              <Text style={styles.pillKicker}>Rejoindre</Text>
+              <Text style={styles.pillTitle}>Tu connais le nom ?</Text>
+              <Text style={styles.pillHint}>
+                Tape le nom du club. Un responsable décide — ce n’est pas un
+                catalogue public.
+              </Text>
+              <TextInput
+                style={styles.keyInput}
+                value={clubSlug}
+                onChangeText={setClubSlug}
+                placeholder="Rechercher un club…"
+                placeholderTextColor={t.outline}
+                autoCapitalize="words"
+                editable={!isSubmitting}
+                accessibilityLabel="Rechercher un club par nom"
+                testID="club-request-name-input"
+              />
+              <TextInput
+                style={[styles.keyInput, styles.messageInput]}
+                value={requestMessage}
+                onChangeText={setRequestMessage}
+                placeholder="Un mot pour te présenter (optionnel)"
+                placeholderTextColor={t.outline}
+                autoCapitalize="sentences"
+                editable={!isSubmitting}
+                testID="club-request-message-input"
+              />
+              <Pressable
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  (pressed || isSubmitting || isPendingMember) && styles.pressed,
+                ]}
+                onPress={() => void handleRequestJoin()}
+                disabled={isSubmitting || isPendingMember}
+                accessibilityRole="button"
+                accessibilityLabel="Demander à rejoindre"
+                testID="club-request-submit"
+              >
+                <Text style={styles.primaryButtonText}>
+                  {isPendingMember
+                    ? "Demande déjà en attente"
+                    : "Demander à rejoindre"}
+                </Text>
+              </Pressable>
+              <Text style={styles.footnoteInPill}>
+                Une demande n’est ni une adhésion confirmée ni une inscription
+                à une sortie.
+              </Text>
+            </View>
+
+            {/* Bottom pill — clé, or Partager when coach/admin */}
             {isCoachOrAdmin ? (
-              <View style={styles.block} testID="club-key-invite-block">
-                <Text style={styles.blockKicker}>PARTAGER</Text>
-                <Text style={styles.blockTitle}>
+              <View style={styles.pillSecondary} testID="club-key-invite-block">
+                <Text style={styles.pillKicker}>Partager</Text>
+                <Text style={styles.pillTitle}>
                   Inviter dans{" "}
                   {adminMembership?.club?.name?.trim() || "ton club"}
                 </Text>
-                <Text style={styles.blockHint}>
+                <Text style={styles.pillHint}>
                   Envoie la clé sur WhatsApp, Instagram ou en message — pas dans
                   un catalogue.
                 </Text>
@@ -395,124 +448,141 @@ export default function ClubAccessScreen() {
                 >
                   <Text style={styles.textLink}>Demandes en attente →</Text>
                 </Pressable>
-              </View>
-            ) : null}
 
-            {/* Join by name first — search at top of joiner path */}
-            <View style={styles.block} testID="club-key-name-form">
-              <Text style={styles.blockKicker}>REJOINDRE</Text>
-              <Text style={styles.blockTitle}>Tu connais le nom ?</Text>
-              <Text style={styles.blockHint}>
-                Tape le nom du club. Un responsable décide — ce n’est pas un
-                catalogue public.
-              </Text>
-              <TextInput
-                style={styles.keyInput}
-                value={clubSlug}
-                onChangeText={setClubSlug}
-                placeholder="Rechercher un club…"
-                placeholderTextColor={t.outline}
-                autoCapitalize="words"
-                editable={!isSubmitting}
-                accessibilityLabel="Rechercher un club par nom"
-                testID="club-request-name-input"
-              />
-              <TextInput
-                style={[styles.keyInput, styles.messageInput]}
-                value={requestMessage}
-                onChangeText={setRequestMessage}
-                placeholder="Un mot pour te présenter (optionnel)"
-                placeholderTextColor={t.outline}
-                autoCapitalize="sentences"
-                editable={!isSubmitting}
-                testID="club-request-message-input"
-              />
-              <Pressable
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  (pressed || isSubmitting || isPendingMember) && styles.pressed,
-                ]}
-                onPress={() => void handleRequestJoin()}
-                disabled={isSubmitting || isPendingMember}
-                accessibilityRole="button"
-                accessibilityLabel="Demander à rejoindre"
-                testID="club-request-submit"
-              >
-                <Text style={styles.primaryButtonText}>
-                  {isPendingMember
-                    ? "Demande déjà en attente"
-                    : "Demander à rejoindre"}
-                </Text>
-              </Pressable>
-              <Text style={styles.footnote}>
-                Une demande n’est ni une adhésion confirmée ni une inscription
-                à une sortie.
-              </Text>
-            </View>
-
-            <View style={styles.tertiaryBlock}>
-              <Pressable
-                onPress={() => setShowKeyEntry((v) => !v)}
-                testID="club-key-code-toggle"
-                accessibilityRole="button"
-                accessibilityState={{ expanded: showKeyEntry }}
-              >
-                <Text style={styles.tertiaryTitle}>
-                  {showKeyEntry
-                    ? "J’ai une clé"
-                    : "J’ai une clé (code ou lien) →"}
-                </Text>
-              </Pressable>
-              {showKeyEntry ? (
-                <View style={styles.knockForm} testID="club-key-join-block">
-                  <Text style={styles.knockHint}>
-                    Colle le code ou le lien qu’on t’a envoyé.
+                <Pressable
+                  onPress={() => setShowKeyEntry((v) => !v)}
+                  style={styles.keyToggleInPill}
+                  testID="club-key-code-toggle"
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: showKeyEntry }}
+                >
+                  <Text style={styles.keyToggleText}>
+                    {showKeyEntry
+                      ? "J’ai une clé"
+                      : "J’ai une clé (code ou lien) →"}
                   </Text>
-                  <TextInput
-                    style={styles.keyInput}
-                    value={keyPaste}
-                    onChangeText={setKeyPaste}
-                    placeholder="Code ou lien (grpd.run/c/…)"
-                    placeholderTextColor={t.outline}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    editable={!isSubmitting}
-                    accessibilityLabel="Code ou lien d'invitation"
-                    testID="club-invite-code-input"
-                  />
-                  <View style={styles.rowActions}>
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.ghostButton,
-                        pressed && styles.pressed,
-                      ]}
-                      onPress={() => void handlePasteFromClipboard()}
-                      testID="club-key-paste"
-                      accessibilityRole="button"
-                      accessibilityLabel="Coller depuis le presse-papiers"
-                    >
-                      <Text style={styles.ghostButtonText}>Coller</Text>
-                    </Pressable>
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.primaryButton,
-                        styles.primaryFlex,
-                        (pressed || isSubmitting) && styles.pressed,
-                      ]}
-                      onPress={() => void handleOpenDoor()}
-                      disabled={isSubmitting}
-                      accessibilityRole="button"
-                      accessibilityLabel="Ouvrir la porte"
-                      testID="club-join-by-code"
-                    >
-                      <Text style={styles.primaryButtonText}>
-                        Ouvrir la porte
-                      </Text>
-                    </Pressable>
+                </Pressable>
+                {showKeyEntry ? (
+                  <View style={styles.knockForm} testID="club-key-join-block">
+                    <Text style={styles.knockHint}>
+                      Colle le code ou le lien qu’on t’a envoyé.
+                    </Text>
+                    <TextInput
+                      style={styles.keyInput}
+                      value={keyPaste}
+                      onChangeText={setKeyPaste}
+                      placeholder="Code ou lien (grpd.run/c/…)"
+                      placeholderTextColor={t.outline}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      editable={!isSubmitting}
+                      accessibilityLabel="Code ou lien d'invitation"
+                      testID="club-invite-code-input"
+                    />
+                    <View style={styles.rowActions}>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.ghostButton,
+                          pressed && styles.pressed,
+                        ]}
+                        onPress={() => void handlePasteFromClipboard()}
+                        testID="club-key-paste"
+                        accessibilityRole="button"
+                        accessibilityLabel="Coller depuis le presse-papiers"
+                      >
+                        <Text style={styles.ghostButtonText}>Coller</Text>
+                      </Pressable>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.primaryButton,
+                          styles.primaryFlex,
+                          (pressed || isSubmitting) && styles.pressed,
+                        ]}
+                        onPress={() => void handleOpenDoor()}
+                        disabled={isSubmitting}
+                        accessibilityRole="button"
+                        accessibilityLabel="Ouvrir la porte"
+                        testID="club-join-by-code"
+                      >
+                        <Text style={styles.primaryButtonText}>
+                          Ouvrir la porte
+                        </Text>
+                      </Pressable>
+                    </View>
                   </View>
-                </View>
-              ) : null}
-            </View>
+                ) : null}
+              </View>
+            ) : (
+              <View style={styles.pillSecondary} testID="club-key-join-pill">
+                <Pressable
+                  onPress={() => setShowKeyEntry((v) => !v)}
+                  testID="club-key-code-toggle"
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: showKeyEntry }}
+                >
+                  <Text style={styles.pillKicker}>Clé</Text>
+                  <Text style={styles.pillTitle}>
+                    {showKeyEntry
+                      ? "J’ai une clé"
+                      : "J’ai une clé (code ou lien)"}
+                  </Text>
+                  {!showKeyEntry ? (
+                    <Text style={styles.pillHint}>
+                      Colle le code ou le lien qu’on t’a envoyé →
+                    </Text>
+                  ) : null}
+                </Pressable>
+                {showKeyEntry ? (
+                  <View style={styles.knockForm} testID="club-key-join-block">
+                    <Text style={styles.knockHint}>
+                      Colle le code ou le lien qu’on t’a envoyé.
+                    </Text>
+                    <TextInput
+                      style={styles.keyInput}
+                      value={keyPaste}
+                      onChangeText={setKeyPaste}
+                      placeholder="Code ou lien (grpd.run/c/…)"
+                      placeholderTextColor={t.outline}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      editable={!isSubmitting}
+                      accessibilityLabel="Code ou lien d'invitation"
+                      testID="club-invite-code-input"
+                    />
+                    <View style={styles.rowActions}>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.ghostButton,
+                          pressed && styles.pressed,
+                        ]}
+                        onPress={() => void handlePasteFromClipboard()}
+                        testID="club-key-paste"
+                        accessibilityRole="button"
+                        accessibilityLabel="Coller depuis le presse-papiers"
+                      >
+                        <Text style={styles.ghostButtonText}>Coller</Text>
+                      </Pressable>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.primaryButton,
+                          styles.primaryFlex,
+                          (pressed || isSubmitting) && styles.pressed,
+                        ]}
+                        onPress={() => void handleOpenDoor()}
+                        disabled={isSubmitting}
+                        accessibilityRole="button"
+                        accessibilityLabel="Ouvrir la porte"
+                        testID="club-join-by-code"
+                      >
+                        <Text style={styles.primaryButtonText}>
+                          Ouvrir la porte
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+            )}
 
             {/* Compat: old tests may toggle name form — keep a hidden alias */}
             <View style={{ height: 0, overflow: "hidden" }}>
@@ -592,53 +662,90 @@ const styles = StyleSheet.create({
     maxWidth: 340,
   },
   content: {
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 48,
-    gap: 8,
-  },
-  block: {
+    paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 20,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: t.surfaceContainerHigh,
+    paddingBottom: 48,
+    gap: 14,
   },
-  blockKicker: {
-    color: t.outline,
-    ...t.type.labelSm,
-    fontFamily: t.font.space.bold,
-    letterSpacing: 1.2,
-    marginBottom: 8,
+  pillPrimary: {
+    backgroundColor: t.card,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 14,
+    borderWidth: 1,
+    borderColor: "rgba(0,95,52,0.12)",
+    shadowColor: "#1A1C1D",
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
-  blockTitle: {
+  pillSecondary: {
+    backgroundColor: t.surfaceContainerLow,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 14,
+    borderWidth: 1,
+    borderColor: "rgba(190,202,190,0.45)",
+  },
+  pillKicker: {
+    color: t.primary,
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.2,
+    marginBottom: 4,
+  },
+  pillTitle: {
     color: t.text,
     fontFamily: t.font.space.bold,
-    fontSize: 20,
-    lineHeight: 26,
-    marginBottom: 6,
+    fontSize: 19,
+    lineHeight: 24,
+    letterSpacing: -0.25,
+    marginBottom: 4,
   },
-  blockHint: {
+  pillHint: {
     color: t.textSecondary,
     fontFamily: t.font.hanken.regular,
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 16,
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 14,
   },
   keyInput: {
-    backgroundColor: t.surfaceContainerLowest,
-    borderRadius: t.radiusMain,
+    backgroundColor: t.canvas,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: t.surfaceContainerHigh,
+    borderColor: "rgba(190,202,190,0.55)",
     paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingVertical: 12,
     color: t.text,
     fontSize: 16,
     fontFamily: t.font.hanken.regular,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   messageInput: {
-    minHeight: 72,
+    minHeight: 64,
     textAlignVertical: "top",
+  },
+  footnoteInPill: {
+    color: t.outline,
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: t.font.hanken.regular,
+    marginTop: 10,
+  },
+  keyToggleInPill: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(190,202,190,0.55)",
+  },
+  keyToggleText: {
+    color: t.textSecondary,
+    fontSize: 14,
+    fontFamily: t.font.space.semibold,
   },
   rowActions: {
     flexDirection: "row",
@@ -700,7 +807,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     fontFamily: t.font.hanken.regular,
-    marginTop: 12,
+    marginTop: 4,
   },
   clubPickRow: {
     flexDirection: "row",
@@ -775,7 +882,7 @@ const styles = StyleSheet.create({
     fontFamily: t.font.space.semibold,
   },
   textLinkWrap: {
-    marginTop: 14,
+    marginTop: 12,
     paddingVertical: 4,
   },
   textLink: {
@@ -783,27 +890,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: t.font.space.semibold,
   },
-  tertiaryBlock: {
-    paddingTop: 18,
-    paddingBottom: 8,
-  },
-  tertiaryTitle: {
-    color: t.textSecondary,
-    fontSize: 15,
-    fontFamily: t.font.space.semibold,
-  },
   knockForm: {
-    marginTop: 14,
+    marginTop: 12,
   },
   knockHint: {
     color: t.outline,
     fontSize: 13,
     lineHeight: 18,
     fontFamily: t.font.hanken.regular,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   createWrap: {
-    marginTop: 20,
+    marginTop: 8,
     alignItems: "center",
     paddingVertical: 8,
   },
