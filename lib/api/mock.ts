@@ -1251,8 +1251,8 @@ async function mockSearchClubs(query: string): Promise<{ clubs: Club[] }> {
     .filter((c) => {
       const name = (c.name || "").toLowerCase();
       const slug = (c.slug || "").toLowerCase();
-      const city = (c.city || "").toLowerCase();
-      return name.includes(q) || slug.includes(q) || city.includes(q);
+      // Name/slug only — not a city catalogue browse.
+      return name.includes(q) || slug.includes(q);
     })
     .slice(0, 8)
     .map((c) => ({
