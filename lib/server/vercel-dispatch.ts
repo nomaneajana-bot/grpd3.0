@@ -3,6 +3,8 @@
 
 import * as routeModule0 from "../../app/api/v1/health/route";
 import * as routeModuleAuthPinLogin from "../../app/api/v1/auth/pin/login/route";
+import * as routeModuleAuthEmailRegister from "../../app/api/v1/auth/email/register/route";
+import * as routeModuleAuthEmailLogin from "../../app/api/v1/auth/email/login/route";
 import * as routeModuleAuthLogout from "../../app/api/v1/auth/logout/route";
 import * as routeModule1 from "../../app/api/v1/clubs/route";
 import * as routeModuleMemberGroup from "../../app/api/v1/clubs/[id]/member-group/route";
@@ -59,6 +61,8 @@ function staticRoute(
 const STATIC_ROUTES: Record<string, RouteMatch> = Object.fromEntries([
   staticRoute("health", async () => routeModule0),
   staticRoute("auth/pin/login", async () => routeModuleAuthPinLogin),
+  staticRoute("auth/email/register", async () => routeModuleAuthEmailRegister),
+  staticRoute("auth/email/login", async () => routeModuleAuthEmailLogin),
   staticRoute("auth/logout", async () => routeModuleAuthLogout),
   staticRoute("clubs", async () => routeModule1),
   staticRoute("clubs/resolve", async () => routeModule2),

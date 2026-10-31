@@ -1,4 +1,4 @@
-# Stito — brief testeurs (10 places, gratuit)
+# Stito — brief testeurs (gratuit, self-serve)
 
 ## Lien
 
@@ -6,26 +6,22 @@
 
 Ouvre dans Chrome / Safari (mobile ou desktop). Pas besoin de compte Vercel.
 
-## Connexion (sans SMS)
+## Connexion (sans SMS, sans PIN fourni)
+
+Chacun crée son propre compte — tu choisis ton email et ton mot de passe. Personne ne te fournit de code.
+
+### Première fois
+
+1. Sur l’accueil → **Créer un compte**
+2. Entre un prénom/pseudo (optionnel), ton **email**, et un **mot de passe** (8+ caractères)
+3. → tu arrives dans l’app
+
+### Déjà inscrit
 
 1. Sur l’accueil → **J'ai déjà un compte**
-2. Entre ton numéro (tableau)
-3. Sur l’écran PIN, entre ton **code à 6 chiffres**
+2. Entre l’email + le mot de passe que **tu** as choisis
 
-| # | Téléphone | PIN |
-|---|-----------|-----|
-| 1 | +212 600 000 001 | 111111 |
-| 2 | +212 600 000 002 | 222222 |
-| 3 | +212 600 000 003 | 333333 |
-| 4 | +212 600 000 004 | 444444 |
-| 5 | +212 600 000 005 | 555555 |
-| 6 | +212 600 000 006 | 666666 |
-| 7 | +212 600 000 007 | 777777 |
-| 8 | +212 600 000 008 | 888888 |
-| 9 | +212 600 000 009 | 999999 |
-| 10 | +212 600 000 010 | 101010 |
-
-Ne clique pas « Commencer » pour créer un compte SMS — la beta n’envoie pas de SMS. Utilise seulement les 10 lignes ci-dessus.
+Aucun SMS. Aucun PIN admin. Gratuit.
 
 ## Club déjà prêt
 
@@ -37,7 +33,7 @@ Après login : Clubs → rejoindre avec la clé, ou Accueil pour voir la sortie.
 
 ## Parcours à tester (~10 min)
 
-1. Se connecter avec ta ligne du tableau
+1. Créer ton compte (ou te reconnecter)
 2. Rejoindre le club avec `E4840FBD` **ou** créer ton propre club
 3. Créer une sortie (Mes Sorties → `+ Créer` ou Organiser)
 4. Voir / rejoindre / quitter une sortie

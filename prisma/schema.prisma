@@ -9,9 +9,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model (from Auth.js - reference only, not managed by Prisma)
-// In Auth.js, users are typically in a separate auth schema
-// We'll reference by userId string
+// App users for email self-serve auth (connected Production).
+// Clubs/sessions still reference userId as opaque string.
+model AppUser {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  passwordHash    String
+  displayName     String?
+  profileComplete Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([email])
+  @@map("app_users")
+}
 
 model Club {
   id          String   @id @default(cuid())
