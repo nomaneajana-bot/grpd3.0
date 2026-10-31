@@ -4,10 +4,10 @@
 import { NextRequest } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { prisma } from "@/lib/server/prisma";
-import { getAuthUserId, requireAuth } from "@/lib/server/auth-helpers";
-import { hasClubPermission } from "@/lib/server/role-checks";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
+import { prisma } from "../../../../lib/server/prisma";
+import { getAuthUserId, requireAuth } from "../../../../lib/server/auth-helpers";
+import { hasClubPermission } from "../../../../lib/server/role-checks";
+import { jsonOk, jsonError } from "../../../../lib/server/api-response";
 
 const paceGroupSchema = z.object({
   id: z.string().min(1),

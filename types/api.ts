@@ -40,7 +40,21 @@ export type TokenBundle = {
 export type AuthUser = {
   id: string;
   phone: string;
+  email?: string | null;
+  name?: string | null;
   profileComplete: boolean;
+};
+
+export type EmailAuthInput = {
+  email: string;
+  password: string;
+  displayName?: string;
+  deviceId?: string;
+};
+
+export type EmailAuthResult = {
+  user: AuthUser;
+  tokens: TokenBundle;
 };
 
 export type OtpVerifyInput = {

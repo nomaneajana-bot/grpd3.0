@@ -21,6 +21,8 @@ import type {
   ClubRosterResult,
   DeviceRegistrationInput,
   DeviceRegistrationResult,
+  EmailAuthInput,
+  EmailAuthResult,
   LogoutInput,
   LogoutResult,
   MySessionsResult,
@@ -175,6 +177,11 @@ function makeInviteCode(slug: string): string {
   const code = `${base || 'CLUB'}${suffix}`;
   return code.slice(0, 8);
 }
+
+/** Email + password accounts for local/demo self-serve auth. */
+const MOCK_EMAIL_PASSWORDS_KEY = 'mock:email_passwords_v1';
+
+type MockEmailPasswordMap = Record<string, string>;
 
 /** One-time invite tickets — burned after a successful join. */
 const MOCK_INVITE_TICKETS_KEY = 'mock:club_invite_tickets_v1';
@@ -701,6 +708,81 @@ async function mockPinLogin(input: PinLoginInput): Promise<PinAuthResult> {
     await ensureSeedClub();
     await ensureDemoRunnerProfile();
     await normalizeDemoJoinedSessionsGroup();
+  }
+  return {
+    user,
+    tokens: createTokens(),
+  };
+}
+
+function normalizeMockEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+async function readEmailPasswords(): Promise<MockEmailPasswordMap> {
+  return await readJson<MockEmailPasswordMap>(MOCK_EMAIL_PASSWORDS_KEY, {});
+}
+
+async function writeEmailPasswords(value: MockEmailPasswordMap): Promise<void> {
+  await writeJson(MOCK_EMAIL_PASSWORDS_KEY, value);
+}
+
+async function getOrCreateEmailUser(
+  email: string,
+  displayName?: string,
+): Promise<AuthUser> {
+  const users = await readJson<MockUserMap>(MOCK_USERS_KEY, {});
+  const existing = Object.values(users).find(
+    (u) => (u.email ?? "").toLowerCase() === email,
+  );
+  if (existing) return existing;
+  const user: AuthUser = {
+    id: randomId('user'),
+    phone: "",
+    email,
+    name: displayName?.trim() || email.split("@")[0] || "Runner",
+    profileComplete: true,
+  };
+  users[email] = user;
+  await writeJson(MOCK_USERS_KEY, users);
+  return user;
+}
+
+async function mockEmailRegister(
+  input: EmailAuthInput,
+): Promise<EmailAuthResult> {
+  const email = normalizeMockEmail(input.email);
+  if (!email.includes("@") || !email.includes(".")) {
+    throw new ApiError(400, "Email invalide");
+  }
+  if (!input.password || input.password.length < 8) {
+    throw new ApiError(400, "Mot de passe trop court (8+ caractères)");
+  }
+  const passwords = await readEmailPasswords();
+  if (passwords[email]) {
+    throw new ApiError(409, "Un compte existe déjà avec cet email");
+  }
+  passwords[email] = input.password;
+  await writeEmailPasswords(passwords);
+  const user = await getOrCreateEmailUser(email, input.displayName);
+  if (DEMO_MODE) {
+    await ensureDemoWorld();
+  }
+  return {
+    user,
+    tokens: createTokens(),
+  };
+}
+
+async function mockEmailLogin(input: EmailAuthInput): Promise<EmailAuthResult> {
+  const email = normalizeMockEmail(input.email);
+  const passwords = await readEmailPasswords();
+  if (!passwords[email] || passwords[email] !== input.password) {
+    throw new ApiError(401, "Email ou mot de passe incorrect");
+  }
+  const user = await getOrCreateEmailUser(email, input.displayName);
+  if (DEMO_MODE) {
+    await ensureDemoWorld();
   }
   return {
     user,
@@ -1755,6 +1837,12 @@ export async function mockApiRequest<T>(
   }
   if (path === '/api/v1/auth/pin/login' && method === 'POST') {
     return (await mockPinLogin(body as PinLoginInput)) as T;
+  }
+  if (path === '/api/v1/auth/email/register' && method === 'POST') {
+    return (await mockEmailRegister(body as EmailAuthInput)) as T;
+  }
+  if (path === '/api/v1/auth/email/login' && method === 'POST') {
+    return (await mockEmailLogin(body as EmailAuthInput)) as T;
   }
   if (path === '/api/v1/auth/token/refresh' && method === 'POST') {
     return (await mockRefresh(body as RefreshInput)) as T;

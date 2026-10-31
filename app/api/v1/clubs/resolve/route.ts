@@ -2,8 +2,8 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
+import { prisma } from "../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../lib/server/api-response";
 
 const bodySchema = z
   .object({

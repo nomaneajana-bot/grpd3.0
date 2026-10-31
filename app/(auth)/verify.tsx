@@ -207,7 +207,11 @@ export default function VerifyScreen() {
         <OnboardingTitle
           variant="auth"
           kicker="CONNEXION"
-          title="Code reçu ?"
+          title={
+            !useMock && !otpPending
+              ? "Ton code PIN ?"
+              : "Code reçu ?"
+          }
           subtitle={
             useMock ? (
               <>
@@ -215,10 +219,16 @@ export default function VerifyScreen() {
                 <Text style={styles.phoneBold}>{phoneDisplay}</Text>
                 {otpPending ? "" : " (code PIN si le compte existe)."}
               </>
-            ) : (
+            ) : otpPending ? (
               <>
                 On a envoyé un code à{" "}
                 <Text style={styles.phoneBold}>{phoneDisplay}</Text>
+              </>
+            ) : (
+              <>
+                Entre le PIN à 6 chiffres pour{" "}
+                <Text style={styles.phoneBold}>{phoneDisplay}</Text>
+                {" — aucun SMS pour cette beta."}
               </>
             )
           }
@@ -227,12 +237,16 @@ export default function VerifyScreen() {
           <Text style={styles.modeHint} testID="verify-mode-hint">
             {modeHint}
           </Text>
+        ) : !useMock && !otpPending ? (
+          <Text style={styles.modeHint} testID="verify-mode-hint">
+            Beta test · PIN uniquement
+          </Text>
         ) : null}
         <OtpCodeInput
           value={code}
           onChange={setCode}
           onComplete={(c) => void handleVerify(c)}
-          resendSlot={resendSlot}
+          resendSlot={!useMock && !otpPending ? null : resendSlot}
         />
         {error ? (
           <Text style={styles.error} testID="verify-error">

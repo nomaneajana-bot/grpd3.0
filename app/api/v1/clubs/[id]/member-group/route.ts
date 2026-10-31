@@ -3,11 +3,11 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
-import { jsonError, jsonOk } from "@/lib/server/api-response";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { prisma } from "@/lib/server/prisma";
-import { requireClubPermission } from "@/lib/server/role-checks";
-import { clubIdParamSchema } from "@/lib/server/validators";
+import { jsonError, jsonOk } from "../../../../../../lib/server/api-response";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { requireClubPermission } from "../../../../../../lib/server/role-checks";
+import { clubIdParamSchema } from "../../../../../../lib/server/validators";
 
 /**
  * Legacy pace groups A–D, or opt-in color-group ids (`g_…`).

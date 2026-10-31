@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CancelParticipationModal } from "@/components/mesSorties/CancelParticipationModal";
 import { stitoTheme as t } from "@/constants/stitoTheme";
 import { createApiClient, getMySessions, leaveSession } from "@/lib/api";
+import { resolveApiTransport } from "@/lib/api/mode";
+import { DEMO_MODE } from "@/lib/featureFlags";
 import {
   getJoinedSessions,
   removeJoinedSession,
@@ -147,7 +149,11 @@ export default function MySessionsScreen() {
     if (refresh) setRefreshing(true);
     else setLoading(true);
     try {
-      let sessions: SessionData[] = await getAllSessionsIncludingStored();
+      const transport = await resolveApiTransport();
+      const useLocalCatalog = DEMO_MODE || transport.useMock;
+      let sessions: SessionData[] = useLocalCatalog
+        ? await getAllSessionsIncludingStored()
+        : [];
       try {
         const client = createApiClient();
         const apiResult = await getMySessions(client);

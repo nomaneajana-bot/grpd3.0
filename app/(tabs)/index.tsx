@@ -22,6 +22,7 @@ import { OrganiseAction } from "@/components/home/OrganiseAction";
 import { OutingRow } from "@/components/home/OutingRow";
 import { homeTheme as h } from "@/constants/homeTheme";
 import { createApiClient, getMyMemberships, listSessions } from "@/lib/api";
+import { resolveApiTransport } from "@/lib/api/mode";
 import {
   countApprovedClubs,
   countCompletedOutings,
@@ -35,6 +36,7 @@ import {
   toLocalDateISO,
   type HomeActivityFilter,
 } from "@/lib/homeViewModel";
+import { DEMO_MODE } from "@/lib/featureFlags";
 import { getJoinedSessions } from "@/lib/joinedSessionsStore";
 import { setMesSortiesBadgeCount } from "@/lib/mesSortiesBadge";
 import {
@@ -68,10 +70,17 @@ export default function HomeScreen() {
     const now = new Date();
     const from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const client = createApiClient();
+    const transport = await resolveApiTransport();
+    // Connected Production must not merge the local demo catalog (Youssef, etc.).
+    const useLocalCatalog = DEMO_MODE || transport.useMock;
     const results = await Promise.allSettled([
       listSessions(client, { from }),
-      getUserSessions().catch(async () => getAllSessionsIncludingStored()),
-      getAllSessionsIncludingStored(),
+      useLocalCatalog
+        ? getUserSessions().catch(async () => getAllSessionsIncludingStored())
+        : Promise.resolve([] as SessionData[]),
+      useLocalCatalog
+        ? getAllSessionsIncludingStored()
+        : Promise.resolve([] as SessionData[]),
       getJoinedSessions(),
       getMyMemberships(client),
     ]);
@@ -80,8 +89,12 @@ export default function HomeScreen() {
     const absorb = (list: SessionData[]) => {
       list.forEach((s) => merged.set(s.id, s));
     };
-    if (results[2].status === "fulfilled") absorb(results[2].value);
-    if (results[1].status === "fulfilled") absorb(results[1].value);
+    if (useLocalCatalog && results[2].status === "fulfilled") {
+      absorb(results[2].value);
+    }
+    if (useLocalCatalog && results[1].status === "fulfilled") {
+      absorb(results[1].value);
+    }
     if (results[0].status === "fulfilled") {
       absorb(
         (results[0].value.sessions ?? []).map(apiSessionToSessionData),

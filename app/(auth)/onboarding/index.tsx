@@ -14,10 +14,10 @@ export default function OnboardingWelcomeScreen() {
       ctaVariant="welcome"
       background={<WelcomeBackground />}
       paddingHorizontal={welcomeTheme.screenPaddingHorizontal}
-      primaryLabel="Commencer"
-      onPrimaryPress={() => router.push("/(auth)/onboarding/phone" as Href)}
+      primaryLabel="Créer un compte"
+      onPrimaryPress={() => router.push("/(auth)/email-signup" as Href)}
       secondaryLabel="J'ai déjà un compte"
-      onSecondaryPress={() => router.push("/(auth)/phone" as Href)}
+      onSecondaryPress={() => router.push("/(auth)/email" as Href)}
     >
       <View style={styles.content}>
         <View style={styles.top}>

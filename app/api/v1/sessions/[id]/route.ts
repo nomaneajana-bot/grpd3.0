@@ -1,11 +1,11 @@
 // GET /api/v1/sessions/:id – session detail
 
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { getAuthUserId } from "@/lib/server/auth-helpers";
-import { requireClubPermission } from "@/lib/server/role-checks";
-import { sessionIdParamSchema } from "@/lib/server/validators";
+import { prisma } from "../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../lib/server/api-response";
+import { getAuthUserId } from "../../../../../lib/server/auth-helpers";
+import { requireClubPermission } from "../../../../../lib/server/role-checks";
+import { sessionIdParamSchema } from "../../../../../lib/server/validators";
 
 function serializeSession(session: {
   id: string;

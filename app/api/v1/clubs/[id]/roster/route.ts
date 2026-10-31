@@ -1,11 +1,11 @@
 // GET /api/v1/clubs/:id/roster – list members (for coach/admin)
 
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { requireClubPermission } from "@/lib/server/role-checks";
-import { clubIdParamSchema } from "@/lib/server/validators";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { requireClubPermission } from "../../../../../../lib/server/role-checks";
+import { clubIdParamSchema } from "../../../../../../lib/server/validators";
 
 export async function GET(
   req: NextRequest,

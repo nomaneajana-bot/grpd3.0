@@ -1,11 +1,11 @@
 // POST /api/v1/clubs/:id/cancel-request – cancel own pending join request
 
 import { NextRequest } from "next/server";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { clubIdParamSchema } from "@/lib/server/validators";
-import { cancelPendingClubRequestForUserTx } from "@/lib/server/clubMembershipLifecycle";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { clubIdParamSchema } from "../../../../../../lib/server/validators";
+import { cancelPendingClubRequestForUserTx } from "../../../../../../lib/server/clubMembershipLifecycle";
 
 export async function POST(
   req: NextRequest,
