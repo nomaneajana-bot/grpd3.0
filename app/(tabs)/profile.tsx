@@ -20,16 +20,18 @@ import { ScreenContainer } from "../../components/ui/ScreenContainer";
 import { stitoTheme as t } from "../../constants/stitoTheme";
 import { createApiClient, getMyMemberships } from "../../lib/api";
 import { getAuthUser } from "../../lib/authStore";
+import { displayInitial, resolveDisplayName } from "../../lib/displayName";
 import { formatPhoneDisplay } from "../../lib/phoneFormat";
 import {
   getProfileSnapshot,
+  seedRunnerProfileFromAuth,
   type RunnerProfile,
 } from "../../lib/profileStore";
 import {
   getSettingsPreferences,
   type SettingsPreferences,
 } from "../../lib/settingsPreferencesStore";
-import type { ClubMembership } from "../../types/api";
+import type { AuthUser, ClubMembership } from "../../types/api";
 
 const LANGUAGE_LABELS: Record<SettingsPreferences["language"], string> = {
   fr: "Français",
@@ -47,6 +49,7 @@ const UNITS_LABELS: Record<SettingsPreferences["units"], string> = {
  */
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
   const [prefs, setPrefs] = useState<SettingsPreferences | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,9 +64,12 @@ export default function ProfileScreen() {
       setProfile(snapshot.profile);
 
       try {
-        const authUser = await getAuthUser();
-        if (authUser?.phone) {
-          setPhoneNumber(authUser.phone);
+        const user = await getAuthUser();
+        setAuthUser(user);
+        if (user?.phone) {
+          setPhoneNumber(user.phone);
+        } else {
+          setPhoneNumber(null);
         }
       } catch (error) {
         console.warn("Failed to load phone number:", error);
@@ -92,9 +98,8 @@ export default function ProfileScreen() {
     }, [loadProfile]),
   );
 
-  const profileName =
-    profile?.firstName?.trim() || profile?.name?.trim() || "Coureur";
-  const profileInitial = profileName.charAt(0).toUpperCase();
+  const profileName = resolveDisplayName({ profile, authUser });
+  const profileInitial = displayInitial(profileName);
 
   /** City only from real club membership — never invent a home city. */
   const cityLabel = useMemo(() => {
@@ -108,8 +113,9 @@ export default function ProfileScreen() {
     const parts: string[] = [];
     if (cityLabel) parts.push(cityLabel);
     if (phoneNumber) parts.push(formatPhoneDisplay(phoneNumber));
+    else if (authUser?.email) parts.push(authUser.email);
     return parts.join(" · ");
-  }, [cityLabel, phoneNumber]);
+  }, [cityLabel, phoneNumber, authUser?.email]);
 
   const handleSettings = () => {
     router.push("/profile/settings");

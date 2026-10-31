@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
-import { router, Stack } from "expo-router";
+import { router, Stack, type Href } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -30,6 +30,7 @@ import {
 import { clearAuthData, getAuthUser } from "@/lib/authStore";
 import { getClubAdminSettings } from "@/lib/clubAdminStore";
 import { confirmAction } from "@/lib/confirmAction";
+import { displayInitial, resolveDisplayName } from "@/lib/displayName";
 import { DEMO_MODE } from "@/lib/featureFlags";
 import { interGroupModeLabel } from "@/lib/interGroupPolicy";
 import { formatPhoneDisplay } from "@/lib/phoneFormat";
@@ -46,7 +47,7 @@ import {
   type NotificationPreferences,
   type SettingsPreferences,
 } from "@/lib/settingsPreferencesStore";
-import type { ClubMembership, PrSummary } from "@/types/api";
+import type { AuthUser, ClubMembership, PrSummary } from "@/types/api";
 
 const LANGUAGE_LABELS: Record<SettingsPreferences["language"], string> = {
   fr: "Français",
@@ -63,6 +64,7 @@ export default function SettingsScreen() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [sharePrsWithCoach, setSharePrsWithCoach] = useState(true);
   const [shareStatsWithClub, setShareStatsWithClub] = useState(false);
@@ -118,14 +120,17 @@ export default function SettingsScreen() {
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [runner, prefs, authUser] = await Promise.all([
+      const [runner, prefs, user] = await Promise.all([
         getRunnerProfile(),
         getSettingsPreferences(),
         getAuthUser(),
       ]);
 
-      if (authUser?.phone) {
-        setPhoneNumber(authUser.phone);
+      setAuthUser(user);
+      if (user?.phone) {
+        setPhoneNumber(user.phone);
+      } else {
+        setPhoneNumber(null);
       }
 
       if (runner) {
@@ -183,9 +188,8 @@ export default function SettingsScreen() {
     memberships.find((m) => m.status === "approved") ?? memberships[0] ?? null;
   const clubName = primaryMembership?.club?.name ?? "ton club";
 
-  const profileName =
-    profile?.firstName?.trim() || profile?.name?.trim() || "Coureur";
-  const profileInitial = profileName.charAt(0).toUpperCase();
+  const profileName = resolveDisplayName({ profile, authUser });
+  const profileInitial = displayInitial(profileName);
 
   const appVersion =
     Constants.expoConfig?.version ??
@@ -306,7 +310,7 @@ export default function SettingsScreen() {
       if (outcome.server === "failed") {
         Alert.alert("Déconnexion", outcome.userMessage);
       }
-      router.replace("/(auth)/phone");
+      router.replace("/(auth)/onboarding" as Href);
     } catch (error) {
       console.warn("Logout failed:", error);
       // Last-resort local clear if orchestration threw mid-flight.
@@ -319,7 +323,7 @@ export default function SettingsScreen() {
         "Déconnexion",
         "Session effacée sur cet appareil. La révocation serveur n'a pas pu être confirmée.",
       );
-      router.replace("/(auth)/phone");
+      router.replace("/(auth)/onboarding" as Href);
     } finally {
       setIsLoggingOut(false);
     }
@@ -340,7 +344,7 @@ export default function SettingsScreen() {
       await resetDemoData();
       await clearAuthData();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/(auth)/phone");
+      router.replace("/(auth)/onboarding" as Href);
     } catch (error) {
       console.warn("Reset demo failed:", error);
       Alert.alert("Erreur", "Impossible de réinitialiser la démo.");
@@ -383,13 +387,21 @@ export default function SettingsScreen() {
       >
         <SettingsSectionLabel>COMPTE</SettingsSectionLabel>
         <SettingsGroup>
-          <SettingsNavRow
-            title="Téléphone"
-            value={
-              phoneNumber ? formatPhoneDisplay(phoneNumber) : "—"
-            }
-            showChevron={false}
-          />
+          {authUser?.email ? (
+            <SettingsNavRow
+              title="Email"
+              value={authUser.email}
+              showChevron={false}
+            />
+          ) : (
+            <SettingsNavRow
+              title="Téléphone"
+              value={
+                phoneNumber ? formatPhoneDisplay(phoneNumber) : "—"
+              }
+              showChevron={false}
+            />
+          )}
           {/* Photo upload unsupported in MVP — display-only, not interactive */}
           <SettingsNavRow
             title="Photo de profil"

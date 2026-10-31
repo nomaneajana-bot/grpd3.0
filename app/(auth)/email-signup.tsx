@@ -9,6 +9,7 @@ import { authTheme } from "@/constants/authTheme";
 import { colors, typography } from "@/constants/ui";
 import { ApiError, createApiClient, registerWithEmail } from "@/lib/api";
 import { getOrCreateDeviceId, storeAuthData } from "@/lib/authStore";
+import { seedRunnerProfileFromAuth } from "@/lib/profileStore";
 
 export default function EmailSignupScreen() {
   const [email, setEmail] = useState("");
@@ -37,6 +38,10 @@ export default function EmailSignupScreen() {
         tokens: result.tokens,
         user: result.user,
         deviceId,
+      });
+      await seedRunnerProfileFromAuth({
+        name: result.user.name ?? (name.trim() || null),
+        email: result.user.email ?? email.trim(),
       });
       router.replace("/(tabs)" as Href);
     } catch (err: unknown) {

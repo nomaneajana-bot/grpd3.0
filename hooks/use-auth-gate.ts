@@ -44,6 +44,8 @@ function isAuthFlowRoute(path: string): boolean {
   if (!path) return false;
   return (
     path.includes("/onboarding") ||
+    path.includes("/email-signup") ||
+    path.includes("/email") ||
     path.includes("/phone") ||
     path.includes("/verify") ||
     path.startsWith("/(auth)")
@@ -54,7 +56,8 @@ function unauthLandingHref(path: string): Href {
   if (DEMO_MODE && (path === "/" || path === "" || path === "/demo")) {
     return "/demo" as Href;
   }
-  return (ONBOARDING_V2 ? "/(auth)/onboarding" : "/(auth)/phone") as Href;
+  // Self-serve email entry is the default unauth landing (PIN/phone is legacy).
+  return (ONBOARDING_V2 ? "/(auth)/onboarding" : "/(auth)/email") as Href;
 }
 
 /**
