@@ -123,6 +123,44 @@ export async function saveRunnerProfile(profile: RunnerProfile): Promise<void> {
   }
 }
 
+/** Drop local runner identity (logout / account switch). */
+export async function clearRunnerProfile(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(PROFILE_KEY);
+  } catch (error) {
+    console.warn("PROFILE_STORE_CLEAR_PROFILE_ERROR", error);
+  }
+}
+
+/**
+ * After email signup/login, persist the chosen display name so Profile/Accueil
+ * do not fall back to the phone-era "Coureur" placeholder.
+ */
+export async function seedRunnerProfileFromAuth(params: {
+  name?: string | null;
+  email?: string | null;
+}): Promise<RunnerProfile> {
+  const fromName = params.name?.trim() || "";
+  const fromEmail = params.email?.includes("@")
+    ? params.email.split("@")[0]?.trim() || ""
+    : "";
+  const display = fromName || fromEmail || "Coureur";
+
+  const existing = await getRunnerProfile();
+  const next: RunnerProfile = {
+    ...(existing ?? {
+      name: display,
+      vo2max: null,
+      weightKg: null,
+      mainGoal: "10k",
+    }),
+    name: display,
+    firstName: display,
+  };
+  await saveRunnerProfile(next);
+  return next;
+}
+
 // ---- Reference paces ----
 
 export async function getReferencePaces(): Promise<ReferencePaces | null> {

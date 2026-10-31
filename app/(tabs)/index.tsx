@@ -36,9 +36,12 @@ import {
   toLocalDateISO,
   type HomeActivityFilter,
 } from "@/lib/homeViewModel";
+import { getAuthUser } from "@/lib/authStore";
+import { displayInitial, resolveDisplayName } from "@/lib/displayName";
 import { DEMO_MODE } from "@/lib/featureFlags";
 import { getJoinedSessions } from "@/lib/joinedSessionsStore";
 import { setMesSortiesBadgeCount } from "@/lib/mesSortiesBadge";
+import { getRunnerProfile } from "@/lib/profileStore";
 import {
   apiSessionToSessionData,
   getAllSessionsIncludingStored,
@@ -64,6 +67,7 @@ export default function HomeScreen() {
   const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [profileInitial, setProfileInitial] = useState("?");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -73,6 +77,17 @@ export default function HomeScreen() {
     const transport = await resolveApiTransport();
     // Connected Production must not merge the local demo catalog (Youssef, etc.).
     const useLocalCatalog = DEMO_MODE || transport.useMock;
+    try {
+      const [authUser, runner] = await Promise.all([
+        getAuthUser(),
+        getRunnerProfile(),
+      ]);
+      setProfileInitial(
+        displayInitial(resolveDisplayName({ profile: runner, authUser })),
+      );
+    } catch {
+      setProfileInitial("?");
+    }
     const results = await Promise.allSettled([
       listSessions(client, { from }),
       useLocalCatalog
@@ -221,7 +236,7 @@ export default function HomeScreen() {
             onQueryChange={setQuery}
             onCityPress={() => {}}
             onCitySelect={(city) => setQuery(city)}
-            profileInitial="Y"
+            profileInitial={profileInitial}
           />
 
           {mode === "new_member" && !nextOuting ? (

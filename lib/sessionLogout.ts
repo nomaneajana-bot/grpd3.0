@@ -23,6 +23,7 @@ import { DEMO_MODE } from "@/lib/featureFlags";
 import { setFocusedClubId } from "@/lib/focusedClubStore";
 import { clearLoginOtpRequest, clearLoginPhone } from "@/lib/loginFlowStore";
 import { clearOnboardingState } from "@/lib/onboardingStore";
+import { clearRunnerProfile } from "@/lib/profileStore";
 import { resolveApiTransport } from "@/lib/api/mode";
 
 export type LogoutOutcome = {
@@ -56,6 +57,11 @@ async function clearUserLocalCaches(): Promise<void> {
   }
   try {
     await clearOnboardingState();
+  } catch {
+    /* ignore */
+  }
+  try {
+    await clearRunnerProfile();
   } catch {
     /* ignore */
   }
