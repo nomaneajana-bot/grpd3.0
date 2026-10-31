@@ -34,6 +34,11 @@ export default function OnboardingPhoneScreen() {
   }, [simMode]);
 
   const handleContinue = async () => {
+    // Connected beta: no SMS signup — send people to PIN login.
+    if (!DEMO_MODE && !isDemoPhoneDigits(digits.replace(/\D/g, ""))) {
+      router.replace("/(auth)/phone" as Href);
+      return;
+    }
     const local = digits.replace(/\D/g, "");
     if (local.length < 9) {
       setError("Entre un numéro valide.");
@@ -48,24 +53,40 @@ export default function OnboardingPhoneScreen() {
     router.push("/(auth)/onboarding/verify" as Href);
   };
 
+  const pinBeta = !DEMO_MODE;
+
   return (
     <OnboardingScreen
-      primaryLabel={simMode ? "Continuer (simulation)" : "Recevoir le code"}
+      primaryLabel={
+        pinBeta
+          ? "J'ai déjà un compte (PIN)"
+          : simMode
+            ? "Continuer (simulation)"
+            : "Recevoir le code"
+      }
       onPrimaryPress={() => void handleContinue()}
-      primaryDisabled={digits.length < 9}
+      primaryDisabled={pinBeta ? false : digits.length < 9}
     >
       <OnboardingTitle
         title="Ton numéro"
         subtitle={
-          simMode
-            ? "Mode simulation — aucun SMS n’est envoyé. Entre le code indiqué ci-dessous à l’étape suivante."
-            : "On t’envoie un code pour vérifier. C’est gratuit et tu peux le changer plus tard."
+          pinBeta
+            ? "Cette beta n’envoie pas de SMS. Utilise « J'ai déjà un compte » avec le PIN fourni."
+            : simMode
+              ? "Mode simulation — aucun SMS n’est envoyé. Entre le code indiqué ci-dessous à l’étape suivante."
+              : "On t’envoie un code pour vérifier. C’est gratuit et tu peux le changer plus tard."
         }
       />
-      <CountryPhoneInput value={digits} onChange={setDigits} />
+      {pinBeta ? null : (
+        <CountryPhoneInput value={digits} onChange={setDigits} />
+      )}
       {modeHint ? (
         <Text style={styles.modeHint} testID="onboarding-phone-sim-hint">
           {modeHint}
+        </Text>
+      ) : pinBeta ? (
+        <Text style={styles.modeHint} testID="onboarding-phone-sim-hint">
+          Beta test · 10 comptes PIN — pas d’inscription SMS
         </Text>
       ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
