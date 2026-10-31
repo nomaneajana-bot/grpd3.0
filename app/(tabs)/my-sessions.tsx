@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CancelParticipationModal } from "@/components/mesSorties/CancelParticipationModal";
 import { stitoTheme as t } from "@/constants/stitoTheme";
 import { createApiClient, getMySessions, leaveSession } from "@/lib/api";
+import { resolveApiTransport } from "@/lib/api/mode";
+import { DEMO_MODE } from "@/lib/featureFlags";
 import {
   getJoinedSessions,
   removeJoinedSession,
