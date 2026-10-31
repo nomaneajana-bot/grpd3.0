@@ -31,7 +31,7 @@ Ne clique pas « Commencer » pour créer un compte SMS — la beta n’envoie p
 
 - Club : **Club Testeurs Stito** (Casablanca)
 - Clé d’accès : **`E4840FBD`**
-- Sortie publique seed : **Sortie découverte Corniche** (Corniche Ain Diab)
+- Sortie publique seed (aujourd’hui) : **Sortie testeurs — Corniche** (Corniche Ain Diab, 18:00)
 
 Après login : Clubs → rejoindre avec la clé, ou Accueil pour voir la sortie.
 
