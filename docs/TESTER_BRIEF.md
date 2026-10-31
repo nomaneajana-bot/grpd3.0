@@ -2,11 +2,15 @@
 
 ## Lien
 
-**https://grpd30.vercel.app** — partagez uniquement ce lien (Production, sans SSO Vercel).
+**https://grpd30.vercel.app**
+
+Ouvre dans Chrome / Safari (mobile ou desktop). Pas besoin de compte Vercel.
 
 ## Connexion (sans SMS)
 
-L’OTP SMS n’est pas activé. Utilisez le **code PIN** à 6 chiffres sur l’écran de vérification (même champ que le code).
+1. Sur l’accueil → **J'ai déjà un compte**
+2. Entre ton numéro (tableau)
+3. Sur l’écran PIN, entre ton **code à 6 chiffres**
 
 | # | Téléphone | PIN |
 |---|-----------|-----|
@@ -21,17 +25,26 @@ L’OTP SMS n’est pas activé. Utilisez le **code PIN** à 6 chiffres sur l’
 | 9 | +212 600 000 009 | 999999 |
 | 10 | +212 600 000 010 | 101010 |
 
-Astuce : après avoir saisi le téléphone, si l’app dit qu’aucun SMS n’est parti, entrez quand même le PIN — le backend PIN-only l’accepte.
+Ne clique pas « Commencer » pour créer un compte SMS — la beta n’envoie pas de SMS. Utilise seulement les 10 lignes ci-dessus.
+
+## Club déjà prêt
+
+- Club : **Club Testeurs Stito** (Casablanca)
+- Clé d’accès : **`E4840FBD`**
+- Sortie publique seed : **Sortie découverte Corniche** (Corniche Ain Diab)
+
+Après login : Clubs → rejoindre avec la clé, ou Accueil pour voir la sortie.
 
 ## Parcours à tester (~10 min)
 
-1. Se connecter avec votre ligne du tableau
-2. Créer un club **ou** rejoindre via une clé partagée par un autre testeur
-3. Créer une sortie, la voir sur Accueil, rejoindre / quitter
-4. Mes Sorties → `+ Créer` ; partager une sortie (bouton share)
-5. Signaler bugs avec : appareil / navigateur + capture + étape
+1. Se connecter avec ta ligne du tableau
+2. Rejoindre le club avec `E4840FBD` **ou** créer ton propre club
+3. Créer une sortie (Mes Sorties → `+ Créer` ou Organiser)
+4. Voir / rejoindre / quitter une sortie
+5. Partager une sortie (bouton share)
+6. Signaler bugs : navigateur + capture + étape
 
-## Hors scope (pour l’instant)
+## Hors scope
 
 - Vrais SMS / OTP payants
 - Push notifications

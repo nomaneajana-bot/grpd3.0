@@ -112,13 +112,17 @@ export default function PhoneScreen() {
           subtitle={
             useMockTransport
               ? "Un code de confirmation sera préparé pour ce numéro (aucun SMS réel en mock/démo)."
-              : "On t'envoie un code pour confirmer que c'est bien toi."
+              : "Pas de SMS pour cette beta : entre ton numéro, puis ton code PIN à 6 chiffres."
           }
         />
         <CountryPhoneInput value={digits} onChange={setDigits} />
         {modeHint ? (
           <Text style={styles.modeHint} testID="login-mode-hint">
             {modeHint}
+          </Text>
+        ) : !DEMO_MODE ? (
+          <Text style={styles.modeHint} testID="login-mode-hint">
+            Beta test · connexion par PIN (aucun SMS)
           </Text>
         ) : null}
         {deviceRecognized ? <ReturningDeviceBanner /> : null}
