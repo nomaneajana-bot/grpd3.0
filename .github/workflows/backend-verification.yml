@@ -38,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: |
           mkdir -p d02-ci-results
-          npm ci --no-audit --no-fund
+          npm ci --legacy-peer-deps --no-audit --no-fund
       - name: Generate Prisma client and migrate disposable database
         run: |
           npx prisma generate 2>&1 | tee d02-ci-results/prisma-generate.txt
