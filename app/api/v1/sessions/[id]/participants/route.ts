@@ -12,7 +12,9 @@ type GroupId = (typeof VALID_GROUP_IDS)[number] | null;
 
 function normalizeGroupId(value: string | null): GroupId {
   if (value == null) return null;
-  return VALID_GROUP_IDS.includes(value as GroupId) ? (value as GroupId) : null;
+  return (VALID_GROUP_IDS as readonly string[]).includes(value)
+    ? (value as (typeof VALID_GROUP_IDS)[number])
+    : null;
 }
 
 export async function GET(
@@ -37,7 +39,7 @@ export async function GET(
     if (!session) return jsonError("Session not found", "NOT_FOUND", 404);
 
     if (session.visibility === "members") {
-      const userId = requireAuth(req);
+      const userId = await requireAuth(req);
       if (!session.clubId) {
         return jsonError("Forbidden", "FORBIDDEN", 403);
       }

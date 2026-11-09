@@ -19,7 +19,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const coachId = requireAuth(req);
+    const coachId = await requireAuth(req);
     const params = await context.params;
     const parsedParams = sessionIdParamSchema.safeParse(params);
     if (!parsedParams.success) {

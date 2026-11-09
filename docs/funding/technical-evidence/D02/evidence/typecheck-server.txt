@@ -1,0 +1,4 @@
+
+> grpd3.0@1.0.0 typecheck:server
+> tsc -p tsconfig.server.json --noEmit
+

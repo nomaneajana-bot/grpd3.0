@@ -1,0 +1,11 @@
+{
+  "healthOk": true,
+  "registerOk": true,
+  "unauthRejected": true,
+  "createClubOk": true,
+  "inviteOk": true,
+  "joinOk": true,
+  "memberRosterForbidden": true,
+  "adminRosterOk": true
+}
+Wrote /agent/repos/grpd3.0/docs/funding/technical-evidence/D02/evidence/functional-captures.json

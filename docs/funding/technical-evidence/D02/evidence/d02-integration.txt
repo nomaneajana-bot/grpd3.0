@@ -1,0 +1,12 @@
+
+> grpd3.0@1.0.0 test:d02
+> jest --runInBand --config jest.d02.config.js --ci
+
+PASS lib/server/__tests__/d02-auth-api.d02.test.ts
+PASS lib/server/__tests__/app-jwt.d02.test.ts
+
+Test Suites: 2 passed, 2 total
+Tests:       11 passed, 11 total
+Snapshots:   0 total
+Time:        2.236 s, estimated 3 s
+Ran all test suites.
