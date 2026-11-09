@@ -5,7 +5,7 @@ Upload-ready materials for incubation funding deliverable **D02 — Backend, RES
 ## Verified tip
 
 - **Git branch:** `cursor/d02-backend-cicd-38d2`
-- **Commit:** filled after push (see `git rev-parse HEAD` on this branch)
+- **Commit:** `4a09e47b8d53a0e5be454567bd0cd883ac066190`
 - **Base:** `main` @ `b8a04b1`
 - **Production deploy:** **not** changed (still the pre-existing email-auth production tip)
 
