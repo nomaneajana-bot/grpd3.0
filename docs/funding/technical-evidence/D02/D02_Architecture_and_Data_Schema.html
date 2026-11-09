@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>D02_Architecture_and_Data_Schema</title>
+  <title>D02 Architecture and Data Schema</title>
   <style>
     html {
       color: #1a1a1a;
@@ -166,7 +166,7 @@
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">D02_Architecture_and_Data_Schema</h1>
+<h1 class="title">D02 Architecture and Data Schema</h1>
 </header>
 <h1 id="d02-architecture-and-data-schema">D02 — Architecture and data
 schema</h1>
@@ -174,11 +174,23 @@ schema</h1>
 <code>cursor/d02-backend-cicd-38d2</code><br />
 <strong>Scope:</strong> Backend, REST API, database (incubation funding
 deliverable D02)<br />
-<strong>Production:</strong> unchanged by this work (no production
-deploy)</p>
-<h2 id="architecture">1. Architecture</h2>
+<strong>Production:</strong> unchanged by this work (<strong>no
+production redeploy</strong>)</p>
+<p>Status legend used below:</p>
+<ul>
+<li><strong>Implemented &amp; verified</strong> — present in code and
+exercised by local and/or CI evidence on this branch<br />
+</li>
+<li><strong>Present but unused / optional</strong> — code exists; not
+part of the verified D02 path<br />
+</li>
+<li><strong>Future / not configured</strong> — documented option only;
+not claimed as completed for D02</li>
+</ul>
+<h2 id="architecture-implemented-verified">1. Architecture (implemented
+&amp; verified)</h2>
 <pre><code>Mobile / Web client (Expo)
-        │  HTTPS JSON  (Bearer JWT)
+        │  HTTPS JSON  (Bearer JWT — app HS256)
         ▼
 Vercel Serverless entry
   api/v1/[...path].ts
@@ -187,76 +199,140 @@ Vercel Serverless entry
 lib/server/vercel-dispatch.ts
   resolves /api/v1/* → app/api/v1/**/route.ts handlers
         │
-        ├── Auth: lib/server/auth-helpers.ts
-        │     verifies Authorization: Bearer &lt;JWT&gt;
-        │     via lib/server/app-jwt.ts (HS256, issuer &quot;grpd&quot;)
-        │     optional Supabase JWT via lib/server/supabase-jwt.ts
+        ├── AuthN verification (active):
+        │     lib/server/auth-helpers.ts
+        │     → lib/server/app-jwt.ts
+        │     Authorization: Bearer &lt;JWT&gt;
+        │     HS256, issuer &quot;grpd&quot;, secret AUTH_JWT_SECRET
         │
-        ├── AuthN issuance:
+        ├── AuthN issuance (active):
         │     POST /api/v1/auth/email/register
         │     POST /api/v1/auth/email/login
-        │     POST /api/v1/auth/pin/login   (fixture allowlist for CI/test)
         │     POST /api/v1/auth/logout
+        │     POST /api/v1/auth/pin/login  (fixture allowlist; CI/local only when PIN_ALLOWLIST_JSON is set)
         │
-        ├── AuthZ: lib/server/role-checks.ts
-        │     club membership role/status → view|join|invite|approve|manage_club
+        ├── AuthZ:
+        │     lib/server/role-checks.ts
+        │     approved membership + role → permission
         │
-        └── Persistence: Prisma Client → PostgreSQL
+        └── Persistence:
+              Prisma Client → PostgreSQL
+              (project hosting target: Neon PostgreSQL; D02 evidence used disposable local/CI Postgres)
               prisma/schema.prisma + prisma/migrations/*</code></pre>
-<h3 id="request-path-verified">Request path (verified)</h3>
+<h3 id="active-authentication-implemented-verified">Active
+authentication (implemented &amp; verified)</h3>
 <ol type="1">
-<li>Client calls <code>/api/v1/...</code> with JSON body when
-needed.</li>
-<li>Vercel rewrite (<code>vercel.json</code>) sends
-<code>/api/v1/:path*</code> → <code>api/v1/[...path].ts</code>.</li>
-<li>Dispatcher loads the matching App Router-style handler under
-<code>app/api/v1/**</code>.</li>
-<li>Protected handlers <code>await requireAuth(req)</code> —
-missing/invalid Bearer → <code>401 UNAUTHORIZED</code>.</li>
+<li>Client obtains tokens from <strong>email register/login</strong>
+(scrypt password hash in <code>AppUser</code>, JWT signed by
+<code>signAppAccessToken</code>).</li>
+<li>Protected handlers call <code>await requireAuth(req)</code>.</li>
+<li><code>getAuthUserId</code> accepts only
+<code>Authorization: Bearer …</code> and verifies the token with
+<strong><code>verifyAppAccessToken</code></strong>
+(<code>lib/server/app-jwt.ts</code>).</li>
+<li>Missing/invalid Bearer → <code>401</code> with code
+<code>UNAUTHORIZED</code> (captured in evidence).</li>
+</ol>
+<p>Database for the product is <strong>Neon PostgreSQL</strong> (via
+<code>DATABASE_URL</code> / Prisma). There is <strong>no Supabase
+database</strong> in this project’s D02 setup.</p>
+<h3 id="optional-unused-supabase-jwt-helper-present-but-unused">Optional
+/ unused Supabase JWT helper (present but unused)</h3>
+<p><code>lib/server/supabase-jwt.ts</code> defines
+<code>verifySupabaseAccessToken</code>.<br />
+<code>getAuthUserId</code> still calls it as a <strong>fallback
+after</strong> app-JWT verification fails.</p>
+<p><strong>Status for D02:</strong></p>
+<ul>
+<li>The helper only attempts verification when <code>SUPABASE_URL</code>
+is set (and optionally <code>SUPABASE_JWT_SECRET</code>).</li>
+<li>D02 local evidence and CI <strong>do not set</strong> those
+variables; tests explicitly clear them.</li>
+<li>No Supabase Auth product, JWKS endpoint, or Supabase-backed user
+store is part of the verified D02 flow.</li>
+<li>Therefore D02 <strong>does not claim</strong> Supabase
+authentication as an implemented capability. Treat the helper as
+leftover optional code, not as the active auth architecture.</li>
+</ul>
+<p>Note: <code>app-jwt.ts</code> can also read
+<code>SUPABASE_JWT_SECRET</code> as an alternate env name for the
+<strong>same app HS256 signing secret</strong> if
+<code>AUTH_JWT_SECRET</code> is unset. That is an env alias for the app
+JWT secret, not evidence of Supabase Auth usage.</p>
+<h3 id="request-path-implemented-verified">Request path (implemented
+&amp; verified)</h3>
+<ol type="1">
+<li>Client calls <code>/api/v1/...</code> with JSON when needed.<br />
+</li>
+<li><code>vercel.json</code> rewrites <code>/api/v1/:path*</code> →
+<code>api/v1/[...path].ts</code>.<br />
+</li>
+<li>Dispatcher loads the matching handler under
+<code>app/api/v1/**</code>.<br />
+</li>
+<li>Protected handlers <code>await requireAuth(req)</code> →
+<code>401</code> when unauthenticated.<br />
+</li>
 <li>Governance handlers also
-<code>await requireClubPermission(...)</code> — wrong role →
-<code>403 FORBIDDEN</code>.</li>
+<code>await requireClubPermission(...)</code> → <code>403</code> when
+forbidden.</li>
 </ol>
 <h3 id="environments">Environments</h3>
 <table>
 <colgroup>
-<col style="width: 15%" />
-<col style="width: 31%" />
-<col style="width: 31%" />
-<col style="width: 21%" />
+<col style="width: 11%" />
+<col style="width: 18%" />
+<col style="width: 23%" />
+<col style="width: 30%" />
+<col style="width: 16%" />
 </colgroup>
 <thead>
 <tr class="header">
 <th>Env</th>
+<th>Status</th>
 <th>Database</th>
-<th>API host</th>
+<th>API surface</th>
 <th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>Dev / evidence (local)</td>
-<td>Disposable PostgreSQL <code>grpd_test</code> on
-<code>127.0.0.1</code></td>
-<td>In-process dispatcher / local scripts</td>
-<td>Synthetic <code>AUTH_JWT_SECRET</code> only</td>
+<td>Local disposable (evidence)</td>
+<td><strong>Verified</strong></td>
+<td>Local PostgreSQL created by
+<code>scripts/d02-setup-local-db.sh</code></td>
+<td>In-process dispatcher via Jest /
+<code>d02-evidence-capture.ts</code></td>
+<td>Synthetic secrets stay in gitignored
+<code>.env.d02.local</code></td>
 </tr>
 <tr class="even">
 <td>CI</td>
-<td>GitHub Actions Postgres 14 service (<code>55439</code>)</td>
-<td>Same code path via Jest</td>
-<td>Workflow
-<code>.github/workflows/backend-verification.yml</code></td>
+<td><strong>Verified</strong></td>
+<td>GitHub Actions Postgres 14 (<code>55439</code>)</td>
+<td>Same handlers via Jest</td>
+<td><code>.github/workflows/backend-verification.yml</code> green on
+this branch</td>
 </tr>
 <tr class="odd">
+<td>Hosted Vercel Preview for this branch</td>
+<td><strong>Future / not claimed as D02 verification</strong></td>
+<td>Would need Preview-only <code>DATABASE_URL</code> +
+<code>AUTH_JWT_SECRET</code></td>
+<td>Preview URL after PR push</td>
+<td>Not used as the authoritative functional proof in this pack</td>
+</tr>
+<tr class="even">
 <td>Production</td>
+<td><strong>Unchanged</strong></td>
 <td>Existing Neon / Vercel production</td>
 <td><code>grpd30.vercel.app</code></td>
-<td><strong>Not modified</strong> by this D02 branch</td>
+<td><strong>Not redeployed</strong> by D02</td>
 </tr>
 </tbody>
 </table>
-<h2 id="data-schema-prisma">2. Data schema (Prisma)</h2>
+<h2 id="data-schema-prisma-implemented">2. Data schema (Prisma) —
+implemented</h2>
 <h3 id="models-after-migration-20261031020000_add_app_users">Models
 (after migration <code>20261031020000_add_app_users</code>)</h3>
 <table>
@@ -276,37 +352,40 @@ missing/invalid Bearer → <code>401 UNAUTHORIZED</code>.</li>
 <tr class="odd">
 <td><code>AppUser</code></td>
 <td><code>app_users</code></td>
-<td>Email/password accounts for self-serve auth (<code>email</code>
-unique, <code>passwordHash</code>)</td>
+<td>Email/password accounts (<code>email</code> unique,
+<code>passwordHash</code>, optional <code>displayName</code>)</td>
 </tr>
 <tr class="even">
 <td><code>Club</code></td>
 <td><code>clubs</code></td>
-<td>Club identity (<code>slug</code> unique), visibility, creator</td>
+<td>Club identity (<code>slug</code> unique), <code>visibility</code>
+(<code>public</code>|<code>members</code>),
+<code>createdById</code></td>
 </tr>
 <tr class="odd">
 <td><code>ClubMembership</code></td>
 <td><code>club_memberships</code></td>
-<td>Unique <code>(userId, clubId)</code>; role + status + optional PR
-summary</td>
+<td>Unique <code>(userId, clubId)</code>; <code>role</code>,
+<code>status</code>, optional <code>displayName</code> /
+<code>prSummary</code></td>
 </tr>
 <tr class="even">
 <td><code>ClubInvite</code></td>
 <td><code>club_invites</code></td>
-<td>Invite <code>code</code> unique, optional expiry</td>
+<td>Invite <code>code</code> unique; optional
+<code>expiresAt</code></td>
 </tr>
 <tr class="odd">
 <td><code>Session</code></td>
 <td><code>sessions</code></td>
-<td>Outing container; optional <code>clubId</code>;
-<code>visibility</code>; JSON <code>paceGroups</code></td>
+<td>Outing; optional <code>clubId</code>; <code>visibility</code>; JSON
+<code>paceGroups</code>; host fields</td>
 </tr>
 <tr class="even">
 <td><code>SessionAttendance</code></td>
 <td><code>session_attendance</code></td>
-<td>Unique <code>(sessionId, userId)</code>; status
-incl. <code>suggested</code>/<code>left</code>;
-<code>groupId</code></td>
+<td>Unique <code>(sessionId, userId)</code>; <code>status</code>;
+optional <code>groupId</code></td>
 </tr>
 <tr class="odd">
 <td><code>SessionTag</code></td>
@@ -315,55 +394,172 @@ incl. <code>suggested</code>/<code>left</code>;
 </tr>
 </tbody>
 </table>
-<h3 id="relationship-sketch">Relationship sketch</h3>
-<pre><code>AppUser (id) ──referenced by opaque userId strings──► ClubMembership / SessionAttendance / Session.hostUserId
+<h3 id="enums-schema">Enums (schema)</h3>
+<ul>
+<li><code>MembershipRole</code>: <code>member</code> |
+<code>coach</code> | <code>admin</code><br />
+</li>
+<li><code>MembershipStatus</code>: <code>pending</code> |
+<code>approved</code> | <code>rejected</code> |
+<code>banned</code><br />
+</li>
+<li><code>SessionVisibility</code> / <code>ClubVisibility</code>:
+<code>public</code> | <code>members</code><br />
+</li>
+<li><code>AttendanceStatus</code>: <code>joined</code> |
+<code>suggested</code> | <code>left</code> | <code>requested</code> |
+<code>waitlisted</code> | <code>declined</code> (legacy)</li>
+</ul>
+<h3 id="relationships">Relationships</h3>
+<pre><code>AppUser.id ── opaque string userId ──► ClubMembership / SessionAttendance / Session.hostUserId
+  (no Prisma FK from membership/attendance to AppUser)
 
 Club 1──N ClubMembership
 Club 1──N ClubInvite
-Club 1──N Session (clubId nullable for autonomous public sessions)
+Club 1──N Session   (Session.clubId nullable)
 Session 1──N SessionAttendance
 Session 1──N SessionTag</code></pre>
-<h3 id="migrations-applied-on-the-d02-test-database">Migrations applied
-on the D02 test database</h3>
+<h3 id="migrations-applied-on-the-d02-test-database-verified">Migrations
+applied on the D02 test database (verified)</h3>
 <ol type="1">
-<li><code>20250128000000_add_clubs_memberships</code></li>
-<li><code>20250128100000_add_session_tags</code></li>
-<li><code>20260130090000_add_membership_prs</code></li>
-<li><code>20260130235238_add_session_fields</code></li>
-<li><code>20260210022611_add_attendance_status_suggested_left</code></li>
-<li><code>20261031020000_add_app_users</code> ← <strong>added for D02
-auth</strong></li>
+<li><code>20250128000000_add_clubs_memberships</code><br />
+</li>
+<li><code>20250128100000_add_session_tags</code><br />
+</li>
+<li><code>20260130090000_add_membership_prs</code><br />
+</li>
+<li><code>20260130235238_add_session_fields</code><br />
+</li>
+<li><code>20260210022611_add_attendance_status_suggested_left</code><br />
+</li>
+<li><code>20261031020000_add_app_users</code> ← added for email
+auth</li>
 </ol>
-<p>See <code>evidence/migrations.txt</code> for the live
-<code>prisma migrate deploy</code> transcript.</p>
-<h2 id="security-controls-d02">3. Security controls (D02)</h2>
+<p>Transcript: <code>evidence/migrations.txt</code>.</p>
+<h2 id="authorization-rules-implemented">3. Authorization rules
+(implemented)</h2>
+<p>From <code>lib/server/role-checks.ts</code> (approved membership
+required):</p>
+<table>
+<colgroup>
+<col style="width: 70%" />
+<col style="width: 29%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Permission</th>
+<th>Who</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>view</code>, <code>join</code></td>
+<td>any <strong>approved</strong> member</td>
+</tr>
+<tr class="even">
+<td><code>create_session</code></td>
+<td>approved <code>member</code>, <code>coach</code>, or
+<code>admin</code></td>
+</tr>
+<tr class="odd">
+<td><code>approve_members</code>, <code>invite</code>,
+<code>manage_club</code></td>
+<td>approved <code>coach</code> or <code>admin</code></td>
+</tr>
+</tbody>
+</table>
+<p>Route mapping verified in handlers:</p>
+<table>
+<colgroup>
+<col style="width: 35%" />
+<col style="width: 21%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Endpoint</th>
+<th>Auth</th>
+<th>Role check</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>GET /api/v1/clubs/:id/roster</code></td>
+<td>required</td>
+<td><code>manage_club</code> → else <code>403</code>
+(<strong>captured</strong>)</td>
+</tr>
+<tr class="even">
+<td><code>POST /api/v1/clubs/:id/invite</code></td>
+<td>required</td>
+<td><code>invite</code></td>
+</tr>
+<tr class="odd">
+<td><code>POST /api/v1/clubs/:id/approve</code></td>
+<td>required</td>
+<td><code>approve_members</code></td>
+</tr>
+<tr class="even">
+<td><code>GET /api/v1/clubs/:id</code> pending list</td>
+<td>optional Bearer</td>
+<td><code>pendingMembers</code> returned only if caller has
+<code>manage_club</code></td>
+</tr>
+<tr class="odd">
+<td><code>POST /api/v1/sessions/:id/assign</code></td>
+<td>required</td>
+<td><code>manage_club</code> <strong>only when</strong>
+<code>session.clubId</code> is set; if <code>clubId</code> is null, only
+authentication is required</td>
+</tr>
+</tbody>
+</table>
+<h2 id="security-controls-claimed-for-d02">4. Security controls claimed
+for D02</h2>
+<p><strong>Implemented &amp; verified</strong></p>
 <ul>
-<li><strong>No unwired <code>req.auth</code>:</strong> network auth is
-Bearer JWT verification only
-(<code>lib/server/auth-helpers.ts</code>).</li>
-<li><strong>Issuance:</strong> email register/login hash passwords with
-scrypt (<code>lib/server/password.ts</code>) and sign HS256 JWTs with
-<code>AUTH_JWT_SECRET</code>.</li>
-<li><strong>Role gate:</strong> roster / invite / approve / assign
-require coach|admin (<code>manage_club</code> / <code>invite</code> /
-<code>approve_members</code>).</li>
-<li><strong>Pending members leak fixed:</strong>
-<code>GET /api/v1/clubs/:id</code> returns <code>pendingMembers</code>
-only when the caller has <code>manage_club</code>.</li>
-<li><strong>Secrets:</strong> never committed. Evidence artifacts redact
-JWTs and passwords.</li>
+<li>Network auth is Bearer JWT verification (<code>requireAuth</code>);
+no reliance on unwired <code>req.auth</code> session middleware.</li>
+<li>Email register/login uses scrypt hashes
+(<code>lib/server/password.ts</code>) and app HS256 JWTs
+(<code>AUTH_JWT_SECRET</code>).</li>
+<li>Unauthenticated access to protected routes returns <code>401</code>
+(evidence capture).</li>
+<li>Non-manager roster access returns <code>403</code> (evidence
+capture).</li>
+<li>Evidence artifacts redact tokens and passwords.</li>
 </ul>
-<h2 id="source-anchors">4. Source anchors</h2>
+<p><strong>Not claimed / not verified as D02 deliverables</strong></p>
 <ul>
-<li>Schema: <code>prisma/schema.prisma</code></li>
-<li>Migrations: <code>prisma/migrations/**</code></li>
+<li>Supabase Auth / Supabase JWT as a product integration.<br />
+</li>
+<li>Production redeploy of this branch.<br />
+</li>
+<li>Hosted Preview as the primary acceptance environment.</li>
+</ul>
+<h2 id="source-anchors">5. Source anchors</h2>
+<ul>
+<li>Schema: <code>prisma/schema.prisma</code><br />
+</li>
+<li>Migrations: <code>prisma/migrations/**</code><br />
+</li>
 <li>Dispatcher: <code>lib/server/vercel-dispatch.ts</code>,
-<code>api/v1/[...path].ts</code></li>
-<li>Auth: <code>lib/server/auth-helpers.ts</code>,
-<code>lib/server/app-jwt.ts</code>, <code>app/api/v1/auth/**</code></li>
-<li>Roles: <code>lib/server/role-checks.ts</code></li>
-<li>Deploy adapter: <code>vercel.json</code></li>
-<li>CI: <code>.github/workflows/backend-verification.yml</code></li>
+<code>api/v1/[...path].ts</code><br />
+</li>
+<li>Active auth: <code>lib/server/auth-helpers.ts</code>,
+<code>lib/server/app-jwt.ts</code>,
+<code>app/api/v1/auth/email/**</code><br />
+</li>
+<li>Optional unused helper: <code>lib/server/supabase-jwt.ts</code> (see
+§1)<br />
+</li>
+<li>Roles: <code>lib/server/role-checks.ts</code><br />
+</li>
+<li>Deploy adapter: <code>vercel.json</code><br />
+</li>
+<li>CI: <code>.github/workflows/backend-verification.yml</code><br />
+</li>
+<li>Local DB setup: <code>scripts/d02-setup-local-db.sh</code></li>
 </ul>
 </body>
 </html>

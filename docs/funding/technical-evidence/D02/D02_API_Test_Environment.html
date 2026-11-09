@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>D02_API_Test_Environment</title>
+  <title>D02 API Test Environment</title>
   <style>
     html {
       color: #1a1a1a;
@@ -230,7 +230,7 @@
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">D02_API_Test_Environment</h1>
+<h1 class="title">D02 API Test Environment</h1>
 </header>
 <h1 id="d02-api-test-environment-and-functional-captures">D02 — API test
 environment and functional captures</h1>
@@ -238,166 +238,284 @@ environment and functional captures</h1>
 <code>cursor/d02-backend-cicd-38d2</code><br />
 <strong>Purpose:</strong> Portal evidence item 2 — access to the
 API/test environment + functional captures<br />
-<strong>Safety:</strong> No production secrets, no real user
-credentials, no live JWTs in this document</p>
-<h2 id="how-to-access-the-test-environment">1. How to access the test
-environment</h2>
-<h3 id="local-disposable-api-test-verified-on-this-branch">Local
-disposable API test (verified on this branch)</h3>
-<p>Prerequisites: Node 24+, PostgreSQL listening locally.</p>
+<strong>Production:</strong> <strong>not redeployed</strong> for D02</p>
+<p><strong>Safety rule:</strong> Never put production secrets, real user
+credentials, private tokens, or live JWTs in source files, screenshots,
+or submitted evidence.</p>
+<h2 id="verified-test-environments">1. Verified test environments</h2>
+<h3 id="a.-local-disposable-api-harness-implemented-verified">A. Local
+disposable API harness — <strong>implemented &amp;
+verified</strong></h3>
+<p>Prerequisites: Node 24+, local PostgreSQL with a privileged admin
+able to create roles/databases (e.g. the OS <code>postgres</code> role).
+The <strong>application</strong> role created for tests is
+<strong>not</strong> a SUPERUSER.</p>
 <div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create disposable DB (example used for evidence)</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> <span class="at">-u</span> postgres psql <span class="at">-c</span> <span class="st">&quot;CREATE USER grpd_test WITH PASSWORD &#39;grpd_test_local_only&#39; SUPERUSER;&quot;</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> <span class="at">-u</span> postgres psql <span class="at">-c</span> <span class="st">&quot;CREATE DATABASE grpd_test OWNER grpd_test;&quot;</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DATABASE_URL</span><span class="op">=</span><span class="st">&#39;postgresql://grpd_test:grpd_test_local_only@127.0.0.1:5432/grpd_test&#39;</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">AUTH_JWT_SECRET</span><span class="op">=</span><span class="st">&#39;d02-local-test-jwt-secret-not-for-prod&#39;</span>   <span class="co"># synthetic only</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">npx</span> prisma generate</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ex">npx</span> prisma migrate deploy</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Automated journeys (auth success, 401, 403)</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run test:d02 <span class="at">--</span> <span class="at">--ci</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Sanitized functional captures for the portal</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="ex">npx</span> tsx scripts/d02-evidence-capture.ts</span></code></pre></div>
-<p>Artifacts written to
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1) Create disposable role + DB + gitignored credentials</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x scripts/d02-setup-local-db.sh</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">./scripts/d02-setup-local-db.sh</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Writes .env.d02.local (gitignored) with DATABASE_URL and AUTH_JWT_SECRET.</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Placeholders conceptually:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   DATABASE_URL=postgresql://grpd_d02_local:&lt;LOCAL_ONLY_PASSWORD&gt;@127.0.0.1:5432/grpd_d02_local</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   AUTH_JWT_SECRET=&lt;LOCAL_ONLY_JWT_SECRET&gt;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># 2) Load local-only env (do not paste values into PDFs)</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-a</span><span class="kw">;</span> <span class="bu">source</span> .env.d02.local<span class="kw">;</span> <span class="bu">set</span> +a</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 3) Migrate + verify</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="ex">npx</span> prisma generate</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="ex">npx</span> prisma migrate deploy</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run test:d02 <span class="at">--</span> <span class="at">--ci</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="ex">npx</span> tsx scripts/d02-evidence-capture.ts</span></code></pre></div>
+<p>Privileges used by the app role: <code>LOGIN</code> owner of its
+disposable database (<code>NOSUPERUSER</code>, <code>NOCREATEDB</code>,
+<code>NOCREATEROLE</code>). Migrations run as that owner against its own
+DB.</p>
+<p>Artifacts under
 <code>docs/funding/technical-evidence/D02/evidence/</code>:</p>
-<ul>
-<li><code>functional-captures.json</code> — redacted request/response
-transcript</li>
-<li><code>d02-integration.txt</code> — Jest D02 suite output</li>
-<li><code>unit-tests.txt</code>, <code>typecheck-server.txt</code>,
-<code>migrations.txt</code></li>
-</ul>
-<h3 id="ci-test-environment">CI test environment</h3>
-<p>GitHub Actions workflow:
-<code>.github/workflows/backend-verification.yml</code></p>
-<ul>
-<li>Spins up Postgres 14 on port <code>55439</code></li>
-<li>Runs <code>prisma migrate deploy</code>, unit tests, server
-typecheck, <code>npm run test:d02</code></li>
-<li>Uploads <code>d02-ci-results/</code> as a workflow artifact</li>
-</ul>
-<h3 id="hosted-preview-production">Hosted preview / production</h3>
-<ul>
-<li><strong>Production was not redeployed</strong> for D02.</li>
-<li>Existing production (<code>grpd30.vercel.app</code>) currently
-tracks an older email-auth preview branch and is out of scope for this
-evidence pack.</li>
-<li>To exercise a hosted <strong>preview</strong> of <em>this</em>
-branch later: open the PR → Vercel Preview URL → set Preview env
-<code>DATABASE_URL</code> (Neon test branch) +
-<code>AUTH_JWT_SECRET</code> (synthetic) in the Vercel project settings
-for Preview only. Do not paste those values into evidence files.</li>
-</ul>
-<h2 id="functional-captures-real-results">2. Functional captures (real
-results)</h2>
-<p>Source of truth: <code>evidence/functional-captures.json</code><br />
-Captured at: see <code>capturedAt</code> inside that file.</p>
 <table>
-<colgroup>
-<col style="width: 15%" />
-<col style="width: 38%" />
-<col style="width: 25%" />
-<col style="width: 20%" />
-</colgroup>
 <thead>
 <tr class="header">
-<th>Step</th>
-<th>Method / path</th>
-<th>Expected</th>
-<th>Result</th>
+<th>File</th>
+<th>Content</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>Health</td>
-<td><code>GET /api/v1/health</code></td>
-<td>200, database ready</td>
-<td><strong>PASS</strong> (<code>healthOk: true</code>)</td>
+<td><code>functional-captures.json</code></td>
+<td>Sanitized request/response transcript</td>
 </tr>
 <tr class="even">
-<td>Register</td>
-<td><code>POST /api/v1/auth/email/register</code></td>
-<td>200 + tokens</td>
-<td><strong>PASS</strong> (<code>registerOk: true</code>)</td>
+<td><code>d02-integration.txt</code></td>
+<td>Jest D02 suite output</td>
 </tr>
 <tr class="odd">
-<td>Unauthenticated</td>
-<td><code>GET /api/v1/me/memberships</code> (no Bearer)</td>
-<td>401 <code>UNAUTHORIZED</code></td>
-<td><strong>PASS</strong> (<code>unauthRejected: true</code>)</td>
+<td><code>unit-tests.txt</code></td>
+<td>Unit suite output</td>
 </tr>
 <tr class="even">
-<td>Create club</td>
-<td><code>POST /api/v1/clubs</code> (admin Bearer)</td>
-<td>200</td>
-<td><strong>PASS</strong> (<code>createClubOk: true</code>)</td>
+<td><code>typecheck-server.txt</code></td>
+<td>Server TypeScript check</td>
 </tr>
 <tr class="odd">
-<td>Invite</td>
-<td><code>POST /api/v1/clubs/:id/invite</code></td>
-<td>200 + code</td>
-<td><strong>PASS</strong> (<code>inviteOk: true</code>)</td>
-</tr>
-<tr class="even">
-<td>Join</td>
-<td><code>POST /api/v1/clubs/join-by-code</code></td>
-<td>200</td>
-<td><strong>PASS</strong> (<code>joinOk: true</code>)</td>
-</tr>
-<tr class="odd">
-<td>Role deny</td>
-<td><code>GET /api/v1/clubs/:id/roster</code> as member</td>
-<td>403 <code>FORBIDDEN</code></td>
-<td><strong>PASS</strong>
-(<code>memberRosterForbidden: true</code>)</td>
-</tr>
-<tr class="even">
-<td>Role allow</td>
-<td><code>GET /api/v1/clubs/:id/roster</code> as admin</td>
-<td>200 + members</td>
-<td><strong>PASS</strong> (<code>adminRosterOk: true</code>)</td>
+<td><code>migrations.txt</code></td>
+<td><code>prisma migrate deploy</code> transcript</td>
 </tr>
 </tbody>
 </table>
-<h3 id="excerpt-unauthenticated-rejection">Excerpt — unauthenticated
-rejection</h3>
+<h3 id="b.-ci-github-actions-implemented-verified">B. CI (GitHub
+Actions) — <strong>implemented &amp; verified</strong></h3>
+<p>Workflow: <code>.github/workflows/backend-verification.yml</code></p>
+<ul>
+<li>Postgres 14 service on port <code>55439</code></li>
+<li><code>prisma migrate deploy</code>, unit tests,
+<code>typecheck:server</code>, <code>npm run test:d02</code></li>
+<li>Uploads <code>d02-ci-results/</code> as a workflow artifact<br />
+</li>
+<li>Confirmed green on this branch (commit <code>6bebba4</code> and
+later fixes on the same PR)</li>
+</ul>
+<p>CI uses workflow-scoped synthetic secrets. Those values are
+<strong>not</strong> reproduced in this PDF.</p>
+<h3
+id="c.-hosted-vercel-preview-future-option-only-not-d02-verification">C.
+Hosted Vercel Preview — <strong>future option only (not D02
+verification)</strong></h3>
+<ul>
+<li>A Preview build may appear when the PR is pushed.<br />
+</li>
+<li>Exercising authenticated API calls on Preview would require
+configuring Preview-only <code>DATABASE_URL</code> (e.g. a Neon test
+branch) and a synthetic <code>AUTH_JWT_SECRET</code> in the Vercel
+dashboard.<br />
+</li>
+<li><strong>This pack does not claim</strong> that Preview env vars were
+configured or that hosted Preview journeys were used as acceptance
+evidence.<br />
+</li>
+<li>Authoritative functional proof for D02 remains <strong>local
+disposable Postgres + CI</strong>.</li>
+</ul>
+<h3 id="d.-production-unchanged">D. Production —
+<strong>unchanged</strong></h3>
+<p>Existing production (<code>grpd30.vercel.app</code> / Neon
+production) was <strong>not</strong> redeployed as part of D02.</p>
+<h2 id="functional-captures-real-sanitized">2. Functional captures
+(real, sanitized)</h2>
+<p>Source of truth: <code>evidence/functional-captures.json</code><br />
+<code>capturedAt</code>: <code>2026-11-09T18:56:15.470Z</code><br />
+Environment note in artifact: local disposable PostgreSQL;
+tokens/passwords redacted.</p>
+<h3 id="results-table">Results table</h3>
+<table>
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 13%" />
+<col style="width: 10%" />
+<col style="width: 17%" />
+<col style="width: 29%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Step</th>
+<th>Method</th>
+<th>Path</th>
+<th>Expected</th>
+<th>Captured status</th>
+<th>Assertion</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1 Health</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/health</code></td>
+<td>200, <code>database: ready</code></td>
+<td><strong>200</strong></td>
+<td><code>healthOk</code></td>
+</tr>
+<tr class="even">
+<td>2 Register</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/auth/email/register</code></td>
+<td>200 + user + tokens</td>
+<td><strong>200</strong></td>
+<td><code>registerOk</code></td>
+</tr>
+<tr class="odd">
+<td>3 Unauthenticated</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/me/memberships</code> (no Bearer)</td>
+<td>401 <code>UNAUTHORIZED</code></td>
+<td><strong>401</strong></td>
+<td><code>unauthRejected</code></td>
+</tr>
+<tr class="even">
+<td>4 Create club</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/clubs</code> (admin Bearer)</td>
+<td>200 club</td>
+<td><strong>200</strong></td>
+<td><code>createClubOk</code></td>
+</tr>
+<tr class="odd">
+<td>5 Invite</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/clubs/:id/invite</code> (admin)</td>
+<td>200 invite code</td>
+<td><strong>200</strong></td>
+<td><code>inviteOk</code></td>
+</tr>
+<tr class="even">
+<td>6 Join</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/clubs/join-by-code</code> (member)</td>
+<td>200 membership</td>
+<td><strong>200</strong></td>
+<td><code>joinOk</code></td>
+</tr>
+<tr class="odd">
+<td>7 Role deny</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/clubs/:id/roster</code> (member)</td>
+<td>403 <code>FORBIDDEN</code></td>
+<td><strong>403</strong></td>
+<td><code>memberRosterForbidden</code></td>
+</tr>
+<tr class="even">
+<td>8 Role allow</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/clubs/:id/roster</code> (admin)</td>
+<td>200 members list</td>
+<td><strong>200</strong></td>
+<td><code>adminRosterOk</code></td>
+</tr>
+</tbody>
+</table>
+<p>All eight assertions in the capture file are <code>true</code>.</p>
+<h3 id="excerpt-unauthenticated-rejection-sanitized">Excerpt —
+unauthenticated rejection (sanitized)</h3>
 <div class="sourceCode" id="cb2"><pre
 class="sourceCode json"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;step&quot;</span><span class="fu">:</span> <span class="st">&quot;3_unauth_me&quot;</span><span class="fu">,</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;method&quot;</span><span class="fu">:</span> <span class="st">&quot;GET&quot;</span><span class="fu">,</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;path&quot;</span><span class="fu">:</span> <span class="st">&quot;/api/v1/me/memberships&quot;</span><span class="fu">,</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="dv">401</span><span class="fu">,</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;response&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;ok&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;error&quot;</span><span class="fu">:</span> <span class="fu">{</span> <span class="dt">&quot;message&quot;</span><span class="fu">:</span> <span class="st">&quot;Unauthorized&quot;</span><span class="fu">,</span> <span class="dt">&quot;code&quot;</span><span class="fu">:</span> <span class="st">&quot;UNAUTHORIZED&quot;</span> <span class="fu">}</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
-<h3 id="excerpt-role-access-check">Excerpt — role access check</h3>
-<p>Member roster call returns <code>403 FORBIDDEN</code>; admin roster
-call returns <code>200</code> with members array (see captures
-<code>7_roster_member_forbidden</code> and
-<code>8_roster_admin_ok</code>).</p>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;requestNotes&quot;</span><span class="fu">:</span> <span class="st">&quot;No Authorization header → expect 401 UNAUTHORIZED&quot;</span><span class="fu">,</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;response&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;ok&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;error&quot;</span><span class="fu">:</span> <span class="fu">{</span> <span class="dt">&quot;message&quot;</span><span class="fu">:</span> <span class="st">&quot;Unauthorized&quot;</span><span class="fu">,</span> <span class="dt">&quot;code&quot;</span><span class="fu">:</span> <span class="st">&quot;UNAUTHORIZED&quot;</span> <span class="fu">}</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<h3 id="excerpt-role-deny-member-roster">Excerpt — role deny (member →
+roster)</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;step&quot;</span><span class="fu">:</span> <span class="st">&quot;7_roster_member_forbidden&quot;</span><span class="fu">,</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;method&quot;</span><span class="fu">:</span> <span class="st">&quot;GET&quot;</span><span class="fu">,</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;path&quot;</span><span class="fu">:</span> <span class="st">&quot;/api/v1/clubs/&lt;clubId&gt;/roster&quot;</span><span class="fu">,</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="dv">403</span><span class="fu">,</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;response&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;ok&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;error&quot;</span><span class="fu">:</span> <span class="fu">{</span> <span class="dt">&quot;message&quot;</span><span class="fu">:</span> <span class="st">&quot;Forbidden&quot;</span><span class="fu">,</span> <span class="dt">&quot;code&quot;</span><span class="fu">:</span> <span class="st">&quot;FORBIDDEN&quot;</span> <span class="fu">}</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<h3 id="excerpt-role-allow-admin-roster">Excerpt — role allow (admin →
+roster)</h3>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;step&quot;</span><span class="fu">:</span> <span class="st">&quot;8_roster_admin_ok&quot;</span><span class="fu">,</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;method&quot;</span><span class="fu">:</span> <span class="st">&quot;GET&quot;</span><span class="fu">,</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;path&quot;</span><span class="fu">:</span> <span class="st">&quot;/api/v1/clubs/&lt;clubId&gt;/roster&quot;</span><span class="fu">,</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="dv">200</span><span class="fu">,</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;response&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;ok&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;data&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;clubId&quot;</span><span class="fu">:</span> <span class="st">&quot;&lt;clubId&gt;&quot;</span><span class="fu">,</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;members&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">{</span> <span class="dt">&quot;userId&quot;</span><span class="fu">:</span> <span class="st">&quot;d02_evidence_admin&quot;</span><span class="fu">,</span> <span class="dt">&quot;role&quot;</span><span class="fu">:</span> <span class="st">&quot;admin&quot;</span><span class="fu">,</span> <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="st">&quot;approved&quot;</span> <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>        <span class="fu">{</span> <span class="dt">&quot;userId&quot;</span><span class="fu">:</span> <span class="st">&quot;d02_evidence_member&quot;</span><span class="fu">,</span> <span class="dt">&quot;role&quot;</span><span class="fu">:</span> <span class="st">&quot;member&quot;</span><span class="fu">,</span> <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="st">&quot;approved&quot;</span> <span class="fu">}</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>      <span class="ot">]</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>(Full sanitized bodies, including register/create/invite/join, are in
+<code>evidence/functional-captures.json</code>. Invite codes and JWTs
+are either fixture data or redacted.)</p>
 <h2 id="commands-and-results-executed-for-this-pack">3. Commands and
 results executed for this pack</h2>
-<pre class="text"><code>npx prisma migrate deploy     → 6 migrations applied (evidence/migrations.txt)
-npm test -- --ci              → 7 suites / 69 tests passed (evidence/unit-tests.txt)
-npm run typecheck:server      → exit 0 (evidence/typecheck-server.txt)
-npm run test:d02 -- --ci      → 2 suites / 11 tests passed (evidence/d02-integration.txt)
-npx tsx scripts/d02-evidence-capture.ts → all assertions true (evidence/functional-captures.json)</code></pre>
-<h2 id="limitations">4. Limitations</h2>
+<pre class="text"><code>npx prisma migrate deploy              → 6 migrations applied   (evidence/migrations.txt)
+npm test -- --ci                       → 7 suites / 69 passed   (evidence/unit-tests.txt)
+npm run typecheck:server               → exit 0                 (evidence/typecheck-server.txt)
+npm run test:d02 -- --ci               → 2 suites / 11 passed   (evidence/d02-integration.txt)
+npx tsx scripts/d02-evidence-capture.ts → 8/8 assertions true   (evidence/functional-captures.json)
+GitHub Actions Backend verification    → success on branch tip  (see PR checks)</code></pre>
+<h2 id="auth-path-exercised-by-captures">4. Auth path exercised by
+captures</h2>
 <ul>
-<li>Local disposable DB passwords shown above are <strong>synthetic
-fixtures</strong> for evaluators recreating the harness; they are not
-production credentials.</li>
-<li>Hosted Preview URL for this exact commit is created by Vercel when
-the PR is pushed; if Preview env vars are not yet configured, use the
-local/CI harness as the authoritative functional proof.</li>
-<li>PIN allowlist auth is available for fixture-only CI
-(<code>PIN_ALLOWLIST_JSON</code>); email auth is the self-serve path
-documented for testers.</li>
+<li><strong>Active:</strong> email register → app HS256 Bearer JWT →
+protected club routes + roster AuthZ.<br />
+</li>
+<li><strong>Not exercised / not claimed:</strong> Supabase JWT
+verification (<code>lib/server/supabase-jwt.ts</code> remains inactive
+without <code>SUPABASE_*</code> env).<br />
+</li>
+<li><strong>Optional fixture only:</strong>
+<code>POST /api/v1/auth/pin/login</code> when
+<code>PIN_ALLOWLIST_JSON</code> is set (not required for the captures
+above).</li>
+</ul>
+<h2 id="limitations">5. Limitations</h2>
+<ul>
+<li>Local credentials live only in <code>.env.d02.local</code>
+(gitignored) or CI secrets; they must not be copied into PDFs.<br />
+</li>
+<li>Hosted Preview is a <strong>future</strong> option until Preview env
+vars are deliberately configured; it is not the D02 acceptance
+environment in this pack.<br />
+</li>
+<li>Production remains untouched.</li>
 </ul>
 </body>
 </html>
