@@ -1,0 +1,39 @@
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "grpd_test", schema "public" at "127.0.0.1:5432"
+
+6 migrations found in prisma/migrations
+
+Applying migration `20250128000000_add_clubs_memberships`
+Applying migration `20250128100000_add_session_tags`
+Applying migration `20260130090000_add_membership_prs`
+Applying migration `20260130235238_add_session_fields`
+Applying migration `20260210022611_add_attendance_status_suggested_left`
+Applying migration `20261031020000_add_app_users`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20250128000000_add_clubs_memberships/
+    └─ migration.sql
+  └─ 20250128100000_add_session_tags/
+    └─ migration.sql
+  └─ 20260130090000_add_membership_prs/
+    └─ migration.sql
+  └─ 20260130235238_add_session_fields/
+    └─ migration.sql
+  └─ 20260210022611_add_attendance_status_suggested_left/
+    └─ migration.sql
+  └─ 20261031020000_add_app_users/
+    └─ migration.sql
+      
+All migrations have been successfully applied.
+┌─────────────────────────────────────────────────────────┐
+│  Update available 5.22.0 -> 8.0.0-rc.33                 │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘

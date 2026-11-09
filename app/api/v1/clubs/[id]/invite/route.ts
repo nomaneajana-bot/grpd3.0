@@ -18,7 +18,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const params = await context.params;
     const parsed = clubIdParamSchema.safeParse(params);
     if (!parsed.success) {
@@ -30,7 +30,12 @@ export async function POST(
     }
     const clubId = parsed.data.id;
 
-    const body = await req.json();
+    const body = (await req.json().catch(() => ({}))) as {
+      invitedPhone?: string;
+      invitedEmail?: string;
+      role?: string;
+      expiresInDays?: number;
+    };
     const { invitedPhone, invitedEmail, role, expiresInDays } = body;
 
     await requireClubPermission(userId, clubId, "invite");
@@ -58,7 +63,7 @@ export async function POST(
         code,
         invitedPhone: invitedPhone ?? null,
         invitedEmail: invitedEmail ?? null,
-        role: role ?? MembershipRole.member,
+        role: (role as MembershipRole | undefined) ?? MembershipRole.member,
         expiresAt,
       },
     });

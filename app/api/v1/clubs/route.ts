@@ -1,15 +1,21 @@
 // POST /api/v1/clubs – create club, creator becomes admin
 
 import { NextRequest } from "next/server";
-import { MembershipRole, MembershipStatus } from "@prisma/client";
+import { ClubVisibility, MembershipRole, MembershipStatus } from "@prisma/client";
 import { requireAuth } from "@/lib/server/auth-helpers";
 import { prisma } from "@/lib/server/prisma";
 import { jsonOk, jsonError } from "@/lib/server/api-response";
 
 export async function POST(req: NextRequest) {
   try {
-    const userId = requireAuth(req);
-    const body = await req.json();
+    const userId = await requireAuth(req);
+    const body = (await req.json()) as {
+      name?: string;
+      slug?: string;
+      city?: string | null;
+      description?: string | null;
+      visibility?: string;
+    };
     const { name, slug, city, description, visibility } = body;
 
     if (!name || !slug) {
@@ -27,7 +33,7 @@ export async function POST(req: NextRequest) {
           slug,
           city: city ?? null,
           description: description ?? null,
-          visibility: visibility ?? "public",
+          visibility: (visibility as ClubVisibility | undefined) ?? ClubVisibility.public,
           createdById: userId,
         },
       });

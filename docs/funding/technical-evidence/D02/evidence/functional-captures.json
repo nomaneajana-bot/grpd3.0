@@ -1,0 +1,188 @@
+{
+  "capturedAt": "2026-11-09T18:56:15.470Z",
+  "environment": {
+    "database": "local disposable PostgreSQL (grpd_test @ 127.0.0.1)",
+    "auth": "AUTH_JWT_SECRET synthetic test secret (value not recorded)",
+    "note": "Tokens and passwords redacted in this artifact"
+  },
+  "assertions": {
+    "healthOk": true,
+    "registerOk": true,
+    "unauthRejected": true,
+    "createClubOk": true,
+    "inviteOk": true,
+    "joinOk": true,
+    "memberRosterForbidden": true,
+    "adminRosterOk": true
+  },
+  "captures": [
+    {
+      "step": "1_health",
+      "method": "GET",
+      "path": "/api/v1/health",
+      "status": 200,
+      "requestNotes": "Unauthenticated readiness probe",
+      "response": {
+        "ok": true,
+        "data": {
+          "service": "grpd-api",
+          "database": "ready"
+        }
+      }
+    },
+    {
+      "step": "2_register",
+      "method": "POST",
+      "path": "/api/v1/auth/email/register",
+      "status": 200,
+      "requestNotes": "Self-serve email register (password redacted in artifact)",
+      "response": {
+        "ok": true,
+        "data": {
+          "user": {
+            "id": "cmw9mgsic000049o9re9niqlt",
+            "phone": "",
+            "email": "d02-evidence-reg-1794250575255@example.test",
+            "name": "Evidence Registrant",
+            "profileComplete": true
+          },
+          "tokens": "<redacted>"
+        }
+      }
+    },
+    {
+      "step": "3_unauth_me",
+      "method": "GET",
+      "path": "/api/v1/me/memberships",
+      "status": 401,
+      "requestNotes": "No Authorization header → expect 401 UNAUTHORIZED",
+      "response": {
+        "ok": false,
+        "error": {
+          "message": "Unauthorized",
+          "code": "UNAUTHORIZED"
+        }
+      }
+    },
+    {
+      "step": "4_create_club",
+      "method": "POST",
+      "path": "/api/v1/clubs",
+      "status": 200,
+      "requestNotes": "Bearer admin JWT → create club",
+      "response": {
+        "ok": true,
+        "data": {
+          "id": "cmw9mgsik000249o9zcx3yzqk",
+          "name": "D02 Evidence Club",
+          "slug": "d02-evidence-1794250575255",
+          "city": "Casablanca",
+          "description": null,
+          "visibility": "public",
+          "createdById": "d02_evidence_admin",
+          "createdAt": "2026-11-09T18:56:15.452Z"
+        }
+      }
+    },
+    {
+      "step": "5_invite",
+      "method": "POST",
+      "path": "/api/v1/clubs/cmw9mgsik000249o9zcx3yzqk/invite",
+      "status": 200,
+      "requestNotes": "Admin invite code generation",
+      "response": {
+        "ok": true,
+        "data": {
+          "id": "cmw9mgsiq000649o9gvamstya",
+          "clubId": "cmw9mgsik000249o9zcx3yzqk",
+          "code": "4B65CF2D",
+          "invitedPhone": null,
+          "invitedEmail": null,
+          "role": "member",
+          "expiresAt": null,
+          "createdAt": "2026-11-09T18:56:15.459Z"
+        }
+      }
+    },
+    {
+      "step": "6_join",
+      "method": "POST",
+      "path": "/api/v1/clubs/join-by-code",
+      "status": 200,
+      "requestNotes": "Member joins with invite code",
+      "response": {
+        "ok": true,
+        "data": {
+          "membership": {
+            "id": "cmw9mgsiw000849o9smpszewa",
+            "userId": "d02_evidence_member",
+            "clubId": "cmw9mgsik000249o9zcx3yzqk",
+            "role": "member",
+            "status": "approved",
+            "displayName": null,
+            "sharePrs": true,
+            "prSummary": null,
+            "createdAt": "2026-11-09T18:56:15.464Z"
+          },
+          "club": {
+            "id": "cmw9mgsik000249o9zcx3yzqk",
+            "name": "D02 Evidence Club",
+            "slug": "d02-evidence-1794250575255",
+            "city": "Casablanca",
+            "description": null,
+            "visibility": "public",
+            "createdById": "d02_evidence_admin",
+            "createdAt": "2026-11-09T18:56:15.452Z"
+          }
+        }
+      }
+    },
+    {
+      "step": "7_roster_member_forbidden",
+      "method": "GET",
+      "path": "/api/v1/clubs/cmw9mgsik000249o9zcx3yzqk/roster",
+      "status": 403,
+      "requestNotes": "Approved member without manage_club → expect 403 FORBIDDEN",
+      "response": {
+        "ok": false,
+        "error": {
+          "message": "Forbidden",
+          "code": "FORBIDDEN"
+        }
+      }
+    },
+    {
+      "step": "8_roster_admin_ok",
+      "method": "GET",
+      "path": "/api/v1/clubs/cmw9mgsik000249o9zcx3yzqk/roster",
+      "status": 200,
+      "requestNotes": "Admin/coach manage_club → roster 200",
+      "response": {
+        "ok": true,
+        "data": {
+          "clubId": "cmw9mgsik000249o9zcx3yzqk",
+          "members": [
+            {
+              "membershipId": "cmw9mgsil000449o9n95hw0uv",
+              "userId": "d02_evidence_admin",
+              "displayName": null,
+              "role": "admin",
+              "status": "approved",
+              "sharePrs": true,
+              "prSummary": null
+            },
+            {
+              "membershipId": "cmw9mgsiw000849o9smpszewa",
+              "userId": "d02_evidence_member",
+              "displayName": null,
+              "role": "member",
+              "status": "approved",
+              "sharePrs": true,
+              "prSummary": null
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

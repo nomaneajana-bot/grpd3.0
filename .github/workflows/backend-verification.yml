@@ -1,0 +1,57 @@
+name: Backend verification
+permissions:
+  contents: read
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  d02-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: grpd_test
+          POSTGRES_PASSWORD: grpd_test_local_only
+          POSTGRES_DB: grpd_test
+        ports:
+          - 55439:5432
+        options: >-
+          --health-cmd "pg_isready -U grpd_test -d grpd_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://grpd_test:grpd_test_local_only@127.0.0.1:55439/grpd_test
+      AUTH_JWT_SECRET: d02-ci-jwt-secret-not-for-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: |
+          mkdir -p d02-ci-results
+          npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Generate Prisma client and migrate disposable database
+        run: |
+          npx prisma generate 2>&1 | tee d02-ci-results/prisma-generate.txt
+          npx prisma migrate deploy 2>&1 | tee d02-ci-results/migrations.txt
+      - name: Unit tests (existing)
+        run: npm test -- --ci 2>&1 | tee d02-ci-results/unit-tests.txt
+      - name: Server TypeScript
+        run: npm run typecheck:server 2>&1 | tee d02-ci-results/typecheck-server.txt
+      - name: D02 JWT + API integration (Postgres)
+        run: npm run test:d02 -- --ci 2>&1 | tee d02-ci-results/d02-integration.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: d02-verification-${{ github.sha }}
+          path: d02-ci-results/
+          retention-days: 30
