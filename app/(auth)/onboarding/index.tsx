@@ -1,21 +1,58 @@
 import { type Href, router } from "expo-router";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { FeatureRow } from "@/components/onboarding/FeatureRow";
 import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
 import { welcomeTheme } from "@/components/onboarding/onboardingTheme";
+import {
+  clearDemoQueryParam,
+  enterDemoSession,
+  shouldAutoEnterDemo,
+} from "@/lib/demoSession";
 
 export default function OnboardingWelcomeScreen() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const autoStarted = useRef(false);
+
+  const handleDemoEnter = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      await enterDemoSession();
+      clearDemoQueryParam();
+      router.replace("/(tabs)" as Href);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Impossible d'ouvrir la démo.",
+      );
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (autoStarted.current || !shouldAutoEnterDemo()) return;
+    autoStarted.current = true;
+    void handleDemoEnter();
+  }, []);
+
   return (
     <OnboardingScreen
       scroll={false}
       ctaVariant="welcome"
       paddingHorizontal={welcomeTheme.screenPaddingHorizontal}
-      primaryLabel="Commencer"
-      onPrimaryPress={() => router.push("/(auth)/onboarding/phone" as Href)}
-      secondaryLabel="J'ai déjà un compte"
-      onSecondaryPress={() => router.push("/(auth)/phone" as Href)}
+      primaryLabel="Entrer en démo"
+      onPrimaryPress={() => void handleDemoEnter()}
+      primaryLoading={loading}
+      secondaryLabel="Créer un compte"
+      onSecondaryPress={() =>
+        router.push("/(auth)/onboarding/phone" as Href)
+      }
+      topLinkLabel="J'ai déjà un compte"
+      onTopLinkPress={() => router.push("/(auth)/phone" as Href)}
     >
       <View style={styles.content}>
         <View style={styles.top}>
@@ -48,6 +85,7 @@ export default function OnboardingWelcomeScreen() {
             isLast
           />
         </View>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
       </View>
     </OnboardingScreen>
   );
@@ -89,5 +127,10 @@ const styles = StyleSheet.create({
   },
   features: {
     marginTop: welcomeTheme.heroToFeaturesGap,
+  },
+  error: {
+    color: "#FF8A80",
+    marginTop: 16,
+    fontSize: 14,
   },
 });

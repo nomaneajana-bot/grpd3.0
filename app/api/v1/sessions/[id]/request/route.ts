@@ -13,7 +13,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const params = await context.params;
     const parsed = sessionIdParamSchema.safeParse(params);
     if (!parsed.success) {
@@ -25,7 +25,9 @@ export async function POST(
     }
     const sessionId = parsed.data.id;
 
-    const body = await req.json().catch(() => ({}));
+    const body = (await req.json().catch(() => ({}))) as {
+      groupId?: string | null;
+    };
     const { groupId } = body;
 
     const session = await prisma.session.findUnique({
