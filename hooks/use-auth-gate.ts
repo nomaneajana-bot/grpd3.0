@@ -2,6 +2,11 @@ import { type Href, router } from "expo-router";
 import { useEffect, useState } from "react";
 import { ONBOARDING_V2 } from "../lib/featureFlags";
 import { getAuthData } from "../lib/authStore";
+import {
+  clearDemoQueryParam,
+  enterDemoSession,
+  shouldAutoEnterDemo,
+} from "../lib/demoSession";
 
 /**
  * Hook to check authentication status and redirect unauthenticated users
@@ -18,54 +23,66 @@ export function useAuthGate(): {
     let isMounted = true;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
+    function redirectUnauthenticated() {
+      timeoutId = setTimeout(() => {
+        if (!isMounted) return;
+        try {
+          router.replace(
+            (ONBOARDING_V2
+              ? "/(auth)/onboarding"
+              : "/(auth)/phone") as Href,
+          );
+        } catch (err) {
+          console.warn("Router redirect failed:", err);
+        }
+      }, 200);
+    }
+
     async function checkAuth() {
       try {
         const authData = await getAuthData();
 
         if (!isMounted) return;
 
-        if (authData === null) {
-          // No auth data, redirect to phone screen
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          // Use setTimeout to ensure router is ready
-          timeoutId = setTimeout(() => {
-            if (isMounted) {
-              try {
-                router.replace(
-                  (ONBOARDING_V2
-                    ? "/(auth)/onboarding"
-                    : "/(auth)/phone") as Href,
-                );
-              } catch (err) {
-                console.warn("Router redirect failed:", err);
-              }
-            }
-          }, 200);
-        } else {
-          // User is authenticated
+        if (authData !== null) {
+          clearDemoQueryParam();
           setIsAuthenticated(true);
           setIsLoading(false);
+          return;
         }
+
+        // Tester shortcut: ?demo=1 logs in as the seeded mock runner.
+        if (shouldAutoEnterDemo()) {
+          try {
+            await enterDemoSession();
+            if (!isMounted) return;
+            clearDemoQueryParam();
+            setIsAuthenticated(true);
+            setIsLoading(false);
+            timeoutId = setTimeout(() => {
+              if (isMounted) {
+                try {
+                  router.replace("/(tabs)" as Href);
+                } catch (err) {
+                  console.warn("Router redirect failed:", err);
+                }
+              }
+            }, 50);
+            return;
+          } catch (demoError) {
+            console.warn("Demo auto-enter failed:", demoError);
+          }
+        }
+
+        setIsAuthenticated(false);
+        setIsLoading(false);
+        redirectUnauthenticated();
       } catch (error) {
         console.warn("Auth check failed:", error);
         if (isMounted) {
-          // On error, assume not authenticated and redirect
           setIsAuthenticated(false);
           setIsLoading(false);
-          timeoutId = setTimeout(() => {
-            if (isMounted) {
-              try {
-                router.replace(
-                  (ONBOARDING_V2
-                    ? "/(auth)/onboarding"
-                    : "/(auth)/phone") as Href,
-                );
-              } catch (err) {
-                console.warn("Router redirect failed:", err);
-              }
-            }
-          }, 200);
+          redirectUnauthenticated();
         }
       }
     }

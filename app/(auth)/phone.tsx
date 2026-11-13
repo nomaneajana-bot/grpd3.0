@@ -11,19 +11,23 @@ import { authTheme } from "@/constants/authTheme";
 import { colors, typography } from "@/constants/ui";
 import { createApiClient, requestOtp } from "@/lib/api";
 import { getAuthData, getDeviceId, setUseMockApi } from "@/lib/authStore";
+import {
+  DEMO_PHONE_LOCAL,
+  clearDemoQueryParam,
+  enterDemoSession,
+} from "@/lib/demoSession";
 import { setLoginOtpRequest, setLoginPhone } from "@/lib/loginFlowStore";
-
-const DEMO_PHONE = "0708060337";
 
 function isDemoPhone(digits: string): boolean {
   const d = digits.replace(/\D/g, "");
-  return d === DEMO_PHONE || d === DEMO_PHONE.slice(1);
+  return d === DEMO_PHONE_LOCAL || d === DEMO_PHONE_LOCAL.slice(1);
 }
 
 export default function PhoneScreen() {
   const [digits, setDigits] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [deviceRecognized, setDeviceRecognized] = useState(true);
 
   useEffect(() => {
@@ -32,6 +36,23 @@ export default function PhoneScreen() {
       setDeviceRecognized(!!auth || !!deviceId);
     })();
   }, []);
+
+  const handleDemoEnter = async () => {
+    setError(null);
+    setDemoLoading(true);
+    try {
+      await enterDemoSession();
+      clearDemoQueryParam();
+      router.replace("/(tabs)" as Href);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Impossible d'ouvrir la démo.",
+      );
+      setDemoLoading(false);
+    }
+  };
 
   const handleReceiveCode = async () => {
     const local = digits.replace(/\D/g, "");
@@ -74,9 +95,11 @@ export default function PhoneScreen() {
         primaryLabel="Recevoir le code"
         onPrimaryPress={() => void handleReceiveCode()}
         primaryDisabled={digits.replace(/\D/g, "").length < 9}
-        primaryLoading={loading}
-        secondaryLabel="Je n'ai pas encore de compte"
-        onSecondaryPress={() => router.replace("/(auth)/onboarding" as Href)}
+        primaryLoading={loading || demoLoading}
+        secondaryLabel="Entrer en démo"
+        onSecondaryPress={() => void handleDemoEnter()}
+        topLinkLabel="Je n'ai pas encore de compte"
+        onTopLinkPress={() => router.replace("/(auth)/onboarding" as Href)}
       >
         <OnboardingTitle
           variant="auth"
