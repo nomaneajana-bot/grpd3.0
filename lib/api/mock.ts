@@ -493,8 +493,17 @@ async function getOrCreateUser(phone: string): Promise<AuthUser> {
 
 async function ensureDemoPinAccount(): Promise<void> {
   const pins = await readJson<MockPinMap>(MOCK_PINS_KEY, {});
+  const e164 = `+212${DEMO_PHONE.slice(1)}`;
+  let changed = false;
   if (!pins[DEMO_PHONE]) {
     pins[DEMO_PHONE] = DEMO_PIN;
+    changed = true;
+  }
+  if (!pins[e164]) {
+    pins[e164] = DEMO_PIN;
+    changed = true;
+  }
+  if (changed) {
     await writeJson(MOCK_PINS_KEY, pins);
   }
 }
@@ -698,16 +707,14 @@ async function mockPinLogin(input: PinLoginInput): Promise<PinAuthResult> {
       ? normalizedPhone
       : `+${normalizedPhone}`,
   );
-  if (DEMO_MODE) {
+  // Demo-phone one-tap entry: always seed Casa world + membership so testers
+  // land in a usable mock session even when EXPO_PUBLIC_DEMO_MODE is off.
+  if (isDemoPhone(normalizedPhone)) {
     await ensureDemoWorld();
-    if (isDemoPhone(normalizedPhone)) {
-      await ensureDemoUserMembership(user);
-      await ensureDemoRunnerProfile();
-    }
-  } else if (isDemoPhone(normalizedPhone)) {
-    await ensureSeedClub();
+    await ensureDemoUserMembership(user);
     await ensureDemoRunnerProfile();
-    await normalizeDemoJoinedSessionsGroup();
+  } else if (DEMO_MODE) {
+    await ensureDemoWorld();
   }
   return {
     user,

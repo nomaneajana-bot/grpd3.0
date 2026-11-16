@@ -3,6 +3,11 @@ import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import { DEMO_MODE, ONBOARDING_V2 } from "../lib/featureFlags";
 import { getAuthData } from "../lib/authStore";
+import {
+  clearDemoQueryParam,
+  enterDemoSession,
+  shouldAutoEnterDemo,
+} from "../lib/demoSession";
 
 /**
  * Resolve the path used for auth redirects.
@@ -87,6 +92,28 @@ export function useAuthGate(): {
         if (!isMounted) return;
 
         if (authData === null) {
+          // Tester shortcut: ?demo=1 seeds mock session + persists for later visits.
+          if (shouldAutoEnterDemo()) {
+            try {
+              await enterDemoSession();
+              if (!isMounted) return;
+              clearDemoQueryParam();
+              setIsAuthenticated(true);
+              setIsLoading(false);
+              timeoutId = setTimeout(() => {
+                if (!isMounted) return;
+                try {
+                  router.replace("/(tabs)" as Href);
+                } catch (err) {
+                  console.warn("Router redirect failed:", err);
+                }
+              }, 50);
+              return;
+            } catch (demoError) {
+              console.warn("Demo auto-enter failed:", demoError);
+            }
+          }
+
           setIsAuthenticated(false);
           setIsLoading(false);
           // Demo root: send share links to /demo (seeds auth → Accueil).
@@ -124,6 +151,7 @@ export function useAuthGate(): {
             }
           }, 200);
         } else {
+          clearDemoQueryParam();
           setIsAuthenticated(true);
           setIsLoading(false);
         }

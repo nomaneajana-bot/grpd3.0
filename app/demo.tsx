@@ -4,12 +4,15 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { stitoTheme as t } from "@/constants/stitoTheme";
-import { enterDemoHomeSession } from "@/lib/demoEnter";
-import { DEMO_MODE } from "@/lib/featureFlags";
+import {
+  clearDemoQueryParam,
+  enterDemoSession,
+} from "@/lib/demoSession";
 
 /**
  * Public demo entry — seeds mock auth and opens Accueil.
- * Only active when EXPO_PUBLIC_DEMO_MODE=true (Vercel preview / local demo).
+ * Works without EXPO_PUBLIC_DEMO_MODE so production can keep the
+ * connected email welcome as the default path.
  */
 export default function DemoHomeEntryScreen() {
   const [error, setError] = useState<string | null>(null);
@@ -18,16 +21,10 @@ export default function DemoHomeEntryScreen() {
   useEffect(() => {
     let alive = true;
     (async () => {
-      if (!DEMO_MODE) {
-        if (alive) {
-          setBusy(false);
-          setError("Mode démo désactivé sur cet environnement.");
-        }
-        return;
-      }
       try {
-        await enterDemoHomeSession();
+        await enterDemoSession();
         if (!alive) return;
+        clearDemoQueryParam();
         // Replace after storage flush so the auth gate sees the session.
         await new Promise((r) => setTimeout(r, 30));
         if (!alive) return;
@@ -58,25 +55,26 @@ export default function DemoHomeEntryScreen() {
           <>
             <Text style={styles.title}>Accueil démo</Text>
             <Text style={styles.body}>{error}</Text>
-            {DEMO_MODE ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Réessayer"
-                onPress={() => {
-                  setError(null);
-                  setBusy(true);
-                  void enterDemoHomeSession()
-                    .then(() => router.replace("/(tabs)" as Href))
-                    .catch(() => {
-                      setBusy(false);
-                      setError("Impossible d’ouvrir l’accueil démo. Réessaie.");
-                    });
-                }}
-                style={styles.btn}
-              >
-                <Text style={styles.btnText}>Réessayer</Text>
-              </Pressable>
-            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Réessayer"
+              onPress={() => {
+                setError(null);
+                setBusy(true);
+                void enterDemoSession()
+                  .then(() => {
+                    clearDemoQueryParam();
+                    router.replace("/(tabs)" as Href);
+                  })
+                  .catch(() => {
+                    setBusy(false);
+                    setError("Impossible d’ouvrir l’accueil démo. Réessaie.");
+                  });
+              }}
+              style={styles.btn}
+            >
+              <Text style={styles.btnText}>Réessayer</Text>
+            </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Aller à l’onboarding"
