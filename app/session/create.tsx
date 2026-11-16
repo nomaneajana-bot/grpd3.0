@@ -1509,18 +1509,12 @@ export default function CreateSessionScreen() {
         const runner = await getRunnerProfile();
         setProfile(runner);
         if (!hasInitializedAudience && !isEditMode) {
-          // Explicit organise-from-club binds members audience.
-          // Standalone create defaults to public so a stale focused club
-          // cannot silently attach a later outing.
-          if (
-            explicitClubId ||
-            explicitAudience === "club" ||
-            explicitAudience === "team"
-          ) {
-            setSessionAudience("club");
+          // Default to club-reserved; explicit ?audience=public can still open.
+          if (explicitAudience === "public") {
+            setSessionAudience("public");
           } else {
             setSessionAudience(
-              normalizeSessionAudience(explicitAudience ?? "public"),
+              normalizeSessionAudience(explicitAudience ?? "club"),
             );
           }
           setHasInitializedAudience(true);
@@ -1528,7 +1522,7 @@ export default function CreateSessionScreen() {
       } catch (error) {
         console.warn("Failed to load profile for session audience:", error);
         if (!hasInitializedAudience && !isEditMode) {
-          setSessionAudience("public");
+          setSessionAudience("club");
           setHasInitializedAudience(true);
         }
       }
@@ -1562,10 +1556,11 @@ export default function CreateSessionScreen() {
           setPrimaryClubId(bound?.clubId ?? explicitClubId);
           return;
         }
-        // Standalone create: do not auto-bind focused club. User must pick
-        // club audience + club explicitly when organising for members.
+        // Club-reserved is the default: pre-bind focused club, else sole club.
         if (focusedId && approved.some((m) => m.clubId === focusedId)) {
-          setPrimaryClubId(null);
+          setPrimaryClubId(focusedId);
+        } else if (approved.length === 1) {
+          setPrimaryClubId(approved[0]!.clubId);
         } else {
           setPrimaryClubId(null);
         }
@@ -1699,7 +1694,7 @@ export default function CreateSessionScreen() {
     null,
   );
   const [sessionAudience, setSessionAudience] =
-    useState<SessionAudience>("public");
+    useState<SessionAudience>("club");
 
   useEffect(() => {
     if (!primaryClubId) {
@@ -2635,86 +2630,24 @@ export default function CreateSessionScreen() {
           </View>
         </View>
 
-        {/* Card metrics — feed the Mes Sorties / club / discovery strips */}
-        <View style={styles.card} testID="session-card-metrics">
-          <Text style={styles.cardLabel}>SUR LES CARTES</Text>
-          <Text style={styles.cardSubtitle}>
-            Distance, allure et durée — les trois chiffres que les gens scannent
-            en premier. Laisse vide si tu ne sais pas encore.
-          </Text>
-          <View style={styles.metricsRow}>
-            <View style={styles.metricField}>
-              <Text style={styles.fieldLabel}>Distance (km)</Text>
-              <TextInput
-                style={styles.metricInput}
-                value={distanceKmText}
-                onChangeText={setDistanceKmText}
-                placeholder="8"
-                placeholderTextColor={colors.text.tertiary}
-                keyboardType="decimal-pad"
-                testID="session-distance-input"
-                accessibilityLabel="Distance en kilomètres"
-              />
-            </View>
-            <View style={styles.metricField}>
-              <Text style={styles.fieldLabel}>
-                {sessionMode === "walking" ? "Rythme" : "Allure"}
-              </Text>
-              <TextInput
-                style={styles.metricInput}
-                value={paceText}
-                onChangeText={setPaceText}
-                placeholder={
-                  sessionMode === "walking" ? "Libre" : "5:30–6:30"
-                }
-                placeholderTextColor={colors.text.tertiary}
-                autoCapitalize="none"
-                testID="session-pace-input"
-                accessibilityLabel={
-                  sessionMode === "walking"
-                    ? "Rythme de la marche"
-                    : "Allure de la course"
-                }
-              />
-            </View>
-            <View style={styles.metricField}>
-              <Text style={styles.fieldLabel}>Durée (min)</Text>
-              <TextInput
-                style={styles.metricInput}
-                value={durationMinText}
-                onChangeText={setDurationMinText}
-                placeholder="45"
-                placeholderTextColor={colors.text.tertiary}
-                keyboardType="number-pad"
-                testID="session-duration-input"
-                accessibilityLabel="Durée en minutes"
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Card 2 - Infos de base */}
-        <View style={styles.card}>
+        {/* Infos de base — lieu via chips only (no duplicate Spot row) */}
+        <View style={styles.card} testID="session-card-basics">
           <Text style={styles.cardLabel}>INFOS DE BASE</Text>
-          <TouchableOpacity
-            style={styles.fieldRow}
-            onPress={() => setShowSpotPicker(true)}
-            activeOpacity={0.7}
-            testID="session-spot-field"
-            accessibilityRole="button"
-            accessibilityLabel="Choisir un spot"
-          >
-            <Text style={styles.fieldLabel}>Spot</Text>
-            <Text style={styles.fieldInput} testID="session-spot-value">
-              {spot}
-            </Text>
-          </TouchableOpacity>
+          <Text style={styles.fieldLabel}>Lieu</Text>
           <LocationSlider
             value={spot}
             onChange={setSpot}
             options={spots}
             testID="session-location-slider"
           />
+          <Text
+            style={styles.srOnly}
+            testID="session-spot-value"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            {spot}
+          </Text>
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.fieldRow}
@@ -2747,9 +2680,6 @@ export default function CreateSessionScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardLabel}>CETTE SORTIE EST…</Text>
-          <Text style={styles.cardSubtitle}>
-            Qui peut voir et rejoindre — accès réel, pas un label.
-          </Text>
           <View style={styles.audienceChips} testID="session-audience-chips">
             {SESSION_AUDIENCE_OPTIONS.map((opt) => {
               const on = sessionAudience === opt.id;
@@ -2807,25 +2737,9 @@ export default function CreateSessionScreen() {
               );
             })}
           </View>
-          <Text style={styles.audienceNote}>
-            {
-              SESSION_AUDIENCE_OPTIONS.find((o) => o.id === sessionAudience)
-                ?.hint
-            }
-          </Text>
           {sessionAudience === "club" && approvedClubs.length > 0 ? (
             <View style={styles.clubPickBlock} testID="create-club-picker">
-              {explicitClubId || approvedClubs.length === 1 ? (
-                <Text style={styles.audienceNote} testID="create-club-bound">
-                  Seuls les membres confirmés de{" "}
-                  {approvedClubs.find(
-                    (m) =>
-                      m.clubId ===
-                      (explicitClubId || primaryClubId || approvedClubs[0]?.clubId),
-                  )?.club?.name ?? "ton club"}{" "}
-                  voient et rejoignent.
-                </Text>
-              ) : (
+              {approvedClubs.length > 1 && !explicitClubId ? (
                 <>
                   <Text style={styles.clubPickLabel}>QUEL CLUB ?</Text>
                   <View style={styles.audienceChips}>
@@ -2852,21 +2766,23 @@ export default function CreateSessionScreen() {
                     })}
                   </View>
                 </>
-              )}
+              ) : null}
+              {primaryClubId ||
+              explicitClubId ||
+              approvedClubs.length === 1 ? (
+                <Text style={styles.audienceNote} testID="create-club-bound">
+                  Seuls les membres confirmés de{" "}
+                  {approvedClubs.find(
+                    (m) =>
+                      m.clubId ===
+                      (explicitClubId ||
+                        primaryClubId ||
+                        approvedClubs[0]?.clubId),
+                  )?.club?.name ?? "ton club"}{" "}
+                  voient et rejoignent.
+                </Text>
+              ) : null}
             </View>
-          ) : null}
-          {sessionAudience === "public" && primaryClubId ? (
-            <Text style={styles.audienceNote} testID="create-public-soft-club">
-              Visible sur Découvrir — associée à{" "}
-              {approvedClubs.find((m) => m.clubId === primaryClubId)?.club
-                ?.name ?? "ton club"}{" "}
-              (Organisé avec…), sans réserver l’accès.
-            </Text>
-          ) : null}
-          {sessionAudience === "public" && !primaryClubId ? (
-            <Text style={styles.audienceNote} testID="create-public-no-club">
-              Visible sur Découvrir — aucun club ne sera associé.
-            </Text>
           ) : null}
           {sessionAudience === "club" &&
           primaryClubId &&
@@ -3212,6 +3128,13 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     marginBottom: 16,
     lineHeight: 16,
+  },
+  srOnly: {
+    position: "absolute",
+    width: 1,
+    height: 1,
+    opacity: 0,
+    overflow: "hidden",
   },
   walkMetaBlock: {
     marginTop: 8,
