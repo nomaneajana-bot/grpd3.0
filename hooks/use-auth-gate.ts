@@ -154,6 +154,23 @@ export function useAuthGate(): {
           clearDemoQueryParam();
           setIsAuthenticated(true);
           setIsLoading(false);
+          // Persisted session: leave welcome/auth (and bare `/`) for Accueil.
+          if (
+            livePath === "/" ||
+            livePath === "" ||
+            isAuthFlowRoute(livePath) ||
+            livePath === "/demo" ||
+            livePath.endsWith("/demo")
+          ) {
+            timeoutId = setTimeout(() => {
+              if (!isMounted) return;
+              try {
+                router.replace("/(tabs)" as Href);
+              } catch (err) {
+                console.warn("Router redirect failed:", err);
+              }
+            }, 50);
+          }
         }
       } catch (error) {
         console.warn("Auth check failed:", error);

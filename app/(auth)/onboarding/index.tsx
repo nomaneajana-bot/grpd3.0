@@ -6,6 +6,7 @@ import { FeatureRow } from "@/components/onboarding/FeatureRow";
 import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
 import { WelcomeBackground } from "@/components/onboarding/WelcomeBackground";
 import { welcomeTheme } from "@/components/onboarding/onboardingTheme";
+import { getAuthData } from "@/lib/authStore";
 import {
   clearDemoQueryParam,
   enterDemoSession,
@@ -35,9 +36,22 @@ export default function OnboardingWelcomeScreen() {
   };
 
   useEffect(() => {
-    if (autoStarted.current || !shouldAutoEnterDemo()) return;
+    if (autoStarted.current) return;
     autoStarted.current = true;
-    void handleDemoEnter();
+    void (async () => {
+      try {
+        const existing = await getAuthData();
+        if (existing) {
+          router.replace("/(tabs)" as Href);
+          return;
+        }
+      } catch {
+        // fall through to optional demo auto-enter
+      }
+      if (shouldAutoEnterDemo()) {
+        await handleDemoEnter();
+      }
+    })();
   }, []);
 
   return (
