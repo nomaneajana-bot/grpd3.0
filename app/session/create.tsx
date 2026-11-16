@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
     Alert,
     FlatList,
+    Image,
     Modal,
     Pressable,
     ScrollView,
@@ -13,6 +14,7 @@ import {
     TouchableWithoutFeedback,
     View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
@@ -113,6 +115,7 @@ import {
 import { resolvePublishClubId } from "../../lib/sessionClubAssociation";
 import { getFocusedClubId } from "../../lib/focusedClubStore";
 import { createSession as createSessionLocal, updateSession } from "../../lib/sessionStore";
+import { pickOutingCover } from "../../lib/pickOutingCover";
 import type { ClubMembership, SessionCreateInput } from "../../types/api";
 import {
     getWorkoutBasePaceSeconds,
@@ -1585,6 +1588,8 @@ export default function CreateSessionScreen() {
   const [sessionMode, setSessionMode] = useState<SessionMode>("workout");
   /** User-entered title — required for walk (must agree on detail). */
   const [outingTitle, setOutingTitle] = useState("");
+  /** Optional cover photo (URL / data URL) — never required to publish. */
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   /** User-entered purpose / “à quoi s’attendre”. */
   const [outingPurpose, setOutingPurpose] = useState("");
   /**
@@ -2068,6 +2073,9 @@ export default function CreateSessionScreen() {
           if (existingSession.title?.trim()) {
             setOutingTitle(existingSession.title.trim());
           }
+          if (existingSession.coverImageUrl?.trim()) {
+            setCoverImageUrl(existingSession.coverImageUrl.trim());
+          }
         }
 
         // Pre-fill group configs from paceGroupsOverride (new format) or paceGroups (legacy)
@@ -2148,6 +2156,7 @@ export default function CreateSessionScreen() {
         groupConfigs,
         outingTitle,
         outingPurpose,
+        coverImageUrl,
       }),
     [
       spot,
@@ -2164,6 +2173,7 @@ export default function CreateSessionScreen() {
       groupConfigs,
       outingTitle,
       outingPurpose,
+      coverImageUrl,
     ],
   );
 
@@ -2332,6 +2342,7 @@ export default function CreateSessionScreen() {
           targetPace: targetPaceExplicit,
           durationMinutes: durationParsed,
           organizerName,
+          coverImageUrl,
         });
         const sessionWithAudience = {
           ...session,
@@ -2367,6 +2378,7 @@ export default function CreateSessionScreen() {
           targetPace: targetPaceExplicit,
           durationMinutes: durationParsed,
           organizerName,
+          coverImageUrl,
         });
 
         const apiPayload: SessionCreateInput = {
@@ -2391,6 +2403,7 @@ export default function CreateSessionScreen() {
           coachAdvice: session.coachAdvice ?? null,
           coachPhone: session.coachPhone ?? null,
           coachName: session.coachName ?? null,
+          coverImageUrl: session.coverImageUrl ?? null,
         };
 
         let createdId: string = id;
@@ -2609,6 +2622,85 @@ export default function CreateSessionScreen() {
               testID="session-purpose-input"
               accessibilityLabel="Objectif de la sortie"
             />
+            <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
+              Photo{" "}
+              <Text style={styles.optionalHint}>(optionnel)</Text>
+            </Text>
+            {coverImageUrl ? (
+              <View style={styles.coverPreviewWrap} testID="session-cover-preview">
+                <Image
+                  source={{ uri: coverImageUrl }}
+                  style={styles.coverPreview}
+                  resizeMode="cover"
+                  accessibilityIgnoresInvertColors
+                />
+                <View style={styles.coverActions}>
+                  <TouchableOpacity
+                    style={styles.coverActionBtn}
+                    onPress={() => {
+                      void (async () => {
+                        try {
+                          const next = await pickOutingCover();
+                          if (next) setCoverImageUrl(next);
+                        } catch (err) {
+                          const message =
+                            err instanceof Error
+                              ? err.message
+                              : "Impossible d’ajouter la photo.";
+                          setFormError(message);
+                        }
+                      })();
+                    }}
+                    activeOpacity={0.75}
+                    testID="session-cover-replace"
+                    accessibilityRole="button"
+                    accessibilityLabel="Changer la photo"
+                  >
+                    <Text style={styles.coverActionText}>Changer</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.coverActionBtn, styles.coverActionDanger]}
+                    onPress={() => setCoverImageUrl(null)}
+                    activeOpacity={0.75}
+                    testID="session-cover-remove"
+                    accessibilityRole="button"
+                    accessibilityLabel="Retirer la photo"
+                  >
+                    <Text style={styles.coverActionTextDanger}>Retirer</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.coverAddBtn}
+                onPress={() => {
+                  void (async () => {
+                    try {
+                      setFormError(null);
+                      const next = await pickOutingCover();
+                      if (next) setCoverImageUrl(next);
+                    } catch (err) {
+                      const message =
+                        err instanceof Error
+                          ? err.message
+                          : "Impossible d’ajouter la photo.";
+                      setFormError(message);
+                    }
+                  })();
+                }}
+                activeOpacity={0.75}
+                testID="session-cover-add"
+                accessibilityRole="button"
+                accessibilityLabel="Ajouter une photo (optionnel)"
+              >
+                <Ionicons
+                  name="image-outline"
+                  size={20}
+                  color={colors.text.secondary}
+                />
+                <Text style={styles.coverAddText}>Ajouter une photo</Text>
+              </TouchableOpacity>
+            )}
             <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
               Structure / déroulé
             </Text>
@@ -3139,6 +3231,67 @@ const styles = StyleSheet.create({
   walkTextArea: {
     minHeight: 72,
     textAlignVertical: "top",
+  },
+  optionalHint: {
+    color: colors.text.tertiary,
+    fontWeight: "400",
+  },
+  coverAddBtn: {
+    marginTop: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.border.medium,
+    backgroundColor: colors.background.input,
+    paddingHorizontal: 14,
+  },
+  coverAddText: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  coverPreviewWrap: {
+    marginTop: 6,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.input,
+  },
+  coverPreview: {
+    width: "100%",
+    height: 160,
+  },
+  coverActions: {
+    flexDirection: "row",
+    gap: 8,
+    padding: 10,
+  },
+  coverActionBtn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: colors.accent.primaryDim,
+  },
+  coverActionDanger: {
+    backgroundColor: "rgba(196,90,26,0.12)",
+  },
+  coverActionText: {
+    color: colors.text.accent,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  coverActionTextDanger: {
+    color: colors.text.warning,
+    fontSize: 13,
+    fontWeight: "700",
   },
   metricsRow: {
     flexDirection: "row",

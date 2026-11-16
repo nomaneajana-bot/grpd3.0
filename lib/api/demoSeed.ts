@@ -31,7 +31,7 @@ export const MOCK_MEMBERSHIPS_KEY = "mock:club_memberships";
 export const MOCK_OTP_KEY = "mock:otp";
 /** Bump to force a one-time reseed of the richer Casablanca world. */
 export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v5";
-export const DEMO_SEED_VERSION = "5";
+export const DEMO_SEED_VERSION = "6";
 
 export const DEMO_CLUB_ID = "club_casa_running";
 export const DEMO_CLUB_NAME = "Casa Running Club";
@@ -296,6 +296,7 @@ function buildDemoSessions(): ApiSession[] {
     pastDaysAgo?: number;
     genderRestriction?: "women_only" | "none";
     openRunners?: number;
+    coverImageUrl?: string | null;
   };
 
   const specs: SpecExtra[] = [
@@ -315,6 +316,8 @@ function buildDemoSessions(): ApiSession[] {
       coachPhone: "+212600000001",
       recommendedGroupId: "C",
       purpose: "Se mettre en jambes sans se forcer — on discute un peu.",
+      coverImageUrl:
+        "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=1200&q=80",
     },
     {
       id: "demo_sess_marche_matin",
@@ -373,6 +376,8 @@ function buildDemoSessions(): ApiSession[] {
     {
       id: "demo_sess_fartlek_ain_diab",
       title: "Fartlek Ain Diab",
+      coverImageUrl:
+        "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1200&q=80",
       spot: "Ain Diab — Phare El Hank",
       dayOffset: 1,
       timeMinutes: 18 * 60 + 30,
@@ -687,6 +692,7 @@ function buildDemoSessions(): ApiSession[] {
         "Arrive 10 min avant. Hydrate-toi. On part ensemble.",
       coachPhone: spec.coachPhone,
       coachName: spec.coachName,
+      coverImageUrl: spec.coverImageUrl ?? null,
       attendanceStatus: null,
       attendanceGroupId: null,
     } satisfies ApiSession;

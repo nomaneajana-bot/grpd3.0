@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { homeTheme as h } from "@/constants/homeTheme";
@@ -55,6 +55,7 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
   const count = confirmedParticipantCount(session);
   const hostInitials = initialsFromName(host) || (isWalk ? "M" : "C");
   const ctaLabel = joined ? "Voir" : "Rejoindre";
+  const cover = session.coverImageUrl?.trim() || null;
 
   return (
     <Pressable
@@ -64,6 +65,16 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       testID={`home-outing-row-${session.id}`}
     >
+      {cover ? (
+        <View style={styles.coverWrap} testID={`home-outing-cover-${session.id}`}>
+          <Image
+            source={{ uri: cover }}
+            style={styles.cover}
+            resizeMode="cover"
+            accessibilityIgnoresInvertColors
+          />
+        </View>
+      ) : null}
       <View style={styles.hostRow}>
         <View
           style={[styles.hostAvatar, { backgroundColor: AVATAR_TONES[0] }]}
@@ -245,9 +256,22 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
+    overflow: "hidden",
   },
   cardPressed: {
     opacity: 0.96,
+  },
+  coverWrap: {
+    marginHorizontal: -16,
+    marginTop: -16,
+    marginBottom: 2,
+    height: 148,
+    backgroundColor: h.mutedSurface,
+    overflow: "hidden",
+  },
+  cover: {
+    width: "100%",
+    height: "100%",
   },
   hostRow: {
     flexDirection: "row",

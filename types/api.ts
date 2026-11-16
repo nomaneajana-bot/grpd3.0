@@ -377,6 +377,8 @@ export type ApiSession = {
   coachAdvice?: string | null;
   coachPhone?: string | null;
   coachName?: string | null;
+  /** Optional cover for discovery / outing cards. */
+  coverImageUrl?: string | null;
   attendanceStatus?: AttendanceStatus | null;
   attendanceGroupId?: string | null;
 };
@@ -403,6 +405,7 @@ export type SessionCreateInput = {
   coachAdvice?: string | null;
   coachPhone?: string | null;
   coachName?: string | null;
+  coverImageUrl?: string | null;
 };
 
 export type SessionCreateResult = ApiSession;

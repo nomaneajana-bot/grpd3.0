@@ -72,6 +72,8 @@ export type SessionData = {
   coachAdvice?: string; // Coach's advice for this session
   coachPhone?: string; // Coach/organizer phone number for WhatsApp
   coachName?: string; // Coach/organizer name
+  /** Optional cover photo for discovery cards (URL or data URL). */
+  coverImageUrl?: string | null;
   visibility?: SessionVisibility; // "public" | "members" (members-only sessions)
   hostGroupName?: string | null; // Group/club name for members-only sessions
   genderRestriction?: "women_only" | null; // Optional gender restriction (e.g., girls-only runs)
@@ -113,6 +115,7 @@ export function apiSessionToSessionData(api: {
   coachAdvice?: string | null;
   coachPhone?: string | null;
   coachName?: string | null;
+  coverImageUrl?: string | null;
   workoutId?: string | null;
   isCustom?: boolean;
   hostUserId?: string | null;
@@ -185,6 +188,7 @@ export function apiSessionToSessionData(api: {
     coachAdvice: api.coachAdvice ?? undefined,
     coachPhone: api.coachPhone ?? undefined,
     coachName: api.coachName ?? undefined,
+    coverImageUrl: api.coverImageUrl ?? null,
     clubId: api.clubId ?? null,
     hostUserId: api.hostUserId ?? null,
     genderRestriction:
@@ -255,6 +259,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
     volume: "3:00 effort x 6 · Récup 2:00",
     targetPace: "5:20–6:00/km",
     estimatedDistanceKm: 10,
+    coverImageUrl:
+      "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1200&q=80",
     paceGroups: [
       {
         id: "A",

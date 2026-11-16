@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 import { stitoTheme as t } from "@/constants/stitoTheme";
 
@@ -11,6 +11,8 @@ type Props = {
   contextLabel?: string | null;
   /** Unused in Stitch hero — kept for call-site compat */
   editionLabel?: string | null;
+  /** Optional cover — omitted when the outing has no photo. */
+  coverImageUrl?: string | null;
 };
 
 /**
@@ -20,11 +22,23 @@ export function StitoOutingHero({
   title,
   metaLine,
   contextLabel,
+  coverImageUrl,
 }: Props) {
+  const cover = coverImageUrl?.trim() || null;
   return (
     <View style={styles.wrap} testID="stito-outing-hero">
-      <View style={styles.glow} pointerEvents="none" />
-      <View style={styles.inner}>
+      {cover ? (
+        <Image
+          source={{ uri: cover }}
+          style={styles.cover}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+          testID="stito-outing-cover"
+        />
+      ) : (
+        <View style={styles.glow} pointerEvents="none" />
+      )}
+      <View style={[styles.inner, cover ? styles.innerOnCover : null]}>
         {(metaLine || contextLabel) && (
           <View style={styles.metaRow}>
             {metaLine ? (
@@ -58,7 +72,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 24,
     minHeight: 120,
-    justifyContent: "center",
+    justifyContent: "flex-end",
+  },
+  cover: {
+    ...StyleSheet.absoluteFillObject,
   },
   glow: {
     position: "absolute",
@@ -72,6 +89,14 @@ const styles = StyleSheet.create({
   inner: {
     zIndex: 1,
     gap: 12,
+  },
+  innerOnCover: {
+    backgroundColor: "rgba(15, 28, 20, 0.45)",
+    marginHorizontal: -24,
+    marginBottom: -24,
+    marginTop: 72,
+    paddingHorizontal: 24,
+    paddingVertical: 18,
   },
   metaRow: {
     flexDirection: "row",

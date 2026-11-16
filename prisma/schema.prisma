@@ -108,6 +108,7 @@ model Session {
   coachAdvice      String?
   coachPhone       String?
   coachName        String?
+  coverImageUrl    String?
   createdAt        DateTime @default(now())
   workoutId        String?
   isCustom         Boolean  @default(false)

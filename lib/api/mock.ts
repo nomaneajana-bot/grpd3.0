@@ -122,6 +122,7 @@ function sessionDataToApiSession(data: SessionData): ApiSession {
     coachAdvice: data.coachAdvice ?? null,
     coachPhone: data.coachPhone ?? null,
     coachName: data.coachName ?? null,
+    coverImageUrl: data.coverImageUrl ?? null,
     attendanceStatus: data.attendanceStatus ?? null,
     attendanceGroupId: data.attendanceGroupId ?? null,
   };
@@ -1088,6 +1089,7 @@ async function mockCreateSession(input: SessionCreateInput): Promise<ApiSession>
     coachAdvice: input.coachAdvice ?? null,
     coachPhone: input.coachPhone ?? null,
     coachName: input.coachName ?? null,
+    coverImageUrl: input.coverImageUrl ?? null,
     attendanceStatus: null,
     attendanceGroupId: null,
   };

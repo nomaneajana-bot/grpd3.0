@@ -32,6 +32,7 @@ function serializeSession(session: {
   coachAdvice: string | null;
   coachPhone: string | null;
   coachName: string | null;
+  coverImageUrl?: string | null;
 }) {
   return {
     id: session.id,
@@ -58,6 +59,7 @@ function serializeSession(session: {
     coachAdvice: session.coachAdvice ?? undefined,
     coachPhone: session.coachPhone ?? undefined,
     coachName: session.coachName ?? undefined,
+    coverImageUrl: session.coverImageUrl ?? undefined,
   };
 }
 

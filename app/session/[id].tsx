@@ -1053,6 +1053,7 @@ export default function SessionScreen() {
                     ? "Réservée aux membres"
                     : "Ouverte à tous"
                 }
+                coverImageUrl={session.coverImageUrl}
               />
             </View>
           );

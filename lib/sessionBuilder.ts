@@ -92,6 +92,8 @@ export function buildSessionFromForm(params: {
   language?: string | null;
   /** Real organizer display name — never invent “Coach Youssef”. */
   organizerName?: string | null;
+  /** Optional cover photo URL / data URL — never required. */
+  coverImageUrl?: string | null;
 }): { id: string; session: SessionData; defaultGroupId: string } {
   const { spot, timeLabel, sessionType, groupConfigs, workoutId } = params;
   const visibility = params.visibility ?? "public";
@@ -280,6 +282,7 @@ export function buildSessionFromForm(params: {
     genderRestriction,
     coachAdvice: purpose || undefined,
     coachName: organizerName || undefined,
+    coverImageUrl: params.coverImageUrl?.trim() || null,
     meetingPoint: spot,
     experience: isWalk
       ? {

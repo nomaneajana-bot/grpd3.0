@@ -38,6 +38,7 @@ const createSchema = z.object({
   coachAdvice: z.string().nullable().optional(),
   coachPhone: z.string().nullable().optional(),
   coachName: z.string().nullable().optional(),
+  coverImageUrl: z.string().nullable().optional(),
   paceGroups: z.array(paceGroupSchema).optional(),
 });
 
@@ -66,6 +67,7 @@ function serializeSession(session: {
   coachAdvice: string | null;
   coachPhone: string | null;
   coachName: string | null;
+  coverImageUrl?: string | null;
 }) {
   return {
     id: session.id,
@@ -92,6 +94,7 @@ function serializeSession(session: {
     coachAdvice: session.coachAdvice ?? undefined,
     coachPhone: session.coachPhone ?? undefined,
     coachName: session.coachName ?? undefined,
+    coverImageUrl: session.coverImageUrl ?? undefined,
   };
 }
 
@@ -151,6 +154,7 @@ export async function POST(req: NextRequest) {
         coachAdvice: data.coachAdvice ?? null,
         coachPhone: data.coachPhone ?? null,
         coachName: data.coachName ?? null,
+        coverImageUrl: data.coverImageUrl ?? null,
         workoutId: data.workoutId ?? null,
         isCustom: data.isCustom ?? true,
         paceGroups: data.paceGroups ?? Prisma.JsonNull,
