@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
 
 import { DaySlider } from "@/components/home/DaySlider";
+import { Avatar } from "@/components/ui/Avatar";
 import { CitySlider } from "@/components/ui/CitySlider";
 import { homeTheme as h } from "@/constants/homeTheme";
 import {
@@ -26,6 +27,7 @@ type HomeHeaderProps = {
   searchInputRef?: React.RefObject<unknown>;
   /** Optional profile initial for the mark (Stitch: single letter). */
   profileInitial?: string;
+  profileAvatarUrl?: string | null;
 };
 
 /**
@@ -39,6 +41,7 @@ export function HomeHeader({
   onCitySelect,
   onQueryChange,
   profileInitial = "Y",
+  profileAvatarUrl = null,
 }: HomeHeaderProps) {
   const [cityOpen, setCityOpen] = useState(false);
   const [dayOpen, setDayOpen] = useState(false);
@@ -87,7 +90,13 @@ export function HomeHeader({
           ]}
           testID="home-profile-btn"
         >
-          <Text style={styles.avatarText}>{profileInitial.slice(0, 1)}</Text>
+          <Avatar
+            initial={profileInitial.slice(0, 1)}
+            uri={profileAvatarUrl}
+            size={36}
+            backgroundColor={h.primary}
+            testID="home-profile-avatar"
+          />
         </Pressable>
       </View>
 
@@ -178,18 +187,12 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   avatarBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: h.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-  },
-  avatarText: {
-    fontFamily: h.font.space.semibold,
-    fontSize: 12,
-    lineHeight: 16,
-    color: h.onPrimary,
+    overflow: "hidden",
   },
   greeting: {
     paddingTop: 0,

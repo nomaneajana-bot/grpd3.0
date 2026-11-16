@@ -21,6 +21,8 @@ export type RunnerProfile = {
   sharePrsWithCoach?: boolean; // default true
   // Extended fields (backward compatible - all optional)
   firstName?: string;
+  /** Optional profile photo (data URL or remote URL). */
+  avatarUrl?: string | null;
   /** French copy agreement — homme | femme */
   gender?: "female" | "male" | null;
   defaultGroup?: "A" | "B" | "C" | "D" | null; // deprecated

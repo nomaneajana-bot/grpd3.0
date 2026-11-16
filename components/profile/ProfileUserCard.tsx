@@ -2,26 +2,56 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { Avatar } from "@/components/ui/Avatar";
 import { stitoTheme as t } from "@/constants/stitoTheme";
 
 type ProfileUserCardProps = {
   name: string;
   initial: string;
   subtitle: string;
+  avatarUrl?: string | null;
   onEditPress: () => void;
+  onAvatarPress?: () => void;
+  avatarBusy?: boolean;
 };
 
 export function ProfileUserCard({
   name,
   initial,
   subtitle,
+  avatarUrl,
   onEditPress,
+  onAvatarPress,
+  avatarBusy = false,
 }: ProfileUserCardProps) {
   return (
     <View style={styles.card} testID="profile-user-card">
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{initial}</Text>
-      </View>
+      <Pressable
+        onPress={onAvatarPress}
+        disabled={!onAvatarPress || avatarBusy}
+        accessibilityRole="button"
+        accessibilityLabel={
+          avatarUrl ? "Changer la photo de profil" : "Ajouter une photo de profil"
+        }
+        testID="profile-avatar-btn"
+        style={({ pressed }) => [
+          styles.avatarHit,
+          pressed && onAvatarPress ? { opacity: 0.85 } : null,
+        ]}
+      >
+        <Avatar
+          name={name}
+          initial={initial}
+          uri={avatarUrl}
+          size={56}
+          testID="profile-avatar"
+        />
+        {onAvatarPress ? (
+          <View style={styles.cameraBadge}>
+            <Ionicons name="camera-outline" size={12} color={t.onPrimary} />
+          </View>
+        ) : null}
+      </Pressable>
       <View style={styles.meta}>
         <Text style={styles.name} testID="profile-name">
           {name}
@@ -29,6 +59,11 @@ export function ProfileUserCard({
         {subtitle ? (
           <Text style={styles.subtitle} testID="profile-subtitle">
             {subtitle}
+          </Text>
+        ) : null}
+        {onAvatarPress ? (
+          <Text style={styles.photoHint}>
+            {avatarUrl ? "Appuie pour changer la photo" : "Ajouter une photo"}
           </Text>
         ) : null}
       </View>
@@ -58,18 +93,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(232,232,233,0.9)",
   },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  avatarHit: {
+    position: "relative",
+  },
+  cameraBadge: {
+    position: "absolute",
+    right: -2,
+    bottom: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: t.primary,
     alignItems: "center",
     justifyContent: "center",
-  },
-  avatarText: {
-    fontSize: 22,
-    fontFamily: t.font.space.bold,
-    color: t.onPrimary,
+    borderWidth: 2,
+    borderColor: t.card,
   },
   meta: {
     flex: 1,
@@ -86,6 +124,12 @@ const styles = StyleSheet.create({
     fontFamily: t.font.hanken.regular,
     fontSize: 13,
     color: t.textSecondary,
+  },
+  photoHint: {
+    fontFamily: t.font.hanken.medium,
+    fontSize: 12,
+    color: t.primary,
+    marginTop: 4,
   },
   editBtn: {
     width: 36,

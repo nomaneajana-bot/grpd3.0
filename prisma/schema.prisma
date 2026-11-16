@@ -51,6 +51,7 @@ model ClubMembership {
   role      MembershipRole @default(member)
   status    MembershipStatus @default(pending)
   displayName String?
+  avatarUrl String?  @db.Text
   sharePrs  Boolean  @default(true)
   prSummary Json?
   // Club home pace group (TOI) — not session attendance.

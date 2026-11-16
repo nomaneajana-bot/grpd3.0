@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { Avatar } from "@/components/ui/Avatar";
 import { stitoTheme as t } from "@/constants/stitoTheme";
 import type { ClubPaceGroupId } from "@/lib/clubPaceGroups";
 import { getClubPaceGroupDef } from "@/lib/clubPaceGroups";
@@ -8,6 +9,7 @@ import { getClubPaceGroupDef } from "@/lib/clubPaceGroups";
 type GroupMemberRowProps = {
   name: string;
   initials: string;
+  avatarUrl?: string | null;
   memberSinceLabel?: string;
   groupId?: ClubPaceGroupId;
   /** Prefer this when using club color groups (not legacy A–D). */
@@ -23,6 +25,7 @@ type GroupMemberRowProps = {
 export function GroupMemberRow({
   name,
   initials,
+  avatarUrl,
   memberSinceLabel,
   groupId,
   avatarColor: avatarColorProp,
@@ -36,9 +39,13 @@ export function GroupMemberRow({
 
   const body = (
     <>
-      <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-        <Text style={styles.avatarText}>{initials}</Text>
-      </View>
+      <Avatar
+        name={name}
+        initial={initials}
+        uri={avatarUrl}
+        size={36}
+        backgroundColor={avatarColor}
+      />
       <View style={styles.meta}>
         <Text style={styles.name} numberOfLines={1}>
           {name}
@@ -132,19 +139,6 @@ const styles = StyleSheet.create({
     fontFamily: t.font.hanken.medium,
     fontSize: 12,
     color: t.primary,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  avatarText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontFamily: t.font.space.bold,
   },
   meta: {
     flex: 1,

@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
+import { Avatar } from "@/components/ui/Avatar";
 import { stitoTheme as t } from "@/constants/stitoTheme";
 import { createApiClient, getClubDetail, getClubRoster } from "@/lib/api";
 import { getAuthUser } from "@/lib/authStore";
@@ -170,9 +171,14 @@ export default function RunnerProfileScreen() {
           ) : (
             <>
               <View style={styles.identityCard} testID="runner-profile-identity">
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{initial}</Text>
-                </View>
+                <Avatar
+                  name={name}
+                  initial={initial}
+                  uri={member.avatarUrl}
+                  size={72}
+                  testID="runner-profile-avatar"
+                />
+                <View style={{ height: 12 }} />
                 <Text style={styles.name}>{name}</Text>
                 <Text style={styles.roleLine}>
                   {roleLabel(member.role)}
@@ -337,20 +343,6 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: "center",
     marginBottom: 6,
-  },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: t.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  avatarText: {
-    fontFamily: t.font.space.bold,
-    fontSize: 28,
-    color: t.onPrimary,
   },
   name: {
     fontFamily: t.font.space.bold,

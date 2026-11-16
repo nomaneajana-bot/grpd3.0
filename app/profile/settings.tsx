@@ -106,12 +106,18 @@ export default function SettingsScreen() {
         await updateMyPrs(client, {
           sharePrs: false,
           displayName,
+          avatarUrl: runner.avatarUrl ?? null,
           prSummary: null,
         });
         return;
       }
       const prSummary = await buildPrSummary();
-      await updateMyPrs(client, { sharePrs: true, displayName, prSummary });
+      await updateMyPrs(client, {
+        sharePrs: true,
+        displayName,
+        avatarUrl: runner.avatarUrl ?? null,
+        prSummary,
+      });
     } catch (error) {
       console.warn("Failed to sync PRs:", error);
     }

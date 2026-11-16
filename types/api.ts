@@ -215,6 +215,7 @@ export type ClubMembership = {
   role: ClubRole;
   status: ClubMembershipStatus;
   displayName?: string | null;
+  avatarUrl?: string | null;
   sharePrs?: boolean;
   prSummary?: PrSummary | null;
   createdAt?: string;
@@ -296,6 +297,7 @@ export type ClubRosterMember = {
   membershipId: string;
   userId: string;
   displayName?: string | null;
+  avatarUrl?: string | null;
   role: ClubRole;
   status: ClubMembershipStatus;
   sharePrs: boolean;
@@ -311,6 +313,7 @@ export type UpdateMyPrsInput = {
   clubId?: string;
   sharePrs?: boolean;
   displayName?: string;
+  avatarUrl?: string | null;
   prSummary?: PrSummary | null;
 };
 

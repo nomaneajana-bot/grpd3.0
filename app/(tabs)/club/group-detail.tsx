@@ -381,6 +381,7 @@ export default function ClubGroupDetailScreen() {
                   key={member.userId}
                   name={member.displayName ?? member.userId}
                   initials={initials(member.displayName ?? "?")}
+                  avatarUrl={member.avatarUrl}
                   groupId={useColorOrg ? undefined : gid}
                   avatarColor={useColorOrg ? accentColor : undefined}
                   memberUserId={member.userId}

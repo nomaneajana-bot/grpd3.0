@@ -10,6 +10,7 @@ const bodySchema = z.object({
   clubId: z.string().optional(),
   sharePrs: z.boolean().optional(),
   displayName: z.string().min(1).max(80).optional(),
+  avatarUrl: z.string().nullable().optional(),
   prSummary: z.any().optional().nullable(),
 });
 
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { clubId, sharePrs, displayName, prSummary } = parsed.data;
+    const { clubId, sharePrs, displayName, avatarUrl, prSummary } = parsed.data;
 
     let membership = null;
     if (clubId) {
@@ -50,15 +51,21 @@ export async function POST(req: NextRequest) {
     const updateData: Record<string, unknown> = {};
     if (sharePrs !== undefined) updateData.sharePrs = sharePrs;
     if (displayName) updateData.displayName = displayName;
+    if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
     if (prSummary !== undefined) updateData.prSummary = prSummary;
 
     if (Object.keys(updateData).length === 0) {
       return jsonError("Nothing to update", "VALIDATION_ERROR", 400);
     }
 
-    const updated = await prisma.clubMembership.update({
-      where: { id: membership.id },
+    // Keep avatar / name consistent across every club membership for this user.
+    await prisma.clubMembership.updateMany({
+      where: { userId },
       data: updateData,
+    });
+
+    const updated = await prisma.clubMembership.findUnique({
+      where: { id: membership.id },
     });
 
     return jsonOk(updated);

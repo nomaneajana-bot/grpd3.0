@@ -65,6 +65,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [profileInitial, setProfileInitial] = useState("?");
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,8 +83,10 @@ export default function HomeScreen() {
       setProfileInitial(
         displayInitial(resolveDisplayName({ profile: runner, authUser })),
       );
+      setProfileAvatarUrl(runner?.avatarUrl?.trim() || null);
     } catch {
       setProfileInitial("?");
+      setProfileAvatarUrl(null);
     }
     const results = await Promise.allSettled([
       listSessions(client, { from }),
@@ -216,6 +219,7 @@ export default function HomeScreen() {
             onCityPress={() => {}}
             onCitySelect={(city) => setQuery(city)}
             profileInitial={profileInitial}
+            profileAvatarUrl={profileAvatarUrl}
           />
 
           <View

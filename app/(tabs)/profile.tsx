@@ -18,19 +18,23 @@ import { ProfileUserCard } from "../../components/profile/ProfileUserCard";
 import { LoadingState } from "../../components/ui/LoadingState";
 import { ScreenContainer } from "../../components/ui/ScreenContainer";
 import { stitoTheme as t } from "../../constants/stitoTheme";
-import { createApiClient, getMyMemberships } from "../../lib/api";
+import { Toast } from "../../components/ui/Toast";
+import { createApiClient, getMyMemberships, updateMyPrs } from "../../lib/api";
 import { getAuthUser } from "../../lib/authStore";
 import { displayInitial, resolveDisplayName } from "../../lib/displayName";
 import { formatPhoneDisplay } from "../../lib/phoneFormat";
+import { pickProfilePhoto } from "../../lib/pickProfilePhoto";
 import {
   getProfileSnapshot,
-  seedRunnerProfileFromAuth,
+  getRunnerProfile,
+  saveRunnerProfile,
   type RunnerProfile,
 } from "../../lib/profileStore";
 import {
   getSettingsPreferences,
   type SettingsPreferences,
 } from "../../lib/settingsPreferencesStore";
+import { useToast } from "../../hooks/useToast";
 import type { AuthUser, ClubMembership } from "../../types/api";
 
 const LANGUAGE_LABELS: Record<SettingsPreferences["language"], string> = {
@@ -54,7 +58,9 @@ export default function ProfileScreen() {
   const [prefs, setPrefs] = useState<SettingsPreferences | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
+  const { toast, showToast, hideToast } = useToast();
 
   const loadProfile = useCallback(async (refresh = false) => {
     if (refresh) setIsRefreshing(true);
@@ -121,6 +127,45 @@ export default function ProfileScreen() {
     router.push("/profile/settings");
   };
 
+  const handleAvatarPress = async () => {
+    if (avatarBusy) return;
+    setAvatarBusy(true);
+    try {
+      const uri = await pickProfilePhoto();
+      if (!uri) return;
+      const current =
+        profile ??
+        (await getRunnerProfile()) ??
+        ({
+          name: profileName,
+          vo2max: null,
+          weightKg: null,
+          mainGoal: "10k",
+        } as RunnerProfile);
+      const next: RunnerProfile = { ...current, avatarUrl: uri };
+      await saveRunnerProfile(next);
+      setProfile(next);
+      try {
+        const client = createApiClient();
+        await updateMyPrs(client, {
+          displayName: resolveDisplayName({ profile: next, authUser }),
+          avatarUrl: uri,
+        });
+      } catch (error) {
+        console.warn("Failed to sync avatar:", error);
+      }
+      showToast("Photo de profil mise à jour.", "success");
+    } catch (error) {
+      console.warn("Avatar pick failed:", error);
+      showToast(
+        error instanceof Error ? error.message : "Impossible d’ajouter la photo.",
+        "error",
+      );
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
   if (isLoading && !profile) {
     return (
       <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -132,6 +177,15 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <ScreenContainer style={{ backgroundColor: t.canvas }}>
+        {toast ? (
+          <Toast
+            message={toast.message}
+            variant={toast.variant}
+            onDismiss={hideToast}
+            tone="onLight"
+            placement="top"
+          />
+        ) : null}
         <View style={styles.toprow}>
           <Text style={styles.pg} accessibilityRole="header">
             Profil
@@ -165,7 +219,10 @@ export default function ProfileScreen() {
             name={profileName}
             initial={profileInitial}
             subtitle={subtitle}
+            avatarUrl={profile?.avatarUrl}
             onEditPress={handleSettings}
+            onAvatarPress={() => void handleAvatarPress()}
+            avatarBusy={avatarBusy}
           />
 
           <ProfileSectionHeader title="02 / Équipes & collectifs" />

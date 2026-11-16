@@ -31,7 +31,7 @@ export const MOCK_MEMBERSHIPS_KEY = "mock:club_memberships";
 export const MOCK_OTP_KEY = "mock:otp";
 /** Bump to force a one-time reseed of the richer Casablanca world. */
 export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v5";
-export const DEMO_SEED_VERSION = "7";
+export const DEMO_SEED_VERSION = "8";
 
 /** Distinct outing covers — avoid repeating the same stock silhouette. */
 const COVER = {
@@ -75,93 +75,139 @@ type DemoPerson = {
   displayName: string;
   role: "coach" | "member";
   paceSecondsPerKm: number;
+  avatarUrl?: string;
 };
 
-/** 2 coaches + 12 runners — French names. */
+const AVATAR = {
+  youssef:
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&h=256&q=80",
+  amelie:
+    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&h=256&q=80",
+  camille:
+    "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=256&h=256&q=80",
+  lucas:
+    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&h=256&q=80",
+  chloe:
+    "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=256&h=256&q=80",
+  hugo:
+    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=256&h=256&q=80",
+  lea:
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&h=256&q=80",
+  nathan:
+    "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?auto=format&fit=crop&w=256&h=256&q=80",
+  manon:
+    "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=256&h=256&q=80",
+  louis:
+    "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=256&h=256&q=80",
+  emma:
+    "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=256&h=256&q=80",
+  arthur:
+    "https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&w=256&h=256&q=80",
+  jade:
+    "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=256&h=256&q=80",
+  theo:
+    "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=256&h=256&q=80",
+} as const;
+
+/** 2 coaches + 12 runners — French names + profile photos. */
 export const DEMO_PEOPLE: DemoPerson[] = [
   {
     userId: "demo_coach_youssef",
     displayName: "Youssef Benali",
     role: "coach",
     paceSecondsPerKm: 270,
+    avatarUrl: AVATAR.youssef,
   },
   {
     userId: "demo_coach_amelie",
     displayName: "Amélie Traoré",
     role: "coach",
     paceSecondsPerKm: 300,
+    avatarUrl: AVATAR.amelie,
   },
   {
     userId: "demo_runner_camille",
     displayName: "Camille Dupont",
     role: "member",
     paceSecondsPerKm: 255,
+    avatarUrl: AVATAR.camille,
   },
   {
     userId: "demo_runner_lucas",
     displayName: "Lucas Martin",
     role: "member",
     paceSecondsPerKm: 268,
+    avatarUrl: AVATAR.lucas,
   },
   {
     userId: "demo_runner_chloe",
     displayName: "Chloé Bernard",
     role: "member",
     paceSecondsPerKm: 285,
+    avatarUrl: AVATAR.chloe,
   },
   {
     userId: "demo_runner_hugo",
     displayName: "Hugo Lefèvre",
     role: "member",
     paceSecondsPerKm: 295,
+    avatarUrl: AVATAR.hugo,
   },
   {
     userId: "demo_runner_lea",
     displayName: "Léa Moreau",
     role: "member",
     paceSecondsPerKm: 310,
+    avatarUrl: AVATAR.lea,
   },
   {
     userId: "demo_runner_nathan",
     displayName: "Nathan Petit",
     role: "member",
     paceSecondsPerKm: 325,
+    avatarUrl: AVATAR.nathan,
   },
   {
     userId: "demo_runner_manon",
     displayName: "Manon Roux",
     role: "member",
     paceSecondsPerKm: 340,
+    avatarUrl: AVATAR.manon,
   },
   {
     userId: "demo_runner_louis",
     displayName: "Louis Girard",
     role: "member",
     paceSecondsPerKm: 355,
+    avatarUrl: AVATAR.louis,
   },
   {
     userId: "demo_runner_emma",
     displayName: "Emma Fontaine",
     role: "member",
     paceSecondsPerKm: 370,
+    avatarUrl: AVATAR.emma,
   },
   {
     userId: "demo_runner_arthur",
     displayName: "Arthur Blanc",
     role: "member",
     paceSecondsPerKm: 390,
+    avatarUrl: AVATAR.arthur,
   },
   {
     userId: "demo_runner_jade",
     displayName: "Jade Mercier",
     role: "member",
     paceSecondsPerKm: 410,
+    avatarUrl: AVATAR.jade,
   },
   {
     userId: "demo_runner_theo",
     displayName: "Théo Renard",
     role: "member",
     paceSecondsPerKm: 430,
+    avatarUrl: AVATAR.theo,
   },
 ];
 
@@ -1141,6 +1187,7 @@ export async function ensureDemoWorld(): Promise<Club & { code: string }> {
       role: person.role === "coach" ? "coach" : "member",
       status: "approved",
       displayName: person.displayName,
+      avatarUrl: person.avatarUrl ?? null,
       sharePrs: true,
       prSummary: makePrSummary(person.paceSecondsPerKm),
       createdAt: "2024-02-01T00:00:00.000Z",
@@ -1163,6 +1210,7 @@ export async function ensureDemoWorld(): Promise<Club & { code: string }> {
       role: person.role === "coach" ? "coach" : "member",
       status: "approved",
       displayName: person.displayName,
+      avatarUrl: person.avatarUrl ?? null,
       sharePrs: false,
       prSummary: null,
       createdAt: "2024-03-10T00:00:00.000Z",
@@ -1184,6 +1232,7 @@ export async function ensureDemoWorld(): Promise<Club & { code: string }> {
       role: person.role === "coach" ? "coach" : "member",
       status: "approved",
       displayName: person.displayName,
+      avatarUrl: person.avatarUrl ?? null,
       sharePrs: true,
       prSummary: makePrSummary(person.paceSecondsPerKm),
       createdAt: "2024-04-10T00:00:00.000Z",

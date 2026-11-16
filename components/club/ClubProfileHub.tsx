@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
+import { Avatar } from "@/components/ui/Avatar";
 import { stitoTheme as t } from "@/constants/stitoTheme";
 import { clubInitialsFromName } from "@/lib/clubPaceGroups";
 import { initialsFromName } from "@/lib/homeViewModel";
@@ -187,11 +188,13 @@ export function ClubProfileHub({
               const tone = AVATAR_TONES[index % AVATAR_TONES.length]!;
               const row = (
                 <>
-                  <View style={[styles.memberAvatar, { backgroundColor: tone }]}>
-                    <Text style={styles.memberAvatarText}>
-                      {initialsFromName(name) || "·"}
-                    </Text>
-                  </View>
+                  <Avatar
+                    name={name}
+                    initial={initialsFromName(name) || "·"}
+                    uri={m.avatarUrl}
+                    size={36}
+                    backgroundColor={tone}
+                  />
                   <View style={styles.memberBody}>
                     <Text style={styles.memberName} numberOfLines={1}>
                       {name}
@@ -375,18 +378,6 @@ const styles = StyleSheet.create({
   },
   memberRowPressed: {
     opacity: 0.72,
-  },
-  memberAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  memberAvatarText: {
-    color: t.onPrimary,
-    fontFamily: t.font.hanken.semibold,
-    fontSize: 12,
   },
   memberBody: { flex: 1, minWidth: 0 },
   memberName: {

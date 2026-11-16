@@ -1578,6 +1578,7 @@ async function mockGetClubRoster(clubId: string): Promise<ClubRosterResult> {
       membershipId: m.id,
       userId: m.userId,
       displayName: m.displayName ?? null,
+      avatarUrl: m.avatarUrl ?? null,
       role: m.role,
       status: m.status,
       sharePrs: m.sharePrs ?? true,
@@ -1593,28 +1594,30 @@ async function mockUpdateMyPrs(
   if (!user) throw new ApiError(401, 'Non authentifié');
 
   const memberships = await readMemberships();
+  const mine = Object.values(memberships).filter((m) => m.userId === user.id);
   let membership: ClubMembership | undefined;
 
   if (input.clubId) {
-    membership = Object.values(memberships).find(
-      (m) => m.userId === user.id && m.clubId === input.clubId,
-    );
+    membership = mine.find((m) => m.clubId === input.clubId);
   } else {
     membership =
-      Object.values(memberships).find(
-        (m) => m.userId === user.id && m.status === 'approved',
-      ) ??
-      Object.values(memberships).find((m) => m.userId === user.id);
+      mine.find((m) => m.status === 'approved') ?? mine[0];
   }
 
   if (!membership) throw new ApiError(404, 'Membership introuvable');
 
-  membership.sharePrs =
-    input.sharePrs !== undefined ? input.sharePrs : membership.sharePrs ?? true;
-  if (input.displayName) membership.displayName = input.displayName;
-  if ('prSummary' in input) membership.prSummary = input.prSummary ?? null;
+  const apply = (row: ClubMembership) => {
+    row.sharePrs =
+      input.sharePrs !== undefined ? input.sharePrs : row.sharePrs ?? true;
+    if (input.displayName) row.displayName = input.displayName;
+    if ('avatarUrl' in input) row.avatarUrl = input.avatarUrl ?? null;
+    if ('prSummary' in input) row.prSummary = input.prSummary ?? null;
+    memberships[row.id] = row;
+  };
 
-  memberships[membership.id] = membership;
+  // Keep avatar / name consistent across all clubs for this user.
+  for (const row of mine) apply(row);
+
   await writeMemberships(memberships);
 
   const clubs = await readClubs();
