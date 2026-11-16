@@ -16,7 +16,7 @@ import * as Haptics from "expo-haptics";
 import { ClubFeedRow } from "@/components/club/ClubFeedRow";
 import { ClubNavCard } from "@/components/club/ClubNavCard";
 import { ClubOutingCard } from "@/components/club/ClubOutingCard";
-import { ClubOverviewCard } from "@/components/club/ClubOverviewCard";
+import { ClubProfileHub } from "@/components/club/ClubProfileHub";
 import { GroupedList } from "@/components/redesign/GroupedList";
 import { SectionHeader } from "@/components/redesign/SectionHeader";
 import { ScreenContainer } from "@/components/ui/ScreenContainer";
@@ -87,6 +87,7 @@ export default function ClubScreen() {
   const [clubSessions, setClubSessions] = useState<SessionData[]>([]);
   const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
   const [focusedClubId, setFocusedClubId] = useState<string | null>(null);
+  const [membersExpanded, setMembersExpanded] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   const loadData = useCallback(async (refresh = false) => {
@@ -113,14 +114,14 @@ export default function ClubScreen() {
       setMemberships(list);
 
       const approved = list.filter((m) => m.status === "approved");
+      // Prefer focused club even when pending — profile hub must stay useful.
       const primary =
-        approved.find((m) => m.clubId === preferredFocus) ??
+        list.find((m) => m.clubId === preferredFocus) ??
         approved[0] ??
         list.find((m) => m.status === "pending") ??
         null;
 
-      if (primary?.status === "approved" && primary.clubId) {
-        // Never overwrite a stored/route focus with approved[0].
+      if (primary?.clubId) {
         if (!preferredFocus) {
           setFocusedClubId(primary.clubId);
           void persistFocusedClubId(primary.clubId);
@@ -142,11 +143,13 @@ export default function ClubScreen() {
         );
         setJoinedIds(new Set((joined ?? []).map((j) => j.sessionId)));
         setAdminSettings(adminCfg);
-        // TOI: explicit color-group assignment only when member org is on.
-        // Never invent Élite / Groupe D for walk or opted-out clubs.
         const authUser = await getAuthUser();
         setAuthUserId(authUser?.id ?? null);
-        if (isMemberOrgEnabled(adminCfg) && authUser) {
+
+        if (primary.status !== "approved") {
+          setUserGroupId(null);
+        } else if (isMemberOrgEnabled(adminCfg) && authUser) {
+          // TOI: explicit color-group assignment only when member org is on.
           setUserGroupId(memberAssignedGroupId(authUser.id, adminCfg));
         } else if (
           adminCfg?.activityStructure === "walk" ||
@@ -175,6 +178,8 @@ export default function ClubScreen() {
         setClubSessions([]);
         setJoinedIds(new Set());
         setAdminSettings(null);
+        setAuthUserId(null);
+        setUserGroupId(null);
       }
     } catch (error) {
       console.warn("Failed to load club data:", error);
@@ -200,8 +205,14 @@ export default function ClubScreen() {
 
   const approvedMemberships = memberships.filter((m) => m.status === "approved");
   const pendingMemberships = memberships.filter((m) => m.status === "pending");
+  const switchableMemberships = [
+    ...approvedMemberships,
+    ...pendingMemberships.filter(
+      (p) => !approvedMemberships.some((a) => a.clubId === p.clubId),
+    ),
+  ];
   const primaryMembership =
-    approvedMemberships.find((m) => m.clubId === focusedClubId) ??
+    memberships.find((m) => m.clubId === focusedClubId) ??
     approvedMemberships[0] ??
     pendingMemberships[0] ??
     null;
@@ -212,8 +223,28 @@ export default function ClubScreen() {
     (primaryMembership?.role === "admin" ||
       primaryMembership?.role === "coach");
   const club = primaryMembership?.club;
-  const memberCount = roster.length > 0 ? roster.length : undefined;
   const foundedYear = formatFoundedYear(club?.createdAt);
+  const activityLabel = (() => {
+    if (!adminSettings) return null;
+    const structure =
+      adminSettings.activityStructure === "walk"
+        ? "Marche"
+        : adminSettings.activityStructure === "run"
+          ? "Course"
+          : null;
+    const groupsOn =
+      isMemberOrgEnabled(adminSettings) &&
+      sortedActiveColorGroups(adminSettings).length > 0
+        ? "groupes"
+        : null;
+    return [structure, groupsOn].filter(Boolean).join(" · ") || null;
+  })();
+  const hubStatus = isClubAdmin
+    ? ("admin" as const)
+    : isPendingMember
+      ? ("pending" as const)
+      : ("member" as const);
+  const weekSessionCount = clubSessions.length;
 
   const handleSelfAssignGroup = async (groupId: string | null) => {
     if (!primaryMembership?.clubId || !authUserId || !adminSettings) return;
@@ -319,12 +350,11 @@ export default function ClubScreen() {
     memberships,
   });
   const showFeedPlaceholder = feedItems.length === 0;
-  const weekSessionCount = clubSessions.length;
 
   const roleSubtitle = isApprovedMember
-    ? `Membre confirmé${foundedYear ? ` · Fondé ${foundedYear}` : ""}`
+    ? `Profil club${foundedYear ? ` · Fondé ${foundedYear}` : ""}`
     : isPendingMember
-      ? "Demande en attente"
+      ? "Profil · demande en attente"
       : "Rejoindre · créer · clé";
 
   return (
@@ -379,8 +409,9 @@ export default function ClubScreen() {
                 </Pressable>
               </View>
               <View style={styles.clubSwitcherRow}>
-                {approvedMemberships.map((m) => {
+                {switchableMemberships.map((m) => {
                   const active = m.clubId === primaryMembership?.clubId;
+                  const pending = m.status === "pending";
                   return (
                     <Pressable
                       key={m.clubId}
@@ -390,11 +421,13 @@ export default function ClubScreen() {
                       accessibilityLabel={m.club?.name ?? m.clubId}
                       onPress={() => {
                         setFocusedClubId(m.clubId);
+                        setMembersExpanded(false);
                         void persistFocusedClubId(m.clubId);
                       }}
                       style={[
                         styles.clubSwitcherChip,
                         active && styles.clubSwitcherChipOn,
+                        pending && !active && styles.clubSwitcherChipPending,
                       ]}
                     >
                       <Text
@@ -405,6 +438,7 @@ export default function ClubScreen() {
                         numberOfLines={1}
                       >
                         {m.club?.name ?? "Club"}
+                        {pending ? " · attente" : ""}
                       </Text>
                     </Pressable>
                   );
@@ -420,20 +454,15 @@ export default function ClubScreen() {
                 </Pressable>
               </View>
             </View>
-            <ClubOverviewCard
-              clubName={club.name}
-              memberCount={memberCount ?? 1}
+            <ClubProfileHub
+              club={club}
+              status={hubStatus}
+              roster={roster}
               foundedYear={foundedYear}
-              city={club.city}
-              purpose={club.description}
-              visibility={club.visibility}
-              status={
-                isClubAdmin
-                  ? "admin"
-                  : isPendingMember
-                    ? "pending"
-                    : "member"
-              }
+              activityLabel={activityLabel}
+              upcomingOutingCount={weekSessionCount}
+              expandedMembers={membersExpanded}
+              onToggleMembers={() => setMembersExpanded((v) => !v)}
             />
 
             <View style={styles.clubOutingsBlock} testID="club-outings-section">
@@ -655,54 +684,121 @@ export default function ClubScreen() {
           </>
         ) : isPendingMember && club ? (
           <>
-            <View testID="club-pending-panel" style={styles.pendingPanel}>
-              <Text style={styles.pendingTitle} testID="club-pending-title">
-                Ta demande est envoyée.
+            {switchableMemberships.length > 1 ? (
+              <View style={styles.clubSwitcher} testID="club-switcher">
+                <Text style={styles.clubSwitcherLabel}>TES DEMANDES / CLUBS</Text>
+                <View style={styles.clubSwitcherRow}>
+                  {switchableMemberships.map((m) => {
+                    const active = m.clubId === primaryMembership?.clubId;
+                    return (
+                      <Pressable
+                        key={m.clubId}
+                        testID={`club-switch-${m.clubId}`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        onPress={() => {
+                          setFocusedClubId(m.clubId);
+                          setMembersExpanded(false);
+                          void persistFocusedClubId(m.clubId);
+                        }}
+                        style={[
+                          styles.clubSwitcherChip,
+                          active && styles.clubSwitcherChipOn,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.clubSwitcherChipText,
+                            active && styles.clubSwitcherChipTextOn,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {m.club?.name ?? "Club"}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
+
+            <View testID="club-pending-panel">
+              <Text style={styles.pendingKicker} testID="club-pending-title">
+                Demande envoyée — voici le profil du club.
               </Text>
-              <Text style={styles.pendingClubName}>{club.name}</Text>
-              <Text style={styles.pendingTag}>EN ATTENTE D&apos;APPROBATION</Text>
-              <Text style={styles.pendingHint}>
-                Le club doit accepter ta demande avant que tu puisses accéder à
-                ses sorties privées.
-              </Text>
-              <View style={styles.pendingDivider} />
-              <Text style={styles.pendingSection}>Et maintenant ?</Text>
-              <Text style={styles.pendingHint}>
-                Tu peux continuer à découvrir les sorties publiques.
-              </Text>
-              <Text style={styles.pendingSmall}>
-                Une demande n&apos;est ni une adhésion confirmée ni une
-                inscription à une sortie.
-              </Text>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.pendingCancelField,
-                  pressed && { opacity: 0.7 },
-                ]}
-                onPress={() => void handleCancelPending()}
-                disabled={isSubmitting}
-                accessibilityRole="button"
-                accessibilityLabel="Annuler ma demande"
-                testID="club-cancel-pending-btn"
-              >
-                <Text style={styles.pendingCancelText}>
-                  Annuler ma demande →
-                </Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.pendingPrimaryBtn,
-                  pressed && { opacity: 0.9 },
-                ]}
-                onPress={() => router.push("/(tabs)" as Href)}
-                accessibilityRole="button"
-                accessibilityLabel="Découvrir les sorties"
-                testID="club-pending-discover-cta"
-              >
-                <Text style={styles.pendingPrimaryBtnText}>
-                  Découvrir les sorties
-                </Text>
-              </Pressable>
+              <ClubProfileHub
+                club={club}
+                status="pending"
+                roster={roster}
+                foundedYear={foundedYear}
+                activityLabel={activityLabel}
+                upcomingOutingCount={weekSessionCount}
+                expandedMembers={membersExpanded}
+                onToggleMembers={() => setMembersExpanded((v) => !v)}
+              />
+
+              {clubSessions.length > 0 ? (
+                <View style={styles.clubOutingsBlock} testID="club-pending-outings">
+                  <Text style={styles.clubOutingsHeading}>
+                    Sorties visibles maintenant
+                  </Text>
+                  <Text style={styles.clubOutingsHint}>
+                    Uniquement les sorties ouvertes — les privées arriveront
+                    après approbation.
+                  </Text>
+                  {clubSessions.map((session) => (
+                    <ClubOutingCard
+                      key={session.id}
+                      session={session}
+                      attendance="none"
+                      onPress={() =>
+                        router.push(`/session/${session.id}` as Href)
+                      }
+                    />
+                  ))}
+                </View>
+              ) : null}
+
+              <View style={styles.pendingActions}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.pendingPrimaryBtn,
+                    pressed && { opacity: 0.9 },
+                  ]}
+                  onPress={() => router.push("/(tabs)" as Href)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Découvrir les sorties"
+                  testID="club-pending-discover-cta"
+                >
+                  <Text style={styles.pendingPrimaryBtnText}>
+                    Découvrir les sorties
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.pendingCancelField,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                  onPress={() => void handleCancelPending()}
+                  disabled={isSubmitting}
+                  accessibilityRole="button"
+                  accessibilityLabel="Annuler ma demande"
+                  testID="club-cancel-pending-btn"
+                >
+                  <Text style={styles.pendingCancelText}>
+                    Annuler ma demande
+                  </Text>
+                </Pressable>
+                <Pressable
+                  testID="club-pending-find-another"
+                  accessibilityRole="button"
+                  accessibilityLabel="Rejoindre un autre club"
+                  onPress={() => router.push("/(tabs)/club/access" as Href)}
+                  style={styles.moreLinkWrap}
+                >
+                  <Text style={styles.moreLink}>Rejoindre un autre club →</Text>
+                </Pressable>
+              </View>
             </View>
           </>
         ) : (
@@ -907,55 +1003,27 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
     alignItems: "center",
   },
-  pendingPanel: {
+  pendingKicker: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    color: t.textSecondary,
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  pendingActions: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 16,
-    width: "100%",
-    maxWidth: "100%",
-    alignSelf: "stretch",
-  },
-  pendingTitle: {
-    ...t.type.pageTitle,
-    color: t.text,
-    marginBottom: 8,
-  },
-  pendingClubName: {
-    color: t.textSecondary,
-    fontSize: 15,
-    fontFamily: t.font.hanken.regular,
-    marginBottom: 12,
-  },
-  pendingTag: {
-    ...t.type.labelSm,
-    color: t.primary,
-    textTransform: "uppercase",
-    marginBottom: 12,
-  },
-  pendingDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: t.outlineVariant,
-    marginVertical: 18,
-  },
-  pendingSection: {
-    ...t.type.section,
-    color: t.text,
-    marginBottom: 8,
-  },
-  pendingSmall: {
-    color: t.outline,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 8,
-    fontFamily: t.font.hanken.regular,
+    paddingBottom: 8,
+    gap: 10,
   },
   pendingCancelField: {
-    marginTop: 16,
     backgroundColor: t.card,
     borderWidth: 1,
     borderColor: "rgba(232,232,233,0.9)",
     borderRadius: 14,
     padding: 16,
+    alignItems: "center",
   },
   pendingCancelText: {
     color: t.text,
@@ -963,7 +1031,6 @@ const styles = StyleSheet.create({
     fontFamily: t.font.space.semibold,
   },
   pendingPrimaryBtn: {
-    marginTop: 20,
     backgroundColor: t.primary,
     borderRadius: 18,
     paddingVertical: 17,
@@ -974,12 +1041,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: t.font.space.bold,
   },
-  pendingHint: {
-    color: t.textSecondary,
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 8,
-    fontFamily: t.font.hanken.regular,
+  clubSwitcherChipPending: {
+    borderStyle: "dashed",
   },
   keyEmpty: {
     marginHorizontal: 24,
