@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import * as Haptics from "expo-haptics";
 
@@ -623,19 +624,27 @@ export default function ClubScreen() {
               </>
             ) : null}
 
-            <Pressable
-              testID="club-leave-btn"
-              accessibilityRole="button"
-              accessibilityLabel="Quitter le club"
-              style={({ pressed }) => [
-                styles.quitZone,
-                pressed && { opacity: 0.5 },
-              ]}
-              onPress={() => void handleLeaveClub()}
-              disabled={isSubmitting}
-            >
-              <Text style={styles.quitText}>Quitter le club</Text>
-            </Pressable>
+            <View style={styles.quitZone}>
+              <View style={styles.quitDivider} />
+              <Text style={styles.quitHint}>
+                Tu pourras rejoindre à nouveau plus tard.
+              </Text>
+              <Pressable
+                testID="club-leave-btn"
+                accessibilityRole="button"
+                accessibilityLabel="Quitter le club"
+                style={({ pressed }) => [
+                  styles.quitBtn,
+                  pressed && styles.quitBtnPressed,
+                  isSubmitting && styles.quitBtnDisabled,
+                ]}
+                onPress={() => void handleLeaveClub()}
+                disabled={isSubmitting}
+              >
+                <Ionicons name="exit-outline" size={18} color={t.error} />
+                <Text style={styles.quitText}>Quitter le club</Text>
+              </Pressable>
+            </View>
 
             {adminSettings && isMemberOrgEnabled(adminSettings) ? (
               <AssignMemberGroupSheet
@@ -890,15 +899,46 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   quitZone: {
-    paddingVertical: 32,
-    paddingHorizontal: 16,
+    marginTop: 8,
+    marginHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 28,
+    gap: 12,
+  },
+  quitDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: t.outlineVariant,
+    marginBottom: 4,
+  },
+  quitHint: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.outline,
+    textAlign: "center",
+  },
+  quitBtn: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(176, 0, 32, 0.28)",
+    backgroundColor: "rgba(176, 0, 32, 0.06)",
+    paddingHorizontal: 18,
+  },
+  quitBtnPressed: {
+    backgroundColor: "rgba(176, 0, 32, 0.12)",
+  },
+  quitBtnDisabled: {
+    opacity: 0.55,
   },
   quitText: {
-    fontSize: 13,
+    fontSize: 15,
     fontFamily: t.font.space.semibold,
     color: t.error,
-    opacity: 0.85,
   },
   content: {
     paddingBottom: 40,
