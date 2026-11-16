@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/useToast";
 import {
   cancelClubRequest,
   createApiClient,
+  getClubDetail,
   getClubRoster,
   getMyMemberships,
   leaveClub,
@@ -90,6 +91,7 @@ export default function ClubScreen() {
   const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
   const [focusedClubId, setFocusedClubId] = useState<string | null>(null);
   const [membersExpanded, setMembersExpanded] = useState(false);
+  const [pendingJoinCount, setPendingJoinCount] = useState(0);
   const { toast, showToast, hideToast } = useToast();
 
   const loadData = useCallback(async (refresh = false) => {
@@ -128,7 +130,10 @@ export default function ClubScreen() {
           setFocusedClubId(primary.clubId);
           void persistFocusedClubId(primary.clubId);
         }
-        const [rosterResult, profile, joined, paces, adminCfg, clubSessionResult] =
+        const isAdminPrimary =
+          primary.status === "approved" &&
+          (primary.role === "admin" || primary.role === "coach");
+        const [rosterResult, profile, joined, paces, adminCfg, clubSessionResult, clubDetail] =
           await Promise.all([
             getClubRoster(client, primary.clubId),
             getRunnerProfile(),
@@ -136,6 +141,9 @@ export default function ClubScreen() {
             getReferencePaces(),
             getClubAdminSettings(primary.clubId),
             listSessions(client, { clubId: primary.clubId }),
+            isAdminPrimary
+              ? getClubDetail(client, primary.clubId).catch(() => null)
+              : Promise.resolve(null),
           ]);
         setRoster(rosterResult.members ?? []);
         setClubSessions(
@@ -145,6 +153,9 @@ export default function ClubScreen() {
         );
         setJoinedIds(new Set((joined ?? []).map((j) => j.sessionId)));
         setAdminSettings(adminCfg);
+        setPendingJoinCount(
+          isAdminPrimary ? clubDetail?.pendingMembers?.length ?? 0 : 0,
+        );
         const authUser = await getAuthUser();
         setAuthUserId(authUser?.id ?? null);
 
@@ -182,11 +193,13 @@ export default function ClubScreen() {
         setAdminSettings(null);
         setAuthUserId(null);
         setUserGroupId(null);
+        setPendingJoinCount(0);
       }
     } catch (error) {
       console.warn("Failed to load club data:", error);
       setMemberships([]);
       setRoster([]);
+      setPendingJoinCount(0);
       if (!refresh) {
         showToast(
           "Impossible de charger le club. Réessaie.",
@@ -373,10 +386,38 @@ export default function ClubScreen() {
       )}
 
       <View style={styles.toprow}>
-        <Text style={styles.pg} accessibilityRole="header">
-          Clubs
-        </Text>
-        <Text style={styles.roleSub}>{roleSubtitle}</Text>
+        <View style={styles.toprowMain}>
+          <Text style={styles.pg} accessibilityRole="header">
+            Clubs
+          </Text>
+          <Text style={styles.roleSub}>{roleSubtitle}</Text>
+        </View>
+        {isClubAdmin ? (
+          <Pressable
+            testID="club-join-requests-bell"
+            accessibilityRole="button"
+            accessibilityLabel={
+              pendingJoinCount > 0
+                ? `Demandes d'adhésion, ${pendingJoinCount} en attente`
+                : "Demandes d'adhésion"
+            }
+            onPress={() => router.push("/(tabs)/club/admin" as Href)}
+            style={({ pressed }) => [
+              styles.bellBtn,
+              pressed && { opacity: 0.7 },
+            ]}
+            hitSlop={8}
+          >
+            <Ionicons name="notifications-outline" size={22} color={t.text} />
+            {pendingJoinCount > 0 ? (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>
+                  {pendingJoinCount > 99 ? "99+" : pendingJoinCount}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
+        ) : null}
       </View>
 
       <ScrollView
@@ -431,6 +472,50 @@ export default function ClubScreen() {
               expandedMembers={membersExpanded}
               onToggleMembers={() => setMembersExpanded((v) => !v)}
             />
+
+            {isClubAdmin ? (
+              <Pressable
+                testID="club-join-requests-banner"
+                accessibilityRole="button"
+                accessibilityLabel={
+                  pendingJoinCount > 0
+                    ? `Demandes d'adhésion, ${pendingJoinCount} en attente`
+                    : "Ouvrir les demandes d'adhésion"
+                }
+                onPress={() => router.push("/(tabs)/club/admin" as Href)}
+                style={({ pressed }) => [
+                  styles.requestsBanner,
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                <View style={styles.requestsBannerIcon}>
+                  <Ionicons
+                    name="notifications-outline"
+                    size={18}
+                    color={t.primary}
+                  />
+                </View>
+                <View style={styles.requestsBannerBody}>
+                  <Text style={styles.requestsBannerTitle}>
+                    Demandes d&apos;adhésion
+                  </Text>
+                  <Text style={styles.requestsBannerSub}>
+                    {pendingJoinCount > 0
+                      ? `${pendingJoinCount} personne${pendingJoinCount > 1 ? "s" : ""} à valider`
+                      : "Aucune demande pour le moment"}
+                  </Text>
+                </View>
+                {pendingJoinCount > 0 ? (
+                  <View style={styles.requestsBannerCount}>
+                    <Text style={styles.requestsBannerCountText}>
+                      {pendingJoinCount}
+                    </Text>
+                  </View>
+                ) : (
+                  <Ionicons name="chevron-forward" size={18} color={t.outline} />
+                )}
+              </Pressable>
+            ) : null}
 
             <View style={styles.clubOutingsBlock} testID="club-outings-section">
               <Text style={styles.clubOutingsHeading}>Les sorties du club</Text>
@@ -608,9 +693,15 @@ export default function ClubScreen() {
                     onPress={() => router.push("/(tabs)/club/access" as Href)}
                   />
                   <ClubNavCard
-                    title="Validations en attente"
-                    subtitle="Approuver les nouveaux membres"
-                    icon="people-outline"
+                    title="Demandes d'adhésion"
+                    subtitle={
+                      pendingJoinCount > 0
+                        ? `${pendingJoinCount} à valider`
+                        : "Approuver les nouveaux membres"
+                    }
+                    icon="notifications-outline"
+                    badge={pendingJoinCount}
+                    testID="club-join-requests-nav"
                     onPress={() => router.push("/(tabs)/club/admin" as Href)}
                   />
                   <ClubNavCard
@@ -799,9 +890,17 @@ const styles = StyleSheet.create({
     backgroundColor: t.canvas,
   },
   toprow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 4,
+  },
+  toprowMain: {
+    flex: 1,
+    minWidth: 0,
   },
   pg: {
     ...t.type.pageTitle,
@@ -811,6 +910,83 @@ const styles = StyleSheet.create({
     ...t.type.bodySm,
     color: t.textSecondary,
     marginTop: 4,
+  },
+  bellBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: t.surfaceContainerLow,
+    marginTop: 2,
+  },
+  bellBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: t.error,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bellBadgeText: {
+    fontFamily: t.font.space.bold,
+    fontSize: 10,
+    color: "#fff",
+  },
+  requestsBanner: {
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: t.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: t.outlineVariant,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  requestsBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: "rgba(0,95,52,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  requestsBannerBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  requestsBannerTitle: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 15,
+    color: t.text,
+  },
+  requestsBannerSub: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 12,
+    color: t.textSecondary,
+    marginTop: 2,
+  },
+  requestsBannerCount: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    paddingHorizontal: 7,
+    backgroundColor: t.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  requestsBannerCountText: {
+    fontFamily: t.font.space.bold,
+    fontSize: 12,
+    color: t.onPrimary,
   },
   feedBlock: {
     paddingHorizontal: 16,
