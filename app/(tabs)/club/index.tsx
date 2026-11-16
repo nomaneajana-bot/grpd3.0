@@ -17,6 +17,7 @@ import { ClubFeedRow } from "@/components/club/ClubFeedRow";
 import { ClubNavCard } from "@/components/club/ClubNavCard";
 import { ClubOutingCard } from "@/components/club/ClubOutingCard";
 import { ClubProfileHub } from "@/components/club/ClubProfileHub";
+import { ClubSwitcherSlider } from "@/components/club/ClubSwitcherSlider";
 import { GroupedList } from "@/components/redesign/GroupedList";
 import { SectionHeader } from "@/components/redesign/SectionHeader";
 import { ScreenContainer } from "@/components/ui/ScreenContainer";
@@ -408,51 +409,16 @@ export default function ClubScreen() {
                   <Text style={styles.clubFindLink}>Trouver un club →</Text>
                 </Pressable>
               </View>
-              <View style={styles.clubSwitcherRow}>
-                {switchableMemberships.map((m) => {
-                  const active = m.clubId === primaryMembership?.clubId;
-                  const pending = m.status === "pending";
-                  return (
-                    <Pressable
-                      key={m.clubId}
-                      testID={`club-switch-${m.clubId}`}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
-                      accessibilityLabel={m.club?.name ?? m.clubId}
-                      onPress={() => {
-                        setFocusedClubId(m.clubId);
-                        setMembersExpanded(false);
-                        void persistFocusedClubId(m.clubId);
-                      }}
-                      style={[
-                        styles.clubSwitcherChip,
-                        active && styles.clubSwitcherChipOn,
-                        pending && !active && styles.clubSwitcherChipPending,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.clubSwitcherChipText,
-                          active && styles.clubSwitcherChipTextOn,
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {m.club?.name ?? "Club"}
-                        {pending ? " · attente" : ""}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-                <Pressable
-                  testID="club-find-chip"
-                  accessibilityRole="button"
-                  accessibilityLabel="Rejoindre un autre club"
-                  onPress={() => router.push("/(tabs)/club/access" as Href)}
-                  style={styles.clubFindChip}
-                >
-                  <Text style={styles.clubFindChipText}>+ Rejoindre</Text>
-                </Pressable>
-              </View>
+              <ClubSwitcherSlider
+                memberships={switchableMemberships}
+                activeClubId={primaryMembership?.clubId}
+                onSelect={(clubId) => {
+                  setFocusedClubId(clubId);
+                  setMembersExpanded(false);
+                  void persistFocusedClubId(clubId);
+                }}
+                onJoinPress={() => router.push("/(tabs)/club/access" as Href)}
+              />
             </View>
             <ClubProfileHub
               club={club}
@@ -687,38 +653,16 @@ export default function ClubScreen() {
             {switchableMemberships.length > 1 ? (
               <View style={styles.clubSwitcher} testID="club-switcher">
                 <Text style={styles.clubSwitcherLabel}>TES DEMANDES / CLUBS</Text>
-                <View style={styles.clubSwitcherRow}>
-                  {switchableMemberships.map((m) => {
-                    const active = m.clubId === primaryMembership?.clubId;
-                    return (
-                      <Pressable
-                        key={m.clubId}
-                        testID={`club-switch-${m.clubId}`}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
-                        onPress={() => {
-                          setFocusedClubId(m.clubId);
-                          setMembersExpanded(false);
-                          void persistFocusedClubId(m.clubId);
-                        }}
-                        style={[
-                          styles.clubSwitcherChip,
-                          active && styles.clubSwitcherChipOn,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.clubSwitcherChipText,
-                            active && styles.clubSwitcherChipTextOn,
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {m.club?.name ?? "Club"}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                <ClubSwitcherSlider
+                  memberships={switchableMemberships}
+                  activeClubId={primaryMembership?.clubId}
+                  onSelect={(clubId) => {
+                    setFocusedClubId(clubId);
+                    setMembersExpanded(false);
+                    void persistFocusedClubId(clubId);
+                  }}
+                  showJoinChip={false}
+                />
               </View>
             ) : null}
 
@@ -945,46 +889,6 @@ const styles = StyleSheet.create({
     color: t.primary,
     fontSize: 13,
   },
-  clubSwitcherRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  clubSwitcherChip: {
-    borderRadius: t.radiusChip,
-    borderWidth: 1,
-    borderColor: t.outlineVariant,
-    backgroundColor: t.card,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    maxWidth: "100%",
-  },
-  clubSwitcherChipOn: {
-    backgroundColor: t.primary,
-    borderColor: t.primary,
-  },
-  clubSwitcherChipText: {
-    color: t.text,
-    fontSize: 13,
-    fontFamily: t.font.space.semibold,
-  },
-  clubSwitcherChipTextOn: {
-    color: t.onPrimary,
-  },
-  clubFindChip: {
-    borderRadius: t.radiusChip,
-    borderWidth: 1,
-    borderColor: t.outlineVariant,
-    borderStyle: "dashed",
-    backgroundColor: t.surfaceContainerLow,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  clubFindChipText: {
-    color: t.primary,
-    fontSize: 13,
-    fontFamily: t.font.space.semibold,
-  },
   quitZone: {
     paddingVertical: 32,
     paddingHorizontal: 16,
@@ -1040,9 +944,6 @@ const styles = StyleSheet.create({
     color: t.onPrimary,
     fontSize: 15,
     fontFamily: t.font.space.bold,
-  },
-  clubSwitcherChipPending: {
-    borderStyle: "dashed",
   },
   keyEmpty: {
     marginHorizontal: 24,
