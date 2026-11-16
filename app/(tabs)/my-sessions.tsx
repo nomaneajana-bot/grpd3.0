@@ -301,7 +301,7 @@ export default function MySessionsScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: tabBarInset + 16 },
+          { paddingBottom: tabBarInset + 88 },
         ]}
         keyboardShouldPersistTaps="handled"
         refreshControl={
@@ -313,26 +313,11 @@ export default function MySessionsScreen() {
         }
       >
         <View style={styles.headerBlock}>
-          <View style={styles.headerTop}>
-            <View style={styles.headerText}>
-              <Text style={styles.eyebrow}>CALENDRIER PERSONNEL</Text>
-              <Text style={styles.title} accessibilityRole="header">
-                Mes Sorties & Réservations
-              </Text>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Créer une sortie"
-              onPress={() => router.push("/session/create" as Href)}
-              style={({ pressed }) => [
-                styles.createBtn,
-                pressed && { opacity: 0.88 },
-              ]}
-              testID="mes-sorties-create"
-            >
-              <Text style={styles.createBtnPlus}>+</Text>
-              <Text style={styles.createBtnText}>Créer</Text>
-            </Pressable>
+          <View style={styles.headerText}>
+            <Text style={styles.eyebrow}>CALENDRIER PERSONNEL</Text>
+            <Text style={styles.title} accessibilityRole="header">
+              Mes Sorties & Réservations
+            </Text>
           </View>
 
           <View style={styles.segment} accessibilityRole="tablist">
@@ -533,6 +518,21 @@ export default function MySessionsScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Créer une sortie"
+        onPress={() => router.push("/session/create" as Href)}
+        style={({ pressed }) => [
+          styles.createFab,
+          { bottom: tabBarInset + 8 },
+          pressed && styles.createFabPressed,
+        ]}
+        testID="mes-sorties-create"
+      >
+        <Ionicons name="add" size={22} color={t.onPrimary} />
+        <Text style={styles.createFabText}>Créer</Text>
+      </Pressable>
 
       <CancelParticipationModal
         visible={Boolean(cancelTarget)}
@@ -960,25 +960,34 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(232,232,233,0.9)",
   },
-  headerTop: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-  },
   headerText: { gap: 2, flex: 1, minWidth: 0 },
-  createBtn: {
+  createFab: {
+    position: "absolute",
+    right: 16,
+    zIndex: 40,
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    minHeight: 40,
-    maxWidth: 168,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 14,
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 52,
+    paddingHorizontal: 18,
+    borderRadius: 16,
     backgroundColor: t.primary,
-    marginTop: 2,
-    flexShrink: 0,
+    shadowColor: "#0B1F14",
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  createFabPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  createFabText: {
+    color: t.onPrimary,
+    fontFamily: t.font.space.bold,
+    fontSize: 15,
+    lineHeight: 18,
   },
   createBtnPlus: {
     color: t.onPrimary,
@@ -986,13 +995,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 18,
     marginTop: -1,
-  },
-  createBtnText: {
-    color: t.onPrimary,
-    fontFamily: t.font.space.bold,
-    fontSize: 12,
-    lineHeight: 14,
-    flexShrink: 1,
   },
   eyebrow: {
     ...t.type.labelSm,
