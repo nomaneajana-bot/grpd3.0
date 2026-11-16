@@ -86,7 +86,8 @@ export function fieldsToSessionAudience(
 export function normalizeSessionAudience(
   raw: string | null | undefined,
 ): SessionAudience {
-  if (raw === "public") return "public";
-  if (raw === "club" || raw === "team" || !raw) return "club";
+  if (raw === "public" || raw === "women") return "public";
+  if (raw === "club" || raw === "team") return "club";
+  // Unset / unknown → club-reserved (organise default).
   return "club";
 }

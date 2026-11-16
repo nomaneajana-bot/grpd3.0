@@ -39,5 +39,7 @@ describe("session audience simplify v1", () => {
     expect(normalizeSessionAudience("team")).toBe("club");
     expect(normalizeSessionAudience("women")).toBe("public");
     expect(normalizeSessionAudience("public")).toBe("public");
+    expect(normalizeSessionAudience(undefined)).toBe("club");
+    expect(normalizeSessionAudience(null)).toBe("club");
   });
 });
