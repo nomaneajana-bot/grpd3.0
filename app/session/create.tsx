@@ -2640,14 +2640,6 @@ export default function CreateSessionScreen() {
             options={spots}
             testID="session-location-slider"
           />
-          <Text
-            style={styles.srOnly}
-            testID="session-spot-value"
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-          >
-            {spot}
-          </Text>
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.fieldRow}
@@ -3128,13 +3120,6 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     marginBottom: 16,
     lineHeight: 16,
-  },
-  srOnly: {
-    position: "absolute",
-    width: 1,
-    height: 1,
-    opacity: 0,
-    overflow: "hidden",
   },
   walkMetaBlock: {
     marginTop: 8,
