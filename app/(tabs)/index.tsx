@@ -239,10 +239,6 @@ export default function HomeScreen() {
             profileInitial={profileInitial}
           />
 
-          {mode === "new_member" && !nextOuting ? (
-            <NewMemberIntro onSeeOutings={scrollToDiscovery} />
-          ) : null}
-
           <View
             ref={discoveryAnchorRef}
             collapsable={false}
@@ -286,17 +282,8 @@ export default function HomeScreen() {
                 ))}
               </View>
             ) : (
-              <View style={styles.empty} testID="home-discovery-empty">
-                <Text style={styles.emptyTitle}>
-                  {query || activityFilter !== "all"
-                    ? "Pas encore de sortie pour cette recherche."
-                    : "Pas encore de sortie à découvrir."}
-                </Text>
-                <Text style={styles.emptyBody}>
-                  {mode === "new_member"
-                    ? "Reviens bientôt, ou organise la première."
-                    : "Propose une marche ou une course et invite ton groupe."}
-                </Text>
+              <View testID="home-discovery-empty">
+                <NewMemberIntro onSeeOutings={scrollToDiscovery} />
               </View>
             )}
           </View>
