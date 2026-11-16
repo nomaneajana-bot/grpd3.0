@@ -24,14 +24,11 @@ import { homeTheme as h } from "@/constants/homeTheme";
 import { createApiClient, getMyMemberships, listSessions } from "@/lib/api";
 import { resolveApiTransport } from "@/lib/api/mode";
 import {
-  countApprovedClubs,
-  countCompletedOutings,
   countConfirmedUpcoming,
   buildHomeDayOptions,
   filterDiscoverySessions,
   joinedIdSet,
   resolveCityLabel,
-  resolveHomeMode,
   selectNextOuting,
   toLocalDateISO,
   type HomeActivityFilter,
@@ -151,24 +148,6 @@ export default function HomeScreen() {
   const upcomingJoinedCount = useMemo(
     () => countConfirmedUpcoming(sessions, joinedIds),
     [sessions, joinedIds],
-  );
-  const completedCount = useMemo(
-    () => countCompletedOutings(sessions, joinedIds),
-    [sessions, joinedIds],
-  );
-  const approvedClubCount = useMemo(
-    () => countApprovedClubs(memberships),
-    [memberships],
-  );
-  const mode = useMemo(
-    () =>
-      resolveHomeMode({
-        nextOuting,
-        approvedClubCount,
-        completedCount,
-        upcomingJoinedCount,
-      }),
-    [nextOuting, approvedClubCount, completedCount, upcomingJoinedCount],
   );
   const discovery = useMemo(
     () =>
