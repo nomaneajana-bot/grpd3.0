@@ -12,12 +12,13 @@ type ClubOverviewCardProps = {
   city?: string | null;
   purpose?: string | null;
   visibility?: "public" | "members" | null;
-  status: "admin" | "member" | "pending";
+  /** @deprecated Status chrome removed — kept optional for call-site compat. */
+  status?: "admin" | "member" | "pending";
 };
 
 /**
  * Club identity card — Stito light, handoff-safe.
- * No "Actif aujourd’hui", fake km, or verified decorations.
+ * No status essay, fake km, or verified decorations.
  */
 export function ClubOverviewCard({
   clubName,
@@ -26,7 +27,6 @@ export function ClubOverviewCard({
   city,
   purpose,
   visibility,
-  status,
 }: ClubOverviewCardProps) {
   const initials = clubInitialsFromName(clubName);
   const accessLabel =
@@ -44,13 +44,6 @@ export function ClubOverviewCard({
   ]
     .filter(Boolean)
     .join(" · ");
-
-  const statusLabel =
-    status === "admin"
-      ? "Tu es membre administrateur"
-      : status === "member"
-        ? "Tu es membre"
-        : "En attente d’approbation";
 
   return (
     <View style={styles.card} testID="club-overview-card">
@@ -70,20 +63,6 @@ export function ClubOverviewCard({
           <Text style={styles.name} numberOfLines={2} testID="club-overview-name">
             {clubName}
           </Text>
-        </View>
-      </View>
-
-      <View style={styles.statusRow} testID="club-overview-status">
-        <View style={styles.statusIcon}>
-          <Ionicons
-            name={status === "admin" ? "shield-checkmark" : "person"}
-            size={14}
-            color={t.onPrimary}
-          />
-        </View>
-        <View style={styles.statusTextCol}>
-          <Text style={styles.statusEyebrow}>Ton statut</Text>
-          <Text style={styles.statusLabel}>{statusLabel}</Text>
         </View>
       </View>
 
@@ -149,34 +128,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 26,
     color: t.text,
-  },
-  statusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: t.surfaceContainerLow,
-    borderRadius: 12,
-    padding: 12,
-  },
-  statusIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: t.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statusTextCol: { flex: 1, minWidth: 0 },
-  statusEyebrow: {
-    ...t.type.labelSm,
-    color: t.primary,
-    textTransform: "uppercase",
-  },
-  statusLabel: {
-    fontFamily: t.font.hanken.semibold,
-    fontSize: 13,
-    color: t.text,
-    marginTop: 1,
   },
   purpose: {
     fontFamily: t.font.hanken.regular,

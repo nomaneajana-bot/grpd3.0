@@ -69,13 +69,6 @@ export function ClubProfileHub({
   const visible = members.slice(0, previewLimit);
   const hiddenCount = Math.max(0, memberCount - visible.length);
 
-  const statusPill =
-    status === "admin"
-      ? "Admin"
-      : status === "pending"
-        ? "En attente"
-        : "Membre";
-
   const facts: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] =
     [];
   if (city) facts.push({ icon: "location-outline", label: "Ville", value: city });
@@ -120,22 +113,6 @@ export function ClubProfileHub({
           <Text style={styles.name} numberOfLines={2} testID="club-overview-name">
             {club.name}
           </Text>
-          <View
-            style={[
-              styles.statusPill,
-              status === "pending" && styles.statusPillPending,
-            ]}
-            testID="club-overview-status"
-          >
-            <Text
-              style={[
-                styles.statusPillText,
-                status === "pending" && styles.statusPillTextPending,
-              ]}
-            >
-              {statusPill}
-            </Text>
-          </View>
         </View>
       </View>
 
@@ -285,25 +262,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 28,
     color: t.text,
-  },
-  statusPill: {
-    alignSelf: "flex-start",
-    marginTop: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: "rgba(0,95,52,0.1)",
-  },
-  statusPillPending: {
-    backgroundColor: "rgba(196,90,26,0.12)",
-  },
-  statusPillText: {
-    fontFamily: t.font.hanken.semibold,
-    fontSize: 12,
-    color: t.primary,
-  },
-  statusPillTextPending: {
-    color: "#C45A1A",
   },
   section: {
     backgroundColor: t.card,
