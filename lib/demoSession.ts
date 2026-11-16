@@ -1,10 +1,10 @@
 import { createApiClient, loginWithPin } from "@/lib/api";
+import { hydrateDemoTesterData } from "@/lib/api/demoSeed";
 import {
   getOrCreateDeviceId,
   setUseMockApi,
   storeAuthData,
 } from "@/lib/authStore";
-import { getRunnerProfile, saveRunnerProfile } from "@/lib/profileStore";
 
 /** Demo phone used by the in-app mock API (local fixture, not SMS). */
 export const DEMO_PHONE_LOCAL = "0708060337";
@@ -14,15 +14,12 @@ export const DEMO_DISPLAY_NAME = "Nouamane Ajana";
 
 /**
  * One-tap tester entry: enable mock API, sign in as the seeded demo runner,
- * and persist the session so the next visit skips auth.
- * Does not require EXPO_PUBLIC_DEMO_MODE — keeps connected signup as the
- * default product path for normal users.
+ * hydrate Casablanca fixtures (outings, clubs, PRs), and persist the session.
  */
 export async function enterDemoSession(): Promise<void> {
   await setUseMockApi(true);
   const deviceId = await getOrCreateDeviceId();
   const client = createApiClient({ baseUrl: "" });
-  // Pin fixture is keyed as the local demo digits (see mock ensureDemoPinAccount).
   const result = await loginWithPin(client, {
     phone: DEMO_PHONE_LOCAL,
     pin: DEMO_PIN,
@@ -40,14 +37,8 @@ export async function enterDemoSession(): Promise<void> {
     user,
     deviceId,
   });
-  // Stamp display name even if an older Sara B. profile is already in storage.
-  await saveRunnerProfile({
-    name: DEMO_DISPLAY_NAME,
-    firstName: DEMO_DISPLAY_NAME,
-    vo2max: null,
-    weightKg: null,
-    mainGoal: "10k",
-  });
+  // Fresh world + memberships + PRs so every tab has visible data.
+  await hydrateDemoTesterData(user, DEMO_DISPLAY_NAME);
 }
 
 /** True when the current web URL asks for instant demo entry. */

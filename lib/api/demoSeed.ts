@@ -30,8 +30,8 @@ export const MOCK_CLUBS_KEY = "mock:clubs";
 export const MOCK_MEMBERSHIPS_KEY = "mock:club_memberships";
 export const MOCK_OTP_KEY = "mock:otp";
 /** Bump to force a one-time reseed of the richer Casablanca world. */
-export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v4";
-export const DEMO_SEED_VERSION = "4";
+export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v5";
+export const DEMO_SEED_VERSION = "5";
 
 export const DEMO_CLUB_ID = "club_casa_running";
 export const DEMO_CLUB_NAME = "Casa Running Club";
@@ -315,6 +315,60 @@ function buildDemoSessions(): ApiSession[] {
       coachPhone: "+212600000001",
       recommendedGroupId: "C",
       purpose: "Se mettre en jambes sans se forcer — on discute un peu.",
+    },
+    {
+      id: "demo_sess_marche_matin",
+      title: "Marche café Corniche",
+      spot: "Corniche — Café Maure",
+      dayOffset: 0,
+      timeMinutes: 8 * 60 + 30,
+      typeLabel: "MARCHE",
+      volume: "50 min · pas pressé",
+      targetPace: "—",
+      estimatedDistanceKm: 4,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Amélie Traoré",
+      coachPhone: "+212600000002",
+      recommendedGroupId: "D",
+      purpose: "Marche du matin, café après — parfait pour démarrer.",
+      openRunners: 11,
+    },
+    {
+      id: "demo_sess_midi_easy",
+      title: "Footing midi Anfa",
+      spot: "Anfa Place",
+      dayOffset: 0,
+      timeMinutes: 12 * 60 + 30,
+      typeLabel: "FOOTING",
+      volume: "30 min · récupération",
+      targetPace: "6:00–7:00/km",
+      estimatedDistanceKm: 5,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Youssef Benali",
+      coachPhone: "+212600000001",
+      recommendedGroupId: "D",
+      purpose: "Pause déjeuner — on court léger.",
+      openRunners: 8,
+    },
+    {
+      id: "demo_sess_soir_members",
+      title: "Allure confort club",
+      spot: "Piste Mohammed V",
+      dayOffset: 0,
+      timeMinutes: 18 * 60,
+      typeLabel: "FOOTING",
+      volume: "8 km · groupes A–D",
+      targetPace: "5:00–6:30/km",
+      estimatedDistanceKm: 8,
+      visibility: "members",
+      withPaceGroups: true,
+      coachName: "Amélie Traoré",
+      coachPhone: "+212600000002",
+      recommendedGroupId: "C",
+      clubId: DEMO_CLUB_ID,
+      purpose: "Sortie club du soir — choisis ton groupe.",
     },
     {
       id: "demo_sess_fartlek_ain_diab",
@@ -1046,9 +1100,12 @@ export async function ensureDemoWorld(): Promise<Club & { code: string }> {
 }
 
 export async function readDemoSessions(): Promise<ApiSession[]> {
-  // Only seed the Casablanca world in DEMO_MODE. Explicit mock mode must keep
-  // user-created sessions (club walks, etc.) without wiping mock:sessions.
-  if (DEMO_MODE) await ensureDemoWorld();
+  // Seed when empty (covers one-tap mock entry without EXPO_PUBLIC_DEMO_MODE).
+  // ensureDemoWorld is version-gated so user-created mock sessions survive.
+  const existing = await readJson<MockSessionMap>(MOCK_SESSIONS_KEY, {});
+  if (DEMO_MODE || Object.keys(existing).length === 0) {
+    await ensureDemoWorld();
+  }
   const map = await readJson<MockSessionMap>(MOCK_SESSIONS_KEY, {});
   return Object.values(map).sort((a, b) => {
     const da = `${a.dateISO ?? ""}-${String(a.timeMinutes ?? 0).padStart(4, "0")}`;
@@ -1060,7 +1117,10 @@ export async function readDemoSessions(): Promise<ApiSession[]> {
 export async function readDemoSession(
   sessionId: string,
 ): Promise<ApiSession | null> {
-  if (DEMO_MODE) await ensureDemoWorld();
+  const existing = await readJson<MockSessionMap>(MOCK_SESSIONS_KEY, {});
+  if (DEMO_MODE || Object.keys(existing).length === 0) {
+    await ensureDemoWorld();
+  }
   const map = await readJson<MockSessionMap>(MOCK_SESSIONS_KEY, {});
   return map[sessionId] ?? null;
 }
@@ -1189,7 +1249,7 @@ export async function ensureDemoUserMembership(
       createdAt: new Date().toISOString(),
     };
   }
-  // Also member of walk club so Clubs hub feels multi-club when focusing
+  // Walk + language clubs so Clubs hub feels multi-club
   const walkExisting = Object.values(memberships).find(
     (m) => m.userId === user.id && m.clubId === DEMO_WALK_CLUB_ID,
   );
@@ -1206,12 +1266,34 @@ export async function ensureDemoUserMembership(
       createdAt: new Date().toISOString(),
     };
   }
+  const langExisting = Object.values(memberships).find(
+    (m) => m.userId === user.id && m.clubId === DEMO_LANG_CLUB_ID,
+  );
+  if (!langExisting) {
+    memberships[`membership_lang_${user.id}`] = {
+      id: `membership_lang_${user.id}`,
+      clubId: DEMO_LANG_CLUB_ID,
+      userId: user.id,
+      role: "member",
+      status: "approved",
+      displayName: displayName ?? null,
+      sharePrs: true,
+      prSummary: makePrSummary(360),
+      createdAt: new Date().toISOString(),
+    };
+  }
   await writeJson(MOCK_MEMBERSHIPS_KEY, memberships);
 
-  // Pre-join a couple of outings so Accueil / Mes Sorties look lived-in
+  // Pre-join enough outings so Accueil / Mes Sorties / historique look lived-in
   const joinSessionIds = [
     "demo_sess_footing_corniche",
+    "demo_sess_marche_matin",
+    "demo_sess_midi_easy",
+    "demo_sess_soir_members",
     "demo_sess_footing_sunset",
+    "demo_sess_marche_parc",
+    "demo_sess_fartlek_ain_diab",
+    "demo_sess_french_run_talk",
     "demo_sess_past_footing",
     "demo_sess_past_marche",
     "demo_sess_past_long",
@@ -1310,4 +1392,107 @@ export async function resetDemoData(): Promise<void> {
     ...joinedUserKeys,
   ]);
   await ensureDemoWorld();
+}
+
+/**
+ * Force a fresh Casablanca world + attach the logged-in tester so every tab
+ * (Accueil, Mes Sorties, Clubs, Profil) shows real fixture data.
+ */
+export async function hydrateDemoTesterData(
+  user: AuthUser,
+  displayName?: string,
+): Promise<void> {
+  // Drop seed marker so dates/outings rebuild relative to "today".
+  await AsyncStorage.removeItem(MOCK_DEMO_SEEDED_KEY);
+  await ensureDemoWorld();
+  await ensureDemoUserMembership(user, displayName);
+
+  try {
+    const {
+      saveReferencePaces,
+      saveTestRecord,
+      getRunnerProfile,
+      saveRunnerProfile,
+    } = await import("../profileStore");
+    const name = displayName?.trim() || user.name?.trim() || "Nouamane Ajana";
+    const existing = await getRunnerProfile();
+    await saveRunnerProfile({
+      name,
+      firstName: name,
+      vo2max: existing?.vo2max ?? 48,
+      weightKg: existing?.weightKg ?? 72,
+      mainGoal: existing?.mainGoal ?? "10k",
+      clubName: DEMO_CLUB_NAME,
+      gender: existing?.gender ?? "male",
+      targetRaceType: "10k",
+      targetSessionsPerWeek: 3,
+      targetKmPerWeek: 25,
+    });
+    await saveReferencePaces({
+      easyMin: 330,
+      easyMax: 390,
+      tempoMin: 285,
+      tempoMax: 315,
+      thresholdMin: 255,
+      thresholdMax: 275,
+      intervalsMin: 225,
+      intervalsMax: 245,
+    });
+    const now = Date.now();
+    const prs = [
+      {
+        id: `demo_pr_5k_${user.id}`,
+        kind: "distance" as const,
+        label: "5 km",
+        mode: "time_over_distance" as const,
+        distanceMeters: 5000,
+        durationSeconds: 22 * 60 + 40,
+        paceSecondsPerKm: 272,
+        testDate: "2025-10-12",
+        testType: "official" as const,
+        createdAt: now - 40 * DAY_MS,
+      },
+      {
+        id: `demo_pr_10k_${user.id}`,
+        kind: "distance" as const,
+        label: "10 km",
+        mode: "time_over_distance" as const,
+        distanceMeters: 10000,
+        durationSeconds: 48 * 60 + 10,
+        paceSecondsPerKm: 289,
+        testDate: "2025-09-20",
+        testType: "official" as const,
+        createdAt: now - 60 * DAY_MS,
+      },
+      {
+        id: `demo_pr_1k_${user.id}`,
+        kind: "distance" as const,
+        label: "1 km",
+        mode: "time_over_distance" as const,
+        distanceMeters: 1000,
+        durationSeconds: 3 * 60 + 55,
+        paceSecondsPerKm: 235,
+        testDate: "2025-11-01",
+        testType: "training" as const,
+        createdAt: now - 14 * DAY_MS,
+      },
+      {
+        id: `demo_pr_1min_${user.id}`,
+        kind: "duration" as const,
+        label: "1 minute",
+        mode: "distance_over_time" as const,
+        distanceMeters: 280,
+        durationSeconds: 60,
+        paceSecondsPerKm: 214,
+        testDate: "2025-11-05",
+        testType: "solo" as const,
+        createdAt: now - 10 * DAY_MS,
+      },
+    ];
+    for (const pr of prs) {
+      await saveTestRecord(pr);
+    }
+  } catch (error) {
+    console.warn("hydrateDemoTesterData profile extras failed:", error);
+  }
 }
