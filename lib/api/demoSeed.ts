@@ -31,7 +31,29 @@ export const MOCK_MEMBERSHIPS_KEY = "mock:club_memberships";
 export const MOCK_OTP_KEY = "mock:otp";
 /** Bump to force a one-time reseed of the richer Casablanca world. */
 export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v5";
-export const DEMO_SEED_VERSION = "6";
+export const DEMO_SEED_VERSION = "7";
+
+/** Distinct outing covers — avoid repeating the same stock silhouette. */
+const COVER = {
+  cornicheDawn:
+    "https://images.unsplash.com/photo-1486218119243-13883505769c?auto=format&fit=crop&w=1200&q=80",
+  trackNight:
+    "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?auto=format&fit=crop&w=1200&q=80",
+  packRoad:
+    "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1200&q=80",
+  cityStride:
+    "https://images.unsplash.com/photo-1513593771513-7b58b6c4af38?auto=format&fit=crop&w=1200&q=80",
+  trailLight:
+    "https://images.unsplash.com/photo-1461896836934-ffe607ba6851?auto=format&fit=crop&w=1200&q=80",
+  waterfront:
+    "https://images.unsplash.com/photo-1541252260730-0412e8e2108e?auto=format&fit=crop&w=1200&q=80",
+  womenPack:
+    "https://images.unsplash.com/photo-1594882645126-14020914d110?auto=format&fit=crop&w=1200&q=80",
+  longRun:
+    "https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?auto=format&fit=crop&w=1200&q=80",
+  walkPark:
+    "https://images.unsplash.com/photo-1476610182048-b716b8518aae?auto=format&fit=crop&w=1200&q=80",
+} as const;
 
 export const DEMO_CLUB_ID = "club_casa_running";
 export const DEMO_CLUB_NAME = "Casa Running Club";
@@ -316,8 +338,8 @@ function buildDemoSessions(): ApiSession[] {
       coachPhone: "+212600000001",
       recommendedGroupId: "C",
       purpose: "Se mettre en jambes sans se forcer — on discute un peu.",
-      coverImageUrl:
-        "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=1200&q=80",
+      coverImageUrl: COVER.cornicheDawn,
+      openRunners: 14,
     },
     {
       id: "demo_sess_marche_matin",
@@ -336,6 +358,7 @@ function buildDemoSessions(): ApiSession[] {
       recommendedGroupId: "D",
       purpose: "Marche du matin, café après — parfait pour démarrer.",
       openRunners: 11,
+      coverImageUrl: COVER.walkPark,
     },
     {
       id: "demo_sess_midi_easy",
@@ -354,6 +377,64 @@ function buildDemoSessions(): ApiSession[] {
       recommendedGroupId: "D",
       purpose: "Pause déjeuner — on court léger.",
       openRunners: 8,
+      coverImageUrl: COVER.cityStride,
+    },
+    {
+      id: "demo_sess_soir_hassan",
+      title: "Footing Hassan II",
+      spot: "Mosquée Hassan II — front de mer",
+      dayOffset: 0,
+      timeMinutes: 17 * 60 + 45,
+      typeLabel: "FOOTING",
+      volume: "40 min · rythme cool",
+      targetPace: "5:45–6:45/km",
+      estimatedDistanceKm: 7,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Amélie Traoré",
+      coachPhone: "+212600000002",
+      recommendedGroupId: "D",
+      purpose: "Boucle le long de l’océan — idéal après le boulot.",
+      openRunners: 12,
+      coverImageUrl: COVER.waterfront,
+    },
+    {
+      id: "demo_sess_tempo_twin",
+      title: "Tempo Twin Center",
+      spot: "Anfa — Twin Center",
+      dayOffset: 0,
+      timeMinutes: 20 * 60,
+      typeLabel: "TEMPO",
+      volume: "6 km · seuil",
+      targetPace: "4:50–5:30/km",
+      estimatedDistanceKm: 6,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Youssef Benali",
+      coachPhone: "+212600000001",
+      recommendedGroupId: "B",
+      purpose: "Bloc tempo court — on pousse un peu, on garde le sourire.",
+      openRunners: 9,
+      coverImageUrl: COVER.trailLight,
+    },
+    {
+      id: "demo_sess_piste_ouverte",
+      title: "Piste ouverte Mohammed V",
+      spot: "Piste Mohammed V",
+      dayOffset: 0,
+      timeMinutes: 21 * 60,
+      typeLabel: "SERIES",
+      volume: "8×200 m · récup jog",
+      targetPace: "4:20–5:10/km",
+      estimatedDistanceKm: 5,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Amélie Traoré",
+      coachPhone: "+212600000002",
+      recommendedGroupId: "B",
+      purpose: "Petites séries sous les projecteurs — ouvert à tous.",
+      openRunners: 10,
+      coverImageUrl: COVER.trackNight,
     },
     {
       id: "demo_sess_soir_members",
@@ -372,12 +453,12 @@ function buildDemoSessions(): ApiSession[] {
       recommendedGroupId: "C",
       clubId: DEMO_CLUB_ID,
       purpose: "Sortie club du soir — choisis ton groupe.",
+      coverImageUrl: COVER.packRoad,
     },
     {
       id: "demo_sess_fartlek_ain_diab",
       title: "Fartlek Ain Diab",
-      coverImageUrl:
-        "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1200&q=80",
+      coverImageUrl: COVER.packRoad,
       spot: "Ain Diab — Phare El Hank",
       dayOffset: 1,
       timeMinutes: 18 * 60 + 30,
@@ -410,6 +491,7 @@ function buildDemoSessions(): ApiSession[] {
       recommendedGroupId: "A",
       clubId: DEMO_CLUB_ID,
       purpose: "Travail de vitesse — groupes A–D.",
+      coverImageUrl: COVER.trackNight,
     },
     {
       id: "demo_sess_footing_sunset",
@@ -428,6 +510,7 @@ function buildDemoSessions(): ApiSession[] {
       recommendedGroupId: "D",
       purpose: "Fin de journée, rythme conversation.",
       openRunners: 9,
+      coverImageUrl: COVER.cornicheDawn,
     },
     {
       id: "demo_sess_reprise_femmes",
@@ -446,6 +529,27 @@ function buildDemoSessions(): ApiSession[] {
       recommendedGroupId: "C",
       purpose: "Reprise douce, uniquement entre femmes — ambiance bienveillante.",
       genderRestriction: "women_only",
+      coverImageUrl: COVER.womenPack,
+      openRunners: 13,
+    },
+    {
+      id: "demo_sess_footing_parc_yasmina",
+      title: "Footing Parc Yasmina",
+      spot: "Parc Yasmina",
+      dayOffset: 1,
+      timeMinutes: 7 * 60 + 30,
+      typeLabel: "FOOTING",
+      volume: "40 min · easy",
+      targetPace: "5:40–6:40/km",
+      estimatedDistanceKm: 6,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Youssef Benali",
+      coachPhone: "+212600000001",
+      recommendedGroupId: "D",
+      purpose: "Tours de parc au calme — démarrage en douceur.",
+      openRunners: 8,
+      coverImageUrl: COVER.longRun,
     },
     {
       id: "demo_sess_marche_parc",
@@ -464,6 +568,7 @@ function buildDemoSessions(): ApiSession[] {
       recommendedGroupId: "D",
       clubId: DEMO_WALK_CLUB_ID,
       purpose: "Marcher ensemble, se rencontrer — sans chrono.",
+      coverImageUrl: COVER.walkPark,
     },
     {
       id: "demo_sess_marche_corniche",
@@ -482,6 +587,7 @@ function buildDemoSessions(): ApiSession[] {
       recommendedGroupId: "D",
       purpose: "Ouverte à tous — rythme marche.",
       openRunners: 11,
+      coverImageUrl: COVER.walkPark,
     },
     {
       id: "demo_sess_french_run_talk",
@@ -500,6 +606,7 @@ function buildDemoSessions(): ApiSession[] {
       recommendedGroupId: "D",
       clubId: DEMO_LANG_CLUB_ID,
       purpose: "Courir doucement et parler français.",
+      coverImageUrl: COVER.cityStride,
     },
     {
       id: "demo_sess_fartlek_public",
@@ -518,6 +625,7 @@ function buildDemoSessions(): ApiSession[] {
       recommendedGroupId: "C",
       purpose: "Ouvert Découvrir — allure progressive.",
       openRunners: 7,
+      coverImageUrl: COVER.waterfront,
     },
     {
       id: "demo_sess_series_members",
@@ -535,6 +643,7 @@ function buildDemoSessions(): ApiSession[] {
       coachPhone: "+212600000002",
       recommendedGroupId: "B",
       clubId: DEMO_CLUB_ID,
+      coverImageUrl: COVER.trailLight,
     },
     {
       id: "demo_sess_long_weekend",
@@ -553,6 +662,7 @@ function buildDemoSessions(): ApiSession[] {
       recommendedGroupId: "C",
       clubId: DEMO_CLUB_ID,
       purpose: "Endurance fondamentale — groupes selon allure.",
+      coverImageUrl: COVER.longRun,
     },
     {
       id: "demo_sess_past_footing",
