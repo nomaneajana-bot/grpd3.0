@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated, { FadeInRight } from "react-native-reanimated";
 
 import { homeTheme as h } from "@/constants/homeTheme";
 import type { HomeDayOption } from "@/lib/homeViewModel";
@@ -49,26 +50,33 @@ export function DaySlider({
         contentContainerStyle={styles.row}
         keyboardShouldPersistTaps="handled"
       >
-        {options.map((option) => {
+        {options.map((option, index) => {
           const selected = option.iso === value;
           return (
-            <Pressable
+            <Animated.View
               key={option.iso}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              accessibilityLabel={option.eyebrow}
-              onPress={() => onChange(option.iso)}
-              style={({ pressed }) => [
-                styles.chip,
-                selected && styles.chipOn,
-                pressed && { opacity: 0.88 },
-              ]}
-              testID={`home-day-chip-${option.iso}`}
+              entering={FadeInRight.delay(40 + index * 45)
+                .duration(280)
+                .springify()
+                .damping(18)}
             >
-              <Text style={[styles.chipText, selected && styles.chipTextOn]}>
-                {option.chip}
-              </Text>
-            </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                accessibilityLabel={option.eyebrow}
+                onPress={() => onChange(option.iso)}
+                style={({ pressed }) => [
+                  styles.chip,
+                  selected && styles.chipOn,
+                  pressed && { opacity: 0.88 },
+                ]}
+                testID={`home-day-chip-${option.iso}`}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextOn]}>
+                  {option.chip}
+                </Text>
+              </Pressable>
+            </Animated.View>
           );
         })}
       </ScrollView>
