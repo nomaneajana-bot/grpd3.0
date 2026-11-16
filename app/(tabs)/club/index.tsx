@@ -471,6 +471,13 @@ export default function ClubScreen() {
               upcomingOutingCount={weekSessionCount}
               expandedMembers={membersExpanded}
               onToggleMembers={() => setMembersExpanded((v) => !v)}
+              onMemberPress={(member) => {
+                const clubId = primaryMembership?.clubId;
+                if (!clubId) return;
+                router.push(
+                  `/runner/${encodeURIComponent(member.userId)}?clubId=${encodeURIComponent(clubId)}` as Href,
+                );
+              }}
             />
 
             {isClubAdmin ? (
@@ -779,6 +786,13 @@ export default function ClubScreen() {
                 upcomingOutingCount={weekSessionCount}
                 expandedMembers={membersExpanded}
                 onToggleMembers={() => setMembersExpanded((v) => !v)}
+                onMemberPress={(member) => {
+                  const id = primaryMembership?.clubId;
+                  if (!id) return;
+                  router.push(
+                    `/runner/${encodeURIComponent(member.userId)}?clubId=${encodeURIComponent(id)}` as Href,
+                  );
+                }}
               />
 
               {clubSessions.length > 0 ? (

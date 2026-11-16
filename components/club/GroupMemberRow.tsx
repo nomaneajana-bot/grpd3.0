@@ -13,12 +13,12 @@ type GroupMemberRowProps = {
   /** Prefer this when using club color groups (not legacy A–D). */
   avatarColor?: string;
   memberUserId?: string;
+  onPress?: () => void;
   onChangePress?: () => void;
 };
 
 /**
- * Quiet roster row — whole row is the hit target when admin can move members.
- * No repeated "Changer" pills.
+ * Quiet roster row — tap opens profile; optional side action moves groups.
  */
 export function GroupMemberRow({
   name,
@@ -27,6 +27,7 @@ export function GroupMemberRow({
   groupId,
   avatarColor: avatarColorProp,
   memberUserId,
+  onPress,
   onChangePress,
 }: GroupMemberRowProps) {
   const avatarColor =
@@ -48,19 +49,40 @@ export function GroupMemberRow({
           </Text>
         ) : null}
       </View>
-      {onChangePress ? <Text style={styles.chevron}>›</Text> : null}
+      {onPress || onChangePress ? <Text style={styles.chevron}>›</Text> : null}
     </>
   );
 
-  if (onChangePress) {
-    return (
-      <View
+  return (
+    <View
+      style={styles.wrap}
+      testID={memberUserId ? `club-group-member-${memberUserId}` : undefined}
+    >
+      <Pressable
+        style={({ pressed }) => [
+          styles.row,
+          styles.rowFlex,
+          pressed && styles.rowPressed,
+        ]}
         testID={
-          memberUserId ? `club-group-member-${memberUserId}` : undefined
+          memberUserId ? `club-group-member-open-${memberUserId}` : undefined
         }
+        onPress={onPress ?? onChangePress}
+        disabled={!onPress && !onChangePress}
+        accessibilityRole="button"
+        accessibilityLabel={
+          onPress ? `Voir le profil de ${name}` : `Changer le groupe de ${name}`
+        }
+        hitSlop={4}
       >
+        {body}
+      </Pressable>
+      {onPress && onChangePress ? (
         <Pressable
-          style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+          style={({ pressed }) => [
+            styles.changeBtn,
+            pressed && styles.rowPressed,
+          ]}
           testID={
             memberUserId
               ? `club-group-member-change-${memberUserId}`
@@ -71,36 +93,45 @@ export function GroupMemberRow({
           accessibilityLabel={`Changer le groupe de ${name}`}
           hitSlop={4}
         >
-          {body}
+          <Text style={styles.changeBtnText}>Groupe</Text>
         </Pressable>
-      </View>
-    );
-  }
-
-  return (
-    <View
-      style={styles.row}
-      testID={
-        memberUserId ? `club-group-member-${memberUserId}` : undefined
-      }
-    >
-      {body}
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(232,232,233,0.95)",
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     paddingVertical: 12,
     minHeight: t.touchMin,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(232,232,233,0.95)",
+  },
+  rowFlex: {
+    flex: 1,
+    minWidth: 0,
   },
   rowPressed: {
     opacity: 0.72,
+  },
+  changeBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: t.surfaceContainerLow,
+    marginLeft: 4,
+  },
+  changeBtnText: {
+    fontFamily: t.font.hanken.medium,
+    fontSize: 12,
+    color: t.primary,
   },
   avatar: {
     width: 36,

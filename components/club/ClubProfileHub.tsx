@@ -20,6 +20,7 @@ type ClubProfileHubProps = {
   /** When true, show full member list (capped); otherwise a compact strip. */
   expandedMembers?: boolean;
   onToggleMembers?: () => void;
+  onMemberPress?: (member: ClubRosterMember) => void;
 };
 
 const AVATAR_TONES = [t.primary, "#333E35", "#576158", "#1B4D3E"] as const;
@@ -53,6 +54,7 @@ export function ClubProfileHub({
   upcomingOutingCount = 0,
   expandedMembers = false,
   onToggleMembers,
+  onMemberPress,
 }: ClubProfileHubProps) {
   const initials = clubInitialsFromName(club.name);
   const accessLabel =
@@ -183,12 +185,8 @@ export function ClubProfileHub({
               const name = m.displayName?.trim() || "Membre";
               const badge = roleBadge(m.role);
               const tone = AVATAR_TONES[index % AVATAR_TONES.length]!;
-              return (
-                <View
-                  key={m.membershipId}
-                  style={styles.memberRow}
-                  testID={`club-member-row-${m.userId}`}
-                >
+              const row = (
+                <>
                   <View style={[styles.memberAvatar, { backgroundColor: tone }]}>
                     <Text style={styles.memberAvatarText}>
                       {initialsFromName(name) || "·"}
@@ -204,6 +202,39 @@ export function ClubProfileHub({
                       <Text style={styles.memberRoleMuted}>Membre</Text>
                     )}
                   </View>
+                  {onMemberPress ? (
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={t.outline}
+                    />
+                  ) : null}
+                </>
+              );
+              if (onMemberPress) {
+                return (
+                  <Pressable
+                    key={m.membershipId}
+                    style={({ pressed }) => [
+                      styles.memberRow,
+                      pressed && styles.memberRowPressed,
+                    ]}
+                    testID={`club-member-row-${m.userId}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Voir le profil de ${name}`}
+                    onPress={() => onMemberPress(m)}
+                  >
+                    {row}
+                  </Pressable>
+                );
+              }
+              return (
+                <View
+                  key={m.membershipId}
+                  style={styles.memberRow}
+                  testID={`club-member-row-${m.userId}`}
+                >
+                  {row}
                 </View>
               );
             })}
@@ -340,6 +371,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    minHeight: 44,
+  },
+  memberRowPressed: {
+    opacity: 0.72,
   },
   memberAvatar: {
     width: 36,

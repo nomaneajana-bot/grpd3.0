@@ -384,6 +384,12 @@ export default function ClubGroupDetailScreen() {
                   groupId={useColorOrg ? undefined : gid}
                   avatarColor={useColorOrg ? accentColor : undefined}
                   memberUserId={member.userId}
+                  onPress={() => {
+                    if (!clubId) return;
+                    router.push(
+                      `/runner/${encodeURIComponent(member.userId)}?clubId=${encodeURIComponent(clubId)}` as Href,
+                    );
+                  }}
                   onChangePress={
                     hasAdminAccess
                       ? () => setChangeMember(member)
