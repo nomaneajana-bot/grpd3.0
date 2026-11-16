@@ -116,6 +116,11 @@ import { resolvePublishClubId } from "../../lib/sessionClubAssociation";
 import { getFocusedClubId } from "../../lib/focusedClubStore";
 import { createSession as createSessionLocal, updateSession } from "../../lib/sessionStore";
 import { pickOutingCover } from "../../lib/pickOutingCover";
+import {
+  buildPaceFourchetteLabel,
+  splitPaceFourchette,
+} from "../../lib/paceFourchette";
+import { PaceFourchetteField } from "../../components/session/PaceFourchetteField";
 import type { ClubMembership, SessionCreateInput } from "../../types/api";
 import {
     getWorkoutBasePaceSeconds,
@@ -1599,7 +1604,9 @@ export default function CreateSessionScreen() {
   const [structureNotes, setStructureNotes] = useState("");
   /** Card metrics — what Découvrir / Mes Sorties / Clubs show. */
   const [distanceKmText, setDistanceKmText] = useState("");
-  const [paceText, setPaceText] = useState("");
+  const [paceMinText, setPaceMinText] = useState("");
+  const [paceMaxText, setPaceMaxText] = useState("");
+  const [paceLibre, setPaceLibre] = useState(false);
   const [durationMinText, setDurationMinText] = useState("");
   /** Inline validation (web Alert dialogs are unreliable for harness). */
   const [formError, setFormError] = useState<string | null>(null);
@@ -2064,8 +2071,11 @@ export default function CreateSessionScreen() {
             );
           }
           const pace = existingSession.targetPace?.trim() || "";
-          if (pace && !/^allure\s+libre$/i.test(pace) && pace !== "—") {
-            setPaceText(pace.replace(/\s*\/\s*km$/i, ""));
+          if (pace && pace !== "—") {
+            const parts = splitPaceFourchette(pace);
+            setPaceLibre(parts.libre);
+            setPaceMinText(parts.min);
+            setPaceMaxText(parts.max);
           }
           if (existingSession.coachAdvice?.trim()) {
             setOutingPurpose(existingSession.coachAdvice.trim());
@@ -2149,7 +2159,9 @@ export default function CreateSessionScreen() {
         sessionMode,
         structureNotes,
         distanceKmText,
-        paceText,
+        paceMinText,
+        paceMaxText,
+        paceLibre,
         durationMinText,
         sessionAudience,
         usePaceGroups,
@@ -2166,7 +2178,9 @@ export default function CreateSessionScreen() {
       sessionMode,
       structureNotes,
       distanceKmText,
-      paceText,
+      paceMinText,
+      paceMaxText,
+      paceLibre,
       durationMinText,
       sessionAudience,
       usePaceGroups,
@@ -2305,14 +2319,17 @@ export default function CreateSessionScreen() {
         setFormError("Durée invalide — ex. 45 (minutes).");
         return;
       }
-      const paceTrimmed = paceText.trim();
-      const targetPaceExplicit = !paceTrimmed
-        ? null
-        : /^libre$/i.test(paceTrimmed)
-          ? "Allure libre"
-          : /\/\s*km$/i.test(paceTrimmed) || /allure/i.test(paceTrimmed)
-            ? paceTrimmed
-            : `${paceTrimmed}/km`;
+      const paceBuilt = buildPaceFourchetteLabel(
+        paceMinText,
+        paceMaxText,
+        paceLibre,
+      );
+      if (paceBuilt.error) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError(paceBuilt.error);
+        return;
+      }
+      const targetPaceExplicit = paceBuilt.label;
 
       // Per-outing A–D removed from organise — publish without session pace groups.
       const submittedGroups: typeof groupConfigs = [];
@@ -2714,6 +2731,66 @@ export default function CreateSessionScreen() {
               testID="session-structure-input"
               accessibilityLabel="Structure de la séance"
             />
+
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
+              Métriques{" "}
+              <Text style={styles.optionalHint}>(ce que les gens voient)</Text>
+            </Text>
+            <View style={styles.metricsRow}>
+              <View style={styles.metricField}>
+                <Text style={styles.metricFieldLabel}>Distance</Text>
+                <TextInput
+                  style={styles.metricInput}
+                  value={distanceKmText}
+                  onChangeText={setDistanceKmText}
+                  placeholder="5"
+                  placeholderTextColor={colors.text.tertiary}
+                  keyboardType="decimal-pad"
+                  testID="session-distance-input"
+                  accessibilityLabel="Distance en kilomètres"
+                />
+                <Text style={styles.metricUnit}>km</Text>
+              </View>
+              <View style={styles.metricField}>
+                <Text style={styles.metricFieldLabel}>Durée</Text>
+                <TextInput
+                  style={styles.metricInput}
+                  value={durationMinText}
+                  onChangeText={setDurationMinText}
+                  placeholder="30"
+                  placeholderTextColor={colors.text.tertiary}
+                  keyboardType="number-pad"
+                  testID="session-duration-input"
+                  accessibilityLabel="Durée en minutes"
+                />
+                <Text style={styles.metricUnit}>min</Text>
+              </View>
+            </View>
+
+            <PaceFourchetteField
+              minValue={paceMinText}
+              maxValue={paceMaxText}
+              libre={paceLibre}
+              onChangeMin={(v) => {
+                setPaceLibre(false);
+                setPaceMinText(v);
+              }}
+              onChangeMax={(v) => {
+                setPaceLibre(false);
+                setPaceMaxText(v);
+              }}
+              onToggleLibre={() => {
+                setPaceLibre((prev) => {
+                  const next = !prev;
+                  if (next) {
+                    setPaceMinText("");
+                    setPaceMaxText("");
+                  }
+                  return next;
+                });
+              }}
+            />
+
             {formError ? (
               <Text style={styles.formErrorText} testID="session-form-error">
                 {formError}
@@ -3296,10 +3373,20 @@ const styles = StyleSheet.create({
   metricsRow: {
     flexDirection: "row",
     gap: 10,
+    marginTop: 8,
   },
   metricField: {
     flex: 1,
     minWidth: 0,
+    position: "relative",
+  },
+  metricFieldLabel: {
+    color: colors.text.tertiary,
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    marginBottom: 4,
   },
   metricInput: {
     backgroundColor: colors.background.input,
@@ -3307,11 +3394,19 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border.default,
     color: colors.text.primary,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "600",
     paddingHorizontal: 12,
     paddingVertical: 12,
-    marginTop: 6,
+    paddingRight: 40,
+  },
+  metricUnit: {
+    position: "absolute",
+    right: 12,
+    bottom: 14,
+    color: colors.text.tertiary,
+    fontSize: 12,
+    fontWeight: "600",
   },
   formErrorText: {
     marginTop: 12,
