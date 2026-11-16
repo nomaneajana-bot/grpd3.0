@@ -4,11 +4,13 @@ import {
   setUseMockApi,
   storeAuthData,
 } from "@/lib/authStore";
+import { getRunnerProfile, saveRunnerProfile } from "@/lib/profileStore";
 
 /** Demo phone used by the in-app mock API (local fixture, not SMS). */
 export const DEMO_PHONE_LOCAL = "0708060337";
 export const DEMO_PHONE_E164 = "+212708060337";
 export const DEMO_PIN = "123456";
+export const DEMO_DISPLAY_NAME = "Nouamane Ajana";
 
 /**
  * One-tap tester entry: enable mock API, sign in as the seeded demo runner,
@@ -26,10 +28,25 @@ export async function enterDemoSession(): Promise<void> {
     pin: DEMO_PIN,
     deviceId,
   });
+  const user = {
+    ...result.user,
+    name: DEMO_DISPLAY_NAME,
+    phone: result.user.phone?.startsWith("+212")
+      ? result.user.phone
+      : DEMO_PHONE_E164,
+  };
   await storeAuthData({
     tokens: result.tokens,
-    user: result.user,
+    user,
     deviceId,
+  });
+  // Stamp display name even if an older Sara B. profile is already in storage.
+  await saveRunnerProfile({
+    name: DEMO_DISPLAY_NAME,
+    firstName: DEMO_DISPLAY_NAME,
+    vo2max: null,
+    weightKg: null,
+    mainGoal: "10k",
   });
 }
 

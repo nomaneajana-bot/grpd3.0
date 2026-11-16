@@ -55,6 +55,7 @@ import type {
 import { getAuthUser } from '../authStore';
 import { DEMO_MODE, DEMO_OTP_CODE } from '../featureFlags';
 import { getJoinedSessions, upsertJoinedSession } from '../joinedSessionsStore';
+import { normalizePhone } from '../phone-normalize';
 import {
   getRunnerProfile,
   saveRunnerProfile,
@@ -262,16 +263,28 @@ function makePrSummary(paceSecondsPerKm: number) {
 
 function isDemoPhone(phone: string): boolean {
   const normalized = phone.replace(/\s/g, '');
-  return (
+  const e164 = `+212${DEMO_PHONE.slice(1)}`;
+  if (
     normalized === DEMO_PHONE ||
-    normalized === `+212${DEMO_PHONE.slice(1)}`
-  );
+    normalized === e164 ||
+    normalized === `+${DEMO_PHONE}`
+  ) {
+    return true;
+  }
+  try {
+    return normalizePhone(normalized) === e164;
+  } catch {
+    return false;
+  }
 }
+
+/** Canonical tester identity for one-tap demo entry. */
+const DEMO_PROFILE_NAME = 'Nouamane Ajana';
 
 async function ensureDemoRunnerProfile(): Promise<void> {
   const existing = await getRunnerProfile();
   const base: RunnerProfile = existing ?? {
-    name: DEMO_MODE ? 'Camille Dupont' : 'Sara B.',
+    name: DEMO_PROFILE_NAME,
     vo2max: null,
     weightKg: null,
     mainGoal: '10k',
@@ -282,7 +295,9 @@ async function ensureDemoRunnerProfile(): Promise<void> {
   };
   await saveRunnerProfile({
     ...rest,
-    name: rest.name || (DEMO_MODE ? 'Camille Dupont' : 'Sara B.'),
+    // Always stamp the demo tester name (overwrite legacy Sara B. / Camille).
+    name: DEMO_PROFILE_NAME,
+    firstName: DEMO_PROFILE_NAME,
     clubName: DEMO_CLUB_NAME,
   });
 }
@@ -313,7 +328,7 @@ async function ensureDemoClubMembership(clubId: string): Promise<void> {
     clubId,
     status: 'approved',
     role: 'member',
-    displayName: 'Sara B.',
+    displayName: DEMO_PROFILE_NAME,
     sharePrs: true,
     prSummary: makePrSummary(DEMO_USER_PACE_SECONDS_PER_KM),
   });
@@ -696,22 +711,30 @@ async function mockPinRegister(
 async function mockPinLogin(input: PinLoginInput): Promise<PinAuthResult> {
   const normalizedPhone = input.phone.replace(/\s/g, "");
   const pins = await readPins();
-  if (!pins[normalizedPhone]) {
+  const pin =
+    pins[normalizedPhone] ??
+    pins[DEMO_PHONE] ??
+    pins[`+212${DEMO_PHONE.slice(1)}`];
+  if (!pin) {
     throw new ApiError(404, "Compte introuvable");
   }
-  if (pins[normalizedPhone] !== input.pin) {
+  if (pin !== input.pin) {
     throw new ApiError(401, "Code incorrect");
   }
-  const user = await getOrCreateUser(
-    normalizedPhone.startsWith("+")
+  // Keep demo identity on a single E.164 key so memberships resolve later.
+  const phoneKey = isDemoPhone(normalizedPhone)
+    ? `+212${DEMO_PHONE.slice(1)}`
+    : normalizedPhone.startsWith("+")
       ? normalizedPhone
-      : `+${normalizedPhone}`,
-  );
-  // Demo-phone one-tap entry: always seed Casa world + membership so testers
-  // land in a usable mock session even when EXPO_PUBLIC_DEMO_MODE is off.
-  if (isDemoPhone(normalizedPhone)) {
+      : `+${normalizedPhone}`;
+  let user = await getOrCreateUser(phoneKey);
+  if (isDemoPhone(normalizedPhone) || isDemoPhone(phoneKey)) {
+    user = { ...user, name: DEMO_PROFILE_NAME, phone: phoneKey };
+    const users = await readJson<MockUserMap>(MOCK_USERS_KEY, {});
+    users[phoneKey] = user;
+    await writeJson(MOCK_USERS_KEY, users);
     await ensureDemoWorld();
-    await ensureDemoUserMembership(user);
+    await ensureDemoUserMembership(user, DEMO_PROFILE_NAME);
     await ensureDemoRunnerProfile();
   } else if (DEMO_MODE) {
     await ensureDemoWorld();
@@ -928,12 +951,9 @@ async function mockGetMemberships(): Promise<ClubMembershipsResult> {
   if (!user) {
     return { memberships: [] };
   }
-  const club = await ensureSeedClub();
-  // Do not silently approve every DEMO_MODE user into Casa — only the demo phone.
-  if (DEMO_MODE && isDemoPhone(user.phone)) {
-    await ensureDemoUserMembership(user);
-  } else if (!DEMO_MODE && isDemoPhone(user.phone)) {
-    await ensureDemoClubMembership(club.id);
+  // Demo tester: always attach Casa world memberships (connected prod + DEMO).
+  if (user.phone && isDemoPhone(user.phone)) {
+    await ensureDemoUserMembership(user, DEMO_PROFILE_NAME);
   }
   const clubs = await readClubs();
   const memberships = await readMemberships();

@@ -26,14 +26,17 @@ export function ProfileClubsCard({ memberships }: ProfileClubsCardProps) {
         accessibilityRole="button"
         accessibilityLabel="J'ai une clé"
         testID="profile-join-club"
-        style={styles.card}
+        style={styles.emptyCard}
       >
         <Text style={styles.emptyTitle}>Aucun club</Text>
         <Text style={styles.emptySub}>
           Pas d’annuaire — une clé (lien ou code) t’ouvre la porte. Tu peux
           aussi créer le tien.
         </Text>
-        <Text style={styles.cta}>J’ai une clé ›</Text>
+        <View style={styles.emptyCtaRow}>
+          <Ionicons name="key-outline" size={16} color={t.primary} />
+          <Text style={styles.cta}>J’ai une clé</Text>
+        </View>
       </Pressable>
     );
   }
@@ -101,6 +104,21 @@ export function ProfileClubsCard({ memberships }: ProfileClubsCardProps) {
 
 const styles = StyleSheet.create({
   stack: { gap: 8, marginBottom: 9 },
+  emptyCard: {
+    backgroundColor: t.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
+    padding: 16,
+    gap: 6,
+    marginBottom: 9,
+  },
+  emptyCtaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+  },
   card: {
     flexDirection: "row",
     alignItems: "center",
@@ -149,13 +167,11 @@ const styles = StyleSheet.create({
     color: t.text,
     fontSize: 15,
     fontFamily: t.font.space.bold,
-    marginBottom: 4,
   },
   emptySub: {
     color: t.textSecondary,
     fontSize: 13,
     lineHeight: 20,
-    marginBottom: 10,
     fontFamily: t.font.hanken.regular,
   },
   exploreBtn: {
