@@ -69,27 +69,12 @@ export function ClubProfileHub({
   const visible = members.slice(0, previewLimit);
   const hiddenCount = Math.max(0, memberCount - visible.length);
 
-  const statusCopy =
+  const statusPill =
     status === "admin"
-      ? {
-          eyebrow: "Ton statut",
-          label: "Administrateur",
-          hint: "Tu gères les validations, les clés et les paramètres.",
-          icon: "shield-checkmark" as const,
-        }
-      : status === "member"
-        ? {
-            eyebrow: "Ton statut",
-            label: "Membre confirmé",
-            hint: "Tu vois les sorties privées du club — chaque sortie reste une inscription à part.",
-            icon: "checkmark-circle" as const,
-          }
-        : {
-            eyebrow: "Ton statut",
-            label: "Demande en attente",
-            hint: "Le club doit encore t’accepter. En attendant, tu peux lire le profil et les sorties ouvertes.",
-            icon: "time" as const,
-          };
+      ? "Admin"
+      : status === "pending"
+        ? "En attente"
+        : "Membre";
 
   const facts: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] =
     [];
@@ -135,17 +120,22 @@ export function ClubProfileHub({
           <Text style={styles.name} numberOfLines={2} testID="club-overview-name">
             {club.name}
           </Text>
-        </View>
-      </View>
-
-      <View style={styles.statusCard} testID="club-overview-status">
-        <View style={styles.statusIcon}>
-          <Ionicons name={statusCopy.icon} size={16} color={t.onPrimary} />
-        </View>
-        <View style={styles.statusBody}>
-          <Text style={styles.statusEyebrow}>{statusCopy.eyebrow}</Text>
-          <Text style={styles.statusLabel}>{statusCopy.label}</Text>
-          <Text style={styles.statusHint}>{statusCopy.hint}</Text>
+          <View
+            style={[
+              styles.statusPill,
+              status === "pending" && styles.statusPillPending,
+            ]}
+            testID="club-overview-status"
+          >
+            <Text
+              style={[
+                styles.statusPillText,
+                status === "pending" && styles.statusPillTextPending,
+              ]}
+            >
+              {statusPill}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -247,18 +237,11 @@ export function ClubProfileHub({
         )}
       </View>
 
-      <View style={styles.accessNote} testID="club-access-note">
-        <Ionicons
-          name={status === "pending" ? "lock-closed-outline" : "information-circle-outline"}
-          size={16}
-          color={t.textSecondary}
-        />
-        <Text style={styles.accessNoteText}>
-          {status === "pending"
-            ? "Les sorties réservées aux membres restent masquées jusqu’à l’approbation. Une demande n’est pas une inscription à une sortie."
-            : "Adhérer au club ne t’inscrit à aucune sortie — chaque sortie a sa propre inscription."}
+      {status === "pending" ? (
+        <Text style={styles.pendingNote} testID="club-access-note">
+          En attente d’approbation — les sorties privées restent masquées.
         </Text>
-      </View>
+      ) : null}
     </View>
   );
 }
@@ -303,40 +286,24 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     color: t.text,
   },
-  statusCard: {
-    flexDirection: "row",
-    gap: 12,
-    backgroundColor: t.surfaceContainerLow,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "rgba(232,232,233,0.9)",
+  statusPill: {
+    alignSelf: "flex-start",
+    marginTop: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: "rgba(0,95,52,0.1)",
   },
-  statusIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: t.primary,
-    alignItems: "center",
-    justifyContent: "center",
+  statusPillPending: {
+    backgroundColor: "rgba(196,90,26,0.12)",
   },
-  statusBody: { flex: 1, minWidth: 0, gap: 2 },
-  statusEyebrow: {
-    ...t.type.labelSm,
+  statusPillText: {
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 12,
     color: t.primary,
-    textTransform: "uppercase",
   },
-  statusLabel: {
-    fontFamily: t.font.space.semibold,
-    fontSize: 15,
-    color: t.text,
-  },
-  statusHint: {
-    fontFamily: t.font.hanken.regular,
-    fontSize: 13,
-    lineHeight: 18,
-    color: t.textSecondary,
-    marginTop: 2,
+  statusPillTextPending: {
+    color: "#C45A1A",
   },
   section: {
     backgroundColor: t.card,
@@ -452,18 +419,11 @@ const styles = StyleSheet.create({
     color: t.textSecondary,
     marginTop: 2,
   },
-  accessNote: {
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "flex-start",
-    paddingHorizontal: 4,
-    paddingBottom: 4,
-  },
-  accessNoteText: {
-    flex: 1,
+  pendingNote: {
     fontFamily: t.font.hanken.regular,
     fontSize: 13,
     lineHeight: 18,
     color: t.textSecondary,
+    paddingHorizontal: 4,
   },
 });
