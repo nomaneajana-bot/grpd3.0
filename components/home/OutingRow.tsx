@@ -24,8 +24,8 @@ type OutingRowProps = {
 const AVATAR_TONES = [h.primary, "#333E35", "#576158"] as const;
 
 /**
- * Discovery feed card — tiny UX polish:
- * scan time first, full pace (no /… truncation), labels that matter, clear Rejoindre.
+ * Discovery feed card — keep the cover + host strip;
+ * body below the title stays light (no stats dashboard box).
  */
 export function OutingRow({ session, onPress }: OutingRowProps) {
   const host =
@@ -40,8 +40,11 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
   const dist =
     session.estimatedDistanceKm > 0
       ? `${String(session.estimatedDistanceKm).replace(".", ",")} km`
-      : "—";
-  const pace = compactPace(session.targetPace, activityForSession(session) === "walk");
+      : null;
+  const pace = compactPace(
+    session.targetPace,
+    activityForSession(session) === "walk",
+  );
   const durationBit = shortDuration(session.volume);
   const isWalk = activityForSession(session) === "walk";
   const activity = activityLabel(session);
@@ -56,6 +59,12 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
   const hostInitials = initialsFromName(host) || (isWalk ? "M" : "C");
   const ctaLabel = joined ? "Voir" : "Rejoindre";
   const cover = session.coverImageUrl?.trim() || null;
+
+  const facts = [
+    dist,
+    pace ? (isWalk ? pace : `${pace}/km`) : null,
+    durationBit?.value ?? null,
+  ].filter(Boolean) as string[];
 
   return (
     <Pressable
@@ -122,96 +131,57 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
         ) : null}
       </View>
 
-      <Text style={styles.title} numberOfLines={2}>
-        {title}
-      </Text>
-      {purpose ? (
-        <Text style={styles.purpose} numberOfLines={2}>
-          {purpose}
+      <View style={styles.body}>
+        <Text style={styles.title} numberOfLines={2}>
+          {title}
         </Text>
-      ) : null}
+        {purpose ? (
+          <Text style={styles.purpose} numberOfLines={2}>
+            {purpose}
+          </Text>
+        ) : null}
 
-      <View style={styles.metrics} testID={`home-outing-metrics-${session.id}`}>
-        <Metric label="Distance" value={dist} />
-        <Metric label={isWalk ? "Rythme" : "Allure"} value={pace} />
-        <Metric
-          label={durationBit?.kind === "format" ? "Format" : "Durée"}
-          value={durationBit?.value || "—"}
-        />
+        {facts.length > 0 ? (
+          <Text
+            style={styles.facts}
+            numberOfLines={1}
+            testID={`home-outing-metrics-${session.id}`}
+          >
+            {facts.join(" · ")}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.footer}>
-        <View style={styles.presence}>
-          {count && count > 0 ? (
-            <>
-              <View style={styles.avatars}>
-                <View
-                  style={[styles.miniAvatar, { backgroundColor: AVATAR_TONES[0] }]}
-                >
-                  <Text style={styles.miniAvatarText}>{hostInitials}</Text>
-                </View>
-                {count > 1 ? (
-                  <View
-                    style={[
-                      styles.miniAvatar,
-                      styles.miniAvatarMore,
-                      { marginLeft: -8 },
-                    ]}
-                  >
-                    <Text style={styles.miniAvatarMoreText}>
-                      +{Math.min(count - 1, 99)}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-              <Text
-                style={styles.countText}
-                testID={`home-outing-count-${session.id}`}
-              >
-                {count} inscrit{count === 1 ? "" : "s"}
-              </Text>
-            </>
-          ) : (
-            <Text style={styles.countTextMuted}>Places ouvertes</Text>
-          )}
-        </View>
+        <Text
+          style={styles.presenceText}
+          numberOfLines={1}
+          testID={`home-outing-count-${session.id}`}
+        >
+          {count && count > 0
+            ? `${count} inscrit${count === 1 ? "" : "s"}`
+            : "Places ouvertes"}
+        </Text>
 
         <View
-          style={[styles.cta, joined && styles.ctaJoined]}
+          style={styles.ctaRow}
           testID={`home-outing-cta-${session.id}`}
         >
-          <Ionicons
-            name={joined ? "arrow-forward" : "add"}
-            size={16}
-            color={joined ? h.primary : h.onPrimary}
-          />
           <Text style={[styles.ctaText, joined && styles.ctaTextJoined]}>
             {ctaLabel}
           </Text>
+          <Ionicons
+            name="arrow-forward"
+            size={16}
+            color={h.primary}
+          />
         </View>
       </View>
     </Pressable>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  const tight = value.length > 10;
-  return (
-    <View style={styles.metricCol}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text
-        style={[styles.metricValue, tight && styles.metricValueTight]}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.85}
-      >
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-/** Pace that fits a 3-col metric without trailing "/…" */
+/** Pace that fits a meta line without trailing "/…" */
 function compactPace(
   raw: string | undefined,
   walk: boolean,
@@ -221,7 +191,6 @@ function compactPace(
   }
   let p = raw.replace(/^Allure\s+/i, "").trim();
   p = p.replace(/\s*\/\s*km$/i, "");
-  // "5:10–5:40/km" → "5:10–5:40"
   p = p.replace(/\/km\b/gi, "");
   return p || "Libre";
 }
@@ -378,10 +347,14 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     color: h.onSecondaryContainer,
   },
+  body: {
+    gap: 4,
+    paddingTop: 2,
+  },
   title: {
     fontFamily: h.font.space.semibold,
-    fontSize: 20,
-    lineHeight: 26,
+    fontSize: 18,
+    lineHeight: 24,
     letterSpacing: -0.3,
     color: h.text,
   },
@@ -390,111 +363,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: h.textSecondary,
-    marginTop: -2,
   },
-  metrics: {
-    flexDirection: "row",
-    gap: 8,
-    backgroundColor: h.mutedSurface,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  metricCol: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  metricLabel: {
+  facts: {
     fontFamily: h.font.hanken.medium,
-    fontSize: 10,
-    lineHeight: 13,
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
-    color: h.outline,
-  },
-  metricValue: {
-    fontFamily: h.font.space.semibold,
-    fontSize: 15,
-    lineHeight: 20,
-    letterSpacing: -0.2,
-    color: h.text,
-  },
-  metricValueTight: {
     fontSize: 13,
     lineHeight: 18,
+    color: h.outline,
+    marginTop: 2,
   },
   footer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 10,
-    marginTop: 2,
+    gap: 12,
+    marginTop: 4,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(190,202,190,0.45)",
   },
-  presence: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  avatars: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  miniAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: h.card,
-  },
-  miniAvatarText: {
-    fontFamily: h.font.hanken.semibold,
-    fontSize: 9,
-    color: h.onPrimary,
-  },
-  miniAvatarMore: {
-    backgroundColor: h.surfaceContainer,
-  },
-  miniAvatarMoreText: {
-    fontFamily: h.font.hanken.semibold,
-    fontSize: 9,
-    color: h.text,
-  },
-  countText: {
-    fontFamily: h.font.hanken.medium,
+  presenceText: {
+    fontFamily: h.font.hanken.regular,
     fontSize: 13,
     lineHeight: 18,
     color: h.textSecondary,
     flexShrink: 1,
+    minWidth: 0,
   },
-  countTextMuted: {
-    fontFamily: h.font.hanken.regular,
-    fontSize: 13,
-    lineHeight: 18,
-    color: h.outline,
-  },
-  cta: {
+  ctaRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: h.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-    minHeight: 40,
-  },
-  ctaJoined: {
-    backgroundColor: "rgba(0,95,52,0.1)",
+    flexShrink: 0,
   },
   ctaText: {
     fontFamily: h.font.hanken.semibold,
-    fontSize: 13,
-    lineHeight: 16,
-    color: h.onPrimary,
+    fontSize: 14,
+    lineHeight: 18,
+    color: h.primary,
   },
   ctaTextJoined: {
     color: h.primary,
