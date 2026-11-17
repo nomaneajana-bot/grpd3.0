@@ -1,0 +1,35 @@
+{
+  "checks": [
+    {
+      "id": "presence_title",
+      "ok": true,
+      "detail": "\nREJOINDRE\nTon club\nt’attend.\nEntre le code à six caractères, ou colle le lien d’invitation.\nCODE D’INVITATION\nou\n\nColler un lien d’invitation\ngrpd.run/c/…\n\nSans code valide, l’accès reste bloqué — on n’invente pas d’approbation.\nRejoind"
+    },
+    {
+      "id": "code_and_link_present",
+      "ok": true,
+      "detail": "\nREJOINDRE\nTon club\nt’attend.\nEntre le code à six caractères, ou colle le lien d’invitation.\nCODE D’INVITATION\nou\n\nColler un lien d’invitation\ngrpd.run/c/…\n\nSans code valide, l’accès reste bloqué — on n’invente pas d’approbation.\nRejoind"
+    },
+    {
+      "id": "not_old_ugly_copy",
+      "ok": true,
+      "detail": "\nREJOINDRE\nTon club\nt’attend.\nEntre le code à six caractères, ou colle le lien d’invitation.\nCODE D’INVITATION\nou\n\nColler un lien d’invitation\ngrpd.run/c/…\n\nSans code valide, l’accès reste bloqué —"
+    },
+    {
+      "id": "handles_lookup_without_crash",
+      "ok": true,
+      "detail": "\nREJOINDRE\nTon club\nt’attend.\nEntre le code à six caractères, ou colle le lien d’invitation.\nCODE D’INVITATION\nCe code ne correspond à aucun club.\nou\n\nColler un lien d’invitation\ngrpd.run/c/…\n\nSans code valide, l’accès reste bloqué — on "
+    },
+    {
+      "id": "deeplink_shows_presence_or_auth",
+      "ok": true,
+      "detail": "\nREJOINDRE\nTon club\nt’attend.\nEntre le code à six caractères, ou colle le lien d’invitation.\nCODE D’INVITATION\nou\n\nColler un lien d’invitation\ngrpd.run/c/…\n\nSans code valide, l’accès reste bloqué —"
+    }
+  ],
+  "base": "http://127.0.0.1:8082",
+  "tested_at": "2026-10-16T21:11:47.720Z",
+  "summary": {
+    "pass": 5,
+    "fail": 0
+  }
+}

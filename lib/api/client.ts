@@ -1,10 +1,12 @@
 import type { ApiEnvelope, ApiErrorPayload } from "../../types/api";
-import {
-  getAccessToken as getStoredAccessToken,
-  shouldUseMockApi,
-} from "../authStore";
+import { getAccessToken as getStoredAccessToken } from "../authStore";
 import { ApiError } from "./errors";
-import { isMockEnabled, mockApiRequest } from "./mock";
+import {
+  assertConnectedApiUrl,
+  getConfiguredApiUrl,
+  resolveApiTransport,
+} from "./mode";
+import { mockApiRequest } from "./mock";
 
 type ApiClientOptions = {
   baseUrl?: string;
@@ -17,7 +19,7 @@ type RequestOptions = {
 };
 
 function getDefaultBaseUrl(): string {
-  return process.env.EXPO_PUBLIC_API_URL ?? "";
+  return getConfiguredApiUrl();
 }
 
 function joinUrl(baseUrl: string, path: string): string {
@@ -57,9 +59,11 @@ export class ApiClient {
     init: RequestInit = {},
     options: RequestOptions = {},
   ): Promise<T> {
-    const url = joinUrl(this.baseUrl, path);
     const headers = new Headers(init.headers);
-    const useMock = (await shouldUseMockApi()) || isMockEnabled(this.baseUrl);
+    const transport = await resolveApiTransport(this.baseUrl);
+    const useMock = transport.useMock;
+    const effectiveBase = useMock ? this.baseUrl : transport.apiUrl || this.baseUrl;
+    const url = joinUrl(effectiveBase, path);
 
     if (options.auth !== false && this.getAccessToken) {
       const token = await this.getAccessToken();
@@ -72,6 +76,8 @@ export class ApiClient {
       return await mockApiRequest<T>(path, { ...init, headers });
     }
 
+    assertConnectedApiUrl(transport.apiUrl || this.baseUrl);
+
     if (init.body && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
@@ -81,6 +87,23 @@ export class ApiClient {
 
     if (response.status === 401 && this.onUnauthorized) {
       await this.onUnauthorized();
+    }
+
+    // Unwrap ok/data|error envelopes for both success and HTTP error statuses
+    // (e.g. 401 login returns {ok:false,error:{message}} — not a top-level message).
+    if (isApiEnvelope<T>(payload)) {
+      if (!payload.ok) {
+        throw new ApiError(
+          response.status,
+          payload.error.message,
+          payload.error.code,
+          payload.error.details,
+        );
+      }
+      if (!response.ok) {
+        throw new ApiError(response.status, "Request failed");
+      }
+      return payload.data;
     }
 
     if (!response.ok) {
@@ -94,18 +117,6 @@ export class ApiClient {
         errorPayload.code,
         errorPayload.details,
       );
-    }
-
-    if (isApiEnvelope<T>(payload)) {
-      if (!payload.ok) {
-        throw new ApiError(
-          response.status,
-          payload.error.message,
-          payload.error.code,
-          payload.error.details,
-        );
-      }
-      return payload.data;
     }
 
     return payload as T;

@@ -40,7 +40,21 @@ export type TokenBundle = {
 export type AuthUser = {
   id: string;
   phone: string;
+  email?: string | null;
+  name?: string | null;
   profileComplete: boolean;
+};
+
+export type EmailAuthInput = {
+  email: string;
+  password: string;
+  displayName?: string;
+  deviceId?: string;
+};
+
+export type EmailAuthResult = {
+  user: AuthUser;
+  tokens: TokenBundle;
 };
 
 export type OtpVerifyInput = {
@@ -214,6 +228,10 @@ export type ClubMembershipsResult = {
 export type ClubCreateInput = {
   name: string;
   city?: string | null;
+  /** Free-form purpose / description (unrestricted). */
+  purpose?: string | null;
+  /** Public = discoverable; members = private club. Default public. */
+  visibility?: ClubVisibility;
 };
 
 export type ClubUpdateInput = {
@@ -225,7 +243,10 @@ export type ClubUpdateInput = {
 
 export type ClubMemberGroupInput = {
   userId: string;
-  groupId: "A" | "B" | "C" | "D";
+  /** Legacy A–D or opt-in color-group id. */
+  groupId: string;
+  /** When set, server requires groupId ∈ this list (active club groups). */
+  eligibleGroupIds?: string[];
 };
 
 export type ClubJoinByCodeInput = {
@@ -386,7 +407,8 @@ export type SessionCreateInput = {
 
 export type SessionCreateResult = ApiSession;
 
-export type SessionJoinInput = { groupId: string };
+/** groupId may be empty/"open" for walk/language outings without pace groups. */
+export type SessionJoinInput = { groupId?: string | null };
 
 export type SessionJoinResult = {
   id: string;

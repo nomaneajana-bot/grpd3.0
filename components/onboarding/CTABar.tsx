@@ -52,12 +52,21 @@ export function CTABar({
       ]}
     >
       {topLinkLabel && onTopLinkPress ? (
-        <Pressable onPress={onTopLinkPress} style={styles.topLinkWrap}>
+        <Pressable
+          onPress={onTopLinkPress}
+          style={styles.topLinkWrap}
+          accessibilityRole="button"
+          accessibilityLabel={topLinkLabel}
+          testID="cta-top-link"
+        >
           <Text style={styles.topLink}>{topLinkLabel}</Text>
         </Pressable>
       ) : null}
       <Pressable
         onPress={onPrimaryPress}
+        accessibilityRole="button"
+        accessibilityLabel={primaryLabel}
+        testID="cta-primary"
         style={({ pressed }) => [
           styles.primaryBtn,
           (primaryDisabled || primaryLoading) && styles.primaryDisabled,
@@ -67,7 +76,7 @@ export function CTABar({
         disabled={primaryDisabled || primaryLoading}
       >
         {primaryLoading ? (
-          <ActivityIndicator color={colors.text.primary} />
+          <ActivityIndicator color={colors.background.primary} />
         ) : (
           <Text
             style={[
@@ -80,7 +89,13 @@ export function CTABar({
         )}
       </Pressable>
       {secondaryLabel && onSecondaryPress ? (
-        <Pressable onPress={onSecondaryPress} style={styles.secondaryWrap}>
+        <Pressable
+          onPress={onSecondaryPress}
+          style={styles.secondaryWrap}
+          accessibilityRole="button"
+          accessibilityLabel={secondaryLabel}
+          testID="cta-secondary"
+        >
           <Text
             style={[
               styles.secondaryText,
@@ -99,6 +114,8 @@ const styles = StyleSheet.create({
   wrap: {
     paddingTop: spacing.sm,
     backgroundColor: colors.background.primary,
+    zIndex: 2,
+    position: "relative",
   },
   wrapWelcome: {
     backgroundColor: "transparent",
@@ -114,19 +131,20 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     backgroundColor: colors.accent.primary,
-    borderRadius: borderRadius.pill,
-    paddingVertical: 16,
+    borderRadius: 16,
+    paddingVertical: 17,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 52,
+    minHeight: 56,
   },
   primaryDisabled: {
     opacity: 0.45,
   },
   primaryText: {
-    color: colors.text.primary,
+    /** Dark on sage CTA — matches D03 Action */
+    color: colors.background.primary,
     fontSize: welcomeTheme.primaryLabelSize,
-    fontWeight: welcomeTheme.primaryLabelWeight,
+    fontWeight: "700",
   },
   primaryTextWelcome: {
     fontFamily: welcomeTheme.fontFamily.semibold,

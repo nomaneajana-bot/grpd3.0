@@ -2,13 +2,13 @@
 
 import { NextRequest } from "next/server";
 import { MembershipRole, MembershipStatus } from "@prisma/client";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
+import { requireAuth } from "../../../../lib/server/auth-helpers";
+import { prisma } from "../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../lib/server/api-response";
 
 export async function POST(req: NextRequest) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const body = await req.json();
     const { name, slug, city, description, visibility } = body;
 

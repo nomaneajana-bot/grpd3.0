@@ -1,0 +1,99 @@
+import { shouldUseMockApi } from "../authStore";
+import { DEMO_MODE } from "../featureFlags";
+import { ApiError } from "./errors";
+
+/**
+ * Explicit API transport selection.
+ *
+ * - DEMO_MODE / EXPO_PUBLIC_USE_MOCK_API / AsyncStorage mock flag → mock
+ * - Connected requires a non-empty EXPO_PUBLIC_API_URL (or constructor baseUrl)
+ * - Missing connected URL must NOT silently fall back to mock
+ */
+
+export type ApiTransportMode = "demo" | "mock" | "connected";
+
+function browserOrigin(): string | null {
+  if (typeof globalThis === "undefined") return null;
+  const origin = (
+    globalThis as { window?: { location?: { origin?: string } } }
+  ).window?.location?.origin;
+  return typeof origin === "string" && origin.trim() ? origin.trim() : null;
+}
+
+/**
+ * Resolve the API base URL.
+ *
+ * On web, if a baked `EXPO_PUBLIC_API_URL` points at a *different* origin than
+ * the page (common on Vercel Preview when the env is pinned to production),
+ * prefer same-origin relative calls so signup/login are not blocked by CORS
+ * ("Failed to fetch") or Preview SSO mismatch.
+ */
+export function getConfiguredApiUrl(baseUrl?: string): string {
+  const configured = (baseUrl ?? process.env.EXPO_PUBLIC_API_URL ?? "").trim();
+  if (baseUrl !== undefined) {
+    // Explicit constructor override — honor as-is.
+    return configured;
+  }
+  const origin = browserOrigin();
+  if (!origin || !configured) return configured;
+  try {
+    if (new URL(configured).origin !== new URL(origin).origin) {
+      return "";
+    }
+  } catch {
+    // Non-absolute configured URL — keep as-is.
+  }
+  return configured;
+}
+
+/** Env-only mock flag (not DEMO_MODE). */
+export function isExplicitMockEnv(): boolean {
+  return process.env.EXPO_PUBLIC_USE_MOCK_API === "true";
+}
+
+/**
+ * Sync check: whether env/flags force mock without needing AsyncStorage.
+ * Does NOT treat a missing API URL as mock.
+ */
+export function isMockEnabled(baseUrl?: string): boolean {
+  void baseUrl; // kept for call-site compatibility; URL absence ≠ mock
+  if (DEMO_MODE) return true;
+  return isExplicitMockEnv();
+}
+
+export async function resolveApiTransport(
+  baseUrl?: string,
+): Promise<{ mode: ApiTransportMode; useMock: boolean; apiUrl: string }> {
+  const apiUrl = getConfiguredApiUrl(baseUrl);
+  if (DEMO_MODE) {
+    return { mode: "demo", useMock: true, apiUrl };
+  }
+  if (isExplicitMockEnv() || (await shouldUseMockApi())) {
+    return { mode: "mock", useMock: true, apiUrl };
+  }
+  return { mode: "connected", useMock: false, apiUrl };
+}
+
+/**
+ * Throws when connected mode has no API URL and same-origin is unavailable.
+ * Empty URL is OK on web (relative `/api/...` to the current origin — Vercel SPA + functions).
+ * Call after resolve when useMock is false.
+ */
+export function assertConnectedApiUrl(apiUrl: string): void {
+  if (apiUrl.trim()) return;
+  // Expo web / browser: empty base → relative fetch against window.location.
+  if (
+    typeof globalThis !== "undefined" &&
+    typeof (globalThis as { window?: { location?: { origin?: string } } })
+      .window?.location?.origin === "string"
+  ) {
+    return;
+  }
+  throw new ApiError(
+    503,
+    "Mode connecté: EXPO_PUBLIC_API_URL est manquant. " +
+      "Définis l'URL de l'API, ou active le mode démo " +
+      "(EXPO_PUBLIC_DEMO_MODE=true) / mock (EXPO_PUBLIC_USE_MOCK_API=true).",
+    "MISSING_API_URL",
+  );
+}

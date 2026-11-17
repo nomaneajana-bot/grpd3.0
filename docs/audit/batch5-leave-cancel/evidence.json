@@ -1,0 +1,132 @@
+{
+  "batch": "Batch 5 \u2014 ISSUE-004 leave / cancel-request (+ ISSUE-008 access)",
+  "issues": [
+    "ISSUE-004",
+    "ISSUE-008"
+  ],
+  "tested_sha": "f8f378707a2b973e3fc2ae9e688f0580af09adff",
+  "tip_sha": "abe641296bc5bbc6af5c503979d8650842110e4a",
+  "codex_review_base": "0309752",
+  "prior_code_sha": "3befb19c9627973ebefa72a438e38b429f0c44b7",
+  "branch": "cursor/green-home-ux-join-3184",
+  "environment": "local_postgres_integration",
+  "hosted_claim": false,
+  "hosted_preview_access": {
+    "url": "https://grpd30-git-cursor-green-home-ux-j-75ed8a-noas-projects-0b3f311d.vercel.app",
+    "http_status": 302,
+    "location_prefix": "https://vercel.com/sso-api",
+    "deployed_sha_readable": false,
+    "dual_browser_connected_journey": false,
+    "blocker": "Vercel SSO gate; no authorized non-SSO Preview/Test credentials in this environment. Protection not altered."
+  },
+  "product_decision": {
+    "id": "LAST_ADMIN_LEAVE",
+    "rule": "Sole approved admin cannot leave; no ownership transfer or club deletion invented.",
+    "http": "409 LAST_ADMIN",
+    "concurrency": "FOR UPDATE on approved admins + Serializable + retry"
+  },
+  "demo_behavior": "preserved (mock leave/cancel unchanged)",
+  "auth_test_method": {
+    "handlers": [
+      "app/api/v1/clubs/[id]/leave/route.ts#POST",
+      "app/api/v1/clubs/[id]/cancel-request/route.ts#POST"
+    ],
+    "contract": "requireAuth(req) \u2192 req.auth?.user?.id (lib/server/auth-helpers.ts)",
+    "request_input": "Request-compatible NextRequest via test/shims/next-server.ts (next package not a workspace dependency)",
+    "removed_wrappers": "runAuthenticatedLeave / runAuthenticatedCancelRequest / requireActorUserId deleted (were not called by routes)"
+  },
+  "checks": {
+    "unit_evaluateLeaveEligibility": {
+      "ok": true,
+      "detail": "5/5 incl. French copy without API jargon"
+    },
+    "pg_route_auth_401_actual_handlers": {
+      "ok": true,
+      "detail": "actual POST leave+cancel: missing/null/empty/non-string auth \u2192 Response 401 UNAUTHORIZED; membership count unchanged"
+    },
+    "pg_route_actor_isolation_body_userid_ignored": {
+      "ok": true,
+      "detail": "auth outsider + body.userId=member/pending does not mutate those rows; auth member leave removes only self"
+    },
+    "pg_approved_leave_revokes_members_only_attendance": {
+      "ok": true,
+      "detail": "membership deleted; members-only \u2192 left; public joined unchanged; club persists"
+    },
+    "pg_leave_idempotent_retry": {
+      "ok": true,
+      "detail": "alreadyAbsent"
+    },
+    "pg_pending_cannot_leave": {
+      "ok": true,
+      "detail": "WRONG_STATUS; French message no cancel-request jargon"
+    },
+    "pg_sole_admin_rejected": {
+      "ok": true,
+      "detail": "LAST_ADMIN; club+others intact"
+    },
+    "pg_admin_leave_with_peer_admin": {
+      "ok": true,
+      "detail": "allowed"
+    },
+    "pg_race_concurrent_last_admin": {
+      "ok": true,
+      "detail": "exactly one leave ok + one LAST_ADMIN; remainingAdmins=1"
+    },
+    "pg_cancel_pending_own_only": {
+      "ok": true,
+      "detail": "pending removed; approved untouched"
+    },
+    "pg_cancel_rejects_approved_and_missing": {
+      "ok": true,
+      "detail": "WRONG_STATUS / NOT_FOUND; French no leave/API jargon"
+    },
+    "pg_concurrent_duplicate_cancel": {
+      "ok": true,
+      "detail": "exactly one ok; other NOT_FOUND"
+    },
+    "pg_race_cancel_vs_approval": {
+      "ok": true,
+      "detail": "12 iterations; Promise.allSettled both outcomes; only cancel-won (ok+approveCount0) or approve-won (WRONG_STATUS+count1); unexpected reject fails"
+    },
+    "pg_lifecycle_rollback_membership_and_attendance": {
+      "ok": true,
+      "detail": "hook throw after attendance revoke \u2192 membership approved + attendance joined"
+    },
+    "pg_wrong_club_isolation": {
+      "ok": true,
+      "detail": "other club leave isolated; CLUB_NOT_FOUND"
+    },
+    "pg_persistence_new_client": {
+      "ok": true,
+      "detail": "leave visible on fresh PrismaClient"
+    },
+    "ui_cancel_not_demo_mode_gated": {
+      "ok": true,
+      "detail": "club-cancel-pending-btn always rendered (prior closeout; source still ungated)"
+    },
+    "hosted_dual_browser_journey": {
+      "ok": false,
+      "status": "BLOCKED",
+      "detail": "SSO 302; no authorized test Preview/Test env \u2014 not PASS"
+    },
+    "issue_008_multi_context": {
+      "ok": false,
+      "status": "BLOCKED",
+      "detail": "depends on hosted creds; SSO protection only \u2014 not PASS"
+    }
+  },
+  "summary": {
+    "passed": 17,
+    "failed": 0,
+    "blocked": 2,
+    "total": 19
+  },
+  "screenshots": [],
+  "logs": [
+    "docs/audit/batch5-leave-cancel/logs/unit-lifecycle.log",
+    "docs/audit/batch5-leave-cancel/logs/pg-integration.log",
+    "docs/audit/batch5-leave-cancel/logs/hosted-sso-blocker.log"
+  ],
+  "note": "Codex 0309752/3befb19 gap closed: auth tests call actual route POST exports. Hosted SSO BLOCKED not PASS. Local PG only. No cloud-localhost advertised as laptop preview.",
+  "generated_at": "2026-10-16T00:09:00.000Z"
+}

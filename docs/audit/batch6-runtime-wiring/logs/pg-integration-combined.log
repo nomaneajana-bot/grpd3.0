@@ -1,0 +1,46 @@
+
+> grpd3.0@1.0.0 test:integration:pg:batch5
+> jest --runInBand lib/server/__tests__/clubLeaveCancel.integration.test.ts
+
+PASS lib/server/__tests__/clubLeaveCancel.integration.test.ts
+  club leave + cancel-request (PostgreSQL)
+    ✓ actual leave/cancel POST: missing/invalid Bearer → Response 401, no DB mutation (102 ms)
+    ✓ actual leave/cancel POST: Bearer actor only — body userId ignored (isolation) (43 ms)
+    ✓ approved member leaves: membership removed, members-only attendance left, public attendance unchanged, club persists (20 ms)
+    ✓ leave is idempotent on retry (duplicate leave) (20 ms)
+    ✓ rejects pending actor on leave (must cancel request) (16 ms)
+    ✓ rejects sole admin leave without inventing transfer/deletion (14 ms)
+    ✓ allows admin leave when another approved admin remains (14 ms)
+    ✓ PG race: concurrent last-admin departures — exactly one leaves, one LAST_ADMIN (23 ms)
+    ✓ cancel-request removes only own pending row (14 ms)
+    ✓ cancel-request rejects approved member and missing request (14 ms)
+    ✓ concurrent duplicate cancellation: exactly one ok, other NOT_FOUND (30 ms)
+    ✓ PG race: cancel pending vs concurrent approval — record both outcomes (141 ms)
+    ✓ lifecycle rollback: hook throw after attendance revoke restores membership + attendance (14 ms)
+    ✓ wrong clubId does not affect other clubs; club not found (15 ms)
+    ✓ persists leave across a new Prisma client (connection) (42 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       15 passed, 15 total
+Snapshots:   0 total
+Time:        2.491 s
+Ran all test suites matching /lib\/server\/__tests__\/clubLeaveCancel.integration.test.ts/i.
+
+> grpd3.0@1.0.0 test:integration:pg:batch6
+> jest --runInBand lib/server/__tests__/vercelDispatch.integration.test.ts
+
+PASS lib/server/__tests__/vercelDispatch.integration.test.ts
+  Batch6 Vercel dispatcher + Bearer (PostgreSQL)
+    ✓ health returns JSON ready (44 ms)
+    ✓ unknown API path returns JSON 404 (never SPA HTML) (3 ms)
+    ✓ missing / invalid / expired / claim-broken Bearer → 401 via entry + dispatch; no DB mutation (73 ms)
+    ✓ valid organizer/participant Bearer: leave + cancel + actor isolation (35 ms)
+    ✓ connected ApiClient: real resolver (no spy), missing URL fails, leave/cancel; demo independent (90 ms)
+    ✓ PIN login via real entry → token → protected leave; bad login rejected (26 ms)
+    ✓ vercel.json routes /api/v1 to function destination (not SPA catch-all) (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        1.812 s, estimated 3 s
+Ran all test suites matching /lib\/server\/__tests__\/vercelDispatch.integration.test.ts/i.

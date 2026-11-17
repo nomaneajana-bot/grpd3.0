@@ -1,0 +1,128 @@
+{
+  "base": "http://127.0.0.1:8082",
+  "tested_at": "2026-10-16T21:08:02.637Z",
+  "checks": [
+    {
+      "id": "Revue_sim_phone",
+      "ok": true,
+      "detail": "\nTon numéro\nMode simulation — aucun SMS n’est envoyé. Entre le code indiqué ci-dessous à l’étape suivante.\n🇲🇦\n+212\n▾\nSimulation démo · code 000000 — aucun SMS réel\nEn continuant, tu acceptes nos Co"
+    },
+    {
+      "id": "Revue_no_auto_sms_claim_on_phone",
+      "ok": true,
+      "detail": "\nTon numéro\nMode simulation — aucun SMS n’est envoyé. Entre le code indiqué ci-dessous à l’étape suivante.\n🇲🇦\n+212\n▾\nSimulation démo · code 000000 — aucun SM"
+    },
+    {
+      "id": "Revue_sim_verify",
+      "ok": true,
+      "detail": "\nCode de simulation\nSimulation — aucun SMS envoyé à +212 7080 60 33 7. Entre le code 000000.\nPas de renvoi SMS — code de simulation : 000000\nVérifier"
+    },
+    {
+      "id": "Revue_no_code_auto_received",
+      "ok": true,
+      "detail": "\nCode de simulation\nSimulation — aucun SMS envoyé à +212 7080 60 33 7. Entre le code 000000.\nPas de renvoi SMS — code de simulation : 000000\nVérifier"
+    },
+    {
+      "id": "Revue_no_allure_step",
+      "ok": true,
+      "detail": "\nTon intention\nPas une promesse — un cap.\nMarche & bien-être\nMARCHE\nReprendre en douceur, sans pression de performance\nRégularité\nCourir plus souvent, sans viser une distance\n5 km\nPremier objectif chronométré\n10 km\nEndurance intermédiaire\nSemi-marathon\n21,1 km — un cap structura"
+    },
+    {
+      "id": "Revue_no_cadence_slider",
+      "ok": true,
+      "detail": "\nTon intention\nPas une promesse — un cap.\nMarche & bien-être\nMARCHE\nReprendre en douceur, sans pression de performance\nRégularité\nCourir plus souvent, sans viser une distance\n5 km\nPremier objectif chronométré\n10 km\nEndurance intermédiaire\nSemi-marathon\n21,1 km — un cap structura"
+    },
+    {
+      "id": "Revue_welcome_natural_copy",
+      "ok": true,
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depuis l’accueil quand tu veux.\nVoir l'accueil"
+    },
+    {
+      "id": "Revue_welcome_has_club",
+      "ok": true,
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depuis l’accueil quand tu veux.\nVoir l'accueil"
+    },
+    {
+      "id": "Revue_welcome_no_youssef",
+      "ok": true,
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nCLUB\nMarche revue A\nTu peux rejoindre ou orga"
+    },
+    {
+      "id": "Revue_welcome_no_cadence_row",
+      "ok": true,
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nRécap de ton parcours — tu pourras tout ajuster plus tard.\nPARCOURS\nCréer un club\nINTENTION\nMarche & bien-être\nCLUB\nMarche revue A\nTu peux rejoindre ou organiser une sortie depuis l’accueil quand tu veux.\nVoir l'accueil"
+    },
+    {
+      "id": "Revue_clubs_hub_loaded",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "Revue_clubs_shows_new_club",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "Revue_clubs_admin",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce"
+    },
+    {
+      "id": "Revue_no_elite_running_groups",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "Revue_no_toi_groupe_d_without_allure",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "Revue_display_name_not_coureur",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "Revue_reload_keeps_club",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "Revue_reload_keeps_name",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nMRA\nMarche revue A\nCasablanca · Club public · 1 membre\nTU ES ADMIN\nMarche & bien-être\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à Marche revue A.\nOrganiser une sortie\nFIL D'ACT"
+    },
+    {
+      "id": "second_club_exists_or_listed",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nEnglish Walk B\nEWB\nEnglish Walk B\nRabat · Club sur invitation · 1 membre\nTU ES ADMIN\nAucun objectif renseigné pour ce club.\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à English "
+    },
+    {
+      "id": "first_club_preserved",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nMES CLUBS\nMarche revue A\nCasa Running Club\nEnglish Walk B\nEWB\nEnglish Walk B\nRabat · Club sur invitation · 1 membre\nTU ES ADMIN\nAucun objectif renseigné pour ce club.\nLes sorties du club\nChaque sortie a sa propre inscription. L’adhésion au club ne t’inscrit à aucune sortie.\nPas encore de sortie pour ce club.\nOrganise la première — elle restera associée à English "
+    },
+    {
+      "id": "invite_not_marked_pass",
+      "ok": true,
+      "detail": "blocker recorded — no fabricated invite PASS"
+    }
+  ],
+  "blockers": [
+    {
+      "path": "invitation / Rejoindre un club",
+      "exact": "Invite fixture unavailable in this batch. Do not PASS. Remaining for batch D: invitation create → pending → approval + two-account private visibility."
+    }
+  ],
+  "clubs": [
+    {
+      "firstName": "Revue",
+      "clubName": "Marche revue A",
+      "city": "Casablanca"
+    }
+  ],
+  "summary": {
+    "pass": 21,
+    "fail": 0
+  }
+}

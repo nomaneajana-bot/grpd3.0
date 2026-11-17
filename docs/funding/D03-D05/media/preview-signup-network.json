@@ -1,0 +1,16 @@
+{
+  "email": "e2ebrowser1794882139243@example.com",
+  "apiCalls": [
+    {
+      "method": "POST",
+      "url": "https://grpd30-9bfnr0d5u-noas-projects-0b3f311d.vercel.app/api/v1/auth/email/register",
+      "type": "request"
+    },
+    {
+      "method": "POST",
+      "url": "https://grpd30-9bfnr0d5u-noas-projects-0b3f311d.vercel.app/api/v1/auth/email/register",
+      "status": 200,
+      "type": "response"
+    }
+  ]
+}

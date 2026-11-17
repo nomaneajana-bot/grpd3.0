@@ -32,7 +32,7 @@ const ROLE_OPTIONS: { value: "all" | ClubRole; label: string }[] = [
   { value: "all", label: "Tous" },
   { value: "member", label: "Membre" },
   { value: "coach", label: "Coach" },
-  { value: "admin", label: "Admin" },
+  { value: "admin", label: "Administrateur" },
 ];
 
 function formatPace(secondsPerKm: number | null): string {

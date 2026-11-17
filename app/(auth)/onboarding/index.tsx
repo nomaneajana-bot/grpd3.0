@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { FeatureRow } from "@/components/onboarding/FeatureRow";
 import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
+import { WelcomeBackground } from "@/components/onboarding/WelcomeBackground";
 import { welcomeTheme } from "@/components/onboarding/onboardingTheme";
 
 export default function OnboardingWelcomeScreen() {
@@ -11,33 +12,34 @@ export default function OnboardingWelcomeScreen() {
     <OnboardingScreen
       scroll={false}
       ctaVariant="welcome"
+      background={<WelcomeBackground />}
       paddingHorizontal={welcomeTheme.screenPaddingHorizontal}
-      primaryLabel="Commencer"
-      onPrimaryPress={() => router.push("/(auth)/onboarding/phone" as Href)}
+      primaryLabel="Créer un compte"
+      onPrimaryPress={() => router.push("/(auth)/email-signup" as Href)}
       secondaryLabel="J'ai déjà un compte"
-      onSecondaryPress={() => router.push("/(auth)/phone" as Href)}
+      onSecondaryPress={() => router.push("/(auth)/email" as Href)}
     >
       <View style={styles.content}>
         <View style={styles.top}>
           <Text style={styles.brand}>G R P D</Text>
-          <Text style={styles.title}>Cours.</Text>
+          <Text style={styles.title}>Sors.</Text>
           <Text style={styles.titleMuted}>Avec les tiens.</Text>
           <Text style={styles.subtitle}>
-            Une communauté calme pour des coureurs qui montrent simplement leur
-            présence — chaque semaine.
+            Une communauté calme pour marcher, parler ou courir — à ton rythme,
+            chaque semaine.
           </Text>
         </View>
         <View style={styles.features}>
           <FeatureRow
             index="01"
             title="Constance"
-            description="Une séance par semaine, c'est déjà un ancrage."
+            description="Une sortie par semaine, c'est déjà un ancrage."
             welcomeTypography
           />
           <FeatureRow
             index="02"
             title="Communauté"
-            description="Tu cours avec les tiens, à ton allure."
+            description="Marche, langue ou course — avec les tiens."
             welcomeTypography
           />
           <FeatureRow

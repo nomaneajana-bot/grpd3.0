@@ -1,0 +1,258 @@
+{
+  "batch": "Batch 2 \u2014 WALK/LANGUAGE CREATE \u2192 DETAIL \u2192 JOIN \u2192 CANCEL (Codex corrections)",
+  "issues": [
+    "ISSUE-003",
+    "ISSUE-010-participation",
+    "M04",
+    "M05",
+    "M06",
+    "M07-gutters"
+  ],
+  "tested_sha": "6d36691234ec4d8fbdddd4ff92ba818e02b1d957",
+  "tip_sha": "6d36691234ec4d8fbdddd4ff92ba818e02b1d957",
+  "branch": "cursor/green-home-ux-join-3184",
+  "environment": "demo",
+  "hosted_claim": false,
+  "note": "DEMO_MODE only. Unexecuted checks are NOT CHECKED / BLOCKED \u2014 never unconditional PASS. Creator auto-attendance and public-club association remain unresolved.",
+  "unresolved_rules_reported": [
+    "creator_auto_attendance \u2014 preserved current auto-join of host on create; not decided",
+    "public_club_association \u2014 preserved current null clubId for public; not decided"
+  ],
+  "future_fixture": {
+    "dateISO": "2026-10-16",
+    "label": "VENDREDI 16 OCTOBRE",
+    "hour": 10,
+    "minute": 30,
+    "timeLabel": "10:30",
+    "dateLabelNeedle": "VENDREDI 16 OCTOBRE 10:30"
+  },
+  "unique": {
+    "token": "W2V7D2KZM",
+    "title": "Marche W2V7D2KZM",
+    "purpose": "Objectif unique W2V7D2KZM \u2014 pratiquer \u00e0 ton rythme.",
+    "spot": "Phare W2V7D2KZM",
+    "language": "Darija W2V7D2KZM"
+  },
+  "checks": {
+    "login_host": {
+      "ok": true,
+      "detail": "0611111111"
+    },
+    "past_datetime_blocks_publish": {
+      "ok": true,
+      "detail": "Date/heure invalide \u2014 choisis un cr\u00e9neau encore \u00e0 venir. | form={\"date\":\"MERCREDI 14 OCTOBRE\",\"time\":\"00:00\"}"
+    },
+    "future_datetime_fixture_selected": {
+      "ok": true,
+      "detail": "{\"date\":\"VENDREDI 16 OCTOBRE\",\"time\":\"10:30\"}"
+    },
+    "unique_spot_seeded": {
+      "ok": true,
+      "detail": "Phare W2V7D2KZM"
+    },
+    "walk_hides_pace_groups_card": {
+      "ok": true,
+      "detail": "absent"
+    },
+    "language_no_english_default": {
+      "ok": true,
+      "detail": "{\"ph\":\"Ex. Fran\u00e7ais, darija\u2026\",\"val\":\"\"}"
+    },
+    "create_form_shows_future_fixture": {
+      "ok": true,
+      "detail": "{\"date\":\"VENDREDI 16 OCTOBRE\",\"time\":\"10:30\"}"
+    },
+    "walk_publish_real_outing_id": {
+      "ok": true,
+      "detail": "/session/session_1791937096143_1rcp87rv"
+    },
+    "detail_title_matches": {
+      "ok": true,
+      "detail": "Marche W2V7D2KZM"
+    },
+    "detail_purpose_matches": {
+      "ok": true,
+      "detail": "Objectif unique W2V7D2KZM \u2014 pratiquer \u00e0 ton rythme."
+    },
+    "detail_spot_matches": {
+      "ok": true,
+      "detail": "Phare W2V7D2KZM"
+    },
+    "detail_datetime_matches_entered": {
+      "ok": true,
+      "detail": "detailDate=VENDREDI 16 OCTOBRE 10:30 \u00b7 Phare W2V7D2KZM"
+    },
+    "detail_language_optional_shown": {
+      "ok": true,
+      "detail": "Darija W2V7D2KZM"
+    },
+    "creator_auto_attendance_observed": {
+      "ok": true,
+      "detail": "status=joined (UNRESOLVED \u2014 not deciding)"
+    },
+    "second_outing_distinct_id": {
+      "ok": true,
+      "detail": "session_1791937101499_xz5z4cqx vs session_1791937096143_1rcp87rv"
+    },
+    "original_outing_not_overwritten": {
+      "ok": true,
+      "detail": "session_1791937096143_1rcp87rv"
+    },
+    "login_participant": {
+      "ok": true,
+      "detail": "0622222222"
+    },
+    "other_outing_unjoined_ui_for_participant": {
+      "ok": true,
+      "detail": "{\"otherUi\":{\"join\":true,\"joined\":false},\"otherAtt\":{\"userId\":\"user_1791937108362_vnkz914m\",\"status\":null,\"rows\":0,\"joinedRows\":0,\"groupId\":null,\"localJoined\":false,\"legacyGlobalLen\":0}}"
+    },
+    "join_controlled_failure_recoverable": {
+      "ok": true,
+      "detail": "{\"afterFail\":{\"join\":true,\"joined\":false,\"flag\":false},\"attFail\":{\"userId\":\"user_1791937108362_vnkz914m\",\"status\":null,\"rows\":0,\"joinedRows\":0,\"groupId\":null,\"localJoined\":false,\"legacyGlobalLen\":0}}"
+    },
+    "join_rapid_double_single_attendance": {
+      "ok": true,
+      "detail": "{\"userId\":\"user_1791937108362_vnkz914m\",\"status\":\"joined\",\"rows\":1,\"joinedRows\":1,\"groupId\":\"open\",\"localJoined\":true,\"legacyGlobalLen\":0}"
+    },
+    "m05_joined_panel_and_attendance": {
+      "ok": true,
+      "detail": "{\"userId\":\"user_1791937108362_vnkz914m\",\"status\":\"joined\",\"rows\":1,\"joinedRows\":1,\"groupId\":\"open\",\"localJoined\":true,\"legacyGlobalLen\":0}"
+    },
+    "join_persists_after_reload": {
+      "ok": true,
+      "detail": "{\"joinedReload\":true,\"attReload\":{\"userId\":\"user_1791937108362_vnkz914m\",\"status\":\"joined\",\"rows\":1,\"joinedRows\":1,\"groupId\":\"open\",\"localJoined\":true,\"legacyGlobalLen\":0}}"
+    },
+    "m06_cancel_modal_french_no_bilingual": {
+      "ok": true,
+      "detail": "{\"visible\":true,\"bilingual\":false,\"frenchClub\":true,\"confirmReachable\":true,\"keepReachable\":true,\"vw\":320,\"vh\":568}"
+    },
+    "m06_short_phone_controls_reachable": {
+      "ok": true,
+      "detail": "{\"visible\":true,\"bilingual\":false,\"frenchClub\":true,\"confirmReachable\":true,\"keepReachable\":true,\"vw\":320,\"vh\":568}"
+    },
+    "m06_keep_place_retains_join": {
+      "ok": true,
+      "detail": "kept"
+    },
+    "m06_confirm_cancels_attendance": {
+      "ok": true,
+      "detail": "{\"userId\":\"user_1791937108362_vnkz914m\",\"status\":\"left\",\"rows\":1,\"joinedRows\":0,\"groupId\":null,\"localJoined\":false,\"legacyGlobalLen\":0}"
+    },
+    "cancelled_not_in_joined_attendance": {
+      "ok": true,
+      "detail": "{\"userId\":\"user_1791937108362_vnkz914m\",\"status\":\"left\",\"rows\":1,\"joinedRows\":0,\"groupId\":null,\"localJoined\":false,\"legacyGlobalLen\":0}"
+    },
+    "cancelled_not_listed_as_joined_in_my_sessions": {
+      "ok": true,
+      "detail": "{\"hasTitle\":false,\"joinedHints\":false,\"path\":\"/my-sessions\"}"
+    },
+    "m07_gutters_phone": {
+      "ok": true,
+      "detail": "{\"viewportWidth\":390,\"titleLeft\":24,\"btnLeft\":24,\"consistent\":true}"
+    },
+    "m07_gutters_desktop": {
+      "ok": true,
+      "detail": "{\"viewportWidth\":1280,\"titleLeft\":184,\"btnLeft\":184,\"consistent\":true}"
+    },
+    "batch1_invite_for_member": {
+      "ok": true,
+      "detail": "PRIVW310"
+    },
+    "batch1_member_host_sees_logistics": {
+      "ok": true,
+      "detail": "/session/session_1791937165182_9a44ics4"
+    },
+    "batch1_approved_member_sees_logistics": {
+      "ok": true,
+      "detail": "PRIVW2V7D2KZM"
+    },
+    "batch1_member_b_left_club": {
+      "ok": true,
+      "detail": "leave clicked"
+    },
+    "batch1_ex_member_gated": {
+      "ok": true,
+      "detail": "gated"
+    },
+    "batch1_outsider_direct_link_gated": {
+      "ok": true,
+      "detail": "gated"
+    },
+    "batch1_outsider_list_no_logistics": {
+      "ok": true,
+      "detail": "PRIVW2V7D2KZM"
+    },
+    "batch1_pending_setup_genuine": {
+      "ok": true,
+      "detail": "{\"status\":\"pending\",\"approved\":false,\"pending\":true}"
+    },
+    "batch1_pending_direct_link_gated": {
+      "ok": true,
+      "detail": "gated"
+    },
+    "batch1_pending_list_no_logistics": {
+      "ok": true,
+      "detail": "PRIVW2V7D2KZM"
+    },
+    "m06_annotation_absent_from_product": {
+      "ok": true,
+      "detail": "no bilingual annotation"
+    },
+    "batch1_full_script_regression": {
+      "ok": true,
+      "detail": "{\"passed\":31,\"failed\":0,\"total\":31}"
+    }
+  },
+  "screenshots": [
+    "docs/audit/batch2-walk-join/screenshots/01-host-home.png",
+    "docs/audit/batch2-walk-join/screenshots/02-create-before-fill.png",
+    "docs/audit/batch2-walk-join/screenshots/02-past-datetime-blocked.png",
+    "docs/audit/batch2-walk-join/screenshots/03-walk-form-future-filled.png",
+    "docs/audit/batch2-walk-join/screenshots/03-walk-mode-no-pace.png",
+    "docs/audit/batch2-walk-join/screenshots/04-detail-after-publish.png",
+    "docs/audit/batch2-walk-join/screenshots/04-walk-form-filled.png",
+    "docs/audit/batch2-walk-join/screenshots/05-detail-after-publish.png",
+    "docs/audit/batch2-walk-join/screenshots/05-other-outing-unjoined.png",
+    "docs/audit/batch2-walk-join/screenshots/06-m04-before-join.png",
+    "docs/audit/batch2-walk-join/screenshots/07-m05-joined.png",
+    "docs/audit/batch2-walk-join/screenshots/08-joined-after-reload.png",
+    "docs/audit/batch2-walk-join/screenshots/08-m06-short-phone.png",
+    "docs/audit/batch2-walk-join/screenshots/09-after-cancel.png",
+    "docs/audit/batch2-walk-join/screenshots/09-m06-cancel-confirm.png",
+    "docs/audit/batch2-walk-join/screenshots/10-after-cancel.png",
+    "docs/audit/batch2-walk-join/screenshots/10-my-sessions-after-cancel.png",
+    "docs/audit/batch2-walk-join/screenshots/11-m07-after-phone.png",
+    "docs/audit/batch2-walk-join/screenshots/12-m07-after-desktop.png",
+    "docs/audit/batch2-walk-join/screenshots/13-batch1-member-detail.png",
+    "docs/audit/batch2-walk-join/screenshots/13-batch1-regression-outsider.png",
+    "docs/audit/batch2-walk-join/screenshots/14-batch1-member-b.png",
+    "docs/audit/batch2-walk-join/screenshots/14-my-sessions-after-cancel.png",
+    "docs/audit/batch2-walk-join/screenshots/15-batch1-ex-member.png",
+    "docs/audit/batch2-walk-join/screenshots/16-batch1-outsider.png",
+    "docs/audit/batch2-walk-join/screenshots/17-batch1-pending.png",
+    "docs/audit/batch2-walk-join/screenshots/m07-before-flush.png"
+  ],
+  "outing_id": "session_1791937096143_1rcp87rv",
+  "other_outing_id": "session_1791937101499_xz5z4cqx",
+  "batch1_full_regression": {
+    "path": "docs/audit/batch2-walk-join/batch1-full-regression-evidence.json",
+    "tested_sha": "6d36691234ec4d8fbdddd4ff92ba818e02b1d957",
+    "summary": {
+      "passed": 31,
+      "failed": 0,
+      "total": 31
+    },
+    "environment": "demo",
+    "hosted_claim": false,
+    "exit_code": 0
+  },
+  "errors": [],
+  "summary": {
+    "passed": 42,
+    "failed": 0,
+    "blocked": 0,
+    "total": 42
+  },
+  "generated_at": "2026-10-14T00:22:13.686Z",
+  "packaging_note": "Current-run screenshots only under screenshots/. Superseded files and side-by-side comps live in archive/ \u2014 not current evidence."
+}

@@ -1,0 +1,19 @@
+
+> grpd3.0@1.0.0 test:integration:pg:batch6
+> jest --runInBand lib/server/__tests__/vercelDispatch.integration.test.ts
+
+PASS lib/server/__tests__/vercelDispatch.integration.test.ts
+  Batch6 Vercel dispatcher + Bearer (PostgreSQL)
+    ✓ health returns JSON ready (44 ms)
+    ✓ unknown API path returns JSON 404 (never SPA HTML) (3 ms)
+    ✓ missing / invalid / expired / claim-broken Bearer → 401 via entry + dispatch; no DB mutation (73 ms)
+    ✓ valid organizer/participant Bearer: leave + cancel + actor isolation (35 ms)
+    ✓ connected ApiClient: real resolver (no spy), missing URL fails, leave/cancel; demo independent (90 ms)
+    ✓ PIN login via real entry → token → protected leave; bad login rejected (26 ms)
+    ✓ vercel.json routes /api/v1 to function destination (not SPA catch-all) (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        1.812 s, estimated 3 s
+Ran all test suites matching /lib\/server\/__tests__\/vercelDispatch.integration.test.ts/i.

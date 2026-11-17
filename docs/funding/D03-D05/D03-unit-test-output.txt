@@ -1,0 +1,112 @@
+
+> grpd3.0@1.0.0 test:unit
+> jest --testPathIgnorePatterns=integration --no-coverage
+
+FAIL lib/__tests__/liveJourneyMocks.unit.test.ts
+  ● assignMemberToClubGroup — no invented Élite › defaults to open/social group D on run clubs when no PR and no admin assignment
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "D"
+    Received: null
+
+      20 |       defaultClubAdminSettings(),
+      21 |     );
+    > 22 |     expect(group).toBe("D");
+         |                   ^
+      23 |   });
+      24 |
+      25 |   it("does not auto-assign a pace group on walk clubs when pace was skipped", async () => {
+
+      at Object.<anonymous> (lib/__tests__/liveJourneyMocks.unit.test.ts:22:19)
+
+  ● walk club admin defaults › do not use Élite / Sub 4:30 labels
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "run"
+    Received: "neutral"
+
+      58 |
+      59 |     const run = defaultClubAdminSettings();
+    > 60 |     expect(run.activityStructure).toBe("run");
+         |                                   ^
+      61 |     expect(run.memberOrgEnabled).toBe(false);
+      62 |     expect(run.colorGroups ?? []).toEqual([]);
+      63 |     expect(JSON.stringify(run)).not.toMatch(/Élite|Elite|Sub 4:30/i);
+
+      at Object.<anonymous> (lib/__tests__/liveJourneyMocks.unit.test.ts:60:35)
+
+PASS lib/__tests__/sessionLogic.test.ts
+PASS lib/__tests__/createOnboardingContinuity.unit.test.ts
+PASS lib/__tests__/sessionBuilder.test.ts
+PASS lib/coach/__tests__/ruleBasedCoachEngine.test.ts
+PASS lib/__tests__/mockSessionPersistence.unit.test.ts
+PASS lib/__tests__/homeViewModel.unit.test.ts
+PASS lib/server/__tests__/app-jwt.unit.test.ts
+PASS lib/__tests__/clubMembershipLifecycle.unit.test.ts
+PASS lib/__tests__/clubPaceGroups.test.ts
+PASS lib/__tests__/storageSchemas.test.ts
+PASS lib/__tests__/apiMode.test.ts
+PASS lib/__tests__/loginVerifyErrors.unit.test.ts
+PASS lib/__tests__/sessionAudience.unit.test.ts
+PASS lib/__tests__/finishOnboardingAuth.unit.test.ts
+PASS lib/__tests__/interGroupPolicy.test.ts
+PASS lib/__tests__/connectedJourney.unit.test.ts
+PASS lib/__tests__/mockListSessionsPrivacy.test.ts
+PASS lib/__tests__/attendanceStatusLogic.test.ts
+PASS lib/__tests__/sessionClubAssociation.unit.test.ts
+PASS lib/__tests__/clubMemberGroups.unit.test.ts
+PASS lib/__tests__/displayName.unit.test.ts
+PASS lib/__tests__/testHelpers.test.ts
+PASS lib/__tests__/sessionDisplay.test.ts
+PASS lib/__tests__/mesSortiesViewModel.unit.test.ts
+PASS lib/__tests__/otpIsolation.test.ts
+PASS lib/__tests__/clubInviteKey.unit.test.ts
+PASS lib/__tests__/onboardingBatchA.unit.test.ts
+PASS lib/__tests__/apiSessionMapper.unit.test.ts
+PASS lib/__tests__/dateHelpers.test.ts
+PASS lib/__tests__/authStore.unit.test.ts
+
+Summary of all failing tests
+FAIL lib/__tests__/liveJourneyMocks.unit.test.ts
+  ● assignMemberToClubGroup — no invented Élite › defaults to open/social group D on run clubs when no PR and no admin assignment
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "D"
+    Received: null
+
+      20 |       defaultClubAdminSettings(),
+      21 |     );
+    > 22 |     expect(group).toBe("D");
+         |                   ^
+      23 |   });
+      24 |
+      25 |   it("does not auto-assign a pace group on walk clubs when pace was skipped", async () => {
+
+      at Object.<anonymous> (lib/__tests__/liveJourneyMocks.unit.test.ts:22:19)
+
+  ● walk club admin defaults › do not use Élite / Sub 4:30 labels
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "run"
+    Received: "neutral"
+
+      58 |
+      59 |     const run = defaultClubAdminSettings();
+    > 60 |     expect(run.activityStructure).toBe("run");
+         |                                   ^
+      61 |     expect(run.memberOrgEnabled).toBe(false);
+      62 |     expect(run.colorGroups ?? []).toEqual([]);
+      63 |     expect(JSON.stringify(run)).not.toMatch(/Élite|Elite|Sub 4:30/i);
+
+      at Object.<anonymous> (lib/__tests__/liveJourneyMocks.unit.test.ts:60:35)
+
+
+Test Suites: 1 failed, 30 passed, 31 total
+Tests:       2 failed, 175 passed, 177 total
+Snapshots:   0 total
+Time:        4.318 s, estimated 7 s
+Ran all test suites.

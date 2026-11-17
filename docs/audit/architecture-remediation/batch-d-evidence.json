@@ -1,0 +1,130 @@
+{
+  "batch": "architecture-remediation-batch-d",
+  "tested_sha": "89b622a02d83a0e8652c553f57ba9a188c71691b",
+  "environment": "demo",
+  "hosted_claim": false,
+  "native_claim": false,
+  "uat_claim": false,
+  "base": "http://127.0.0.1:38303",
+  "checks": [
+    {
+      "id": "settings_loads",
+      "ok": true,
+      "detail": "\nParamètres\nCOMPTE\nTéléphone\n+212 6111 11 11 1\nPhoto de profil\nInitiale C · non"
+    },
+    {
+      "id": "settings_no_push_claim",
+      "ok": true,
+      "detail": "notification honesty"
+    },
+    {
+      "id": "settings_hors_mvp",
+      "ok": true,
+      "detail": "legal/support disposition"
+    },
+    {
+      "id": "settings_language_row",
+      "ok": true,
+      "detail": "language"
+    },
+    {
+      "id": "settings_units_row",
+      "ok": true,
+      "detail": "units"
+    },
+    {
+      "id": "hors_mvp_no_navigation",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/profile/settings"
+    },
+    {
+      "id": "settings_language_toggle",
+      "ok": true,
+      "detail": "\nParamètres\nCOMPTE\nTéléphone\n+212 6111 11 11 1\nPhoto de pro"
+    },
+    {
+      "id": "settings_language_persists",
+      "ok": true,
+      "detail": "reload"
+    },
+    {
+      "id": "settings_units_toggle",
+      "ok": true,
+      "detail": "\nParamètres\nCOMPTE\nTéléphone\n+212 6111 "
+    },
+    {
+      "id": "settings_notif_row_present",
+      "ok": true,
+      "detail": "toggle row"
+    },
+    {
+      "id": "settings_back",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/"
+    },
+    {
+      "id": "settings_logout_control",
+      "ok": true,
+      "detail": "logout btn"
+    },
+    {
+      "id": "orphan_test_history_redirect",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/profile"
+    },
+    {
+      "id": "orphan_run_setup_demo_safe",
+      "ok": true,
+      "detail": "Trouver mon groupe\nRemplis les informations pour trouver ou créer une course\nTYP"
+    },
+    {
+      "id": "orphan_run_setup_not_blank",
+      "ok": true,
+      "detail": "has content"
+    },
+    {
+      "id": "orphan_group_edit_redirect",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/club/group-create?clubId=club_test_d&groupId=B"
+    },
+    {
+      "id": "orphan_group_edit_params",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/club/group-create?clubId=club_test_d&groupId=B"
+    },
+    {
+      "id": "avenir_loads",
+      "ok": true,
+      "detail": "G R P D\nL'avenir de GrpD\nAujourd'hui nous réunissons des cou"
+    },
+    {
+      "id": "avenir_cta_present",
+      "ok": true,
+      "detail": "enter CTA"
+    },
+    {
+      "id": "avenir_enter_navigates",
+      "ok": true,
+      "detail": "http://127.0.0.1:38303/"
+    },
+    {
+      "id": "settings_desktop_readable",
+      "ok": true,
+      "detail": "desktop settings"
+    },
+    {
+      "id": "avenir_desktop_cta_clear",
+      "ok": true,
+      "detail": "cta visible"
+    },
+    {
+      "id": "settings_keyboard_tab_no_crash",
+      "ok": true,
+      "detail": "tab pressed"
+    }
+  ],
+  "summary": {
+    "pass": 23,
+    "fail": 0
+  }
+}

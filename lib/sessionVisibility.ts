@@ -1,30 +1,40 @@
 import type { RunnerProfile } from "./profileStore";
 import type { SessionData } from "./sessionData";
 
-const normalizeGroupName = (value?: string | null): string | null => {
-  if (!value) return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed.toLowerCase() : null;
+export type SessionVisibilityContext = {
+  /** True when the viewer has approved membership of session.clubId. */
+  isApprovedMemberOfSessionClub?: boolean;
+  /** True when the viewer already has a stored join for this session. */
+  hasJoined?: boolean;
+  /** True when the viewer is the session host. */
+  isHost?: boolean;
 };
 
+/**
+ * Whether a session should appear in open lists (Discover/training aggregates).
+ * Members-only sessions are not universally visible — join history / membership / host only.
+ */
 export function isSessionVisibleToProfile(
-  _session: SessionData,
-  _profile: RunnerProfile | null,
-): boolean {
-  // Members-only sessions are still visible; joining is gated separately.
-  return true;
-}
-
-export function canProfileJoinSession(
   session: SessionData,
-  profile: RunnerProfile | null,
+  _profile: RunnerProfile | null,
+  ctx: SessionVisibilityContext = {},
 ): boolean {
   if (session.visibility !== "members") return true;
-  if (session.isCustom) return true;
+  if (ctx.hasJoined || ctx.isHost || ctx.isApprovedMemberOfSessionClub) {
+    return true;
+  }
+  return false;
+}
 
-  const sessionGroup = normalizeGroupName(session.hostGroupName);
-  if (!sessionGroup) return true;
-
-  const userGroup = normalizeGroupName(profile?.clubName ?? null);
-  return Boolean(userGroup && userGroup === sessionGroup);
+/**
+ * Whether the viewer may attempt an explicit join.
+ * Membership (or host) gates members-only — never isCustom / clubName alone.
+ */
+export function canProfileJoinSession(
+  session: SessionData,
+  _profile: RunnerProfile | null,
+  ctx: SessionVisibilityContext = {},
+): boolean {
+  if (session.visibility !== "members") return true;
+  return Boolean(ctx.isApprovedMemberOfSessionClub || ctx.isHost);
 }

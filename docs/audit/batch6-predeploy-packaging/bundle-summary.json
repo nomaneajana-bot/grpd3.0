@@ -1,0 +1,11 @@
+{
+  "outfile": "/workspace/.packaging/serverless/api-v1.cjs",
+  "bytes": 568247,
+  "inputCount": 158,
+  "includes": {
+    "jose": true,
+    "next": true,
+    "vercelDispatch": true,
+    "appJwt": true
+  }
+}

@@ -1,0 +1,12 @@
+
+> grpd3.0@1.0.0 test:integration:pg
+> jest --runInBand lib/server/__tests__/clubLeaveCancel.integration.test.ts lib/server/__tests__/vercelDispatch.integration.test.ts
+
+PASS lib/server/__tests__/vercelDispatch.integration.test.ts
+PASS lib/server/__tests__/clubLeaveCancel.integration.test.ts
+
+Test Suites: 2 passed, 2 total
+Tests:       22 passed, 22 total
+Snapshots:   0 total
+Time:        6.15 s, estimated 7 s
+Ran all test suites matching /lib\/server\/__tests__\/clubLeaveCancel.integration.test.ts|lib\/server\/__tests__\/vercelDispatch.integration.test.ts/i.

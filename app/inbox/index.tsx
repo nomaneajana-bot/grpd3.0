@@ -11,8 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Card } from "../../components/ui/Card";
-import { colors } from "../../constants/ui";
+import { stitoTheme as t } from "../../constants/stitoTheme";
 import { createApiClient, getMyMemberships, getMySessions } from "../../lib/api";
 import type { ClubMembership } from "../../types/api";
 import type { SessionData } from "../../lib/sessionData";
@@ -27,6 +26,10 @@ type InboxItem = {
   actionPath: string;
 };
 
+/**
+ * Inbox / invitations list — Stito light.
+ * No VIP tabs; pending membership never implies outing registration.
+ */
 export default function InboxScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
@@ -64,8 +67,8 @@ export default function InboxScreen() {
           id: `membership-${membership.id}`,
           title: "Demande club en attente",
           subtitle: membership.club?.name
-            ? `Ta demande pour ${membership.club.name} est en attente.`
-            : "Ta demande d'accès club est en attente.",
+            ? `Ta demande pour ${membership.club.name} est en attente. L’adhésion n’inscrit à aucune sortie.`
+            : "Ta demande d'accès club est en attente. L’adhésion n’inscrit à aucune sortie.",
           type: "membership",
           actionLabel: "Voir club",
           actionPath: "/club",
@@ -111,7 +114,7 @@ export default function InboxScreen() {
           <Text style={styles.backIcon}>←</Text>
           <Text style={styles.backLabel}>Retour</Text>
         </TouchableOpacity>
-        <Text style={styles.screenTitle}>Notifications</Text>
+        <Text style={styles.screenTitle}>Invitations</Text>
       </View>
 
       <ScrollView
@@ -119,22 +122,22 @@ export default function InboxScreen() {
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl
-            tintColor={colors.text.accent}
+            tintColor={t.primary}
             refreshing={isLoading}
             onRefresh={loadData}
           />
         }
       >
         {inboxItems.length === 0 && !isLoading ? (
-          <Card style={styles.card}>
+          <View style={styles.card}>
             <Text style={styles.emptyTitle}>Rien de nouveau</Text>
             <Text style={styles.emptySubtitle}>
               Les demandes, suggestions et mises à jour apparaîtront ici.
             </Text>
-          </Card>
+          </View>
         ) : (
           inboxItems.map((item) => (
-            <Card key={item.id} style={styles.card}>
+            <View key={item.id} style={styles.card}>
               <Text style={styles.itemTitle}>{item.title}</Text>
               <Text style={styles.itemSubtitle}>{item.subtitle}</Text>
               <Pressable
@@ -146,7 +149,7 @@ export default function InboxScreen() {
               >
                 <Text style={styles.itemActionText}>{item.actionLabel}</Text>
               </Pressable>
-            </Card>
+            </View>
           ))
         )}
       </ScrollView>
@@ -157,13 +160,13 @@ export default function InboxScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.canvas,
   },
   header: {
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 12,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.canvas,
   },
   backRow: {
     flexDirection: "row",
@@ -172,19 +175,18 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   backIcon: {
-    color: colors.text.accent,
+    color: t.primary,
     fontSize: 18,
     marginRight: 4,
   },
   backLabel: {
-    color: colors.text.accent,
+    color: t.primary,
     fontSize: 16,
-    fontWeight: "500",
+    fontFamily: t.font.space.semibold,
   },
   screenTitle: {
-    color: colors.text.primary,
-    fontSize: 26,
-    fontWeight: "700",
+    ...t.type.pageTitle,
+    color: t.text,
   },
   scroll: {
     flex: 1,
@@ -196,45 +198,52 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 12,
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
+    padding: 16,
   },
   emptyTitle: {
-    color: colors.text.primary,
+    color: t.text,
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: t.font.space.bold,
     marginBottom: 8,
   },
   emptySubtitle: {
-    color: colors.text.secondary,
+    color: t.textSecondary,
     fontSize: 14,
     lineHeight: 20,
+    fontFamily: t.font.hanken.regular,
   },
   itemTitle: {
-    color: colors.text.primary,
+    color: t.text,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: t.font.space.bold,
     marginBottom: 6,
   },
   itemSubtitle: {
-    color: colors.text.secondary,
+    color: t.textSecondary,
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 12,
+    fontFamily: t.font.hanken.regular,
   },
   itemAction: {
     alignSelf: "flex-start",
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: t.radiusChip,
     borderWidth: 1,
-    borderColor: colors.border.medium,
-    backgroundColor: colors.background.elevated,
+    borderColor: t.outlineVariant,
+    backgroundColor: t.surfaceContainerLow,
   },
   itemActionPressed: {
     opacity: 0.8,
   },
   itemActionText: {
-    color: colors.text.accent,
+    color: t.primary,
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: t.font.space.bold,
   },
 });

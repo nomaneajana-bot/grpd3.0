@@ -1,1178 +1,1576 @@
-import { router, useFocusEffect } from "expo-router";
-import React, {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from "react";
+import { router, useFocusEffect, useLocalSearchParams, type Href } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-    Animated,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import * as Haptics from "expo-haptics";
+import { CancelParticipationModal } from "@/components/mesSorties/CancelParticipationModal";
+import { stitoTheme as t } from "@/constants/stitoTheme";
+import { createApiClient, getMySessions, leaveSession } from "@/lib/api";
+import { resolveApiTransport } from "@/lib/api/mode";
+import { allowLocalCatalogFallback } from "@/lib/connectedJourney";
+import {
+  getJoinedSessions,
+  removeJoinedSession,
+  type JoinedSession,
+} from "@/lib/joinedSessionsStore";
+import {
+  clubOrHostLabel,
+  disciplineMeta,
+  distanceLabel,
+  formatKmTotal,
+  formatOutingDateCompact,
+  formatOutingDateTime,
+  isConfirmedParticipation,
+  isPendingParticipation,
+  locationLabel,
+  paceLabel,
+  sumPastDistanceKm,
+  type MesSortiesTab,
+} from "@/lib/mesSortiesViewModel";
+import { setMesSortiesBadgeCount } from "@/lib/mesSortiesBadge";
+import {
+  activityLabel,
+  discoveryDateParts,
+  displayOutingTitle,
+  formatTimeLabel,
+  initialsFromName,
+} from "@/lib/homeViewModel";
+import { activityForSession } from "@/lib/experiences";
+import {
+  apiSessionToSessionData,
+  getAllSessionsIncludingStored,
+  type SessionData,
+} from "@/lib/sessionData";
+import { getSessionDateForSort } from "@/lib/sessionLogic";
 
-import { SearchField } from "../../components/redesign/SearchField";
-import { Tag } from "../../components/redesign/Tag";
-import { Card } from "../../components/ui/Card";
-import { Chip } from "../../components/ui/Chip";
-import { LoadingState } from "../../components/ui/LoadingState";
-import { CoachWeeklyPlan } from "../../components/coach/CoachWeeklyPlan";
-import { borderRadius, colors, hairline, typography } from "../../constants/ui";
-import { createApiClient, getMySessions } from "../../lib/api";
-import {
-    getJoinedSessions,
-    type JoinedSession,
-} from "../../lib/joinedSessionsStore";
-import { getStoredRuns, type StoredRun } from "../../lib/runStore";
-import {
-    getRunTypePillLabel as getRunTypePillLabelFromModule,
-    type RunTypeId as RunTypeIdFromRunTypes,
-} from "../../lib/runTypes";
-import {
-    getAllSessionsIncludingStored,
-    apiSessionToSessionData,
-    type SessionData,
-} from "../../lib/sessionData";
-import { uniqueSessionBadges } from "../../lib/sessionBadges";
-import {
-    filterSessionsList,
-    type SessionFilterChipId,
-} from "../../lib/sessionListFilters";
-import {
-    getSessionDateForSort,
-    getSessionRunTypeId,
-} from "../../lib/sessionLogic";
-import { buildCoachContext } from "../../lib/coach";
-import { getRunTypePillLabel } from "../../lib/workoutHelpers";
-import { getWorkout, type RunTypeId } from "../../lib/workoutStore";
+const HOST_TONES = [t.primary, "#167A47", "#333E35", "#3F4941", "#005F34"] as const;
 
-// Animated Session Card Component for Timeline
-type AnimatedTimelineCardProps = {
-  children: React.ReactNode;
-  index: number;
-  totalCount: number;
-  hasAnimated: boolean;
-  onAnimationComplete: () => void;
-};
+function hostTone(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h + name.charCodeAt(i) * (i + 1)) % 97;
+  return HOST_TONES[h % HOST_TONES.length]!;
+}
 
-function AnimatedTimelineCard({
-  children,
-  index,
-  totalCount,
-  hasAnimated,
-  onAnimationComplete,
-}: AnimatedTimelineCardProps) {
-  const cardOpacity = useRef(new Animated.Value(hasAnimated ? 1 : 0)).current;
-  const cardTranslateY = useRef(
-    new Animated.Value(hasAnimated ? 0 : 10),
-  ).current;
+function compactPaceLine(raw: string | null | undefined, walk: boolean): string {
+  if (!raw || raw === "—" || /^0:00/i.test(raw)) return walk ? "Libre" : "Libre";
+  return raw.replace(/^Allure\s+/i, "").replace(/\s*\/\s*km$/i, "").replace(/\/km\b/gi, "").trim() || "Libre";
+}
 
+function volumeBit(volume: string | undefined): string | null {
+  const v = (volume ?? "").trim();
+  if (!v) return null;
+  const min = v.match(/(\d+)\s*min/i);
+  if (min) return `${min[1]} min`;
+  const hour = v.match(/(\d+)\s*h(?:\s*(\d+))?/i);
+  if (hour) return hour[2] ? `${hour[1]}h${hour[2]}` : `${hour[1]} h`;
+  // "14 km · endurance" is distance/format — not a duration
+  const first = v.split("·")[0]?.trim() ?? "";
+  if (!first || first.length > 18 || /\bkm\b/i.test(first)) return null;
+  return first;
+}
+
+/**
+ * Mes Sorties — Noa-Stito visual fidelity, real join/leave/API data.
+ * Omits Stito prototype-only "Aperçu · Fiche d'annulation" chrome; real modal only.
+ * Past counts/km from real sessions (not hardcoded 12 / fake May).
+ */
+
+function PulseDot({ color = t.primary }: { color?: string }) {
+  const opacity = useRef(new Animated.Value(1)).current;
   useEffect(() => {
-    if (!hasAnimated) {
-      Animated.parallel([
-        Animated.timing(cardOpacity, {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 0.35,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
           toValue: 1,
-          duration: 180,
-          delay: index * 50,
+          duration: 700,
           useNativeDriver: true,
         }),
-        Animated.timing(cardTranslateY, {
-          toValue: 0,
-          duration: 180,
-          delay: index * 50,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        if (index === totalCount - 1) {
-          onAnimationComplete();
-        }
-      });
-    }
-  }, [
-    hasAnimated,
-    index,
-    totalCount,
-    onAnimationComplete,
-    cardOpacity,
-    cardTranslateY,
-  ]);
-
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
   return (
     <Animated.View
-      style={[
-        styles.sessionCardAnimatedWrap,
-        {
-          opacity: cardOpacity,
-          transform: [{ translateY: cardTranslateY }],
-        },
-      ]}
-    >
-      {children}
-    </Animated.View>
+      style={{
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: color,
+        opacity,
+      }}
+    />
   );
 }
 
-// Run type logic moved to lib/runTypes.ts and lib/sessionLogic.ts
-
-function formatSessionDistanceKm(km: number): string {
-  if (!Number.isFinite(km) || km <= 0) return "—";
-  const s = km < 10 ? km.toFixed(1) : String(Math.round(km));
-  return `${s}km`;
-}
-
-function sumSessionParticipants(session: SessionData): number {
-  return session.paceGroups.reduce(
-    (sum, g) => sum + (g.runnersCount ?? 0),
-    0,
-  );
-}
-
-/** Top line like "MARDI 5 MAI · 18:00 · Parc …" (screenshot). */
-function formatSessionMetaUpper(session: SessionData): string {
-  const spot = (session.spot || "").trim();
-  let datePart = (session.dateLabel || "").toUpperCase();
-  if (session.dateISO) {
-    const d = new Date(`${session.dateISO}T12:00:00`);
-    const wd = d.toLocaleDateString("fr-FR", { weekday: "long" });
-    const dm = d.toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "long",
-    });
-    datePart = `${wd} ${dm}`.toUpperCase();
-  }
-  const tm = session.timeMinutes;
-  const timeStr =
-    tm != null && Number.isFinite(tm)
-      ? `${Math.floor(tm / 60)}:${String(tm % 60).padStart(2, "0")}`
-      : "";
-  if (timeStr && spot) return `${datePart} · ${timeStr} · ${spot}`;
-  if (spot) return `${datePart} · ${spot}`;
-  return datePart;
-}
-
-function tagVariantForRunPill(label: string): "tb" | "tg" | "to" | "tp" | "tpk" | "tgr" {
-  const u = label.toUpperCase();
-  if (u.includes("PROGRESSIF") || u.includes("TEMPO") || u.includes("FARTLEK"))
-    return "tb";
-  if (u.includes("DÉCOUVERTE") || u.includes("DECOUVERTE")) return "tp";
-  if (u.includes("FEMMES")) return "tpk";
-  if (u.includes("MARCHE") || u.includes("FOOTING")) return "tg";
-  return "tb";
+function parseMesSortiesTab(raw: string | string[] | undefined): MesSortiesTab {
+  const v = Array.isArray(raw) ? raw[0] : raw;
+  if (v === "past" || v === "passees" || v === "passées") return "past";
+  if (v === "pending" || v === "attente") return "pending";
+  return "upcoming";
 }
 
 export default function MySessionsScreen() {
+  const insets = useSafeAreaInsets();
+  const tabBarInset = 54 + Math.max(insets.bottom, 10) + 12;
+  const params = useLocalSearchParams<{ tab?: string }>();
+
   const [allSessions, setAllSessions] = useState<SessionData[]>([]);
   const [joinedSessions, setJoinedSessions] = useState<JoinedSession[]>([]);
-  const [storedRuns, setStoredRuns] = useState<StoredRun[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [hasAnimated, setHasAnimated] = useState(false);
-  const [workoutRunTypes, setWorkoutRunTypes] = useState<
-    Record<string, RunTypeId>
-  >({});
-  const insets = useSafeAreaInsets();
-  /** Matches tab bar height in `(tabs)/_layout.tsx` + small buffer. */
-  const tabBarInset = 56 + Math.max(insets.bottom, 10) + 10;
-  const scrollBottomPadding = tabBarInset + 16;
-  const [sessionSearch, setSessionSearch] = useState("");
-  const [chipType, setChipType] = useState<SessionFilterChipId>("all");
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [tab, setTab] = useState<MesSortiesTab>(() =>
+    parseMesSortiesTab(params.tab),
+  );
+  const [cancelTarget, setCancelTarget] = useState<SessionData | null>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
-  const loadData = useCallback(async (refresh = false) => {
-    if (refresh) setIsRefreshing(true);
-    else setIsLoading(true);
+  useEffect(() => {
+    if (params.tab == null) return;
+    setTab(parseMesSortiesTab(params.tab));
+  }, [params.tab]);
+
+  const load = useCallback(async (refresh = false) => {
+    if (refresh) setRefreshing(true);
+    else setLoading(true);
+    setLoadError(false);
     try {
-      let sessions: SessionData[] = await getAllSessionsIncludingStored();
+      const transport = await resolveApiTransport();
+      const useLocalCatalog = allowLocalCatalogFallback(transport.useMock);
+      let sessions: SessionData[] = useLocalCatalog
+        ? await getAllSessionsIncludingStored()
+        : [];
+      let apiOk = useLocalCatalog;
       try {
         const client = createApiClient();
         const apiResult = await getMySessions(client);
-        const apiSessions = (apiResult.sessions ?? []).map(apiSessionToSessionData);
-        const localIds = new Set(sessions.map((s) => s.id));
-        for (const apiSession of apiSessions) {
-          if (!localIds.has(apiSession.id)) {
-            sessions = [...sessions, apiSession];
-            localIds.add(apiSession.id);
+        const apiSessions = (apiResult.sessions ?? []).map(
+          apiSessionToSessionData,
+        );
+        apiOk = true;
+        if (!useLocalCatalog) {
+          // Connected: API list is the source of truth (real attendanceStatus).
+          sessions = apiSessions;
+        } else {
+          const ids = new Set(sessions.map((s) => s.id));
+          for (const s of apiSessions) {
+            if (!ids.has(s.id)) {
+              sessions = [...sessions, s];
+              ids.add(s.id);
+            } else {
+              sessions = sessions.map((x) =>
+                x.id === s.id ? { ...x, ...s } : x,
+              );
+            }
           }
         }
-      } catch (apiErr) {
-        console.warn("API my-sessions failed, using local only:", apiErr);
+      } catch (e) {
+        console.warn("API my-sessions failed:", e);
+        if (!useLocalCatalog) {
+          setLoadError(true);
+          setAllSessions([]);
+          setJoinedSessions([]);
+          return;
+        }
+      }
+      const joined = await getJoinedSessions();
+      const jids = new Set(joined.map((j) => j.sessionId));
+      if (useLocalCatalog) {
+        sessions = sessions.map((s) => {
+          if (jids.has(s.id) && !s.attendanceStatus) {
+            return { ...s, attendanceStatus: "joined" as const };
+          }
+          return s;
+        });
       }
       setAllSessions(sessions);
-
-      const runTypeMap: Record<string, RunTypeId> = {};
-      await Promise.all(
-        sessions
-          .filter((s) => s.workoutId)
-          .map(async (session) => {
-            try {
-              const workout = await getWorkout(session.workoutId!);
-              if (workout?.runType) {
-                runTypeMap[session.id] = workout.runType;
-              }
-            } catch {
-              // ignore
-            }
-          }),
-      );
-      setWorkoutRunTypes(runTypeMap);
-
-      const joined = await getJoinedSessions();
-      setJoinedSessions(joined);
-
-      const runs = await getStoredRuns();
-      setStoredRuns(runs);
-    } catch (error) {
-      console.warn("Failed to load sessions data:", error);
+      setJoinedSessions(useLocalCatalog ? joined : []);
+      if (!apiOk && !useLocalCatalog) setLoadError(true);
+    } catch (e) {
+      console.warn("Failed to load mes sorties:", e);
+      setLoadError(true);
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      void loadData();
-    }, [loadData]),
+      void load();
+    }, [load]),
   );
 
-  // Build joined set for quick lookup
-  const joinedSet = useMemo(() => {
-    return new Set(joinedSessions.map((js) => js.sessionId));
-  }, [joinedSessions]);
+  const joinedIds = useMemo(
+    () => new Set(joinedSessions.map((j) => j.sessionId)),
+    [joinedSessions],
+  );
 
-  const attendanceStatusBySessionId = useMemo(() => {
-    const map = new Map<string, SessionData["attendanceStatus"]>();
-    for (const session of allSessions) {
-      if (session.attendanceStatus) {
-        map.set(session.id, session.attendanceStatus);
-      }
-    }
-    return map;
-  }, [allSessions]);
+  const pastCutoffMs = Date.now() - 15 * 60 * 1000;
 
-  // Filter to only show sessions created by me OR sessions I am involved in
-  // Sort by date ascending
-  const mySessions = useMemo(() => {
-    const personalSessions = allSessions.filter(
-      (session) =>
-        session.isCustom === true ||
-        joinedSet.has(session.id) ||
-        session.attendanceStatus === "suggested" ||
-        session.attendanceStatus === "requested" ||
-        session.attendanceStatus === "joined",
+  const personal = useMemo(() => {
+    return allSessions.filter(
+      (s) =>
+        s.isCustom === true ||
+        joinedIds.has(s.id) ||
+        s.attendanceStatus === "suggested" ||
+        s.attendanceStatus === "requested" ||
+        s.attendanceStatus === "joined",
     );
+  }, [allSessions, joinedIds]);
 
-    // Sort by date ascending
-    return [...personalSessions].sort((a, b) => {
-      return getSessionDateForSort(a) - getSessionDateForSort(b);
-    });
-  }, [allSessions, joinedSet]);
+  const confirmedUpcoming = useMemo(() => {
+    return personal
+      .filter(
+        (s) =>
+          getSessionDateForSort(s) >= pastCutoffMs &&
+          isConfirmedParticipation(s, joinedIds),
+      )
+      .sort((a, b) => getSessionDateForSort(a) - getSessionDateForSort(b));
+  }, [personal, pastCutoffMs, joinedIds]);
 
-  const pastCutoffMs = Date.now() - 15 * 60 * 1000; // 15 min grace after start time
+  const pending = useMemo(() => {
+    return personal
+      .filter(
+        (s) =>
+          getSessionDateForSort(s) >= pastCutoffMs && isPendingParticipation(s),
+      )
+      .sort((a, b) => getSessionDateForSort(a) - getSessionDateForSort(b));
+  }, [personal, pastCutoffMs]);
 
-  const upcomingSessions = useMemo(() => {
-    return mySessions.filter(
-      (session) => getSessionDateForSort(session) >= pastCutoffMs,
-    );
-  }, [mySessions, pastCutoffMs]);
+  const past = useMemo(() => {
+    return personal
+      .filter(
+        (s) =>
+          getSessionDateForSort(s) < pastCutoffMs &&
+          (isConfirmedParticipation(s, joinedIds) || s.isCustom === true),
+      )
+      .sort((a, b) => getSessionDateForSort(b) - getSessionDateForSort(a));
+  }, [personal, pastCutoffMs, joinedIds]);
 
-  const pastSessions = useMemo(() => {
-    return [...mySessions]
-      .filter((session) => getSessionDateForSort(session) < pastCutoffMs)
-      .sort(
-        (a, b) => getSessionDateForSort(b) - getSessionDateForSort(a),
-      );
-  }, [mySessions, pastCutoffMs]);
+  useEffect(() => {
+    setMesSortiesBadgeCount(confirmedUpcoming.length);
+  }, [confirmedUpcoming.length]);
 
-  const sessionChips = useMemo(
-    () => [
-      { id: "all" as const, label: "Tout" },
-      { id: "fartlek" as const, label: "Fartlek" },
-      { id: "tempo_run" as const, label: "Tempo" },
-      { id: "discovery_run" as const, label: "Découverte" },
-      { id: "easy_run" as const, label: "Footing" },
-      { id: "series" as const, label: "Séries" },
-      { id: "progressif" as const, label: "Progressif" },
-    ],
-    [],
-  );
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(id);
+  }, [toast]);
 
-  const filteredUpcoming = useMemo(
-    () =>
-      filterSessionsList(
-        upcomingSessions,
-        chipType,
-        sessionSearch,
-        workoutRunTypes,
-      ),
-    [upcomingSessions, chipType, sessionSearch, workoutRunTypes],
-  );
+  const openSession = (id: string) => {
+    router.push(`/session/${id}` as Href);
+  };
 
-  const filteredPastSessions = useMemo(
-    () =>
-      filterSessionsList(
-        pastSessions,
-        chipType,
-        sessionSearch,
-        workoutRunTypes,
-      ),
-    [pastSessions, chipType, sessionSearch, workoutRunTypes],
-  );
-
-  const coachMySessionsWeekLabels = useMemo(() => {
-    return filteredUpcoming
-      .map((s) => {
-        const rt = s.workoutId ? workoutRunTypes[s.id] : null;
-        return (rt ?? getSessionRunTypeId(s) ?? s.typeLabel) as string;
-      })
-      .filter(Boolean);
-  }, [filteredUpcoming, workoutRunTypes]);
-
-  const coachWeeklyContext = useMemo(
-    () =>
-      buildCoachContext({
-        screen: "my_sessions",
-        sessions: allSessions,
-        joinedIds: joinedSet,
-        workoutRunTypes,
-        weekSessions: coachMySessionsWeekLabels,
-      }),
-    [allSessions, joinedSet, workoutRunTypes, coachMySessionsWeekLabels],
-  );
-
-  const joinedRuns = useMemo(() => {
-    const now = Date.now();
-    return [...storedRuns]
-      .filter((entry) => entry.isJoined)
-      .filter((entry) => {
-        const start = new Date(entry.run.startTimeISO).getTime();
-        return Number.isFinite(start) && start >= now;
-      })
-      .sort(
-        (a, b) =>
-          new Date(a.run.startTimeISO).getTime() -
-          new Date(b.run.startTimeISO).getTime(),
-      );
-  }, [storedRuns]);
-
-  const pastRuns = useMemo(() => {
-    const now = Date.now();
-    return [...storedRuns]
-      .filter((entry) => entry.isJoined)
-      .filter((entry) => {
-        const start = new Date(entry.run.startTimeISO).getTime();
-        return Number.isFinite(start) && start < now;
-      })
-      .sort(
-        (a, b) =>
-          new Date(b.run.startTimeISO).getTime() -
-          new Date(a.run.startTimeISO).getTime(),
-      );
-  }, [storedRuns]);
-
-  const formatRunDate = (iso: string) => {
+  const confirmCancel = async () => {
+    if (!cancelTarget) return;
+    setCancelBusy(true);
+    const id = cancelTarget.id;
+    const title = cancelTarget.title;
     try {
-      return new Date(iso).toLocaleString("fr-FR", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return iso;
+      try {
+        const client = createApiClient();
+        await leaveSession(client, id);
+      } catch (e) {
+        console.warn("API leave failed, clearing local join:", e);
+      }
+      await removeJoinedSession(id);
+      setAllSessions((prev) =>
+        prev.map((s) =>
+          s.id === id
+            ? { ...s, attendanceStatus: null as SessionData["attendanceStatus"] }
+            : s,
+        ),
+      );
+      setJoinedSessions((prev) => prev.filter((j) => j.sessionId !== id));
+      setToast(`Participation à « ${title} » annulée.`);
+      setCancelTarget(null);
+    } catch (e) {
+      console.warn("Cancel failed:", e);
+      setToast("Impossible d'annuler pour le moment.");
+    } finally {
+      setCancelBusy(false);
     }
   };
 
-  const formatPace = (pace: number) => {
-    const minutes = Math.floor(pace);
-    const seconds = Math.round((pace - minutes) * 60);
-    return `${minutes}'${seconds.toString().padStart(2, "0")}/km`;
-  };
+  const pastKm = sumPastDistanceKm(past);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.root, { paddingTop: insets.top }]} testID="mes-sorties">
+      {toast ? (
+        <View style={styles.toast} pointerEvents="none">
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      ) : null}
+
       <ScrollView
-        style={styles.scrollView}
         contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingTop: insets.top + 6,
-            paddingBottom: scrollBottomPadding,
-          },
+          styles.content,
+          { paddingBottom: tabBarInset + 16 },
         ]}
-        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={() => loadData(true)}
-            tintColor={colors.text.accent}
+            refreshing={refreshing}
+            onRefresh={() => void load(true)}
+            tintColor={t.primary}
           />
         }
       >
-        {isLoading && allSessions.length === 0 ? (
-          <LoadingState message="Chargement de tes séances…" />
-        ) : null}
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerTextContainer}>
-              <Text style={styles.headerTitle}>Mes séances</Text>
-              <Text style={styles.headerSubtitle}>
-                Ton agenda de séances.
+        <View style={styles.headerBlock}>
+          <View style={styles.headerTop}>
+            <View style={styles.headerText}>
+              <Text style={styles.eyebrow}>CALENDRIER PERSONNEL</Text>
+              <Text style={styles.title} accessibilityRole="header">
+                Mes Sorties & Réservations
               </Text>
             </View>
-            <TouchableOpacity
-              onPress={() => router.push("/session/create")}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={styles.createPill}
-              activeOpacity={0.85}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Créer une sortie"
+              onPress={() => router.push("/session/create" as Href)}
+              style={({ pressed }) => [
+                styles.createBtn,
+                pressed && { opacity: 0.88 },
+              ]}
+              testID="mes-sorties-create"
             >
-              <Text style={styles.createPillText}>Créer</Text>
-            </TouchableOpacity>
+              <Text style={styles.createBtnPlus}>+</Text>
+              <Text style={styles.createBtnText}>Créer</Text>
+            </Pressable>
           </View>
-        </View>
 
-        <SearchField
-          value={sessionSearch}
-          onChangeText={setSessionSearch}
-          placeholder="Rechercher…"
-          style={styles.searchFieldWrap}
-        />
-
-        <View style={styles.chipsRow}>
-          {sessionChips.map((c) => (
-            <TouchableOpacity
-              key={c.id}
-              onPress={() => setChipType(c.id)}
-              activeOpacity={0.85}
-            >
-              <Chip
-                label={c.label}
-                variant="default"
-                style={[
-                  styles.filterChip,
-                  chipType === c.id &&
-                    (c.id === "all"
-                      ? styles.filterChipActiveAll
-                      : styles.filterChipActive),
-                ]}
-                textStyle={[
-                  styles.filterChipText,
-                  chipType === c.id &&
-                    (c.id === "all"
-                      ? styles.filterChipTextActiveAll
-                      : styles.filterChipTextActive),
-                ]}
-              />
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {joinedRuns.length > 0 && (
-          <View style={styles.sectionBlock}>
-            <Text style={styles.sectionTitle}>Courses à venir</Text>
-            {joinedRuns.map((entry) => (
-              <Card key={entry.run.id} style={styles.sessionCard}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardHeaderTopRow}>
-                    <Text style={styles.spotName} numberOfLines={1}>
-                      {entry.run.location.placeName || "Course"}
-                    </Text>
-                    <Text style={styles.dateText}>
-                      {formatRunDate(entry.run.startTimeISO)}
-                    </Text>
-                  </View>
-                  <View style={styles.pillsContainer}>
-                    <Chip label="RUN" variant="default" />
-                    <Chip label="INSCRIT" variant="active" />
-                  </View>
-                </View>
-                <Text style={styles.title}>{entry.run.runType}</Text>
-                <Text style={styles.description}>
-                  {entry.run.distanceKm} km · {formatPace(entry.run.paceMinPerKm)}
-                </Text>
-                <TouchableOpacity
-                  onPress={() =>
-                    router.push({
-                      pathname: "/run/confirm",
-                      params: {
-                        runId: entry.run.id,
-                        status: entry.status,
-                        participants: JSON.stringify(entry.participants || []),
-                      },
-                    })
-                  }
-                  style={styles.detailsButton}
-                >
-                  <Text style={styles.detailsButtonText}>→ Voir détails</Text>
-                </TouchableOpacity>
-              </Card>
-            ))}
-          </View>
-        )}
-
-        {pastRuns.length > 0 && (
-          <View style={styles.sectionBlock}>
-            <Text style={styles.sectionTitle}>Courses passées</Text>
-            {pastRuns.map((entry) => (
-              <Card key={entry.run.id} style={styles.sessionCard}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardHeaderTopRow}>
-                    <Text style={styles.spotName} numberOfLines={1}>
-                      {entry.run.location.placeName || "Course"}
-                    </Text>
-                    <Text style={styles.dateText}>
-                      {formatRunDate(entry.run.startTimeISO)}
-                    </Text>
-                  </View>
-                  <View style={styles.pillsContainer}>
-                    <Chip label="RUN" variant="default" />
-                    <Chip label="PASSÉE" variant="custom" />
-                  </View>
-                </View>
-                <Text style={styles.title}>{entry.run.runType}</Text>
-                <Text style={styles.description}>
-                  {entry.run.distanceKm} km · {formatPace(entry.run.paceMinPerKm)}
-                </Text>
-                <TouchableOpacity
-                  onPress={() =>
-                    router.push({
-                      pathname: "/run/confirm",
-                      params: {
-                        runId: entry.run.id,
-                        status: entry.status,
-                        participants: JSON.stringify(entry.participants || []),
-                      },
-                    })
-                  }
-                  style={styles.detailsButton}
-                >
-                  <Text style={styles.detailsButtonText}>→ Voir détails</Text>
-                </TouchableOpacity>
-              </Card>
-            ))}
-          </View>
-        )}
-
-        {/* Empty State */}
-        {!isLoading &&
-          upcomingSessions.length === 0 &&
-          pastSessions.length === 0 &&
-          joinedRuns.length === 0 &&
-          pastRuns.length === 0 && (
-          <View style={styles.emptyStateContainer}>
-            <Text style={styles.emptyStateEmoji}>😕</Text>
-            <Text style={styles.emptyStateTitle}>
-              Rien de prévu — rejoins une séance ou crée-en une.
-            </Text>
-            <Text style={styles.emptyStateSubtitle}>
-              Utilise Créer ci-dessus ou rejoins une séance depuis l&apos;accueil.
-            </Text>
-            <TouchableOpacity
-              style={styles.emptyStateSecondaryButton}
-              onPress={() => router.push("/")}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.emptyStateSecondaryButtonText}>
-                Parcourir les séances
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Sessions List */}
-        {!isLoading && upcomingSessions.length > 0 && (
-          <View style={styles.sessionsList}>
-            <Text style={styles.sectionTitle}>À VENIR</Text>
-            {filteredUpcoming.length === 0 && (
-              <Text style={styles.filterEmpty}>
-                Aucune séance ne correspond à ta recherche.
-              </Text>
-            )}
-
-            <View style={styles.sessionsStack}>
-              {filteredUpcoming.map((session, index) => {
-                const description = `${session.volume} · ${session.targetPace}`;
-                const isJoined = joinedSet.has(session.id);
-                const isCustom = session.isCustom === true;
-                const attendanceStatus =
-                  attendanceStatusBySessionId.get(session.id) ??
-                  (isJoined ? "joined" : null);
-
-                const workoutRunType = session.workoutId
-                  ? workoutRunTypes[session.id]
-                  : null;
-                const sessionTypeId =
-                  workoutRunType || getSessionRunTypeId(session);
-                const typeLabel = workoutRunType
-                  ? getRunTypePillLabel(workoutRunType)
-                  : sessionTypeId
-                    ? getRunTypePillLabelFromModule(
-                        sessionTypeId as RunTypeIdFromRunTypes,
-                      )
-                    : "PERSONNALISÉ";
-                const badges = uniqueSessionBadges([
-                  ...(typeLabel
-                    ? [{ label: typeLabel, variant: "default" as const }]
-                    : []),
-                  ...(session.visibility === "members"
-                    ? [{ label: "🔒 MEMBRES", variant: "custom" as const }]
-                    : []),
-                  ...(isCustom
-                    ? [{ label: "Créée par toi", variant: "success" as const }]
-                    : []),
-                  ...(isJoined
-                    ? [{ label: "INSCRIT", variant: "active" as const }]
-                    : []),
-                  ...(attendanceStatus === "requested"
-                    ? [{ label: "DEMANDE", variant: "custom" as const }]
-                    : []),
-                  ...(attendanceStatus === "suggested"
-                    ? [{ label: "SUGGÉRÉ", variant: "custom" as const }]
-                    : []),
-                ]);
-                const [typeBadge, ...restBadges] = badges;
-                const n = sumSessionParticipants(session);
-
-                return (
-                  <React.Fragment key={session.id}>
-                  <AnimatedTimelineCard
-                    index={index}
-                    totalCount={filteredUpcoming.length}
-                    hasAnimated={hasAnimated}
-                    onAnimationComplete={() => {
-                      if (index === filteredUpcoming.length - 1) {
-                        setHasAnimated(true);
-                      }
-                    }}
-                  >
-                    <Card style={styles.upcomingSessionCard}>
-                      <View style={styles.sessionMetaRow}>
-                        <Text
-                          style={styles.sessionMetaText}
-                          numberOfLines={2}
-                          ellipsizeMode="tail"
-                        >
-                          {formatSessionMetaUpper(session)}
-                        </Text>
-                        <Text style={styles.sessionDistance}>
-                          {formatSessionDistanceKm(session.estimatedDistanceKm)}
-                        </Text>
-                      </View>
-
-                      <View style={styles.sessionTagRow}>
-                        {typeBadge ? (
-                          <Tag
-                            label={typeBadge.label}
-                            variant={tagVariantForRunPill(typeBadge.label)}
-                            style={styles.sessionTypeTag}
-                          />
-                        ) : null}
-                        {restBadges.map((badge) => (
-                          <Chip
-                            key={`${session.id}-${badge.variant}-${badge.label}`}
-                            label={badge.label}
-                            variant="default"
-                            style={styles.sessionMetaChip}
-                            textStyle={styles.sessionMetaChipText}
-                          />
-                        ))}
-                      </View>
-
-                      <Text style={styles.sessionCardTitle} numberOfLines={2}>
-                        {session.title}
-                      </Text>
-                      <Text style={styles.sessionCardDescription} numberOfLines={2}>
-                        {description}
-                      </Text>
-
-                      <View style={styles.sessionCardFooter}>
-                        <Text style={styles.sessionParticipants}>
-                          {n}{" "}
-                          {n <= 1 ? "participant" : "participants"}
-                        </Text>
-                        <TouchableOpacity
-                          onPress={() => {
-                            Haptics.impactAsync(
-                              Haptics.ImpactFeedbackStyle.Light,
-                            );
-                            router.push(`/session/${session.id}`);
-                          }}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          activeOpacity={0.85}
-                        >
-                          <Text style={styles.sessionDetailsLink}>
-                            Voir détails →
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    </Card>
-                  </AnimatedTimelineCard>
-                  {index === 0 ? (
-                    <CoachWeeklyPlan
-                      context={coachWeeklyContext}
-                      sessions={allSessions}
-                      joinedIds={joinedSet}
-                      workoutRunTypes={workoutRunTypes}
-                    />
-                  ) : null}
-                  </React.Fragment>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {!isLoading && pastSessions.length > 0 && (
-          <View style={styles.sectionBlock}>
-            <Text style={styles.sectionTitle}>HISTORIQUE</Text>
-            {filteredPastSessions.length === 0 && (
-              <Text style={styles.filterEmpty}>
-                Aucune séance passée ne correspond à ta recherche.
-              </Text>
-            )}
-            {filteredPastSessions.map((session) => {
-              const description = `${session.volume} · ${session.targetPace}`;
-
-              const workoutRunType = session.workoutId
-                ? workoutRunTypes[session.id]
-                : null;
-              const sessionTypeId =
-                workoutRunType || getSessionRunTypeId(session);
-              const typeLabel = workoutRunType
-                ? getRunTypePillLabel(workoutRunType)
-                : sessionTypeId
-                  ? getRunTypePillLabelFromModule(
-                      sessionTypeId as RunTypeIdFromRunTypes,
-                    )
-                  : "PERSONNALISÉ";
-
+          <View style={styles.segment} accessibilityRole="tablist">
+            {(
+              [
+                {
+                  id: "upcoming" as const,
+                  label: "À venir",
+                  count: confirmedUpcoming.length,
+                },
+                {
+                  id: "pending" as const,
+                  label: "En attente",
+                  count: pending.length,
+                },
+                {
+                  id: "past" as const,
+                  label: "Passées",
+                  count: past.length,
+                },
+              ] as const
+            ).map((item) => {
+              const on = tab === item.id;
               return (
-                <Card key={session.id} style={styles.historyCard}>
-                  <View style={styles.historyTopRow}>
-                    <View style={styles.historyMeta}>
-                      <Text style={styles.historyType} numberOfLines={1}>
-                        {typeLabel}
-                        {session.spot ? ` · ${session.spot}` : ""}
-                      </Text>
-                      <Text style={styles.historySub} numberOfLines={1}>
-                        {session.dateLabel} · {session.targetPace}
-                        {session.volume ? ` · ${session.volume}` : ""}
-                      </Text>
-                    </View>
-                    <Text style={styles.historyDone}>TERMINÉ</Text>
-                  </View>
-                  <Text style={styles.title}>{session.title}</Text>
-                  <Text style={styles.description}>{description}</Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push(`/session/${session.id}`);
-                    }}
-                    style={styles.detailsButton}
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => setTab(item.id)}
+                  style={[styles.segBtn, on && styles.segBtnOn]}
+                  testID={`mes-sorties-tab-${item.id}`}
+                >
+                  <Text style={[styles.segLabel, on && styles.segLabelOn]}>
+                    {item.label}
+                  </Text>
+                  <View
+                    style={[
+                      styles.segBadge,
+                      on ? styles.segBadgeOn : styles.segBadgeOff,
+                    ]}
                   >
-                    <Text style={styles.detailsButtonText}>
-                      → Voir détails
+                    <Text
+                      style={[
+                        styles.segBadgeText,
+                        on && styles.segBadgeTextOn,
+                      ]}
+                    >
+                      {item.count}
                     </Text>
-                  </TouchableOpacity>
-                </Card>
+                  </View>
+                </Pressable>
               );
             })}
           </View>
+        </View>
+
+        {loadError ? (
+          <View style={styles.errorBox} testID="mes-sorties-error">
+            <Text style={styles.errorText}>
+              Impossible de charger tes sorties en ligne pour le moment.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Réessayer"
+              onPress={() => void load(true)}
+              style={styles.retryBtn}
+              testID="mes-sorties-retry"
+            >
+              <Text style={styles.retryText}>Réessayer</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {tab === "upcoming" ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <View style={styles.sectionHeadLeft}>
+                <PulseDot />
+                <Text style={styles.sectionTitle}>Sorties confirmées</Text>
+              </View>
+              <Text style={styles.sectionMeta}>
+                {confirmedUpcoming.length} réservation
+                {confirmedUpcoming.length === 1 ? "" : "s"} active
+                {confirmedUpcoming.length === 1 ? "" : "s"}
+              </Text>
+            </View>
+
+            {loading && !confirmedUpcoming.length && !pending.length ? (
+              <Text style={styles.loadingHint}>Chargement…</Text>
+            ) : confirmedUpcoming.length ? (
+              <View style={styles.grid}>
+                {confirmedUpcoming.map((s) => (
+                  <ConfirmedCard
+                    key={s.id}
+                    session={s}
+                    onDetails={() => openSession(s.id)}
+                    onCancel={() => setCancelTarget(s)}
+                  />
+                ))}
+              </View>
+            ) : (
+              <EmptyUpcoming
+                onExplore={() => router.push("/" as Href)}
+                pastCount={past.length}
+                onOpenPast={() => setTab("past")}
+              />
+            )}
+
+            {past.length > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Voir ${past.length} sorties passées`}
+                onPress={() => setTab("past")}
+                style={({ pressed }) => [
+                  styles.pastTeaser,
+                  pressed && { opacity: 0.9 },
+                ]}
+                testID="mes-sorties-past-teaser"
+              >
+                <View style={styles.pastTeaserLeft}>
+                  <Ionicons name="time-outline" size={18} color={t.primary} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.pastTeaserTitle}>
+                      Sorties passées
+                    </Text>
+                    <Text style={styles.pastTeaserBody} numberOfLines={1}>
+                      {past.length} sortie{past.length === 1 ? "" : "s"} ·{" "}
+                      {formatKmTotal(pastKm)}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.pastTeaserCta}>Voir →</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
+
+        {(tab === "pending" || (tab === "upcoming" && pending.length > 0)) && (
+          <View style={[styles.section, tab === "upcoming" && { paddingTop: 8 }]}>
+            <View style={styles.sectionHead}>
+              <View style={styles.sectionHeadLeft}>
+                <View
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: t.secondaryFixedDim,
+                  }}
+                />
+                <Text style={styles.sectionTitle}>Demandes en attente</Text>
+              </View>
+              <Text style={styles.sectionMeta}>
+                {pending.length} requête{pending.length === 1 ? "" : "s"} en cours
+              </Text>
+            </View>
+            {pending.length ? (
+              <View style={styles.grid}>
+                {pending.map((s) => (
+                  <PendingCard
+                    key={s.id}
+                    session={s}
+                    onCancel={() => setCancelTarget(s)}
+                  />
+                ))}
+              </View>
+            ) : tab === "pending" ? (
+              <View style={styles.emptyCompact}>
+                <Text style={styles.emptyTitle}>Aucune demande en attente</Text>
+                <Text style={styles.emptyBody}>
+                  Les sorties sur invitation apparaîtront ici jusqu’à validation.
+                </Text>
+              </View>
+            ) : null}
+          </View>
         )}
+
+        {tab === "past" ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <View style={styles.sectionHeadLeft}>
+                <View
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: t.outline,
+                  }}
+                />
+                <Text style={styles.sectionTitle}>
+                  Sorties passées ({past.length})
+                </Text>
+              </View>
+              <Text style={[styles.sectionMeta, { color: t.outline }]}>
+                Total {formatKmTotal(pastKm)}
+              </Text>
+            </View>
+            {past.length ? (
+              <View style={styles.pastGrid}>
+                {past.map((s) => (
+                  <PastCard
+                    key={s.id}
+                    session={s}
+                    onPress={() => openSession(s.id)}
+                  />
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyCompact}>
+                <Text style={styles.emptyTitle}>Pas encore de sorties passées</Text>
+                <Text style={styles.emptyBody}>
+                  Tes sorties terminées s’afficheront ici avec distance et allure.
+                </Text>
+              </View>
+            )}
+          </View>
+        ) : null}
       </ScrollView>
+
+      <CancelParticipationModal
+        visible={Boolean(cancelTarget)}
+        title={cancelTarget?.title ?? ""}
+        busy={cancelBusy}
+        onConfirm={() => void confirmCancel()}
+        onKeep={() => setCancelTarget(null)}
+      />
+    </View>
+  );
+}
+
+function ConfirmedCard({
+  session,
+  onDetails,
+  onCancel,
+}: {
+  session: SessionData;
+  onDetails: () => void;
+  onCancel: () => void;
+}) {
+  const host = clubOrHostLabel(session);
+  const isWalk = activityForSession(session) === "walk";
+  const activity = activityLabel(session);
+  const title = displayOutingTitle(session.title);
+  const date = discoveryDateParts(session);
+  const time = formatTimeLabel(session.timeMinutes);
+  const dist = distanceLabel(session);
+  const pace = compactPaceLine(paceLabel(session), isWalk);
+  const dur = volumeBit(session.volume);
+  const initials = initialsFromName(host) || (isWalk ? "M" : "C");
+  const tone = hostTone(host);
+
+  return (
+    <View style={styles.card} testID={`mes-sorties-confirmed-${session.id}`}>
+      <View style={styles.liveRow}>
+        <View style={styles.dateRail} accessibilityLabel={formatOutingDateCompact(session)}>
+          <Text style={styles.dateWeekday}>{date?.weekday ?? "—"}</Text>
+          <Text style={styles.dateDay}>{date?.dayNum ?? "·"}</Text>
+          <Text style={styles.dateMonth}>{date?.month ?? ""}</Text>
+        </View>
+
+        <View style={styles.liveBody}>
+          <View style={styles.hostRow}>
+            <View style={[styles.hostAvatar, { backgroundColor: tone }]}>
+              <Text style={styles.hostAvatarText}>{initials}</Text>
+            </View>
+            <View style={styles.hostTextCol}>
+              <Text style={styles.hostName} numberOfLines={1}>
+                {host}
+              </Text>
+              <View style={styles.chipRow}>
+                <View style={[styles.actChip, isWalk ? styles.actChipWalk : styles.actChipRun]}>
+                  <Text
+                    style={[
+                      styles.actChipText,
+                      isWalk ? styles.actChipTextWalk : styles.actChipTextRun,
+                    ]}
+                  >
+                    {activity}
+                  </Text>
+                </View>
+                <View style={styles.inscritPill}>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={13}
+                    color={t.onSecondaryContainer}
+                  />
+                  <Text style={styles.inscritText}>Inscrit</Text>
+                </View>
+              </View>
+            </View>
+            {time ? (
+              <View style={styles.timeBadge}>
+                <Text style={styles.timeBadgeText}>{time}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          <Text style={styles.cardTitle} numberOfLines={2}>
+            {title}
+          </Text>
+          <Text style={styles.spotLine} numberOfLines={1}>
+            {locationLabel(session) || "Lieu à préciser"}
+          </Text>
+
+          <View style={styles.metricStrip}>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>Distance</Text>
+              <Text style={styles.metricValue} numberOfLines={1}>
+                {dist ?? "—"}
+              </Text>
+            </View>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>{isWalk ? "Rythme" : "Allure"}</Text>
+              <Text
+                style={[styles.metricValue, pace.length > 10 && styles.metricValueTight]}
+                numberOfLines={1}
+              >
+                {pace}
+              </Text>
+            </View>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>Durée</Text>
+              <Text style={styles.metricValue} numberOfLines={1}>
+                {dur ?? "—"}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.cardActions}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Annuler ma participation"
+          onPress={onCancel}
+          style={({ pressed }) => [
+            styles.desistBtn,
+            pressed && { opacity: 0.75 },
+          ]}
+          testID={`mes-sorties-desist-${session.id}`}
+        >
+          <Text style={styles.desistText}>Annuler</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Voir les détails"
+          onPress={onDetails}
+          style={({ pressed }) => [
+            styles.detailsBtn,
+            pressed && { opacity: 0.9 },
+          ]}
+          testID={`mes-sorties-details-${session.id}`}
+        >
+          <Text style={styles.detailsText}>Détails</Text>
+          <Ionicons name="arrow-forward" size={16} color={t.text} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function PendingCard({
+  session,
+  onCancel,
+}: {
+  session: SessionData;
+  onCancel: () => void;
+}) {
+  return (
+    <View style={styles.card} testID={`mes-sorties-pending-${session.id}`}>
+      <View style={styles.cardTop}>
+        <View style={styles.cardTopLeft}>
+          <View style={styles.metaRow}>
+            <Text style={[styles.clubLabel, { color: t.textSecondary }]} numberOfLines={1}>
+              {clubOrHostLabel(session)}
+            </Text>
+            <Text style={styles.dot}>·</Text>
+            <Text style={styles.discipline}>{disciplineMeta(session)}</Text>
+          </View>
+          <Text style={[styles.cardTitle, { fontSize: 16 }]} numberOfLines={2}>
+            {session.title}
+          </Text>
+        </View>
+        <View style={styles.pendingPill}>
+          <Ionicons name="hourglass-outline" size={14} color={t.textSecondary} />
+          <Text style={styles.pendingText}>En attente</Text>
+        </View>
+      </View>
+
+      <View style={styles.pendingBox}>
+        <View style={styles.pendingBoxRow}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
+            <Ionicons name="calendar-outline" size={18} color={t.primary} />
+            <Text style={styles.pendingWhen} numberOfLines={1}>
+              {formatOutingDateTime(session)}
+            </Text>
+          </View>
+          <Text style={styles.pendingLoc} numberOfLines={1}>
+            {locationLabel(session)}
+          </Text>
+        </View>
+        <View style={styles.pendingInfoRow}>
+          <Ionicons name="information-circle-outline" size={16} color={t.textSecondary} />
+          <Text style={styles.pendingInfo}>
+            L'organisateur valide les participants avant le départ afin de calibrer
+            le groupe.
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.pendingActions}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Annuler ma demande"
+          onPress={onCancel}
+          hitSlop={8}
+          style={({ pressed }) => [pressed && { opacity: 0.75 }]}
+        >
+          <Text style={styles.cancelRequest}>Annuler ma demande</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function PastCard({
+  session,
+  onPress,
+}: {
+  session: SessionData;
+  onPress: () => void;
+}) {
+  const host = clubOrHostLabel(session);
+  const isWalk = activityForSession(session) === "walk";
+  const activity = activityLabel(session);
+  const title = displayOutingTitle(session.title);
+  const date = discoveryDateParts(session);
+  const time = formatTimeLabel(session.timeMinutes);
+  const dist = distanceLabel(session);
+  const pace = compactPaceLine(paceLabel(session), isWalk);
+  const loc = locationLabel(session);
+  const dur = volumeBit(session.volume);
+  const initials = initialsFromName(host) || (isWalk ? "M" : "C");
+  const tone = hostTone(host);
+  const evening = (session.timeMinutes ?? 0) >= 16 * 60;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${title}, ${formatOutingDateCompact(session)}`}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.pastCard,
+        isWalk && styles.pastCardWalk,
+        evening && !isWalk && styles.pastCardEvening,
+        pressed && { opacity: 0.92 },
+      ]}
+      testID={`mes-sorties-past-${session.id}`}
+    >
+      <View style={styles.liveRow}>
+        <View
+          style={[
+            styles.dateRail,
+            styles.dateRailPast,
+            evening && styles.dateRailEvening,
+          ]}
+        >
+          <Text
+            style={[
+              styles.dateWeekday,
+              evening && styles.dateWeekdayEvening,
+            ]}
+          >
+            {date?.weekday ?? "—"}
+          </Text>
+          <Text style={[styles.dateDay, styles.dateDayPast]}>
+            {date?.dayNum ?? "·"}
+          </Text>
+          <Text style={styles.dateMonth}>{date?.month ?? ""}</Text>
+        </View>
+
+        <View style={styles.liveBody}>
+          <View style={styles.hostRow}>
+            <View style={[styles.hostAvatar, styles.hostAvatarPast, { backgroundColor: tone }]}>
+              <Text style={styles.hostAvatarText}>{initials}</Text>
+            </View>
+            <View style={styles.hostTextCol}>
+              <Text style={styles.hostName} numberOfLines={1}>
+                {host}
+              </Text>
+              <View style={styles.chipRow}>
+                <View style={[styles.actChip, isWalk ? styles.actChipWalk : styles.actChipRun]}>
+                  <Text
+                    style={[
+                      styles.actChipText,
+                      isWalk ? styles.actChipTextWalk : styles.actChipTextRun,
+                    ]}
+                  >
+                    {activity}
+                  </Text>
+                </View>
+                {time ? (
+                  <View style={[styles.timeBadge, styles.timeBadgePast]}>
+                    <Text style={styles.timeBadgeText}>{time}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+            <View style={styles.doneMark} accessibilityLabel="Terminée">
+              <Ionicons name="checkmark-circle" size={22} color={t.primary} />
+            </View>
+          </View>
+
+          <Text style={styles.pastTitle} numberOfLines={2}>
+            {title}
+          </Text>
+          {loc ? (
+            <Text style={styles.spotLine} numberOfLines={1}>
+              {loc}
+            </Text>
+          ) : null}
+
+          <View style={styles.metricStrip}>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>Distance</Text>
+              <Text style={styles.metricValueStrong} numberOfLines={1}>
+                {dist ?? "—"}
+              </Text>
+            </View>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>{isWalk ? "Rythme" : "Allure"}</Text>
+              <Text
+                style={[styles.metricValue, pace.length > 10 && styles.metricValueTight]}
+                numberOfLines={1}
+              >
+                {pace}
+              </Text>
+            </View>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>Durée</Text>
+              <Text style={styles.metricValue} numberOfLines={1}>
+                {dur ?? "—"}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+function EmptyUpcoming({
+  onExplore,
+  pastCount = 0,
+  onOpenPast,
+}: {
+  onExplore: () => void;
+  pastCount?: number;
+  onOpenPast?: () => void;
+}) {
+  return (
+    <View style={styles.empty} testID="mes-sorties-empty-upcoming">
+      <View style={styles.emptyIcon}>
+        <Ionicons name="walk-outline" size={28} color={t.primary} />
+      </View>
+      <Text style={styles.emptyTitle}>Aucune sortie prévue pour le moment</Text>
+      <Text style={styles.emptyBody}>
+        Trouve un groupe chaleureux pour marcher ou courir ensemble ce week-end.
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Créer une sortie"
+        onPress={() => router.push("/session/create" as Href)}
+        style={({ pressed }) => [
+          styles.exploreBtn,
+          pressed && { opacity: 0.9 },
+        ]}
+        testID="mes-sorties-empty-create"
+      >
+        <Text style={styles.createBtnPlus}>+</Text>
+        <Text style={styles.exploreText}>Créer une sortie</Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Explorer les sorties"
+        onPress={onExplore}
+        style={({ pressed }) => [
+          styles.exploreGhost,
+          pressed && { opacity: 0.9 },
+        ]}
+        testID="mes-sorties-explore"
+      >
+        <Ionicons name="compass-outline" size={18} color={t.primary} />
+        <Text style={styles.exploreGhostText}>Explorer les sorties</Text>
+      </Pressable>
+      {pastCount > 0 && onOpenPast ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Voir les sorties passées"
+          onPress={onOpenPast}
+          style={styles.emptyPastLink}
+          testID="mes-sorties-empty-past-link"
+        >
+          <Text style={styles.emptyPastLinkText}>
+            Ou revoir tes {pastCount} sortie{pastCount === 1 ? "" : "s"} passée
+            {pastCount === 1 ? "" : "s"} →
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    minHeight: 0,
-    backgroundColor: colors.background.primary,
-    position: "relative",
+  root: { flex: 1, backgroundColor: t.canvas },
+  content: {
+    paddingHorizontal: t.space.lg,
+    paddingTop: t.space.md,
+    gap: t.space.xl,
+    maxWidth: 960,
+    width: "100%",
+    alignSelf: "center",
   },
-  scrollView: {
-    flex: 1,
-    minHeight: 0,
+  toast: {
+    position: "absolute",
+    top: 56,
+    alignSelf: "center",
+    zIndex: 50,
+    backgroundColor: t.text,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: t.radiusChip,
+    maxWidth: "90%",
   },
-  scrollContent: {
-    paddingHorizontal: 14,
+  toastText: {
+    ...t.type.labelMd,
+    color: t.canvas,
+    fontFamily: t.font.space.semibold,
   },
-  chipsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    paddingBottom: 12,
-    alignItems: "center",
+  headerBlock: {
+    gap: t.space.lg,
+    paddingBottom: t.space.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(232,232,233,0.9)",
   },
-  searchFieldWrap: {
-    marginTop: 4,
-    marginBottom: 10,
-  },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    minHeight: 32,
-    justifyContent: "center",
-    backgroundColor: "transparent",
-    borderColor: "rgba(255,255,255,0.14)",
-    borderWidth: hairline,
-  },
-  filterChipActive: {
-    backgroundColor: colors.accent.primary,
-    borderColor: colors.accent.primary,
-  },
-  filterChipActiveAll: {
-    backgroundColor: "transparent",
-    borderColor: "rgba(255,255,255,0.85)",
-    borderWidth: 1.5,
-  },
-  filterChipText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: colors.text.secondary,
-  },
-  filterChipTextActive: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  filterChipTextActiveAll: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  filterEmpty: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.md,
-    marginBottom: 12,
-  },
-  header: {
-    marginBottom: 8,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  headerTitle: {
-    color: colors.text.primary,
-    fontSize: typography.sizes["3xl"],
-    fontWeight: "800",
-    marginBottom: 2,
-    letterSpacing: -0.4,
-  },
-  headerSubtitle: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
-    fontWeight: "400",
-    opacity: 0.9,
-  },
-  createPill: {
-    borderRadius: borderRadius.pill,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    backgroundColor: colors.accent.primary,
-    borderWidth: 0,
-  },
-  createPillText: {
-    color: "#fff",
-    fontSize: typography.sizes.sm,
-    fontWeight: "700",
-  },
-  sectionBlock: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    color: "#BFBFBF",
-    fontSize: 13,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  sessionsList: {
-    position: "relative",
-  },
-  sessionsStack: {
-    gap: 0,
-  },
-  sessionCardAnimatedWrap: {
-    marginBottom: 12,
-  },
-  upcomingSessionCard: {
-    backgroundColor: "#131313",
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
-    marginBottom: 0,
-  },
-  sessionMetaRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 10,
-    marginBottom: 8,
-  },
-  sessionMetaText: {
-    flex: 1,
-    color: colors.text.secondary,
-    fontSize: 11,
-    fontWeight: "600",
-    lineHeight: 15,
-    textTransform: "uppercase",
-    letterSpacing: 0.2,
-  },
-  sessionDistance: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "700",
-    flexShrink: 0,
-  },
-  sessionTagRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  sessionTypeTag: {
-    marginRight: 0,
-  },
-  sessionMetaChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderColor: "rgba(255,255,255,0.12)",
-    borderWidth: hairline,
-  },
-  sessionMetaChipText: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: colors.text.secondary,
-    textTransform: "uppercase",
-  },
-  sessionCardTitle: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-    marginBottom: 6,
-    lineHeight: 20,
-  },
-  sessionCardDescription: {
-    color: "#BFBFBF",
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  sessionCardFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 12,
-  },
-  sessionParticipants: {
-    color: colors.text.secondary,
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  sessionDetailsLink: {
-    color: colors.accent.primary,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  sessionCard: {
-    backgroundColor: "#131313",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
-    marginBottom: 16,
-  },
-  historyCard: {
-    backgroundColor: "#131313",
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
-    marginBottom: 12,
-  },
-  historyTopRow: {
+  headerTop: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 12,
-    marginBottom: 8,
   },
-  historyMeta: { flex: 1 },
-  historyType: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.sm,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  historySub: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
-  },
-  historyDone: {
-    color: colors.tag.greenText,
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.5,
+  headerText: { gap: 2, flex: 1, minWidth: 0 },
+  createBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    minHeight: 40,
+    maxWidth: 168,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: t.primary,
+    marginTop: 2,
     flexShrink: 0,
   },
-  cardHeader: {
-    marginBottom: 8,
+  createBtnPlus: {
+    color: t.onPrimary,
+    fontFamily: t.font.space.bold,
+    fontSize: 18,
+    lineHeight: 18,
+    marginTop: -1,
   },
-  cardHeaderTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  pillsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    alignItems: "center",
-  },
-  typePill: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: "#1A2230",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-  },
-  typePillText: {
-    color: "#BFBFBF",
-    fontSize: 11,
-    fontWeight: "600",
-    textTransform: "uppercase",
-  },
-  customPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: "#1A2230",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-  },
-  customPillText: {
-    color: "#BFBFBF",
-    fontSize: 11,
-    fontWeight: "600",
-    textTransform: "uppercase",
-  },
-  spotName: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+  createBtnText: {
+    color: t.onPrimary,
+    fontFamily: t.font.space.bold,
+    fontSize: 12,
+    lineHeight: 14,
     flexShrink: 1,
-    marginRight: 12,
   },
-  statusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: "rgba(41, 208, 126, 0.18)",
+  eyebrow: {
+    ...t.type.labelSm,
+    color: t.outline,
+    textTransform: "uppercase",
+  },
+  title: { ...t.type.pageTitle, color: t.text, fontSize: 26 },
+  segment: {
+    flexDirection: "row",
+    backgroundColor: t.surfaceContainerHigh,
+    borderRadius: t.radiusChip,
+    padding: 4,
     borderWidth: 1,
-    borderColor: "rgba(41, 208, 126, 0.6)",
+    borderColor: "rgba(232,232,233,0.7)",
+    gap: 2,
   },
-  statusPillText: {
-    color: "#29D07E",
-    fontSize: 11,
-    fontWeight: "600",
-    textTransform: "uppercase",
-  },
-  date: {
-    color: "#F8B319",
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    flexShrink: 0,
-  },
-  dateText: {
-    color: "#BFBFBF",
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    flexShrink: 0,
-  },
-  title: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    marginBottom: 8,
-  },
-  description: {
-    color: "#BFBFBF",
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  detailsButton: {
-    alignSelf: "flex-end",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  detailsButtonText: {
-    color: colors.accent.primary,
-    fontSize: typography.sizes.md,
-    fontWeight: "600",
-  },
-  // Empty state styles (matching index.tsx)
-  emptyStateContainer: {
+  segBtn: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: t.radiusChip,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 60,
-    marginTop: 40,
+    gap: 6,
+    paddingHorizontal: 8,
   },
-  emptyStateEmoji: {
-    fontSize: 40,
-    marginBottom: 12,
+  segBtnOn: {
+    backgroundColor: t.surfaceContainerLowest,
   },
-  emptyStateTitle: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 8,
+  segLabel: {
+    ...t.type.labelMd,
+    color: t.textSecondary,
+    fontFamily: t.font.space.semibold,
+  },
+  segLabelOn: {
+    color: t.primary,
+    fontFamily: t.font.space.bold,
+  },
+  segBadge: {
+    minWidth: 18,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: t.radiusChip,
+  },
+  segBadgeOn: {
+    backgroundColor: t.secondaryContainer,
+  },
+  segBadgeOff: {
+    backgroundColor: t.surfaceContainerHighest,
+  },
+  segBadgeText: {
+    ...t.type.labelSm,
+    color: t.textSecondary,
     textAlign: "center",
   },
-  emptyStateSubtitle: {
-    color: "#BFBFBF",
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 24,
+  segBadgeTextOn: {
+    color: t.onSecondaryContainer,
   },
-  emptyStateSecondaryButton: {
-    borderRadius: 999,
-    paddingVertical: 12,
-    paddingHorizontal: 32,
+  section: { gap: t.space.md },
+  sectionHead: {
+    flexDirection: "row",
     alignItems: "center",
-    alignSelf: "stretch",
-    marginHorizontal: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
+    justifyContent: "space-between",
+    gap: 8,
   },
-  emptyStateSecondaryButtonText: {
-    color: "#BFBFBF",
+  sectionHeadLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexShrink: 1,
+  },
+  sectionTitle: { ...t.type.section, color: t.text, flexShrink: 1 },
+  sectionMeta: {
+    ...t.type.labelSm,
+    color: t.textSecondary,
+    textTransform: "uppercase",
+    fontFamily: t.font.space.semibold,
+  },
+  loadingHint: { ...t.type.bodySm, color: t.textSecondary },
+  errorBox: {
+    backgroundColor: "#FDECEA",
+    borderRadius: t.radiusMain,
+    padding: 16,
+    gap: 12,
+    marginBottom: 8,
+  },
+  errorText: { ...t.type.bodySm, color: "#B3261E" },
+  retryBtn: {
+    alignSelf: "flex-start",
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#B3261E",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  retryText: { ...t.type.labelMd, color: "#B3261E" },
+  grid: { gap: t.space.md },
+  pastGrid: { gap: t.space.md },
+  pastTeaser: {
+    marginTop: t.space.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: t.card,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
+  },
+  pastTeaserLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
+  },
+  pastTeaserTitle: {
+    fontFamily: t.font.hanken.semibold,
     fontSize: 14,
-    fontWeight: "500",
+    lineHeight: 18,
+    color: t.text,
+  },
+  pastTeaserBody: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 12,
+    lineHeight: 16,
+    color: t.outline,
+    marginTop: 2,
+  },
+  pastTeaserCta: {
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 13,
+    color: t.primary,
+  },
+  emptyPastLink: {
+    marginTop: 14,
+    paddingVertical: 8,
+  },
+  emptyPastLinkText: {
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.primary,
     textAlign: "center",
+  },
+  card: {
+    backgroundColor: t.surfaceContainerLowest,
+    borderRadius: t.radiusMain,
+    padding: 16,
+    gap: 14,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.75)",
+    shadowColor: "#1A1C1D",
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  liveRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 12,
+  },
+  dateRail: {
+    width: 52,
+    borderRadius: 14,
+    backgroundColor: "rgba(0,95,52,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    gap: 2,
+  },
+  dateRailPast: {
+    backgroundColor: "rgba(0,95,52,0.08)",
+  },
+  dateRailEvening: {
+    backgroundColor: "rgba(51,62,53,0.12)",
+  },
+  dateWeekday: {
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 11,
+    lineHeight: 14,
+    color: t.primary,
+    textTransform: "uppercase",
+  },
+  dateWeekdayEvening: {
+    color: "#333E35",
+  },
+  dateDay: {
+    fontFamily: t.font.space.bold,
+    fontSize: 24,
+    lineHeight: 28,
+    letterSpacing: -0.6,
+    color: t.primary,
+    fontVariant: ["tabular-nums"],
+  },
+  dateDayPast: {
+    color: t.text,
+  },
+  dateMonth: {
+    fontFamily: t.font.hanken.medium,
+    fontSize: 11,
+    lineHeight: 14,
+    color: t.outline,
+  },
+  liveBody: { flex: 1, minWidth: 0, gap: 8 },
+  hostRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  hostAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hostAvatarPast: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  hostAvatarText: {
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 12,
+    color: t.onPrimary,
+  },
+  hostTextCol: { flex: 1, minWidth: 0, gap: 4 },
+  hostName: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 14,
+    lineHeight: 18,
+    color: t.text,
+  },
+  chipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  actChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  actChipRun: { backgroundColor: "rgba(0,95,52,0.1)" },
+  actChipWalk: { backgroundColor: "rgba(63,73,65,0.12)" },
+  actChipText: {
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  actChipTextRun: { color: t.primary },
+  actChipTextWalk: { color: t.textSecondary },
+  timeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: "rgba(0,95,52,0.1)",
+    minWidth: 52,
+    alignItems: "center",
+  },
+  timeBadgePast: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    minWidth: 48,
+  },
+  timeBadgeText: {
+    fontFamily: t.font.space.bold,
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: -0.2,
+    color: t.primary,
+    fontVariant: ["tabular-nums"],
+  },
+  cardTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  cardTopLeft: { flex: 1, minWidth: 0, gap: 4 },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  clubLabel: {
+    ...t.type.labelSm,
+    color: t.primary,
+    textTransform: "uppercase",
+    flexShrink: 1,
+  },
+  dot: { ...t.type.labelSm, color: t.textSecondary },
+  discipline: {
+    ...t.type.labelSm,
+    color: t.textSecondary,
+    fontFamily: t.font.space.semibold,
+  },
+  cardTitle: {
+    fontFamily: t.font.space.bold,
+    fontSize: 18,
+    lineHeight: 24,
+    letterSpacing: -0.3,
+    color: t.text,
+  },
+  spotLine: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.textSecondary,
+    marginTop: -2,
+  },
+  metricStrip: {
+    flexDirection: "row",
+    gap: 8,
+    backgroundColor: t.surfaceContainerLow,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  metricCol: { flex: 1, minWidth: 0, gap: 2 },
+  metricLabel: {
+    fontFamily: t.font.hanken.medium,
+    fontSize: 10,
+    lineHeight: 13,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    color: t.outline,
+  },
+  metricValue: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: -0.2,
+    color: t.text,
+  },
+  metricValueTight: { fontSize: 12, lineHeight: 16 },
+  metricValueStrong: {
+    fontFamily: t.font.space.bold,
+    fontSize: 16,
+    lineHeight: 20,
+    letterSpacing: -0.3,
+    color: t.primary,
+  },
+  inscritPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: "rgba(118,252,167,0.45)",
+  },
+  inscritText: {
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 11,
+    lineHeight: 14,
+    color: t.onSecondaryContainer,
+  },
+  pendingPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: t.radiusChip,
+    backgroundColor: t.surfaceContainerHigh,
+  },
+  pendingText: { ...t.type.labelSm, color: t.textSecondary },
+  cardActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(232,232,233,0.9)",
+    paddingTop: 12,
+  },
+  desistBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    minHeight: t.touchMin,
+    paddingRight: 8,
+  },
+  desistText: {
+    ...t.type.labelMd,
+    color: t.textSecondary,
+    fontFamily: t.font.space.semibold,
+  },
+  detailsBtn: {
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: t.surfaceContainer,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  detailsText: {
+    ...t.type.labelMd,
+    color: t.text,
+    fontFamily: t.font.space.bold,
+  },
+  pendingBox: {
+    backgroundColor: t.surfaceContainerLow,
+    borderRadius: 12,
+    padding: 12,
+    gap: 8,
+  },
+  pendingBoxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  pendingWhen: {
+    ...t.type.labelMd,
+    color: t.text,
+    fontFamily: t.font.space.bold,
+    flexShrink: 1,
+  },
+  pendingLoc: { ...t.type.labelSm, color: t.textSecondary, flexShrink: 1 },
+  pendingInfoRow: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
+  pendingInfo: { ...t.type.bodySm, color: t.textSecondary, flex: 1, fontSize: 12 },
+  pendingActions: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(232,232,233,0.9)",
+    paddingTop: 10,
+    alignItems: "flex-end",
+  },
+  cancelRequest: {
+    ...t.type.labelMd,
+    color: t.textSecondary,
+    fontFamily: t.font.space.medium,
+    minHeight: t.touchMin,
+    textAlignVertical: "center",
+    paddingVertical: 10,
+  },
+  pastCard: {
+    backgroundColor: t.surfaceContainerLowest,
+    borderRadius: t.radiusMain,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.75)",
+    borderLeftWidth: 3,
+    borderLeftColor: t.secondaryFixedDim,
+    shadowColor: "#1A1C1D",
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  pastCardWalk: {
+    borderLeftColor: "#576158",
+  },
+  pastCardEvening: {
+    borderLeftColor: t.primary,
+  },
+  pastTitle: {
+    fontFamily: t.font.space.bold,
+    fontSize: 17,
+    lineHeight: 22,
+    letterSpacing: -0.3,
+    color: t.text,
+  },
+  doneMark: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  empty: {
+    backgroundColor: t.surfaceContainerLow,
+    borderRadius: t.radiusMain,
+    padding: 32,
+    alignItems: "center",
+    gap: 12,
+    maxWidth: 480,
+    alignSelf: "center",
+    width: "100%",
+  },
+  emptyCompact: {
+    backgroundColor: t.surfaceContainerLow,
+    borderRadius: t.radiusMain,
+    padding: 24,
+    gap: 8,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: t.surfaceContainer,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyTitle: {
+    ...t.type.section,
+    color: t.text,
+    textAlign: "center",
+    fontSize: 18,
+  },
+  emptyBody: {
+    ...t.type.bodySm,
+    color: t.textSecondary,
+    textAlign: "center",
+  },
+  exploreBtn: {
+    marginTop: 8,
+    minHeight: 44,
+    paddingHorizontal: 24,
+    borderRadius: t.radiusChip,
+    backgroundColor: t.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  exploreText: {
+    ...t.type.labelMd,
+    color: t.onPrimary,
+    fontFamily: t.font.space.bold,
+    fontSize: 14,
+  },
+  exploreGhost: {
+    marginTop: 4,
+    minHeight: 44,
+    paddingHorizontal: 20,
+    borderRadius: t.radiusChip,
+    backgroundColor: t.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: "rgba(0,95,52,0.2)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  exploreGhostText: {
+    ...t.type.labelMd,
+    color: t.primary,
+    fontFamily: t.font.space.bold,
+    fontSize: 14,
   },
 });

@@ -6,8 +6,13 @@ node_modules/
 # Expo
 .expo/
 dist/
+dist-connected/
+dist-demo/
 web-build/
 expo-env.d.ts
+
+# Local serverless packaging proof (not deploy artifacts)
+.packaging/
 
 # Native
 .kotlin/

@@ -1,0 +1,137 @@
+SHOT /opt/cursor/artifacts/create-j-Revue-00-start.png
+PASS Revue_sim_phone 
+Ton numéro
+Mode simulation — aucun SMS n’est envoyé. Entre le code indiqué ci-dessous à l’étape suivante.
+🇲🇦
++212
+▾
+
+PASS Revue_no_auto_sms_claim_on_phone 
+Ton numéro
+Mode simulation — aucun SMS n’est envoyé. Entre le code indiqué ci-dessous à l’étape suivante.
+🇲🇦
++212
+▾
+
+SHOT /opt/cursor/artifacts/create-j-Revue-01-phone.png
+PASS Revue_sim_verify 
+Code de simulation
+Simulation — aucun SMS envoyé à +212 7080 60 33 7. Entre le code 000000.
+Pas de renvoi SMS — code d
+PASS Revue_no_code_auto_received 
+Code de simulation
+Simulation — aucun SMS envoyé à +212 7080 60 33 7. Entre le code 000000.
+Pas de renvoi SMS — code d
+SHOT /opt/cursor/artifacts/create-j-Revue-02-verify.png
+SHOT /opt/cursor/artifacts/create-j-Revue-03-role.png
+SHOT /opt/cursor/artifacts/create-j-Revue-04-pace.png
+PASS Revue_pace_no_group_letters 
+Allure de course (optionnel)
+Utile seulement si tu cours. Marche, langue ou découverte : tu peux passer sans choisir d
+SHOT /opt/cursor/artifacts/create-j-Revue-05-create-club.png
+SHOT /opt/cursor/artifacts/create-j-Revue-06-welcome.png
+PASS Revue_welcome_natural_copy BIENVENUE · ÉTAPE FINALE
+C’est prêt, Revue.
+Récap de ton parcours — tu pourras tout ajuster plus tard.
+PARCOURS
+Créer un
+PASS Revue_welcome_has_club BIENVENUE · ÉTAPE FINALE
+C’est prêt, Revue.
+Récap de ton parcours — tu pourras tout ajuster plus tard.
+PARCOURS
+Créer un
+PASS Revue_welcome_no_youssef BIENVENUE · ÉTAPE FINALE
+C’est prêt, Revue.
+Récap de ton parcours — tu pourras tout ajuster plus tard.
+PARCOURS
+Créer un
+SHOT /opt/cursor/artifacts/create-j-Revue-07-home.png
+SHOT /opt/cursor/artifacts/create-j-Revue-08-clubs.png
+PASS Revue_clubs_hub_loaded Clubs
+Membre confirmé · Fondé 2026
+MES CLUBS
+Marche revue A
+Casa Running Club
+MRA
+Marche revue A
+Casablanca · Club publi
+PASS Revue_clubs_shows_new_club Clubs
+Membre confirmé · Fondé 2026
+MES CLUBS
+Marche revue A
+Casa Running Club
+MRA
+Marche revue A
+Casablanca · Club publi
+PASS Revue_clubs_admin Clubs
+Membre confirmé · Fondé 2026
+MES CLUBS
+Marche revue A
+Casa Running Club
+MRA
+Marche revue A
+Casablanca · Club publi
+PASS Revue_no_elite_running_groups Clubs
+Membre confirmé · Fondé 2026
+MES CLUBS
+Marche revue A
+Casa Running Club
+MRA
+Marche revue A
+Casablanca · Club publi
+PASS Revue_no_toi_groupe_d_on_skip Clubs
+Membre confirmé · Fondé 2026
+MES CLUBS
+Marche revue A
+Casa Running Club
+MRA
+Marche revue A
+Casablanca · Club publi
+PASS Revue_display_name_not_coureur Clubs
+Membre confirmé · Fondé 2026
+MES CLUBS
+Marche revue A
+Casa Running Club
+MRA
+Marche revue A
+Casablanca · Club publi
+SHOT /opt/cursor/artifacts/create-j-Revue-09-reload-clubs.png
+PASS Revue_reload_keeps_club Clubs
+Membre confirmé · Fondé 2026
+MES CLUBS
+Marche revue A
+Casa Running Club
+MRA
+Marche revue A
+Casablanca · Club publi
+PASS Revue_reload_keeps_name Clubs
+Membre confirmé · Fondé 2026
+MES CLUBS
+Marche revue A
+Casa Running Club
+MRA
+Marche revue A
+Casablanca · Club publi
+SHOT /opt/cursor/artifacts/create-j-second-00-form.png
+SHOT /opt/cursor/artifacts/create-j-second-01-after.png
+SHOT /opt/cursor/artifacts/create-j-second-02-clubs.png
+PASS second_club_exists_or_listed Clubs
+Membre confirmé · Fondé 2026
+MES CLUBS
+Marche revue A
+Casa Running Club
+English Walk B
+EWB
+English Walk B
+Rabat · 
+PASS first_club_preserved Clubs
+Membre confirmé · Fondé 2026
+MES CLUBS
+Marche revue A
+Casa Running Club
+English Walk B
+EWB
+English Walk B
+Rabat · 
+PASS invite_not_marked_pass blocker recorded — no fabricated invite PASS
+SUMMARY { pass: 19, fail: 0 }

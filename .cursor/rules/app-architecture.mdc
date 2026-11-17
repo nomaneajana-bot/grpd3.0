@@ -1,0 +1,28 @@
+---
+description: Permanent application architecture rules
+alwaysApply: true
+---
+
+# Application architecture (permanent)
+
+`APP_BLUEPRINT.md` at the repository root is the **authoritative** reference for product architecture (screens, navigation, interactions, journeys, business rules, known gaps). Prefer its **remediation addendum / tip surface** and `docs/audit/architecture-remediation/` over older numbered §1–§10 rows (those rows are the avenir `@3ba6775` audit kept for provenance).
+
+**Canonical issues:** `docs/product/ISSUE_REGISTER.md` only — do not invent a second register.  
+**Working decisions** in `docs/audit/architecture-remediation/WORKING_DECISIONS.md` are implementation defaults for authorized work — **not** OCIF approvals.
+
+## Required practice
+
+1. **Consult the blueprint** (and remediation addendum) before planning or implementing changes.
+2. **Do not contradict** approved requirements in the blueprint by adding screens, routes, workflows, or behaviors that conflict with it.
+3. **Place every feature** in the existing screen hierarchy before implementing. If it has no place, stop and ask — do not invent a new surface silently.
+4. **Every interactive element** you add or change must have a defined purpose and expected behavior.
+5. **Update `APP_BLUEPRINT.md`** in the same change when you alter navigation, screens, workflows, business logic, or known gaps.
+6. **Never silently invent product requirements.** Label uncertainty as UNKNOWN. Prefer CONFIRMED / INFERRED / UNKNOWN.
+7. **Flag inconsistencies** between the blueprint and the codebase before deciding which is correct.
+8. **After completing a feature, verify** navigation, handlers, forms/validation, empty/error/loading, and affected journeys.
+9. **Preserve** established UI patterns; do not redesign unless the task requires it.
+10. **Do not create** unnecessary screens or features outside approved scope.
+11. **Keep this rule concise** — detail lives in `APP_BLUEPRINT.md` and remediation docs.
+12. **Maintain the blueprint** for the full development lifecycle.
+
+`docs/architecture.md` and `docs/dead-routes.md` are **historical/stale** (bannered). They are not authoritative when they conflict with `APP_BLUEPRINT.md`. Preserve them as provenance; do not treat their action lists as current work.

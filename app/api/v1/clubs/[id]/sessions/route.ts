@@ -1,9 +1,9 @@
 // GET /api/v1/clubs/:id/sessions – upcoming sessions for the club
 
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { clubIdParamSchema } from "@/lib/server/validators";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { clubIdParamSchema } from "../../../../../../lib/server/validators";
 
 const todayStart = (): Date => {
   const d = new Date();

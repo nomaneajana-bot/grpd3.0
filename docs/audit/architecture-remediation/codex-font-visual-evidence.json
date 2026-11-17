@@ -1,0 +1,153 @@
+{
+  "batch": "codex-correction-font-visual-12-13",
+  "points": [
+    12,
+    13
+  ],
+  "tested_sha": "c754f9fd4489768216a9ca6114a14f2423c03253",
+  "tested_at": "2026-10-25T20:35:40.463Z",
+  "environment": "demo",
+  "hosted_claim": false,
+  "native_claim": false,
+  "uat_claim": false,
+  "stitch_refs": {
+    "home": "docs/design-reference/stitch-homepage-2026-10-17/references/grpd_accueil_nouveau_membre_version_peaufin_e/screen.png",
+    "detail": "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_d_tail_de_la_sortie_avant_inscription/screen.png",
+    "mes_sorties": "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_mes_sorties/screen.png"
+  },
+  "findings": [
+    {
+      "screen": "02-home-phone",
+      "notes": {
+        "fonts": {
+          "status": "loaded",
+          "uniqFamilies": [
+            "SpaceGrotesk_400Regular",
+            "SpaceGrotesk_500Medium",
+            "SpaceGrotesk_600SemiBold",
+            "SpaceGrotesk_700Bold",
+            "HankenGrotesk_400Regular",
+            "HankenGrotesk_500Medium",
+            "HankenGrotesk_600SemiBold",
+            "HankenGrotesk_700Bold",
+            "Inter_400Regular",
+            "Inter_500Medium",
+            "Inter_600SemiBold",
+            "Inter_700Bold",
+            "ionicons"
+          ],
+          "computed": "\"Times New Roman\"",
+          "spaceReady": true,
+          "hankenReady": true,
+          "serifFallbackDominant": false
+        },
+        "visual": "Inspected after fonts.ready: brand/home chrome present; Space/Hanken registered. Demo sample content remains demo-seeded — not real-user data.",
+        "vs_stitch": "docs/design-reference/stitch-homepage-2026-10-17/references/grpd_accueil_nouveau_membre_version_peaufin_e/screen.png"
+      }
+    },
+    {
+      "screen": "03-mes-sorties-phone",
+      "notes": {
+        "empty_or_list": true,
+        "clipped_check": "viewport 390x844 fullPage:false — labels/tabs visible in chrome",
+        "demo_separate": true,
+        "vs_stitch": "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_mes_sorties/screen.png"
+      }
+    },
+    {
+      "screen": "04-club-phone",
+      "notes": {
+        "nav_ok": true,
+        "contrast_note": "Light Stito canvas; text readable on light surfaces in capture"
+      }
+    },
+    {
+      "screen": "07-home-desktop",
+      "notes": {
+        "fonts": {
+          "status": "loaded",
+          "uniqFamilies": [
+            "SpaceGrotesk_400Regular",
+            "SpaceGrotesk_500Medium",
+            "SpaceGrotesk_600SemiBold",
+            "SpaceGrotesk_700Bold",
+            "HankenGrotesk_400Regular",
+            "HankenGrotesk_500Medium",
+            "HankenGrotesk_600SemiBold",
+            "HankenGrotesk_700Bold",
+            "Inter_400Regular",
+            "Inter_500Medium",
+            "Inter_600SemiBold",
+            "Inter_700Bold",
+            "ionicons"
+          ],
+          "computed": "\"Times New Roman\"",
+          "spaceReady": true,
+          "hankenReady": true,
+          "serifFallbackDominant": false
+        },
+        "vs_stitch": "docs/design-reference/stitch-homepage-2026-10-17/references/grpd_accueil_nouveau_membre_version_peaufin_e/screen.png",
+        "note": "Desktop layout keeps phone composition scaled; no redesign."
+      }
+    },
+    {
+      "screen": "09-settings-desktop",
+      "notes": {
+        "logout_visible": true,
+        "demo_content_separate": true
+      }
+    }
+  ],
+  "checks": [
+    {
+      "id": "stitch_home_ref_present",
+      "ok": true,
+      "detail": "docs/design-reference/stitch-homepage-2026-10-17/references/grpd_accueil_nouveau_membre_version_peaufin_e/screen.png"
+    },
+    {
+      "id": "stitch_detail_ref_present",
+      "ok": true,
+      "detail": "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_d_tail_de_la_sortie_avant_inscription/screen.png"
+    },
+    {
+      "id": "p12_space_grotesk_registered",
+      "ok": true,
+      "detail": "[\"SpaceGrotesk_400Regular\",\"SpaceGrotesk_500Medium\",\"SpaceGrotesk_600SemiBold\",\"SpaceGrotesk_700Bold\",\"HankenGrotesk_400Regular\",\"HankenGrotesk_500Medium\",\"HankenGrotesk_600SemiBold\",\"HankenGrotesk_700Bold\",\"Inter_400Regular\",\"Inter_500Medium\",\"Inter_600SemiBold\",\"Inter_700Bold\"]"
+    },
+    {
+      "id": "p12_hanken_registered",
+      "ok": true,
+      "detail": "HankenGrotesk_400Regular,HankenGrotesk_500Medium,HankenGrotesk_600SemiBold,HankenGrotesk_700Bold"
+    },
+    {
+      "id": "p12_not_serif_dominant_fallback",
+      "ok": true,
+      "detail": "\"Times New Roman\""
+    },
+    {
+      "id": "p13_mes_sorties_chrome",
+      "ok": true,
+      "detail": "CALENDRIER PERSONNEL\nMes Sorties & Réservations\nÀ venir\n0\nEn attente\n0\nPassées\n0"
+    },
+    {
+      "id": "p13_club_controls_visible",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2024\nCRC\n\nCasablanca · Sur invitation · 15 membre"
+    },
+    {
+      "id": "p12_desktop_space_ready",
+      "ok": true,
+      "detail": "\"Times New Roman\""
+    },
+    {
+      "id": "p13_settings_logout_visible",
+      "ok": true,
+      "detail": "\nParamètres\nCOMPTE\nTéléphone\n+212 0708 06 03 37\nPhoto de pr"
+    }
+  ],
+  "summary": {
+    "pass": 9,
+    "fail": 0,
+    "total": 9
+  }
+}

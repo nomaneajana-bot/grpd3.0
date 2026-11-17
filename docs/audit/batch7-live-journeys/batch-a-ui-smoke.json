@@ -1,0 +1,82 @@
+{
+  "base": "http://127.0.0.1:8082",
+  "paths": {},
+  "blockers": [
+    {
+      "path": "Rejoindre un club / invite",
+      "exact": "Invite/approval not seeded in Batch A. Without a valid invite code, join cannot be PASSed. Remaining for batch D: invitation create → pending → approval + two-account visibility.",
+      "ui_excerpt": "\nLe code de ton club\nSix lettres ou chiffres — ou colle le lien d’invitation. Sans code valide, l’accès reste bloqué (pas d’approbation inventée).\nou\n\nColler un lien d'invitation\ngrpd.run/c/…\nRejoindre le club\nContinuer sans club"
+    }
+  ],
+  "checks": [
+    {
+      "id": "phone_fill",
+      "ok": true,
+      "detail": "entered 0708060337"
+    },
+    {
+      "id": "sim_hint_phone",
+      "ok": true,
+      "detail": "\nTon numéro\nMode simulation — aucun SMS n’est envoyé. Entre le code indiqué ci-dessous à l’étape suivante.\n🇲🇦\n+212\n▾\nSimulation démo · code 000000 — aucun SMS réel\nEn continuant, tu acceptes nos Co"
+    },
+    {
+      "id": "sim_hint_verify",
+      "ok": true,
+      "detail": "\nCode de simulation\nSimulation — aucun SMS envoyé à +212 7080 60 33 7. Entre le code 000000.\nCode reçu automatiquement\nPas de renvoi SMS — code de simulation : 000000\nVérifier"
+    },
+    {
+      "id": "role_inclusive",
+      "ok": true,
+      "detail": "\nComment tu veux commencer, Revue ?\nMarche, langue, course ou club — on s’adapte à ton rythme, sans imposer la perf.\n\nDécouvrir à mon rythme\nSans club pour l’instant — marche, langue ou course libre\n\nRejoindre un club\nJ’ai un code ou un lien d’invitation\n\nCréer un club\nJe rassemble les miens — g"
+    },
+    {
+      "id": "role_not_runners_only",
+      "ok": true,
+      "detail": "\nComment tu veux commencer, Revue ?\nMarche, langue, course ou club — on s’adapte à ton rythme, sans imposer la perf.\n\nDécouvrir à mon rythme\nSans club pour l’instant — marche, langue ou course libre"
+    },
+    {
+      "id": "pace_no_invented_group",
+      "ok": true,
+      "detail": "\nAllure de course (optionnel)\nUtile seulement si tu cours. Marche, langue ou découverte : tu peux passer — aucun groupe ne sera inventé.\n5'15 /km\nOptionnel — uniquement si tu cours et veux une allure de départ. Aucun groupe inventé.\n3'30\n5'00\n6'30\n8'00+\n4'00\nAllure soutenue\n5'00"
+    },
+    {
+      "id": "welcome_no_youssef",
+      "ok": true,
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nVoici ce que tu as choisi — rien d’autre n’est inventé.\nPARCOURS\nDécouvrir à mon rythme\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nALLURE\nNon renseignée — aucun groupe inventé\nAucune séance n’est réservée automatiquement. Tu rejoins "
+    },
+    {
+      "id": "welcome_no_fake_outing",
+      "ok": true,
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nVoici ce que tu as choisi — rien d’autre n’est inventé.\nPARCOURS\nDécouvrir à mon rythme\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nALLURE\nNon renseignée — aucun groupe inventé\nAucune séance n’est réservée automatiquement. Tu rejoins "
+    },
+    {
+      "id": "welcome_truthful",
+      "ok": true,
+      "detail": "BIENVENUE · ÉTAPE FINALE\nC’est prêt, Revue.\nVoici ce que tu as choisi — rien d’autre n’est inventé.\nPARCOURS\nDécouvrir à mon rythme\nINTENTION\nMarche & bien-être\nRYTHME\n3 sorties / semaine (souhait)\nALLURE\nNon renseignée — aucun groupe inventé\nAucune séance n’est réservée automatiquement. Tu rejoins "
+    },
+    {
+      "id": "home_not_onboarding_start",
+      "ok": true,
+      "detail": "G R P D / EN BONNE COMPAGNIE\n\nDehors. Ensemble.\nPour quelque chose.\nUne marche pour se rencontrer. Un run pour pratiquer une langue. Un club où revenir.\n\n\nTout\n\nCommunauté\n\nLangues\n\nAvec un expert\n\nCélibataires\n\nEntraînement\nMarche & course\nM"
+    },
+    {
+      "id": "reload_stays_authed",
+      "ok": true,
+      "detail": "G R P D / EN BONNE COMPAGNIE\n\nDehors. Ensemble.\nPour quelque chose.\nUne marche pour se rencontrer. Un run pour pratiquer une langue. Un club où revenir.\n\n\nTout\n\nCommunauté\n\nLangues\n\nAvec un expert\n\nCélibataires\n\nEntraînement\nMarche & course\nM"
+    },
+    {
+      "id": "create_club_inclusive_copy",
+      "ok": true,
+      "detail": "\nTon club\nNom affiché aux membres. Tu pourras ajuster les groupes ensuite.\nNOM DU CLUB\nVILLE\nCréer le club"
+    },
+    {
+      "id": "join_no_fake_approval",
+      "ok": true,
+      "detail": "\nLe code de ton club\nSix lettres ou chiffres — ou colle le lien d’invitation. Sans code valide, l’accès reste bloqué (pas d’approbation inventée).\nou\n\nColler un lien d'invitation\ngrpd.run/c/…\nRejoindre le club\nContinuer sans club"
+    }
+  ],
+  "summary": {
+    "pass": 13,
+    "fail": 0
+  }
+}

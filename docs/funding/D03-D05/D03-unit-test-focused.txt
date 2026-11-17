@@ -1,0 +1,13 @@
+
+> grpd3.0@1.0.0 test
+> jest --testPathPattern=apiSessionMapper|authStore.unit|connectedJourney --no-coverage
+
+PASS lib/__tests__/authStore.unit.test.ts
+PASS lib/__tests__/connectedJourney.unit.test.ts
+PASS lib/__tests__/apiSessionMapper.unit.test.ts
+
+Test Suites: 3 passed, 3 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        2.133 s
+Ran all test suites matching /apiSessionMapper|authStore.unit|connectedJourney/i.

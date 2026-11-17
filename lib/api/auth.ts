@@ -1,4 +1,6 @@
 import type {
+  EmailAuthInput,
+  EmailAuthResult,
   LogoutInput,
   LogoutResult,
   OtpRequestInput,
@@ -61,6 +63,34 @@ export async function loginWithPin(
 ): Promise<PinAuthResult> {
   return await client.request<PinAuthResult>(
     "/api/v1/auth/pin/login",
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+    { auth: false },
+  );
+}
+
+export async function registerWithEmail(
+  client: ApiClient,
+  input: EmailAuthInput,
+): Promise<EmailAuthResult> {
+  return await client.request<EmailAuthResult>(
+    "/api/v1/auth/email/register",
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+    { auth: false },
+  );
+}
+
+export async function loginWithEmail(
+  client: ApiClient,
+  input: EmailAuthInput,
+): Promise<EmailAuthResult> {
+  return await client.request<EmailAuthResult>(
+    "/api/v1/auth/email/login",
     {
       method: "POST",
       body: JSON.stringify(input),
