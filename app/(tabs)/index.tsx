@@ -13,7 +13,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DiscoveryFilters } from "@/components/home/DiscoveryFilters";
 import { HomeHeader } from "@/components/home/HomeHeader";
-import { NewMemberIntro } from "@/components/home/NewMemberIntro";
 import {
   NEXT_OUTING_DOCK_COLLAPSED,
   NextOutingDock,
@@ -51,7 +50,6 @@ import type { ClubMembership } from "@/types/api";
  * Authenticated Accueil — discovery first, next outing pinned as dock.
  */
 export default function HomeScreen() {
-  const discoveryAnchorRef = useRef<View>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   const [activityFilter, setActivityFilter] =
@@ -176,13 +174,6 @@ export default function HomeScreen() {
     router.push(`/session/${id}` as Href);
   };
 
-  const scrollToDiscovery = () => {
-    discoveryAnchorRef.current?.measureInWindow((_x, y) => {
-      const target = Math.max(0, y - 72);
-      scrollRef.current?.scrollTo({ y: target, animated: true });
-    });
-  };
-
   const dockClearance = nextOuting ? NEXT_OUTING_DOCK_COLLAPSED + 20 : 0;
   const scrollPadBottom = 28 + dockClearance;
 
@@ -222,11 +213,7 @@ export default function HomeScreen() {
             profileAvatarUrl={profileAvatarUrl}
           />
 
-          <View
-            ref={discoveryAnchorRef}
-            collapsable={false}
-            style={styles.section}
-          >
+          <View style={styles.section}>
             <DiscoveryFilters
               value={activityFilter}
               onChange={setActivityFilter}
@@ -265,8 +252,10 @@ export default function HomeScreen() {
                 ))}
               </View>
             ) : (
-              <View testID="home-discovery-empty">
-                <NewMemberIntro onSeeOutings={scrollToDiscovery} />
+              <View style={styles.emptyBox} testID="home-discovery-empty">
+                <Text style={styles.emptyText}>
+                  Aucune sortie pour ce filtre.
+                </Text>
               </View>
             )}
           </View>
@@ -326,10 +315,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   retryText: { ...h.type.label, color: h.danger },
-  empty: {
-    paddingVertical: h.space.lg,
-    gap: 8,
+  emptyBox: {
+    paddingVertical: h.space.md,
   },
-  emptyTitle: { ...h.type.label, fontSize: 16, color: h.text },
-  emptyBody: { ...h.type.bodySm, color: h.textSecondary },
+  emptyText: {
+    ...h.type.bodySm,
+    color: h.textSecondary,
+  },
 });
