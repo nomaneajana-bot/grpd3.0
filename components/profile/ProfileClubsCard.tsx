@@ -20,21 +20,11 @@ export function ProfileClubsCard({ memberships }: ProfileClubsCardProps) {
   const pending = memberships.filter((m) => m.status === "pending");
 
   if (approved.length === 0 && pending.length === 0) {
+    // Empty: no key CTA / annuaire copy (user removed). Create-club stays on Clubs tab.
     return (
-      <Pressable
-        onPress={() => router.push("/(tabs)/club/access")}
-        accessibilityRole="button"
-        accessibilityLabel="J'ai une clé"
-        testID="profile-join-club"
-        style={styles.card}
-      >
+      <View style={styles.card} testID="profile-clubs-empty">
         <Text style={styles.emptyTitle}>Aucun club</Text>
-        <Text style={styles.emptySub}>
-          Pas d’annuaire — une clé (lien ou code) t’ouvre la porte. Tu peux
-          aussi créer le tien.
-        </Text>
-        <Text style={styles.cta}>J’ai une clé ›</Text>
-      </Pressable>
+      </View>
     );
   }
 
@@ -149,14 +139,6 @@ const styles = StyleSheet.create({
     color: t.text,
     fontSize: 15,
     fontFamily: t.font.space.bold,
-    marginBottom: 4,
-  },
-  emptySub: {
-    color: t.textSecondary,
-    fontSize: 13,
-    lineHeight: 20,
-    marginBottom: 10,
-    fontFamily: t.font.hanken.regular,
   },
   exploreBtn: {
     flexDirection: "row",
