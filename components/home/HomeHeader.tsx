@@ -31,8 +31,8 @@ type HomeHeaderProps = {
 };
 
 /**
- * Accueil top — city + mark, full-width day control, editorial title.
- * No greeting subtitle; day chevron sits at the far right (no left cluster).
+ * Accueil top as three separate bands — location, day, title —
+ * not one stacked greeting block. No subtitle. No Bienvenue card.
  */
 export function HomeHeader({
   cityLabel,
@@ -56,64 +56,70 @@ export function HomeHeader({
 
   return (
     <View style={styles.wrap} testID="home-header">
-      <View style={styles.topRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Ville : ${cityLabel}. Changer de ville`}
-          onPress={() => {
-            setDayOpen(false);
-            setCityOpen((v) => !v);
-          }}
-          style={({ pressed }) => [
-            styles.cityBtn,
-            pressed && { opacity: 0.85 },
-          ]}
-          testID="home-city-chip"
-        >
-          <Ionicons name="location" size={19} color={h.primary} />
-          <Text style={styles.cityText} numberOfLines={1}>
-            {cityLabel}
-          </Text>
-          <Ionicons
-            name={cityOpen ? "chevron-up" : "chevron-down"}
-            size={18}
-            color={h.outline}
-          />
-        </Pressable>
+      {/* Band 1 — Explorer / location */}
+      <View style={styles.band} testID="home-header-location">
+        <View style={styles.topRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Ville : ${cityLabel}. Changer de ville`}
+            onPress={() => {
+              setDayOpen(false);
+              setCityOpen((v) => !v);
+            }}
+            style={({ pressed }) => [
+              styles.cityBtn,
+              pressed && { opacity: 0.85 },
+            ]}
+            testID="home-city-chip"
+          >
+            <Ionicons name="location" size={19} color={h.primary} />
+            <Text style={styles.cityText} numberOfLines={1}>
+              {cityLabel}
+            </Text>
+            <Ionicons
+              name={cityOpen ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={h.outline}
+            />
+          </Pressable>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Ouvrir le profil"
-          onPress={() => router.push("/(tabs)/profile" as Href)}
-          style={({ pressed }) => [
-            styles.avatarBtn,
-            pressed && { opacity: 0.85 },
-          ]}
-          testID="home-profile-btn"
-        >
-          <Avatar
-            initial={profileInitial.slice(0, 1)}
-            uri={profileAvatarUrl}
-            size={36}
-            backgroundColor={h.primary}
-            testID="home-profile-avatar"
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Ouvrir le profil"
+            onPress={() => router.push("/(tabs)/profile" as Href)}
+            style={({ pressed }) => [
+              styles.avatarBtn,
+              pressed && { opacity: 0.85 },
+            ]}
+            testID="home-profile-btn"
+          >
+            <Avatar
+              initial={profileInitial.slice(0, 1)}
+              uri={profileAvatarUrl}
+              size={36}
+              backgroundColor={h.primary}
+              testID="home-profile-avatar"
+            />
+          </Pressable>
+        </View>
+
+        {cityOpen ? (
+          <CitySlider
+            value={cityLabel}
+            onChange={(city) => {
+              if (onCitySelect) onCitySelect(city);
+              else onQueryChange(city);
+              setCityOpen(false);
+            }}
+            testID="home-city-slider"
           />
-        </Pressable>
+        ) : null}
       </View>
 
-      {cityOpen ? (
-        <CitySlider
-          value={cityLabel}
-          onChange={(city) => {
-            if (onCitySelect) onCitySelect(city);
-            else onQueryChange(city);
-            setCityOpen(false);
-          }}
-          testID="home-city-slider"
-        />
-      ) : null}
+      <View style={styles.rule} />
 
-      <View style={styles.greeting}>
+      {/* Band 2 — Date (its own plane) */}
+      <View style={styles.band} testID="home-header-day">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Jour : ${dayEyebrow}. Changer de jour`}
@@ -148,7 +154,12 @@ export function HomeHeader({
             }}
           />
         ) : null}
+      </View>
 
+      <View style={styles.rule} />
+
+      {/* Band 3 — Title alone */}
+      <View style={styles.titleBand} testID="home-header-title">
         <Text
           style={styles.title}
           accessibilityRole="header"
@@ -162,14 +173,27 @@ export function HomeHeader({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: h.space.sm, width: "100%", alignSelf: "stretch" },
+  wrap: {
+    width: "100%",
+    alignSelf: "stretch",
+    gap: 0,
+  },
+  band: {
+    width: "100%",
+    alignSelf: "stretch",
+    paddingVertical: 10,
+    gap: 8,
+  },
+  rule: {
+    height: StyleSheet.hairlineWidth,
+    width: "100%",
+    backgroundColor: "rgba(190,202,190,0.55)",
+  },
   topRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    paddingTop: 0,
-    paddingBottom: 0,
   },
   cityBtn: {
     flexDirection: "row",
@@ -179,7 +203,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     marginRight: 12,
-    paddingVertical: 4,
+    paddingVertical: 2,
   },
   cityText: {
     fontFamily: h.font.space.semibold,
@@ -198,21 +222,14 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     flexShrink: 0,
   },
-  greeting: {
-    paddingTop: 2,
-    paddingBottom: 2,
-    gap: 10,
-    width: "100%",
-    alignSelf: "stretch",
-  },
   dayBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
     gap: 12,
-    paddingVertical: 4,
-    minHeight: 32,
+    paddingVertical: 2,
+    minHeight: 28,
   },
   dayEyebrow: {
     fontFamily: h.font.hanken.bold,
@@ -224,6 +241,12 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  titleBand: {
+    width: "100%",
+    alignSelf: "stretch",
+    paddingTop: 14,
+    paddingBottom: 6,
+  },
   title: {
     fontFamily: h.font.space.bold,
     fontSize: 36,
@@ -232,6 +255,5 @@ const styles = StyleSheet.create({
     color: h.text,
     fontWeight: "700",
     width: "100%",
-    alignSelf: "stretch",
   },
 });
