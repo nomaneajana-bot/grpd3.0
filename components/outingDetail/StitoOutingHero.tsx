@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 
 import { stitoTheme as t } from "@/constants/stitoTheme";
+import { COVER_FALLBACK } from "@/lib/outingCovers";
 
 type Props = {
   title: string;
@@ -24,7 +25,9 @@ export function StitoOutingHero({
   contextLabel,
   coverImageUrl,
 }: Props) {
-  const cover = coverImageUrl?.trim() || null;
+  const raw = coverImageUrl?.trim() || null;
+  const [failed, setFailed] = useState(false);
+  const cover = raw ? (failed ? COVER_FALLBACK : raw) : null;
   return (
     <View style={styles.wrap} testID="stito-outing-hero">
       {cover ? (
@@ -34,6 +37,9 @@ export function StitoOutingHero({
           resizeMode="cover"
           accessibilityIgnoresInvertColors
           testID="stito-outing-cover"
+          onError={() => {
+            if (!failed && cover !== COVER_FALLBACK) setFailed(true);
+          }}
         />
       ) : (
         <View style={styles.glow} pointerEvents="none" />

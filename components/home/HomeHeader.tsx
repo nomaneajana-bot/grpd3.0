@@ -31,8 +31,8 @@ type HomeHeaderProps = {
 };
 
 /**
- * Accueil top as three separate bands — location, day, title —
- * not one stacked greeting block. No subtitle. No Bienvenue card.
+ * Accueil top — city + date on one meta line (city first), then title.
+ * No subtitle. No Bienvenue card.
  */
 export function HomeHeader({
   cityLabel,
@@ -56,32 +56,61 @@ export function HomeHeader({
 
   return (
     <View style={styles.wrap} testID="home-header">
-      {/* Band 1 — Explorer / location */}
-      <View style={styles.band} testID="home-header-location">
-        <View style={styles.topRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Ville : ${cityLabel}. Changer de ville`}
-            onPress={() => {
-              setDayOpen(false);
-              setCityOpen((v) => !v);
-            }}
-            style={({ pressed }) => [
-              styles.cityBtn,
-              pressed && { opacity: 0.85 },
-            ]}
-            testID="home-city-chip"
-          >
-            <Ionicons name="location" size={19} color={h.primary} />
-            <Text style={styles.cityText} numberOfLines={1}>
-              {cityLabel}
+      <View style={styles.metaBand} testID="home-header-location">
+        <View style={styles.metaRow}>
+          <View style={styles.metaLeft}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Ville : ${cityLabel}. Changer de ville`}
+              onPress={() => {
+                setDayOpen(false);
+                setCityOpen((v) => !v);
+              }}
+              style={({ pressed }) => [
+                styles.cityBtn,
+                pressed && { opacity: 0.85 },
+              ]}
+              testID="home-city-chip"
+            >
+              <Ionicons name="location" size={17} color={h.primary} />
+              <Text style={styles.cityText} numberOfLines={1}>
+                {cityLabel}
+              </Text>
+              <Ionicons
+                name={cityOpen ? "chevron-up" : "chevron-down"}
+                size={16}
+                color={h.outline}
+              />
+            </Pressable>
+
+            <Text style={styles.metaSep} accessible={false}>
+              ·
             </Text>
-            <Ionicons
-              name={cityOpen ? "chevron-up" : "chevron-down"}
-              size={18}
-              color={h.outline}
-            />
-          </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Jour : ${dayEyebrow}. Changer de jour`}
+              accessibilityState={{ expanded: dayOpen }}
+              onPress={() => {
+                setCityOpen(false);
+                setDayOpen((v) => !v);
+              }}
+              style={({ pressed }) => [
+                styles.dayBtn,
+                pressed && { opacity: 0.85 },
+              ]}
+              testID="home-day-eyebrow"
+            >
+              <Text style={styles.dayEyebrow} numberOfLines={1}>
+                {dayEyebrow}
+              </Text>
+              <Ionicons
+                name={dayOpen ? "chevron-up" : "chevron-down"}
+                size={14}
+                color={h.outline}
+              />
+            </Pressable>
+          </View>
 
           <Pressable
             accessibilityRole="button"
@@ -114,51 +143,23 @@ export function HomeHeader({
             testID="home-city-slider"
           />
         ) : null}
-      </View>
-
-      <View style={styles.rule} />
-
-      {/* Band 2 — Date (its own plane) */}
-      <View style={styles.band} testID="home-header-day">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Jour : ${dayEyebrow}. Changer de jour`}
-          accessibilityState={{ expanded: dayOpen }}
-          onPress={() => {
-            setCityOpen(false);
-            setDayOpen((v) => !v);
-          }}
-          style={({ pressed }) => [
-            styles.dayBtn,
-            pressed && { opacity: 0.85 },
-          ]}
-          testID="home-day-eyebrow"
-        >
-          <Text style={styles.dayEyebrow} numberOfLines={1}>
-            {dayEyebrow}
-          </Text>
-          <Ionicons
-            name={dayOpen ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={h.outline}
-          />
-        </Pressable>
 
         {dayOpen ? (
-          <DaySlider
-            options={dayOptions}
-            value={selectedDayISO}
-            onChange={(iso) => {
-              onDayChange(iso);
-              setDayOpen(false);
-            }}
-          />
+          <View testID="home-header-day">
+            <DaySlider
+              options={dayOptions}
+              value={selectedDayISO}
+              onChange={(iso) => {
+                onDayChange(iso);
+                setDayOpen(false);
+              }}
+            />
+          </View>
         ) : null}
       </View>
 
       <View style={styles.rule} />
 
-      {/* Band 3 — Title alone */}
       <View style={styles.titleBand} testID="home-header-title">
         <Text
           style={styles.title}
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     gap: 0,
   },
-  band: {
+  metaBand: {
     width: "100%",
     alignSelf: "stretch",
     paddingVertical: 10,
@@ -189,29 +190,43 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: "rgba(190,202,190,0.55)",
   },
-  topRow: {
+  metaRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
+    gap: 10,
+  },
+  metaLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    minWidth: 0,
+    gap: 6,
   },
   cityBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
     minHeight: 36,
-    flex: 1,
-    minWidth: 0,
-    marginRight: 12,
+    flexShrink: 1,
+    maxWidth: "48%",
     paddingVertical: 2,
   },
   cityText: {
     fontFamily: h.font.space.semibold,
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 18,
     letterSpacing: -0.2,
     color: h.text,
     flexShrink: 1,
+  },
+  metaSep: {
+    fontFamily: h.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 16,
+    color: h.outline,
+    flexShrink: 0,
   },
   avatarBtn: {
     width: 36,
@@ -225,21 +240,20 @@ const styles = StyleSheet.create({
   dayBtn: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    gap: 12,
+    gap: 4,
+    flexShrink: 1,
+    minWidth: 0,
     paddingVertical: 2,
-    minHeight: 28,
+    minHeight: 36,
   },
   dayEyebrow: {
     fontFamily: h.font.hanken.bold,
-    fontSize: 12,
-    lineHeight: 16,
-    letterSpacing: 1.2,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.9,
     textTransform: "uppercase",
     color: h.outline,
-    flex: 1,
-    minWidth: 0,
+    flexShrink: 1,
   },
   titleBand: {
     width: "100%",

@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { homeTheme as h } from "@/constants/homeTheme";
+import { COVER_FALLBACK } from "@/lib/outingCovers";
 import {
   activityLabel,
   confirmedParticipantCount,
@@ -59,7 +60,16 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
   const count = confirmedParticipantCount(session);
   const hostInitials = initialsFromName(host) || (isWalk ? "M" : "C");
   const ctaLabel = joined ? "Voir" : "Rejoindre";
-  const cover = session.coverImageUrl?.trim() || null;
+  const rawCover = session.coverImageUrl?.trim() || null;
+  const [coverFailed, setCoverFailed] = useState(false);
+  // Prefer session imagery; if the remote 404s, swap to a verified stock cover
+  // so Accueil never shows a dead grey rectangle with only the type chip.
+  const coverUri = rawCover
+    ? coverFailed
+      ? COVER_FALLBACK
+      : rawCover
+    : null;
+  const showCover = Boolean(coverUri);
 
   const facts = [
     dist,
@@ -68,7 +78,7 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
   ].filter(Boolean) as string[];
 
   const hasExtraChips = womenOnly || language || joined;
-  const whenWithType = cover
+  const whenWithType = showCover
     ? whereLine || "À venir"
     : [activity, whereLine || "À venir"].filter(Boolean).join(" · ");
 
@@ -80,13 +90,18 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       testID={`home-outing-row-${session.id}`}
     >
-      {cover ? (
+      {showCover && coverUri ? (
         <View style={styles.coverWrap} testID={`home-outing-cover-${session.id}`}>
           <Image
-            source={{ uri: cover }}
+            source={{ uri: coverUri }}
             style={styles.cover}
             resizeMode="cover"
             accessibilityIgnoresInvertColors
+            onError={() => {
+              if (!coverFailed && coverUri !== COVER_FALLBACK) {
+                setCoverFailed(true);
+              }
+            }}
           />
           <View
             style={[
@@ -132,7 +147,7 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
       {hasExtraChips ? (
         <View
           style={styles.labels}
-          testID={cover ? undefined : `home-outing-labels-${session.id}`}
+          testID={showCover ? undefined : `home-outing-labels-${session.id}`}
         >
           {womenOnly ? (
             <View style={styles.chipWomen} testID={`home-outing-women-${session.id}`}>

@@ -1,6 +1,7 @@
 // Shared session data - exported from session detail screen for reuse
 
 import { formatDateLabel } from "./dateHelpers";
+import { OUTING_COVERS } from "./outingCovers";
 import type { Workout } from "./workoutTypes";
 
 export type PaceGroup = {
@@ -216,6 +217,7 @@ export const SESSION_MAP: Record<string, SessionData> = {
     coachName: "Amélie Traoré",
     coachAdvice:
       "Reprise douce, uniquement entre femmes — ambiance bienveillante.",
+    coverImageUrl: OUTING_COVERS.womenPack,
     paceGroups: [
       {
         id: "A",
@@ -259,8 +261,7 @@ export const SESSION_MAP: Record<string, SessionData> = {
     volume: "3:00 effort x 6 · Récup 2:00",
     targetPace: "5:20–6:00/km",
     estimatedDistanceKm: 10,
-    coverImageUrl:
-      "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1200&q=80",
+    coverImageUrl: OUTING_COVERS.packRoad,
     paceGroups: [
       {
         id: "A",

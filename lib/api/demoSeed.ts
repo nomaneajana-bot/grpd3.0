@@ -21,6 +21,7 @@ import type {
   SessionParticipantsResult,
 } from "../../types/api";
 import { DEMO_MODE } from "../featureFlags";
+import { OUTING_COVERS } from "../outingCovers";
 
 export const MOCK_SESSIONS_KEY = "mock:sessions";
 export const MOCK_ATTENDANCE_KEY = "mock:attendance";
@@ -31,29 +32,11 @@ export const MOCK_MEMBERSHIPS_KEY = "mock:club_memberships";
 export const MOCK_OTP_KEY = "mock:otp";
 /** Bump to force a one-time reseed of the richer Casablanca world. */
 export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v5";
-export const DEMO_SEED_VERSION = "8";
+/** v9: replace dead Unsplash cover IDs (404 → blank grey Accueil covers). */
+export const DEMO_SEED_VERSION = "9";
 
-/** Distinct outing covers — avoid repeating the same stock silhouette. */
-const COVER = {
-  cornicheDawn:
-    "https://images.unsplash.com/photo-1486218119243-13883505769c?auto=format&fit=crop&w=1200&q=80",
-  trackNight:
-    "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?auto=format&fit=crop&w=1200&q=80",
-  packRoad:
-    "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1200&q=80",
-  cityStride:
-    "https://images.unsplash.com/photo-1513593771513-7b58b6c4af38?auto=format&fit=crop&w=1200&q=80",
-  trailLight:
-    "https://images.unsplash.com/photo-1461896836934-ffe607ba6851?auto=format&fit=crop&w=1200&q=80",
-  waterfront:
-    "https://images.unsplash.com/photo-1541252260730-0412e8e2108e?auto=format&fit=crop&w=1200&q=80",
-  womenPack:
-    "https://images.unsplash.com/photo-1594882645126-14020914d110?auto=format&fit=crop&w=1200&q=80",
-  longRun:
-    "https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?auto=format&fit=crop&w=1200&q=80",
-  walkPark:
-    "https://images.unsplash.com/photo-1476610182048-b716b8518aae?auto=format&fit=crop&w=1200&q=80",
-} as const;
+/** Distinct outing covers — live Unsplash IDs only (verified HTTP 200). */
+const COVER = OUTING_COVERS;
 
 export const DEMO_CLUB_ID = "club_casa_running";
 export const DEMO_CLUB_NAME = "Casa Running Club";
