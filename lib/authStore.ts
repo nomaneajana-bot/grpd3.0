@@ -64,17 +64,22 @@ export async function getAuthData(): Promise<StoredAuthData | null> {
       DEVICE_ID_KEY,
     ]);
 
-    if (!tokensJson[1] || !userJson[1] || !deviceId[1]) {
+    // Tokens + user are enough to resume; device id is repaired if missing.
+    if (!tokensJson[1] || !userJson[1]) {
       return null;
     }
 
     const tokens = JSON.parse(tokensJson[1]) as TokenBundle;
     const user = JSON.parse(userJson[1]) as AuthUser;
+    let resolvedDeviceId = deviceId[1];
+    if (!resolvedDeviceId) {
+      resolvedDeviceId = await getOrCreateDeviceId();
+    }
 
     return {
       tokens,
       user,
-      deviceId: deviceId[1],
+      deviceId: resolvedDeviceId,
     };
   } catch (error) {
     console.warn('Failed to get auth data:', error);

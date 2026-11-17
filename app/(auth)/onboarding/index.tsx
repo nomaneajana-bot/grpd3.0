@@ -1,30 +1,40 @@
 import { type Href, router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { FeatureRow } from "@/components/onboarding/FeatureRow";
 import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
 import { WelcomeBackground } from "@/components/onboarding/WelcomeBackground";
 import { welcomeTheme } from "@/components/onboarding/onboardingTheme";
-import { getAuthData } from "@/lib/authStore";
+import { restoreStickyDemoTransport } from "@/lib/authStore";
 import {
   clearDemoQueryParam,
   enterDemoSession,
+  hasResumableSession,
   shouldAutoEnterDemo,
 } from "@/lib/demoSession";
 
+/**
+ * Marketing welcome — never shown when a durable session (demo or connected)
+ * is already on disk. Gate the paint until that check finishes.
+ */
 export default function OnboardingWelcomeScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gateReady, setGateReady] = useState(false);
   const autoStarted = useRef(false);
+
+  const goAccueil = () => {
+    clearDemoQueryParam();
+    router.replace("/(tabs)" as Href);
+  };
 
   const handleDemoEnter = async () => {
     setError(null);
     setLoading(true);
     try {
       await enterDemoSession();
-      clearDemoQueryParam();
-      router.replace("/(tabs)" as Href);
+      goAccueil();
     } catch (err: unknown) {
       setError(
         err instanceof Error
@@ -32,6 +42,7 @@ export default function OnboardingWelcomeScreen() {
           : "Impossible d'ouvrir la démo.",
       );
       setLoading(false);
+      setGateReady(true);
     }
   };
 
@@ -40,19 +51,30 @@ export default function OnboardingWelcomeScreen() {
     autoStarted.current = true;
     void (async () => {
       try {
-        const existing = await getAuthData();
-        if (existing) {
-          router.replace("/(tabs)" as Href);
+        await restoreStickyDemoTransport();
+        if (await hasResumableSession()) {
+          goAccueil();
+          return;
+        }
+        if (shouldAutoEnterDemo()) {
+          await handleDemoEnter();
           return;
         }
       } catch {
-        // fall through to optional demo auto-enter
+        // fall through to welcome UI
       }
-      if (shouldAutoEnterDemo()) {
-        await handleDemoEnter();
-      }
+      setGateReady(true);
     })();
   }, []);
+
+  if (!gateReady) {
+    return (
+      <View style={styles.boot} testID="onboarding-welcome-boot">
+        <WelcomeBackground />
+        <ActivityIndicator size="large" color="#FFFFFF" />
+      </View>
+    );
+  }
 
   return (
     <OnboardingScreen
@@ -114,6 +136,12 @@ export default function OnboardingWelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  boot: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0B1F14",
+  },
   content: {},
   top: {
     paddingTop: 16,

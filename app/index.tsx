@@ -2,10 +2,10 @@ import { type Href, Redirect } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 
-import { getAuthData, restoreStickyDemoTransport } from "@/lib/authStore";
+import { restoreStickyDemoTransport } from "@/lib/authStore";
 import {
   clearDemoQueryParam,
-  resumeExistingDemoSession,
+  hasResumableSession,
   shouldAutoEnterDemo,
 } from "@/lib/demoSession";
 import { DEMO_MODE } from "@/lib/featureFlags";
@@ -27,14 +27,7 @@ export default function RootIndex() {
         await restoreStickyDemoTransport();
 
         // Prefer durable auth over re-entering ?demo=1 every refresh.
-        if (await resumeExistingDemoSession()) {
-          clearDemoQueryParam();
-          if (alive) setHref("/(tabs)" as Href);
-          return;
-        }
-
-        const auth = await getAuthData();
-        if (auth) {
+        if (await hasResumableSession()) {
           clearDemoQueryParam();
           if (alive) setHref("/(tabs)" as Href);
           return;
@@ -47,7 +40,13 @@ export default function RootIndex() {
 
         if (alive) setHref("/(auth)/onboarding" as Href);
       } catch {
-        if (alive) setHref("/(auth)/onboarding" as Href);
+        if (alive) {
+          setHref(
+            (DEMO_MODE || shouldAutoEnterDemo()
+              ? "/demo"
+              : "/(auth)/onboarding") as Href,
+          );
+        }
       }
     })();
     return () => {

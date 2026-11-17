@@ -2,7 +2,11 @@ import { type Href, router, usePathname } from "expo-router";
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import { DEMO_MODE, ONBOARDING_V2 } from "../lib/featureFlags";
-import { getAuthData, restoreStickyDemoTransport } from "../lib/authStore";
+import {
+  getAuthData,
+  isDemoSessionActive,
+  restoreStickyDemoTransport,
+} from "../lib/authStore";
 import {
   clearDemoQueryParam,
   enterDemoSession,
@@ -59,7 +63,12 @@ function isAuthFlowRoute(path: string): boolean {
 }
 
 function unauthLandingHref(path: string): Href {
-  if (DEMO_MODE && (path === "/" || path === "" || path === "/demo")) {
+  if (
+    DEMO_MODE ||
+    shouldAutoEnterDemo() ||
+    path === "/demo" ||
+    path.endsWith("/demo")
+  ) {
     return "/demo" as Href;
   }
   // Self-serve email entry is the default unauth landing (PIN/phone is legacy).
@@ -143,11 +152,14 @@ export function useAuthGate(): {
 
           setIsAuthenticated(false);
           setIsLoading(false);
-          // Demo root: send share links to /demo (seeds auth → Accueil).
+
+          // Sticky demo without tokens yet, or ?demo=1 → seed via /demo,
+          // never dump the tester onto the marketing welcome.
+          const stickyDemo = await isDemoSessionActive();
           if (
-            DEMO_MODE &&
-            (livePath === "/" || livePath === "") &&
-            Platform.OS === "web"
+            stickyDemo ||
+            shouldAutoEnterDemo() ||
+            (DEMO_MODE && (livePath === "/" || livePath === ""))
           ) {
             timeoutId = setTimeout(() => {
               if (!isMounted) return;
@@ -159,6 +171,7 @@ export function useAuthGate(): {
             }, 50);
             return;
           }
+
           if (stayOnAuth) {
             return;
           }

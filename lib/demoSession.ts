@@ -58,10 +58,19 @@ export async function resumeExistingDemoSession(): Promise<boolean> {
   const auth = await getAuthData();
   if (!auth) return false;
   const sticky =
-    (await isDemoSessionActive()) || (await shouldUseMockApi());
+    (await isDemoSessionActive()) ||
+    (await shouldUseMockApi()) ||
+    shouldAutoEnterDemo();
   if (!sticky) return false;
   await setDemoSessionActive(true);
   return true;
+}
+
+/** Any durable auth on disk (demo or connected) — skip marketing welcome. */
+export async function hasResumableSession(): Promise<boolean> {
+  await restoreStickyDemoTransport();
+  if (await resumeExistingDemoSession()) return true;
+  return Boolean(await getAuthData());
 }
 
 /** True when the current web URL asks for instant demo entry. */
