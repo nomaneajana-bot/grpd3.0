@@ -16,7 +16,7 @@ import { CancelParticipationModal } from "@/components/mesSorties/CancelParticip
 import { stitoTheme as t } from "@/constants/stitoTheme";
 import { createApiClient, getMySessions, leaveSession } from "@/lib/api";
 import { resolveApiTransport } from "@/lib/api/mode";
-import { DEMO_MODE } from "@/lib/featureFlags";
+import { allowLocalCatalogFallback } from "@/lib/connectedJourney";
 import {
   getJoinedSessions,
   removeJoinedSession,
@@ -133,6 +133,7 @@ export default function MySessionsScreen() {
   const [joinedSessions, setJoinedSessions] = useState<JoinedSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [tab, setTab] = useState<MesSortiesTab>(() =>
     parseMesSortiesTab(params.tab),
   );
@@ -148,42 +149,62 @@ export default function MySessionsScreen() {
   const load = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true);
     else setLoading(true);
+    setLoadError(false);
     try {
       const transport = await resolveApiTransport();
-      const useLocalCatalog = DEMO_MODE || transport.useMock;
+      const useLocalCatalog = allowLocalCatalogFallback(transport.useMock);
       let sessions: SessionData[] = useLocalCatalog
         ? await getAllSessionsIncludingStored()
         : [];
+      let apiOk = useLocalCatalog;
       try {
         const client = createApiClient();
         const apiResult = await getMySessions(client);
         const apiSessions = (apiResult.sessions ?? []).map(
           apiSessionToSessionData,
         );
-        const ids = new Set(sessions.map((s) => s.id));
-        for (const s of apiSessions) {
-          if (!ids.has(s.id)) {
-            sessions = [...sessions, s];
-            ids.add(s.id);
-          } else {
-            sessions = sessions.map((x) => (x.id === s.id ? { ...x, ...s } : x));
+        apiOk = true;
+        if (!useLocalCatalog) {
+          // Connected: API list is the source of truth (real attendanceStatus).
+          sessions = apiSessions;
+        } else {
+          const ids = new Set(sessions.map((s) => s.id));
+          for (const s of apiSessions) {
+            if (!ids.has(s.id)) {
+              sessions = [...sessions, s];
+              ids.add(s.id);
+            } else {
+              sessions = sessions.map((x) =>
+                x.id === s.id ? { ...x, ...s } : x,
+              );
+            }
           }
         }
       } catch (e) {
-        console.warn("API my-sessions failed, using local only:", e);
+        console.warn("API my-sessions failed:", e);
+        if (!useLocalCatalog) {
+          setLoadError(true);
+          setAllSessions([]);
+          setJoinedSessions([]);
+          return;
+        }
       }
       const joined = await getJoinedSessions();
       const jids = new Set(joined.map((j) => j.sessionId));
-      sessions = sessions.map((s) => {
-        if (jids.has(s.id) && !s.attendanceStatus) {
-          return { ...s, attendanceStatus: "joined" as const };
-        }
-        return s;
-      });
+      if (useLocalCatalog) {
+        sessions = sessions.map((s) => {
+          if (jids.has(s.id) && !s.attendanceStatus) {
+            return { ...s, attendanceStatus: "joined" as const };
+          }
+          return s;
+        });
+      }
       setAllSessions(sessions);
-      setJoinedSessions(joined);
+      setJoinedSessions(useLocalCatalog ? joined : []);
+      if (!apiOk && !useLocalCatalog) setLoadError(true);
     } catch (e) {
       console.warn("Failed to load mes sorties:", e);
+      setLoadError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -388,6 +409,23 @@ export default function MySessionsScreen() {
             })}
           </View>
         </View>
+
+        {loadError ? (
+          <View style={styles.errorBox} testID="mes-sorties-error">
+            <Text style={styles.errorText}>
+              Impossible de charger tes sorties en ligne pour le moment.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Réessayer"
+              onPress={() => void load(true)}
+              style={styles.retryBtn}
+              testID="mes-sorties-retry"
+            >
+              <Text style={styles.retryText}>Réessayer</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {tab === "upcoming" ? (
           <View style={styles.section}>
@@ -1072,6 +1110,25 @@ const styles = StyleSheet.create({
     fontFamily: t.font.space.semibold,
   },
   loadingHint: { ...t.type.bodySm, color: t.textSecondary },
+  errorBox: {
+    backgroundColor: "#FDECEA",
+    borderRadius: t.radiusMain,
+    padding: 16,
+    gap: 12,
+    marginBottom: 8,
+  },
+  errorText: { ...t.type.bodySm, color: "#B3261E" },
+  retryBtn: {
+    alignSelf: "flex-start",
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#B3261E",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  retryText: { ...t.type.labelMd, color: "#B3261E" },
   grid: { gap: t.space.md },
   pastGrid: { gap: t.space.md },
   pastTeaser: {

@@ -21,8 +21,17 @@ import {
 import { OrganiseAction } from "@/components/home/OrganiseAction";
 import { OutingRow } from "@/components/home/OutingRow";
 import { homeTheme as h } from "@/constants/homeTheme";
-import { createApiClient, getMyMemberships, listSessions } from "@/lib/api";
+import {
+  createApiClient,
+  getMyMemberships,
+  getMySessions,
+  listSessions,
+} from "@/lib/api";
 import { resolveApiTransport } from "@/lib/api/mode";
+import {
+  allowLocalCatalogFallback,
+  joinedIdsFromAttendance,
+} from "@/lib/connectedJourney";
 import {
   countApprovedClubs,
   countCompletedOutings,
@@ -38,7 +47,6 @@ import {
 } from "@/lib/homeViewModel";
 import { getAuthUser } from "@/lib/authStore";
 import { displayInitial, resolveDisplayName } from "@/lib/displayName";
-import { DEMO_MODE } from "@/lib/featureFlags";
 import { getJoinedSessions } from "@/lib/joinedSessionsStore";
 import { setMesSortiesBadgeCount } from "@/lib/mesSortiesBadge";
 import { getRunnerProfile } from "@/lib/profileStore";
@@ -76,7 +84,7 @@ export default function HomeScreen() {
     const client = createApiClient();
     const transport = await resolveApiTransport();
     // Connected Production must not merge the local demo catalog (Youssef, etc.).
-    const useLocalCatalog = DEMO_MODE || transport.useMock;
+    const useLocalCatalog = allowLocalCatalogFallback(transport.useMock);
     try {
       const [authUser, runner] = await Promise.all([
         getAuthUser(),
@@ -98,6 +106,12 @@ export default function HomeScreen() {
         : Promise.resolve([] as SessionData[]),
       getJoinedSessions(),
       getMyMemberships(client),
+      // Connected: real attendance from API (not device-local join store alone).
+      useLocalCatalog
+        ? Promise.resolve({ sessions: [] as SessionData[] })
+        : getMySessions(client).then((r) => ({
+            sessions: (r.sessions ?? []).map(apiSessionToSessionData),
+          })),
     ]);
 
     const merged = new Map<string, SessionData>();
@@ -116,9 +130,26 @@ export default function HomeScreen() {
       );
     }
 
-    const joined =
+    const localJoined =
       results[3].status === "fulfilled" ? results[3].value : [];
-    const jids = joinedIdSet(joined);
+    const jids = useLocalCatalog
+      ? joinedIdSet(localJoined)
+      : new Set<string>();
+    if (
+      !useLocalCatalog &&
+      results[5].status === "fulfilled"
+    ) {
+      for (const s of results[5].value.sessions) {
+        absorb([s]);
+      }
+      for (const id of joinedIdsFromAttendance(results[5].value.sessions)) {
+        jids.add(id);
+      }
+    } else if (!useLocalCatalog) {
+      // Still allow device cache only as a soft hint after a successful API join
+      // this session — never as the sole source of truth when me/sessions failed.
+      for (const id of joinedIdSet(localJoined)) jids.add(id);
+    }
     for (const id of jids) {
       const s = merged.get(id);
       if (s && !s.attendanceStatus) {

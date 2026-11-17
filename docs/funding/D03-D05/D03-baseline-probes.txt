@@ -1,0 +1,34 @@
+=== 2026-11-17T01:52:04Z baseline probes ===
+--- GET https://grpd30.vercel.app/api/v1/health ---
+{"ok":true,"data":{"service":"grpd-api","database":"ready"}}
+--- POST https://grpd30.vercel.app/api/v1/auth/email/login (bad password) ---
+{"ok":false,"error":{"message":"Email ou mot de passe incorrect","code":"UNAUTHORIZED"}}
+--- GET https://grpd30.vercel.app/api/v1/sessions (first item keys only) ---
+{
+  "ok": true,
+  "count": 2,
+  "first_keys": [
+    "clubId",
+    "createdAt",
+    "dateISO",
+    "dateLabel",
+    "estimatedDistanceKm",
+    "genderRestriction",
+    "hostGroupName",
+    "hostUserId",
+    "id",
+    "isCustom",
+    "meetingPoint",
+    "recommendedGroupId",
+    "spot",
+    "targetPace",
+    "timeMinutes",
+    "title",
+    "typeLabel",
+    "visibility",
+    "volume",
+    "workoutId"
+  ]
+}
+--- email-auth preview health via share cookie ---
+{"ok":true,"data":{"service":"grpd-api","database":"ready"}}

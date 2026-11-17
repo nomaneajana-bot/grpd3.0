@@ -74,6 +74,11 @@ import {
     leaveSession as leaveSessionApi,
     requestSessionAccess,
 } from "../../lib/api";
+import { resolveApiTransport } from "../../lib/api/mode";
+import {
+  allowLocalCatalogFallback,
+  canRecordJoinLocally,
+} from "../../lib/connectedJourney";
 import {
   getRunnerProfile,
   getReferencePaces,
@@ -174,6 +179,8 @@ export default function SessionScreen() {
     const loadSession = async () => {
       setSessionLoadState("loading");
       setSession(undefined);
+      const transport = await resolveApiTransport();
+      const allowLocal = allowLocalCatalogFallback(transport.useMock);
       try {
         const client = createApiClient();
         const apiSession = await getSessionApi(client, id);
@@ -189,14 +196,20 @@ export default function SessionScreen() {
           err && typeof err === "object" && "status" in err
             ? Number((err as { status?: number }).status)
             : null;
-        if (status === 404 || status === 403) {
+        if (status === 404 || status === 403 || !allowLocal) {
           setSession(undefined);
           setSessionLoadState("not_found");
           return;
         }
         console.warn("API get session failed, trying local:", err);
       }
-      // Offline / seed fallback only when the API did not deliberately hide it.
+      if (!allowLocal) {
+        // Connected: missing API payload = inaccessible (no seed resurrection).
+        setSession(undefined);
+        setSessionLoadState("not_found");
+        return;
+      }
+      // Demo/mock seed fallback only.
       try {
         const storedSession = await getSessionById(id);
         if (storedSession) {
@@ -700,6 +713,7 @@ export default function SessionScreen() {
     }
     setIsJoiningOuting(true);
     try {
+      const transport = await resolveApiTransport();
       const client = createApiClient();
       let apiJoined = false;
       try {
@@ -712,14 +726,26 @@ export default function SessionScreen() {
           apiErr && typeof apiErr === "object" && "status" in apiErr
             ? Number((apiErr as { status?: number }).status)
             : null;
-        // Members-only / auth failures must not fake success via local join.
+        console.warn("API join failed:", apiErr);
+        // Connected: never fake success with a local-only join.
+        if (!canRecordJoinLocally({ useMock: transport.useMock, apiJoined: false })) {
+          showToast(
+            status === 403 || session.visibility === "members"
+              ? "Réservé aux membres du club."
+              : status === 503 || status === 500 || status === 502
+                ? "Inscription temporairement impossible. Réessaie."
+                : "Impossible de t'inscrire pour le moment.",
+            "error",
+          );
+          return;
+        }
+        // Demo/mock only: members-only / auth still must not fake success.
         if (
           session.visibility === "members" ||
           status === 401 ||
           status === 403 ||
           status === 404
         ) {
-          console.warn("API join denied:", apiErr);
           showToast(
             status === 403 || session.visibility === "members"
               ? "Réservé aux membres du club."
@@ -728,13 +754,14 @@ export default function SessionScreen() {
           );
           return;
         }
-        // Transient failures (e.g. demo fail-next flag / 5xx): keep join CTA for retry.
         if (status === 503 || status === 500 || status === 502) {
-          console.warn("API join temporary failure:", apiErr);
           showToast("Inscription temporairement impossible. Réessaie.", "error");
           return;
         }
-        console.warn("API join failed, saving locally:", apiErr);
+      }
+      if (!canRecordJoinLocally({ useMock: transport.useMock, apiJoined })) {
+        showToast("Impossible de t'inscrire pour le moment.", "error");
+        return;
       }
       const storedGroupId = currentGroupId || "open";
       await upsertJoinedSession(session.id, storedGroupId);
@@ -743,7 +770,7 @@ export default function SessionScreen() {
       showToast(
         apiJoined
           ? "Tu es inscrit à cette séance."
-          : "Inscription enregistrée sur cet appareil.",
+          : "Inscription enregistrée sur cet appareil (démo).",
         "success",
       );
     } catch (error) {
