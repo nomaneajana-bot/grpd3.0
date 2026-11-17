@@ -73,7 +73,6 @@ export default function EmailLoginScreen() {
           kicker="CONNEXION"
           title="Bon retour."
           titleMuted="Ton email ?"
-          subtitle="Entre l’email et le mot de passe que tu as choisis à l’inscription."
         />
         <View style={styles.fields}>
           <Text style={styles.label}>Email</Text>

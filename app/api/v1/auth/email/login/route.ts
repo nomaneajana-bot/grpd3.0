@@ -39,7 +39,14 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.appUser.findUnique({ where: { email } });
     if (!user || !verifyPassword(parsed.data.password, user.passwordHash)) {
-      return jsonError("Email ou mot de passe incorrect", "UNAUTHORIZED", 401);
+      // Same message whether missing user or bad password (no account leak).
+      // Copy nudges first-time users who never finished signup (e.g. earlier
+      // Preview “Failed to fetch”) toward Créer un compte on this same URL.
+      return jsonError(
+        "Email ou mot de passe incorrect. Vérifie-les, ou crée un compte si c’est ta première fois ici.",
+        "UNAUTHORIZED",
+        401,
+      );
     }
 
     const accessToken = await signAppAccessToken(user.id);
