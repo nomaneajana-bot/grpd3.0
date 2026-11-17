@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
-import { router, Stack, type Href } from "expo-router";
+import { router, Stack, useFocusEffect, type Href } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -149,23 +149,29 @@ export default function SettingsScreen() {
       setUnits(prefs.units);
       setNotifications({ ...prefs.notifications });
 
-      if (runner) {
-        try {
-          const client = createApiClient();
-          const { memberships: loadedMemberships } =
-            await getMyMemberships(client);
-          const list = loadedMemberships ?? [];
-          setMemberships(list);
-          const primary =
-            list.find((m) => m.status === "approved") ?? list[0] ?? null;
-          if (primary?.clubId) {
-            const admin = await getClubAdminSettings(primary.clubId);
-            const mode = admin.defaultInterGroupPolicy ?? "warn";
-            setInterGroupPolicyLabel(interGroupModeLabel(mode));
-          }
-        } catch (error) {
-          console.warn("Failed to load club settings context:", error);
+      try {
+        const client = createApiClient();
+        const { memberships: loadedMemberships } =
+          await getMyMemberships(client);
+        const list = (loadedMemberships ?? []).map((m) => ({
+          ...m,
+          clubId: m.clubId || m.club?.id || "",
+        }));
+        setMemberships(list);
+        const primary =
+          list.find((m) => m.status === "approved" && m.clubId) ??
+          list.find((m) => m.clubId) ??
+          null;
+        if (primary?.clubId) {
+          const admin = await getClubAdminSettings(primary.clubId);
+          const mode = admin.defaultInterGroupPolicy ?? "warn";
+          setInterGroupPolicyLabel(interGroupModeLabel(mode));
+        } else {
+          setInterGroupPolicyLabel("Avertissement");
         }
+      } catch (error) {
+        console.warn("Failed to load club settings context:", error);
+        setMemberships([]);
       }
     } catch (error) {
       console.warn("Failed to load settings:", error);
@@ -174,9 +180,11 @@ export default function SettingsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    void loadSettings();
-  }, [loadSettings]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadSettings();
+    }, [loadSettings]),
+  );
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -190,9 +198,20 @@ export default function SettingsScreen() {
     };
   }, []);
 
+  const resolveClubId = (m: ClubMembership | null | undefined) =>
+    (m?.clubId || m?.club?.id || "").trim();
   const primaryMembership =
-    memberships.find((m) => m.status === "approved") ?? memberships[0] ?? null;
-  const clubName = primaryMembership?.club?.name ?? "ton club";
+    memberships.find(
+      (m) => m.status === "approved" && resolveClubId(m),
+    ) ??
+    memberships.find((m) => resolveClubId(m)) ??
+    null;
+  const primaryClubId = resolveClubId(primaryMembership);
+  const isClubMember = Boolean(primaryClubId);
+  const clubName =
+    primaryMembership?.club?.name?.trim() ||
+    profile?.clubName?.trim() ||
+    null;
 
   const profileName = resolveDisplayName({ profile, authUser });
   const profileInitial = displayInitial(profileName);
@@ -251,20 +270,21 @@ export default function SettingsScreen() {
   };
 
   const handleLeaveClub = async () => {
-    if (!primaryMembership?.clubId) {
+    if (!primaryClubId) {
       Alert.alert("Club", "Tu n'es membre d'aucun club pour le moment.");
       return;
     }
+    const leaveLabel = clubName ?? "ce club";
     const ok = await confirmAction({
       title: "Quitter le club",
-      message: `Tu ne verras plus les séances réservées aux membres de ${clubName}.`,
+      message: `Tu ne verras plus les séances réservées aux membres de ${leaveLabel}.`,
       confirmLabel: "Quitter",
       destructive: true,
     });
     if (!ok) return;
     try {
       const client = createApiClient();
-      await leaveClub(client, primaryMembership.clubId);
+      await leaveClub(client, primaryClubId);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await loadSettings();
       Alert.alert("Club", "Tu as quitté le club.");
@@ -499,16 +519,20 @@ export default function SettingsScreen() {
 
         <SettingsSectionLabel
           subtitle={
-            <Text style={styles.clubSubtitle}>
-              Membre de{" "}
-              <Text style={styles.clubName}>{clubName}</Text>
-            </Text>
+            isClubMember ? (
+              <Text style={styles.clubSubtitle}>
+                Membre de{" "}
+                <Text style={styles.clubName}>{clubName ?? "ton club"}</Text>
+              </Text>
+            ) : (
+              <Text style={styles.clubSubtitle}>Aucun club pour l’instant</Text>
+            )
           }
         >
           CLUB
         </SettingsSectionLabel>
         <SettingsGroup>
-          {primaryMembership?.clubId ? (
+          {isClubMember ? (
             <SettingsNavRow
               title="Politique d'accès inter-groupes"
               value={interGroupPolicyLabel}
@@ -521,11 +545,13 @@ export default function SettingsScreen() {
               showChevron={false}
             />
           )}
-          <SettingsNavRow
-            title="Quitter le club"
-            destructive
-            onPress={() => void handleLeaveClub()}
-          />
+          {isClubMember ? (
+            <SettingsNavRow
+              title="Quitter le club"
+              destructive
+              onPress={() => void handleLeaveClub()}
+            />
+          ) : null}
         </SettingsGroup>
 
         <SettingsSectionLabel>À PROPOS</SettingsSectionLabel>

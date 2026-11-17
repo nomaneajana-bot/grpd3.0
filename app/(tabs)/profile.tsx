@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect, type Href } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   RefreshControl,
@@ -13,6 +13,7 @@ import type { TextStyle, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ProfileClubsCard } from "../../components/profile/ProfileClubsCard";
+import { ProfilePrsCard } from "../../components/profile/ProfilePrsCard";
 import { ProfileSectionHeader } from "../../components/profile/ProfileSectionHeader";
 import { ProfileUserCard } from "../../components/profile/ProfileUserCard";
 import { LoadingState } from "../../components/ui/LoadingState";
@@ -27,8 +28,10 @@ import { pickProfilePhoto } from "../../lib/pickProfilePhoto";
 import {
   getProfileSnapshot,
   getRunnerProfile,
+  getTestRecords,
   saveRunnerProfile,
   type RunnerProfile,
+  type TestRecord,
 } from "../../lib/profileStore";
 import {
   getSettingsPreferences,
@@ -55,6 +58,7 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
+  const [prRecords, setPrRecords] = useState<TestRecord[]>([]);
   const [prefs, setPrefs] = useState<SettingsPreferences | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -82,6 +86,13 @@ export default function ProfileScreen() {
       }
 
       setPrefs(await getSettingsPreferences());
+
+      try {
+        const records = await getTestRecords();
+        setPrRecords(records.slice(0, 6));
+      } catch {
+        setPrRecords([]);
+      }
 
       try {
         const client = createApiClient();
@@ -228,28 +239,8 @@ export default function ProfileScreen() {
           <ProfileSectionHeader title="02 / Équipes & collectifs" />
           <ProfileClubsCard memberships={memberships} />
 
-          <ProfileSectionHeader title="03 / Ton historique" />
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel="Voir mes sorties passées"
-            onPress={() => router.push("/my-sessions?tab=past" as Href)}
-            style={styles.historyRow}
-            activeOpacity={0.85}
-            testID="profile-past-sessions"
-          >
-            <View style={styles.historyLeft}>
-              <View style={styles.historyIcon}>
-                <Ionicons name="time-outline" size={18} color={t.primary} />
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.historyTitle}>Sorties passées</Text>
-                <Text style={styles.historyBody}>
-                  Retrouve ce que tu as déjà couru ou marché
-                </Text>
-              </View>
-            </View>
-            <Text style={styles.historyCta}>Voir →</Text>
-          </TouchableOpacity>
+          <ProfileSectionHeader title="03 / Mes records" />
+          <ProfilePrsCard records={prRecords} />
 
           <ProfileSectionHeader
             title="04 / Préférences"
@@ -278,7 +269,7 @@ export default function ProfileScreen() {
               accessibilityLabel="Ouvrir les paramètres"
               testID="profile-prefs-settings"
             >
-              <Text style={styles.prefLink}>Tout gérer dans Paramètres ›</Text>
+              <Text style={styles.prefLink}>Ouvrir les paramètres</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -294,12 +285,6 @@ type ProfileStyles = {
   gearBtn: ViewStyle;
   scroll: ViewStyle;
   content: ViewStyle;
-  historyRow: ViewStyle;
-  historyLeft: ViewStyle;
-  historyIcon: ViewStyle;
-  historyTitle: TextStyle;
-  historyBody: TextStyle;
-  historyCta: TextStyle;
   prefsCard: ViewStyle;
   prefRow: ViewStyle;
   prefLabel: TextStyle;
@@ -342,52 +327,6 @@ const styles = StyleSheet.create<ProfileStyles>({
     paddingHorizontal: 16,
     paddingTop: 4,
     paddingBottom: 40,
-  },
-  historyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    backgroundColor: t.card,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(232,232,233,0.9)",
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    marginBottom: 16,
-  },
-  historyLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    flex: 1,
-    minWidth: 0,
-  },
-  historyIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(0,95,52,0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  historyTitle: {
-    fontFamily: t.font.hanken.semibold,
-    fontSize: 14,
-    lineHeight: 18,
-    color: t.text,
-  },
-  historyBody: {
-    fontFamily: t.font.hanken.regular,
-    fontSize: 12,
-    lineHeight: 16,
-    color: t.outline,
-    marginTop: 2,
-  },
-  historyCta: {
-    fontFamily: t.font.hanken.semibold,
-    fontSize: 13,
-    color: t.primary,
   },
   prefsCard: {
     backgroundColor: t.card,

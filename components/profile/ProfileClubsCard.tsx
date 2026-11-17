@@ -13,7 +13,7 @@ type ProfileClubsCardProps = {
 
 /**
  * Community clubs on primary profile — no pace-group identity.
- * Stito light cards; real membership data only.
+ * Empty state: no join-by-key CTA (create lives on the Club tab).
  */
 export function ProfileClubsCard({ memberships }: ProfileClubsCardProps) {
   const approved = memberships.filter((m) => m.status === "approved");
@@ -21,23 +21,19 @@ export function ProfileClubsCard({ memberships }: ProfileClubsCardProps) {
 
   if (approved.length === 0 && pending.length === 0) {
     return (
-      <Pressable
-        onPress={() => router.push("/(tabs)/club/access")}
-        accessibilityRole="button"
-        accessibilityLabel="J'ai une clé"
-        testID="profile-join-club"
-        style={styles.emptyCard}
-      >
+      <View style={styles.emptyCard} testID="profile-join-club">
         <Text style={styles.emptyTitle}>Aucun club</Text>
-        <Text style={styles.emptySub}>
-          Pas d’annuaire — une clé (lien ou code) t’ouvre la porte. Tu peux
-          aussi créer le tien.
-        </Text>
-        <View style={styles.emptyCtaRow}>
-          <Ionicons name="key-outline" size={16} color={t.primary} />
-          <Text style={styles.cta}>J’ai une clé</Text>
-        </View>
-      </Pressable>
+        <Pressable
+          onPress={() => router.push("/(tabs)/club/create")}
+          accessibilityRole="button"
+          accessibilityLabel="Créer un club"
+          style={styles.emptyCtaRow}
+          testID="profile-create-club"
+        >
+          <Ionicons name="add-circle-outline" size={16} color={t.primary} />
+          <Text style={styles.cta}>Créer un club</Text>
+        </Pressable>
+      </View>
     );
   }
 
@@ -89,14 +85,14 @@ export function ProfileClubsCard({ memberships }: ProfileClubsCardProps) {
         </View>
       ))}
       <Pressable
-        onPress={() => router.push("/(tabs)/club/access")}
+        onPress={() => router.push("/(tabs)/club")}
         style={styles.exploreBtn}
         accessibilityRole="button"
-        accessibilityLabel="Ajouter un club avec une clé"
+        accessibilityLabel="Voir mes clubs"
         testID="profile-manage-clubs"
       >
-        <Ionicons name="key-outline" size={18} color={t.primary} />
-        <Text style={styles.cta}>Ajouter avec une clé</Text>
+        <Text style={styles.cta}>Voir mes clubs</Text>
+        <Ionicons name="chevron-forward" size={16} color={t.primary} />
       </Pressable>
     </View>
   );
@@ -168,16 +164,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: t.font.space.bold,
   },
-  emptySub: {
-    color: t.textSecondary,
-    fontSize: 13,
-    lineHeight: 20,
-    fontFamily: t.font.hanken.regular,
-  },
   exploreBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     padding: 14,
     borderRadius: 14,
     backgroundColor: t.card,
@@ -188,7 +178,6 @@ const styles = StyleSheet.create({
     color: t.primary,
     fontSize: 13,
     fontFamily: t.font.space.bold,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
 });
