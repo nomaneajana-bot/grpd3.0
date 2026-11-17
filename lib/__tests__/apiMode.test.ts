@@ -94,6 +94,32 @@ describe("api transport mode", () => {
     expect(t.apiUrl).toBe("https://api.example.com");
   });
 
+  it("web Preview prefers same-origin when baked API URL points at production", async () => {
+    process.env.EXPO_PUBLIC_DEMO_MODE = "false";
+    delete process.env.EXPO_PUBLIC_USE_MOCK_API;
+    process.env.EXPO_PUBLIC_API_URL = "https://grpd30.vercel.app";
+    jest.resetModules();
+    const g = globalThis as { window?: { location: { origin: string } } };
+    const prev = g.window;
+    g.window = {
+      location: {
+        origin:
+          "https://grpd30-git-cursor-d03-d05-funding-d193c4-noas-projects-0b3f311d.vercel.app",
+      },
+    };
+    try {
+      const { getConfiguredApiUrl } = await import("../api/mode");
+      expect(getConfiguredApiUrl()).toBe("");
+      // Explicit override still honored (tests / native clients).
+      expect(getConfiguredApiUrl("https://grpd30.vercel.app")).toBe(
+        "https://grpd30.vercel.app",
+      );
+    } finally {
+      if (prev === undefined) delete g.window;
+      else g.window = prev;
+    }
+  });
+
   it("ApiClient.request throws MISSING_API_URL when connected without URL", async () => {
     process.env.EXPO_PUBLIC_DEMO_MODE = "false";
     delete process.env.EXPO_PUBLIC_USE_MOCK_API;

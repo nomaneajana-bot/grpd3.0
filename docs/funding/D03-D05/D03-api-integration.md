@@ -81,5 +81,5 @@ Authorization: Bearer [redacted]
 
 - Preview deployments remain behind Vercel Authentication; evaluators need Visit/SSO or a share link for browser UI. Public production alias currently exposes JSON API without SSO.
 - Production alias deployments may lag / differ from email-auth Preview SHA — always record SHA when running UAT.
-- Client connected mode requires `EXPO_PUBLIC_DEMO_MODE=false`, mock off, and `EXPO_PUBLIC_API_URL` pointing at the chosen origin (or same-origin on the hosted SPA).
+- Client connected mode requires `EXPO_PUBLIC_DEMO_MODE=false`, mock off, and same-origin API on web (empty `EXPO_PUBLIC_API_URL` in Vercel `buildCommand`). Pinning Preview builds to `https://grpd30.vercel.app` caused browser **Failed to fetch** on signup (cross-origin + no CORS on OPTIONS) — fixed on this branch by same-origin preference + build override.
 - iOS/Android UI captures: **à réaliser** (see `media/README.md`).

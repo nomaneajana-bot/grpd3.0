@@ -12,8 +12,38 @@ import { ApiError } from "./errors";
 
 export type ApiTransportMode = "demo" | "mock" | "connected";
 
+function browserOrigin(): string | null {
+  if (typeof globalThis === "undefined") return null;
+  const origin = (
+    globalThis as { window?: { location?: { origin?: string } } }
+  ).window?.location?.origin;
+  return typeof origin === "string" && origin.trim() ? origin.trim() : null;
+}
+
+/**
+ * Resolve the API base URL.
+ *
+ * On web, if a baked `EXPO_PUBLIC_API_URL` points at a *different* origin than
+ * the page (common on Vercel Preview when the env is pinned to production),
+ * prefer same-origin relative calls so signup/login are not blocked by CORS
+ * ("Failed to fetch") or Preview SSO mismatch.
+ */
 export function getConfiguredApiUrl(baseUrl?: string): string {
-  return (baseUrl ?? process.env.EXPO_PUBLIC_API_URL ?? "").trim();
+  const configured = (baseUrl ?? process.env.EXPO_PUBLIC_API_URL ?? "").trim();
+  if (baseUrl !== undefined) {
+    // Explicit constructor override — honor as-is.
+    return configured;
+  }
+  const origin = browserOrigin();
+  if (!origin || !configured) return configured;
+  try {
+    if (new URL(configured).origin !== new URL(origin).origin) {
+      return "";
+    }
+  } catch {
+    // Non-absolute configured URL — keep as-is.
+  }
+  return configured;
 }
 
 /** Env-only mock flag (not DEMO_MODE). */
