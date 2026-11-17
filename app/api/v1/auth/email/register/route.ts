@@ -12,6 +12,7 @@ import {
   hashPassword,
   isValidEmail,
   normalizeEmail,
+  normalizePassword,
 } from "../../../../../../lib/server/password";
 import { prisma } from "../../../../../../lib/server/prisma";
 
@@ -34,8 +35,16 @@ export async function POST(req: NextRequest) {
     }
 
     const email = normalizeEmail(parsed.data.email);
+    const password = normalizePassword(parsed.data.password);
     if (!isValidEmail(email)) {
       return jsonError("Email invalide", "VALIDATION_ERROR", 400);
+    }
+    if (password.length < 8) {
+      return jsonError(
+        "Le mot de passe doit contenir au moins 8 caractères",
+        "VALIDATION_ERROR",
+        400,
+      );
     }
 
     const existing = await prisma.appUser.findUnique({ where: { email } });
@@ -53,7 +62,7 @@ export async function POST(req: NextRequest) {
     const user = await prisma.appUser.create({
       data: {
         email,
-        passwordHash: hashPassword(parsed.data.password),
+        passwordHash: hashPassword(password),
         displayName,
         profileComplete: true,
       },

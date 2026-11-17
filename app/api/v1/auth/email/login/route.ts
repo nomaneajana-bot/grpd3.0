@@ -11,6 +11,7 @@ import {
 import {
   isValidEmail,
   normalizeEmail,
+  normalizePassword,
   verifyPassword,
 } from "../../../../../../lib/server/password";
 import { prisma } from "../../../../../../lib/server/prisma";
@@ -33,12 +34,16 @@ export async function POST(req: NextRequest) {
     }
 
     const email = normalizeEmail(parsed.data.email);
+    const password = normalizePassword(parsed.data.password);
     if (!isValidEmail(email)) {
       return jsonError("Email invalide", "VALIDATION_ERROR", 400);
     }
+    if (!password) {
+      return jsonError("Mot de passe requis", "VALIDATION_ERROR", 400);
+    }
 
     const user = await prisma.appUser.findUnique({ where: { email } });
-    if (!user || !verifyPassword(parsed.data.password, user.passwordHash)) {
+    if (!user || !verifyPassword(password, user.passwordHash)) {
       // Same message whether missing user or bad password (no account leak).
       // Copy nudges first-time users who never finished signup (e.g. earlier
       // Preview “Failed to fetch”) toward Créer un compte on this same URL.

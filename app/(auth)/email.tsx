@@ -29,7 +29,7 @@ export default function EmailLoginScreen() {
       const client = createApiClient();
       const result = await loginWithEmail(client, {
         email: email.trim(),
-        password,
+        password: password.trim(),
         deviceId,
       });
       await storeAuthData({
@@ -85,6 +85,8 @@ export default function EmailLoginScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
             testID="email-login-email"
           />
           <Text style={styles.label}>Mot de passe</Text>
@@ -95,6 +97,8 @@ export default function EmailLoginScreen() {
             placeholder="••••••••"
             placeholderTextColor={colors.text.secondary}
             secureTextEntry
+            autoComplete="current-password"
+            textContentType="password"
             testID="email-login-password"
           />
         </View>

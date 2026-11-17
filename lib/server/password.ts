@@ -26,6 +26,14 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+/**
+ * Strip accidental leading/trailing whitespace from autofill / paste.
+ * Applied on both register and login so hashes stay consistent.
+ */
+export function normalizePassword(password: string): string {
+  return password.trim();
+}
+
 export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }

@@ -30,7 +30,7 @@ export default function EmailSignupScreen() {
       const client = createApiClient();
       const result = await registerWithEmail(client, {
         email: email.trim(),
-        password,
+        password: password.trim(),
         displayName: name.trim() || undefined,
         deviceId,
       });
@@ -98,6 +98,8 @@ export default function EmailSignupScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
             testID="email-signup-email"
           />
           <Text style={styles.label}>Mot de passe (8+ caractères)</Text>
@@ -108,6 +110,8 @@ export default function EmailSignupScreen() {
             placeholder="••••••••"
             placeholderTextColor={colors.text.secondary}
             secureTextEntry
+            autoComplete="new-password"
+            textContentType="newPassword"
             testID="email-signup-password"
           />
         </View>

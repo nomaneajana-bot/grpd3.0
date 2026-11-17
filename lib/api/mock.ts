@@ -752,17 +752,18 @@ async function mockEmailRegister(
   input: EmailAuthInput,
 ): Promise<EmailAuthResult> {
   const email = normalizeMockEmail(input.email);
+  const password = input.password.trim();
   if (!email.includes("@") || !email.includes(".")) {
     throw new ApiError(400, "Email invalide");
   }
-  if (!input.password || input.password.length < 8) {
+  if (!password || password.length < 8) {
     throw new ApiError(400, "Mot de passe trop court (8+ caractères)");
   }
   const passwords = await readEmailPasswords();
   if (passwords[email]) {
     throw new ApiError(409, "Un compte existe déjà avec cet email");
   }
-  passwords[email] = input.password;
+  passwords[email] = password;
   await writeEmailPasswords(passwords);
   const user = await getOrCreateEmailUser(email, input.displayName);
   if (DEMO_MODE) {
@@ -776,8 +777,9 @@ async function mockEmailRegister(
 
 async function mockEmailLogin(input: EmailAuthInput): Promise<EmailAuthResult> {
   const email = normalizeMockEmail(input.email);
+  const password = input.password.trim();
   const passwords = await readEmailPasswords();
-  if (!passwords[email] || passwords[email] !== input.password) {
+  if (!passwords[email] || passwords[email] !== password) {
     throw new ApiError(401, "Email ou mot de passe incorrect");
   }
   const user = await getOrCreateEmailUser(email, input.displayName);
