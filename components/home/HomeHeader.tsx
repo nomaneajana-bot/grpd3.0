@@ -113,27 +113,29 @@ export function HomeHeader({
       ) : null}
 
       <View style={styles.greeting}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Jour : ${dayEyebrow}. Changer de jour`}
-          accessibilityState={{ expanded: dayOpen }}
-          onPress={() => {
-            setCityOpen(false);
-            setDayOpen((v) => !v);
-          }}
-          style={({ pressed }) => [
-            styles.dayBtn,
-            pressed && { opacity: 0.85 },
-          ]}
-          testID="home-day-eyebrow"
-        >
-          <Text style={styles.dayEyebrow}>{dayEyebrow}</Text>
-          <Ionicons
-            name={dayOpen ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={h.outline}
-          />
-        </Pressable>
+        <View style={styles.greetingTop}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Jour : ${dayEyebrow}. Changer de jour`}
+            accessibilityState={{ expanded: dayOpen }}
+            onPress={() => {
+              setCityOpen(false);
+              setDayOpen((v) => !v);
+            }}
+            style={({ pressed }) => [
+              styles.dayBtn,
+              pressed && { opacity: 0.85 },
+            ]}
+            testID="home-day-eyebrow"
+          >
+            <Text style={styles.dayEyebrow}>{dayEyebrow}</Text>
+            <Ionicons
+              name={dayOpen ? "chevron-up" : "chevron-down"}
+              size={16}
+              color={h.outline}
+            />
+          </Pressable>
+        </View>
 
         {dayOpen ? (
           <DaySlider
@@ -152,9 +154,6 @@ export function HomeHeader({
           testID="home-title"
         >
           On sort ?
-        </Text>
-        <Text style={styles.sub} testID="home-greeting-sub">
-          Cette semaine, avec les tiens.
         </Text>
       </View>
     </View>
@@ -195,37 +194,41 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   greeting: {
-    paddingTop: 0,
-    paddingBottom: 0,
-    gap: 4,
+    paddingTop: 2,
+    paddingBottom: 2,
+    gap: 8,
+    width: "100%",
+  },
+  greetingTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
   },
   dayBtn: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 4,
+    flex: 1,
+    gap: 6,
     paddingVertical: 2,
-    paddingRight: 4,
+    minHeight: 28,
   },
   dayEyebrow: {
     fontFamily: h.font.hanken.bold,
-    fontSize: 11,
-    lineHeight: 14,
-    letterSpacing: 1.1,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 1.2,
     textTransform: "uppercase",
     color: h.outline,
+    flexShrink: 1,
   },
   title: {
     fontFamily: h.font.space.bold,
-    fontSize: 28,
-    lineHeight: 32,
-    letterSpacing: -0.7,
+    fontSize: 34,
+    lineHeight: 38,
+    letterSpacing: -0.9,
     color: h.text,
     fontWeight: "700",
-  },
-  sub: {
-    ...h.type.bodySm,
-    color: h.textSecondary,
-    marginTop: 0,
+    width: "100%",
   },
 });

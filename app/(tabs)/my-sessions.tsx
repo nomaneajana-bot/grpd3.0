@@ -409,32 +409,6 @@ export default function MySessionsScreen() {
               />
             )}
 
-            {past.length > 0 ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Voir ${past.length} sorties passées`}
-                onPress={() => setTab("past")}
-                style={({ pressed }) => [
-                  styles.pastTeaser,
-                  pressed && { opacity: 0.9 },
-                ]}
-                testID="mes-sorties-past-teaser"
-              >
-                <View style={styles.pastTeaserLeft}>
-                  <Ionicons name="time-outline" size={18} color={t.primary} />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.pastTeaserTitle}>
-                      Sorties passées
-                    </Text>
-                    <Text style={styles.pastTeaserBody} numberOfLines={1}>
-                      {past.length} sortie{past.length === 1 ? "" : "s"} ·{" "}
-                      {formatKmTotal(pastKm)}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.pastTeaserCta}>Voir →</Text>
-              </Pressable>
-            ) : null}
           </View>
         ) : null}
 
@@ -1076,44 +1050,6 @@ const styles = StyleSheet.create({
   loadingHint: { ...t.type.bodySm, color: t.textSecondary },
   grid: { gap: t.space.md },
   pastGrid: { gap: t.space.md },
-  pastTeaser: {
-    marginTop: t.space.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: t.card,
-    borderWidth: 1,
-    borderColor: "rgba(232,232,233,0.9)",
-  },
-  pastTeaserLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    flex: 1,
-    minWidth: 0,
-  },
-  pastTeaserTitle: {
-    fontFamily: t.font.hanken.semibold,
-    fontSize: 14,
-    lineHeight: 18,
-    color: t.text,
-  },
-  pastTeaserBody: {
-    fontFamily: t.font.hanken.regular,
-    fontSize: 12,
-    lineHeight: 16,
-    color: t.outline,
-    marginTop: 2,
-  },
-  pastTeaserCta: {
-    fontFamily: t.font.hanken.semibold,
-    fontSize: 13,
-    color: t.primary,
-  },
   emptyPastLink: {
     marginTop: 14,
     paddingVertical: 8,
