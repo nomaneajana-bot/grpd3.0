@@ -35,8 +35,25 @@ export async function getOrCreateDeviceId(): Promise<string> {
   }
 }
 
+/** Web: mirror into localStorage so refresh restores even if AsyncStorage races. */
+function mirrorWebLocalStorage(data: StoredAuthData | null): void {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    if (!data) {
+      window.localStorage.removeItem(TOKENS_KEY);
+      window.localStorage.removeItem(USER_KEY);
+      return;
+    }
+    window.localStorage.setItem(TOKENS_KEY, JSON.stringify(data.tokens));
+    window.localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+    window.localStorage.setItem(DEVICE_ID_KEY, data.deviceId);
+  } catch {
+    // private mode / quota — AsyncStorage path still attempted
+  }
+}
+
 /**
- * Store authentication tokens and user data
+ * Store authentication tokens and user data (durable AsyncStorage + web localStorage).
  */
 export async function storeAuthData(data: StoredAuthData): Promise<void> {
   try {
@@ -45,6 +62,7 @@ export async function storeAuthData(data: StoredAuthData): Promise<void> {
       [USER_KEY, JSON.stringify(data.user)],
       [DEVICE_ID_KEY, data.deviceId],
     ]);
+    mirrorWebLocalStorage(data);
   } catch (error) {
     console.warn('Failed to store auth data:', error);
     throw error;
@@ -62,18 +80,38 @@ export async function getAuthData(): Promise<StoredAuthData | null> {
       DEVICE_ID_KEY,
     ]);
 
-    if (!tokensJson[1] || !userJson[1] || !deviceId[1]) {
-      return null;
+    if (tokensJson[1] && userJson[1] && deviceId[1]) {
+      const tokens = JSON.parse(tokensJson[1]) as TokenBundle;
+      const user = JSON.parse(userJson[1]) as AuthUser;
+      return {
+        tokens,
+        user,
+        deviceId: deviceId[1],
+      };
     }
 
-    const tokens = JSON.parse(tokensJson[1]) as TokenBundle;
-    const user = JSON.parse(userJson[1]) as AuthUser;
+    // Fallback: web localStorage mirror (refresh / AsyncStorage race).
+    if (typeof window !== "undefined" && window.localStorage) {
+      const t = window.localStorage.getItem(TOKENS_KEY);
+      const u = window.localStorage.getItem(USER_KEY);
+      const d =
+        window.localStorage.getItem(DEVICE_ID_KEY) ||
+        deviceId[1] ||
+        `device_web_${Date.now()}`;
+      if (t && u) {
+        const tokens = JSON.parse(t) as TokenBundle;
+        const user = JSON.parse(u) as AuthUser;
+        // Rehydrate AsyncStorage so subsequent reads stay consistent.
+        await AsyncStorage.multiSet([
+          [TOKENS_KEY, t],
+          [USER_KEY, u],
+          [DEVICE_ID_KEY, d],
+        ]);
+        return { tokens, user, deviceId: d };
+      }
+    }
 
-    return {
-      tokens,
-      user,
-      deviceId: deviceId[1],
-    };
+    return null;
   } catch (error) {
     console.warn('Failed to get auth data:', error);
     return null;
@@ -137,6 +175,7 @@ export async function getDeviceId(): Promise<string | null> {
 export async function clearAuthData(): Promise<void> {
   try {
     await AsyncStorage.multiRemove([TOKENS_KEY, USER_KEY, MOCK_API_KEY]);
+    mirrorWebLocalStorage(null);
     // Keep device ID for future logins
   } catch (error) {
     console.warn('Failed to clear auth data:', error);

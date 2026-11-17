@@ -72,4 +72,61 @@ describe("authStore token state (fixture)", () => {
     expect(await isAuthenticated()).toBe(false);
     expect(await getAccessToken()).toBeNull();
   });
+
+  it("rehydrates from web localStorage mirror when AsyncStorage empty", async () => {
+    const ls = new Map<string, string>();
+    const localStorageMock: Storage = {
+      get length() {
+        return ls.size;
+      },
+      clear: () => ls.clear(),
+      key: (i: number) => [...ls.keys()][i] ?? null,
+      getItem: (k: string) => ls.get(k) ?? null,
+      setItem: (k: string, v: string) => {
+        ls.set(k, v);
+      },
+      removeItem: (k: string) => {
+        ls.delete(k);
+      },
+    };
+    const g = globalThis as typeof globalThis & { window?: Window & typeof globalThis };
+    const prev = g.window;
+    g.window = { localStorage: localStorageMock } as Window & typeof globalThis;
+
+    const { storeAuthData, getAuthData, clearAuthData } = await import(
+      "../authStore"
+    );
+
+    await storeAuthData({
+      tokens: {
+        accessToken: "mirrored-access",
+        expiresInSeconds: 3600,
+        refreshToken: "mirrored-refresh",
+        refreshExpiresInSeconds: 86400,
+      },
+      user: {
+        id: "mirror-user",
+        phone: "",
+        email: "mirror@example.com",
+        name: "Mirror",
+        profileComplete: true,
+      },
+      deviceId: "mirror-device",
+    });
+
+    expect(ls.get("grpd_auth_tokens_v1")).toContain("mirrored-access");
+
+    // Simulate refresh where in-memory AsyncStorage was wiped but localStorage kept.
+    authStoreMemory.clear();
+    const restored = await getAuthData();
+    expect(restored?.tokens.accessToken).toBe("mirrored-access");
+    expect(restored?.user.email).toBe("mirror@example.com");
+
+    await clearAuthData();
+    expect(ls.get("grpd_auth_tokens_v1")).toBeUndefined();
+    if (prev) g.window = prev;
+    else Reflect.deleteProperty(g, "window");
+  });
 });
+
+

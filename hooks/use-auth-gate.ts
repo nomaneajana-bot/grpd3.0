@@ -1,8 +1,14 @@
 import { type Href, router, usePathname } from "expo-router";
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
-import { DEMO_MODE, ONBOARDING_V2 } from "../lib/featureFlags";
+
+import {
+  AUTHENTICATED_HOME_HREF,
+  hasUsableAuthSession,
+  unauthenticatedLandingHref,
+} from "../lib/authBoot";
 import { getAuthData } from "../lib/authStore";
+import { DEMO_MODE } from "../lib/featureFlags";
 
 /**
  * Resolve the path used for auth redirects.
@@ -39,7 +45,7 @@ function isPublicVisionRoute(path: string): boolean {
   return false;
 }
 
-/** Auth / onboarding routes — do not redirect away mid-flow. */
+/** Auth / onboarding routes — do not redirect unauth users away mid-flow. */
 function isAuthFlowRoute(path: string): boolean {
   if (!path) return false;
   return (
@@ -52,17 +58,10 @@ function isAuthFlowRoute(path: string): boolean {
   );
 }
 
-function unauthLandingHref(path: string): Href {
-  if (DEMO_MODE && (path === "/" || path === "" || path === "/demo")) {
-    return "/demo" as Href;
-  }
-  // Self-serve email entry is the default unauth landing (PIN/phone is legacy).
-  return (ONBOARDING_V2 ? "/(auth)/onboarding" : "/(auth)/email") as Href;
-}
-
 /**
- * Hook to check authentication status and redirect unauthenticated users
- * Returns true if authenticated, false if not (and handles redirect)
+ * Hook to check authentication status and redirect:
+ * - no session → unauth landing (unless already on auth/public)
+ * - durable session → Accueil (including after refresh on auth pages)
  */
 export function useAuthGate(): {
   isAuthenticated: boolean | null;
@@ -86,7 +85,7 @@ export function useAuthGate(): {
         const authData = await getAuthData();
         if (!isMounted) return;
 
-        if (authData === null) {
+        if (!hasUsableAuthSession(authData)) {
           setIsAuthenticated(false);
           setIsLoading(false);
           // Demo root: send share links to /demo (seeds auth → Accueil).
@@ -118,7 +117,7 @@ export function useAuthGate(): {
               return;
             }
             try {
-              router.replace(unauthLandingHref(nowPath));
+              router.replace(unauthenticatedLandingHref());
             } catch (err) {
               console.warn("Router redirect failed:", err);
             }
@@ -126,6 +125,17 @@ export function useAuthGate(): {
         } else {
           setIsAuthenticated(true);
           setIsLoading(false);
+          // Refresh landed on welcome/login with tokens still in storage → Accueil.
+          if (isAuthFlowRoute(livePath) && !isPublicVisionRoute(livePath)) {
+            timeoutId = setTimeout(() => {
+              if (!isMounted) return;
+              try {
+                router.replace(AUTHENTICATED_HOME_HREF);
+              } catch (err) {
+                console.warn("Router redirect failed:", err);
+              }
+            }, 50);
+          }
         }
       } catch (error) {
         console.warn("Auth check failed:", error);
@@ -135,9 +145,8 @@ export function useAuthGate(): {
         if (stayOnAuth) return;
         timeoutId = setTimeout(() => {
           if (!isMounted) return;
-          const nowPath = currentPath(pathname);
           try {
-            router.replace(unauthLandingHref(nowPath));
+            router.replace(unauthenticatedLandingHref());
           } catch (err) {
             console.warn("Router redirect failed:", err);
           }
