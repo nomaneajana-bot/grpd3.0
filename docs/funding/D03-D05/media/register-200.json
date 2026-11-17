@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "data": {
+    "user": {
+      "id": "cmwk2fty200006g18b1iq5cyy",
+      "phone": "",
+      "email": "e2e1794882065@example.com",
+      "name": "E2E Fix",
+      "profileComplete": true
+    },
+    "tokens": {
+      "accessToken": "[redacted]",
+      "expiresInSeconds": 604800,
+      "refreshToken": "[redacted]",
+      "refreshExpiresInSeconds": 604800
+    }
+  }
+}

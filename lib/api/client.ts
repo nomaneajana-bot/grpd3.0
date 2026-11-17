@@ -89,6 +89,23 @@ export class ApiClient {
       await this.onUnauthorized();
     }
 
+    // Unwrap ok/data|error envelopes for both success and HTTP error statuses
+    // (e.g. 401 login returns {ok:false,error:{message}} — not a top-level message).
+    if (isApiEnvelope<T>(payload)) {
+      if (!payload.ok) {
+        throw new ApiError(
+          response.status,
+          payload.error.message,
+          payload.error.code,
+          payload.error.details,
+        );
+      }
+      if (!response.ok) {
+        throw new ApiError(response.status, "Request failed");
+      }
+      return payload.data;
+    }
+
     if (!response.ok) {
       const errorPayload = payload as ApiErrorPayload | string;
       if (typeof errorPayload === "string") {
@@ -100,18 +117,6 @@ export class ApiClient {
         errorPayload.code,
         errorPayload.details,
       );
-    }
-
-    if (isApiEnvelope<T>(payload)) {
-      if (!payload.ok) {
-        throw new ApiError(
-          response.status,
-          payload.error.message,
-          payload.error.code,
-          payload.error.details,
-        );
-      }
-      return payload.data;
     }
 
     return payload as T;
