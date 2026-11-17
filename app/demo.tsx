@@ -7,12 +7,13 @@ import { stitoTheme as t } from "@/constants/stitoTheme";
 import {
   clearDemoQueryParam,
   enterDemoSession,
+  resumeExistingDemoSession,
 } from "@/lib/demoSession";
 
 /**
  * Public demo entry — seeds mock auth and opens Accueil.
- * Works without EXPO_PUBLIC_DEMO_MODE so production can keep the
- * connected email welcome as the default path.
+ * If a demo session already exists (refresh / revisit with ?demo=1),
+ * skip re-login and go straight to Accueil.
  */
 export default function DemoHomeEntryScreen() {
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +23,12 @@ export default function DemoHomeEntryScreen() {
     let alive = true;
     (async () => {
       try {
+        if (await resumeExistingDemoSession()) {
+          if (!alive) return;
+          clearDemoQueryParam();
+          router.replace("/(tabs)" as Href);
+          return;
+        }
         await enterDemoSession();
         if (!alive) return;
         clearDemoQueryParam();
@@ -61,15 +68,21 @@ export default function DemoHomeEntryScreen() {
               onPress={() => {
                 setError(null);
                 setBusy(true);
-                void enterDemoSession()
-                  .then(() => {
+                void (async () => {
+                  try {
+                    if (await resumeExistingDemoSession()) {
+                      clearDemoQueryParam();
+                      router.replace("/(tabs)" as Href);
+                      return;
+                    }
+                    await enterDemoSession();
                     clearDemoQueryParam();
                     router.replace("/(tabs)" as Href);
-                  })
-                  .catch(() => {
+                  } catch {
                     setBusy(false);
                     setError("Impossible d’ouvrir l’accueil démo. Réessaie.");
-                  });
+                  }
+                })();
               }}
               style={styles.btn}
             >

@@ -1,8 +1,13 @@
 import { createApiClient, loginWithPin } from "@/lib/api";
 import { hydrateDemoTesterData } from "@/lib/api/demoSeed";
 import {
+  getAuthData,
   getOrCreateDeviceId,
+  isDemoSessionActive,
+  restoreStickyDemoTransport,
+  setDemoSessionActive,
   setUseMockApi,
+  shouldUseMockApi,
   storeAuthData,
 } from "@/lib/authStore";
 
@@ -18,6 +23,7 @@ export const DEMO_DISPLAY_NAME = "Nouamane Ajana";
  */
 export async function enterDemoSession(): Promise<void> {
   await setUseMockApi(true);
+  await setDemoSessionActive(true);
   const deviceId = await getOrCreateDeviceId();
   const client = createApiClient({ baseUrl: "" });
   const result = await loginWithPin(client, {
@@ -37,8 +43,25 @@ export async function enterDemoSession(): Promise<void> {
     user,
     deviceId,
   });
+  // Keep sticky flags after token write (storeAuthData does not clear them).
+  await setDemoSessionActive(true);
   // Fresh world + memberships + PRs so every tab has visible data.
   await hydrateDemoTesterData(user, DEMO_DISPLAY_NAME);
+}
+
+/**
+ * If a demo/mock session is already on disk, restore transport and return true
+ * so callers can skip the login dance on refresh / ?demo=1 revisit.
+ */
+export async function resumeExistingDemoSession(): Promise<boolean> {
+  await restoreStickyDemoTransport();
+  const auth = await getAuthData();
+  if (!auth) return false;
+  const sticky =
+    (await isDemoSessionActive()) || (await shouldUseMockApi());
+  if (!sticky) return false;
+  await setDemoSessionActive(true);
+  return true;
 }
 
 /** True when the current web URL asks for instant demo entry. */

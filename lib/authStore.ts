@@ -7,6 +7,8 @@ const TOKENS_KEY = 'grpd_auth_tokens_v1';
 const USER_KEY = 'grpd_auth_user_v1';
 const DEVICE_ID_KEY = 'grpd_device_id_v1';
 const MOCK_API_KEY = 'grpd_use_mock_api_v1';
+/** Sticky one-tap / ?demo=1 session — survives refresh until explicit logout. */
+const DEMO_SESSION_KEY = 'grpd_demo_session_v1';
 
 export type StoredAuthData = {
   tokens: TokenBundle;
@@ -136,11 +138,58 @@ export async function getDeviceId(): Promise<string | null> {
  */
 export async function clearAuthData(): Promise<void> {
   try {
-    await AsyncStorage.multiRemove([TOKENS_KEY, USER_KEY, MOCK_API_KEY]);
+    await AsyncStorage.multiRemove([
+      TOKENS_KEY,
+      USER_KEY,
+      MOCK_API_KEY,
+      DEMO_SESSION_KEY,
+    ]);
     // Keep device ID for future logins
   } catch (error) {
     console.warn('Failed to clear auth data:', error);
     throw error;
+  }
+}
+
+/** Mark / clear durable demo entry (keeps mock transport across refresh). */
+export async function setDemoSessionActive(active: boolean): Promise<void> {
+  try {
+    if (active) {
+      await AsyncStorage.multiSet([
+        [DEMO_SESSION_KEY, 'true'],
+        [MOCK_API_KEY, 'true'],
+      ]);
+      return;
+    }
+    await AsyncStorage.multiRemove([DEMO_SESSION_KEY]);
+  } catch (error) {
+    console.warn('Failed to update demo session flag:', error);
+  }
+}
+
+export async function isDemoSessionActive(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(DEMO_SESSION_KEY)) === 'true';
+  } catch (error) {
+    console.warn('Failed to read demo session flag:', error);
+    return false;
+  }
+}
+
+/**
+ * Re-apply mock transport when a prior demo/mock session is still on disk.
+ * Call on boot before routing so refresh does not fall into connected API.
+ */
+export async function restoreStickyDemoTransport(): Promise<void> {
+  try {
+    if (
+      (await AsyncStorage.getItem(DEMO_SESSION_KEY)) === 'true' ||
+      (await AsyncStorage.getItem(MOCK_API_KEY)) === 'true'
+    ) {
+      await AsyncStorage.setItem(MOCK_API_KEY, 'true');
+    }
+  } catch (error) {
+    console.warn('Failed to restore demo transport:', error);
   }
 }
 

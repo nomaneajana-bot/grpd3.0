@@ -2,10 +2,11 @@ import { type Href, router, usePathname } from "expo-router";
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import { DEMO_MODE, ONBOARDING_V2 } from "../lib/featureFlags";
-import { getAuthData } from "../lib/authStore";
+import { getAuthData, restoreStickyDemoTransport } from "../lib/authStore";
 import {
   clearDemoQueryParam,
   enterDemoSession,
+  resumeExistingDemoSession,
   shouldAutoEnterDemo,
 } from "../lib/demoSession";
 
@@ -88,6 +89,32 @@ export function useAuthGate(): {
 
     async function checkAuth() {
       try {
+        await restoreStickyDemoTransport();
+        // Refresh / ?demo=1 with an existing sticky session → Accueil, no re-login.
+        if (await resumeExistingDemoSession()) {
+          if (!isMounted) return;
+          clearDemoQueryParam();
+          setIsAuthenticated(true);
+          setIsLoading(false);
+          if (
+            livePath === "/" ||
+            livePath === "" ||
+            livePath === "/demo" ||
+            livePath.endsWith("/demo") ||
+            isAuthFlowRoute(livePath)
+          ) {
+            timeoutId = setTimeout(() => {
+              if (!isMounted) return;
+              try {
+                router.replace("/(tabs)" as Href);
+              } catch (err) {
+                console.warn("Router redirect failed:", err);
+              }
+            }, 50);
+          }
+          return;
+        }
+
         const authData = await getAuthData();
         if (!isMounted) return;
 

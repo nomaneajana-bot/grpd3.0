@@ -2,15 +2,19 @@ import { type Href, Redirect } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 
-import { getAuthData } from "@/lib/authStore";
-import { shouldAutoEnterDemo } from "@/lib/demoSession";
+import { getAuthData, restoreStickyDemoTransport } from "@/lib/authStore";
+import {
+  clearDemoQueryParam,
+  resumeExistingDemoSession,
+  shouldAutoEnterDemo,
+} from "@/lib/demoSession";
 import { DEMO_MODE } from "@/lib/featureFlags";
 import { colors } from "@/constants/ui";
 
 /**
  * `/` entry.
- * - Existing session → Accueil (persisted demo / real login)
- * - `?demo=1` or DEMO_MODE → `/demo`
+ * - Existing session (incl. sticky demo) → Accueil — survives refresh
+ * - `?demo=1` / DEMO_MODE with no session → `/demo`
  * - Otherwise → connected email welcome
  */
 export default function RootIndex() {
@@ -20,13 +24,28 @@ export default function RootIndex() {
     let alive = true;
     (async () => {
       try {
+        await restoreStickyDemoTransport();
+
+        // Prefer durable auth over re-entering ?demo=1 every refresh.
+        if (await resumeExistingDemoSession()) {
+          clearDemoQueryParam();
+          if (alive) setHref("/(tabs)" as Href);
+          return;
+        }
+
+        const auth = await getAuthData();
+        if (auth) {
+          clearDemoQueryParam();
+          if (alive) setHref("/(tabs)" as Href);
+          return;
+        }
+
         if (DEMO_MODE || shouldAutoEnterDemo()) {
           if (alive) setHref("/demo" as Href);
           return;
         }
-        const auth = await getAuthData();
-        if (!alive) return;
-        setHref((auth ? "/(tabs)" : "/(auth)/onboarding") as Href);
+
+        if (alive) setHref("/(auth)/onboarding" as Href);
       } catch {
         if (alive) setHref("/(auth)/onboarding" as Href);
       }
