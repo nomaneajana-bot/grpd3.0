@@ -73,7 +73,7 @@ describe("authStore token state (fixture)", () => {
     expect(await getAccessToken()).toBeNull();
   });
 
-  it("rehydrates from web localStorage mirror when AsyncStorage empty", async () => {
+  it("sync localStorage restore survives AsyncStorage wipe (web refresh)", async () => {
     const ls = new Map<string, string>();
     const localStorageMock: Storage = {
       get length() {
@@ -89,13 +89,19 @@ describe("authStore token state (fixture)", () => {
         ls.delete(k);
       },
     };
-    const g = globalThis as typeof globalThis & { window?: Window & typeof globalThis };
+    const g = globalThis as typeof globalThis & {
+      window?: Window & typeof globalThis;
+    };
     const prev = g.window;
     g.window = { localStorage: localStorageMock } as Window & typeof globalThis;
 
-    const { storeAuthData, getAuthData, clearAuthData } = await import(
-      "../authStore"
-    );
+    const {
+      storeAuthData,
+      getAuthData,
+      getAuthDataSync,
+      clearAuthData,
+      AUTH_TOKENS_KEY,
+    } = await import("../authStore");
 
     await storeAuthData({
       tokens: {
@@ -114,19 +120,50 @@ describe("authStore token state (fixture)", () => {
       deviceId: "mirror-device",
     });
 
-    expect(ls.get("grpd_auth_tokens_v1")).toContain("mirrored-access");
+    expect(ls.get(AUTH_TOKENS_KEY)).toContain("mirrored-access");
+    expect(getAuthDataSync()?.tokens.accessToken).toBe("mirrored-access");
 
-    // Simulate refresh where in-memory AsyncStorage was wiped but localStorage kept.
+    // Simulate refresh: in-memory AsyncStorage wiped, localStorage kept.
     authStoreMemory.clear();
+    expect(getAuthDataSync()?.user.email).toBe("mirror@example.com");
     const restored = await getAuthData();
     expect(restored?.tokens.accessToken).toBe("mirrored-access");
-    expect(restored?.user.email).toBe("mirror@example.com");
+    expect(authStoreMemory.get(AUTH_TOKENS_KEY)).toContain("mirrored-access");
 
     await clearAuthData();
-    expect(ls.get("grpd_auth_tokens_v1")).toBeUndefined();
+    expect(ls.get(AUTH_TOKENS_KEY)).toBeUndefined();
+    expect(getAuthDataSync()).toBeNull();
     if (prev) g.window = prev;
     else Reflect.deleteProperty(g, "window");
   });
+
+  it("notifies subscribers after store and clear", async () => {
+    const { storeAuthData, clearAuthData, subscribeAuthStore } = await import(
+      "../authStore"
+    );
+    const seen: string[] = [];
+    const unsub = subscribeAuthStore(() => {
+      seen.push("tick");
+    });
+
+    await storeAuthData({
+      tokens: {
+        accessToken: "a",
+        expiresInSeconds: 1,
+        refreshToken: "r",
+        refreshExpiresInSeconds: 1,
+      },
+      user: {
+        id: "u",
+        phone: "",
+        email: "a@b.c",
+        name: "A",
+        profileComplete: true,
+      },
+      deviceId: "d",
+    });
+    await clearAuthData();
+    unsub();
+    expect(seen.length).toBeGreaterThanOrEqual(2);
+  });
 });
-
-

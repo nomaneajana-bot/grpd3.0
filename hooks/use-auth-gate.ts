@@ -7,7 +7,11 @@ import {
   hasUsableAuthSession,
   unauthenticatedLandingHref,
 } from "../lib/authBoot";
-import { getAuthData } from "../lib/authStore";
+import {
+  getAuthData,
+  getAuthDataSync,
+  subscribeAuthStore,
+} from "../lib/authStore";
 import { DEMO_MODE } from "../lib/featureFlags";
 
 /**
@@ -38,7 +42,6 @@ function isPublicVisionRoute(path: string): boolean {
   ) {
     return true;
   }
-  // Preview builds: bare `/` is the share link — hold the gate so `/demo` can seed.
   if (DEMO_MODE && (path === "/" || path === "")) {
     return true;
   }
@@ -58,10 +61,16 @@ function isAuthFlowRoute(path: string): boolean {
   );
 }
 
+function go(href: Href) {
+  try {
+    router.replace(href);
+  } catch (err) {
+    console.warn("Router redirect failed:", err);
+  }
+}
+
 /**
- * Hook to check authentication status and redirect:
- * - no session → unauth landing (unless already on auth/public)
- * - durable session → Accueil (including after refresh on auth pages)
+ * Restore durable email session on boot/refresh and keep Accueil when logged in.
  */
 export function useAuthGate(): {
   isAuthenticated: boolean | null;
@@ -69,98 +78,109 @@ export function useAuthGate(): {
 } {
   const pathname = usePathname();
   const path = currentPath(pathname);
+
+  // Web: decide from localStorage synchronously so refresh never flashes welcome.
+  const syncBoot = getAuthDataSync();
+  const syncAuthed = hasUsableAuthSession(syncBoot);
+
   const allowUnauthed = isPublicVisionRoute(path) || isAuthFlowRoute(path);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(!allowUnauthed);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(
+    syncAuthed ? true : allowUnauthed ? null : syncBoot ? true : null,
+  );
+  const [isLoading, setIsLoading] = useState(!syncAuthed && !allowUnauthed);
 
   useEffect(() => {
     let isMounted = true;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    const livePath = currentPath(pathname);
-    const stayOnAuth =
-      isPublicVisionRoute(livePath) || isAuthFlowRoute(livePath);
 
-    async function checkAuth() {
-      try {
-        const authData = await getAuthData();
-        if (!isMounted) return;
+    async function applyAuth(authData: Awaited<ReturnType<typeof getAuthData>>) {
+      if (!isMounted) return;
+      const livePath = currentPath(pathname);
+      const stayOnAuth =
+        isPublicVisionRoute(livePath) || isAuthFlowRoute(livePath);
 
-        if (!hasUsableAuthSession(authData)) {
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          // Demo root: send share links to /demo (seeds auth → Accueil).
-          if (
-            DEMO_MODE &&
-            (livePath === "/" || livePath === "") &&
-            Platform.OS === "web"
-          ) {
-            timeoutId = setTimeout(() => {
-              if (!isMounted) return;
-              try {
-                router.replace("/demo" as Href);
-              } catch (err) {
-                console.warn("Router redirect failed:", err);
-              }
-            }, 50);
-            return;
-          }
-          if (stayOnAuth) {
-            return;
-          }
-          timeoutId = setTimeout(() => {
-            if (!isMounted) return;
-            const nowPath = currentPath(pathname);
-            if (
-              isPublicVisionRoute(nowPath) ||
-              isAuthFlowRoute(nowPath)
-            ) {
-              return;
-            }
-            try {
-              router.replace(unauthenticatedLandingHref());
-            } catch (err) {
-              console.warn("Router redirect failed:", err);
-            }
-          }, 200);
-        } else {
-          setIsAuthenticated(true);
-          setIsLoading(false);
-          // Refresh landed on welcome/login with tokens still in storage → Accueil.
-          if (isAuthFlowRoute(livePath) && !isPublicVisionRoute(livePath)) {
-            timeoutId = setTimeout(() => {
-              if (!isMounted) return;
-              try {
-                router.replace(AUTHENTICATED_HOME_HREF);
-              } catch (err) {
-                console.warn("Router redirect failed:", err);
-              }
-            }, 50);
-          }
-        }
-      } catch (error) {
-        console.warn("Auth check failed:", error);
-        if (!isMounted) return;
+      if (!hasUsableAuthSession(authData)) {
         setIsAuthenticated(false);
         setIsLoading(false);
+
+        if (
+          DEMO_MODE &&
+          (livePath === "/" || livePath === "") &&
+          Platform.OS === "web"
+        ) {
+          timeoutId = setTimeout(() => {
+            if (isMounted) go("/demo" as Href);
+          }, 50);
+          return;
+        }
         if (stayOnAuth) return;
         timeoutId = setTimeout(() => {
           if (!isMounted) return;
-          try {
-            router.replace(unauthenticatedLandingHref());
-          } catch (err) {
-            console.warn("Router redirect failed:", err);
+          const nowPath = currentPath(pathname);
+          if (isPublicVisionRoute(nowPath) || isAuthFlowRoute(nowPath)) return;
+          // Final guard: sync storage may have been written mid-flight (login).
+          if (hasUsableAuthSession(getAuthDataSync())) {
+            setIsAuthenticated(true);
+            go(AUTHENTICATED_HOME_HREF);
+            return;
           }
+          go(unauthenticatedLandingHref());
+        }, 200);
+        return;
+      }
+
+      setIsAuthenticated(true);
+      setIsLoading(false);
+      if (isAuthFlowRoute(livePath) && !isPublicVisionRoute(livePath)) {
+        timeoutId = setTimeout(() => {
+          if (isMounted) go(AUTHENTICATED_HOME_HREF);
+        }, 50);
+      }
+    }
+
+    async function checkAuth() {
+      try {
+        // Prefer sync peek — never send a stored session to welcome.
+        const sync = getAuthDataSync();
+        if (hasUsableAuthSession(sync)) {
+          await applyAuth(sync);
+        }
+        const authData = await getAuthData();
+        await applyAuth(authData);
+      } catch (error) {
+        console.warn("Auth check failed:", error);
+        const sync = getAuthDataSync();
+        if (hasUsableAuthSession(sync)) {
+          await applyAuth(sync);
+          return;
+        }
+        if (!isMounted) return;
+        setIsAuthenticated(false);
+        setIsLoading(false);
+        const livePath = currentPath(pathname);
+        if (isPublicVisionRoute(livePath) || isAuthFlowRoute(livePath)) return;
+        timeoutId = setTimeout(() => {
+          if (isMounted) go(unauthenticatedLandingHref());
         }, 200);
       }
     }
 
     const initTimeout = setTimeout(() => {
       void checkAuth();
-    }, 50);
+    }, 0);
 
-    // Fail open if AsyncStorage / auth never resolves (stuck Chargement…).
+    const unsubscribe = subscribeAuthStore(() => {
+      void checkAuth();
+    });
+
     const failOpen = setTimeout(() => {
       if (!isMounted) return;
+      // If we still have a sync session, never treat timeout as logged-out.
+      if (hasUsableAuthSession(getAuthDataSync())) {
+        setIsAuthenticated(true);
+        setIsLoading(false);
+        return;
+      }
       setIsLoading((prev) => {
         if (prev) {
           console.warn("Auth gate timed out — releasing boot loading.");
@@ -174,6 +194,7 @@ export function useAuthGate(): {
       if (timeoutId) clearTimeout(timeoutId);
       clearTimeout(initTimeout);
       clearTimeout(failOpen);
+      unsubscribe();
     };
   }, [pathname]);
 

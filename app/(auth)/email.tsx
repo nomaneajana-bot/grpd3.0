@@ -1,6 +1,6 @@
 import { type Href, router } from "expo-router";
 import React, { useState } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { AuthFlowLayout } from "@/components/auth/AuthFlowLayout";
 import { OnboardingScreen } from "@/components/onboarding/OnboardingScreen";
@@ -8,6 +8,7 @@ import { OnboardingTitle } from "@/components/onboarding/OnboardingTitle";
 import { authTheme } from "@/constants/authTheme";
 import { colors, typography } from "@/constants/ui";
 import { ApiError, createApiClient, loginWithEmail } from "@/lib/api";
+import { AUTHENTICATED_HOME_HREF } from "@/lib/authBoot";
 import { getOrCreateDeviceId, storeAuthData } from "@/lib/authStore";
 import { seedRunnerProfileFromAuth } from "@/lib/profileStore";
 
@@ -41,7 +42,12 @@ export default function EmailLoginScreen() {
         name: result.user.name ?? null,
         email: result.user.email ?? email.trim(),
       });
-      router.replace("/(tabs)" as Href);
+      // Web: hard navigation so Accueil boots with tokens already in localStorage.
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        window.location.replace("/");
+        return;
+      }
+      router.replace(AUTHENTICATED_HOME_HREF);
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         setError(err.message);
