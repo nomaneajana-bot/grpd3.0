@@ -109,12 +109,16 @@ async function main() {
       "tab",
     );
 
-    const newIntro = await page.getByTestId("home-new-member-intro").count();
     const nextCard = await page.getByTestId("home-next-outing-card").count();
     check(
       "state_is_new_or_existing",
-      newIntro > 0 || nextCard > 0 || Boolean(await page.getByTestId("home-discovery-list").count()) || Boolean(await page.getByTestId("home-discovery-empty").count()),
-      `intro=${newIntro} next=${nextCard}`,
+      nextCard > 0 || Boolean(await page.getByTestId("home-discovery-list").count()) || Boolean(await page.getByTestId("home-discovery-empty").count()),
+      `next=${nextCard}`,
+    );
+    check(
+      "no_new_member_intro",
+      !(await page.getByTestId("home-new-member-intro").count()),
+      "new-member welcome card removed",
     );
     check(
       "no_pace_checklist",

@@ -139,13 +139,22 @@ async function main() {
       const joined = JSON.parse(localStorage.getItem("joinedSessions") || "{}");
       const joinedIds = Object.keys(joined).filter((k) => joined[k]);
       const card = document.querySelector('[data-testid="home-next-outing-card"]');
+      const empty = document.querySelector('[data-testid="home-discovery-empty"]');
+      const list = document.querySelector('[data-testid="home-discovery-list"]');
       const intro = document.querySelector('[data-testid="home-new-member-intro"]');
       return {
         joinedIds,
         hasNextCard: Boolean(card),
+        hasEmpty: Boolean(empty),
+        hasList: Boolean(list),
         hasIntro: Boolean(intro),
       };
     });
+    check(
+      "p1_no_new_member_intro",
+      !nextState.hasIntro,
+      JSON.stringify(nextState),
+    );
     if (nextState.joinedIds.length === 0) {
       check(
         "p1_no_soft_next_when_unjoined",
@@ -153,9 +162,9 @@ async function main() {
         JSON.stringify(nextState),
       );
       check(
-        "p1_new_member_or_empty_truthful",
-        nextState.hasIntro || /Pas encore de sortie/i.test(body),
-        "intro or empty discovery",
+        "p1_discovery_list_or_empty",
+        nextState.hasList || nextState.hasEmpty || /Aucune sortie/i.test(body),
+        "discovery list or quiet empty",
       );
     } else {
       check(
