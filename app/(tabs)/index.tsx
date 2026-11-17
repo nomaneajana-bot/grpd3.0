@@ -48,6 +48,10 @@ import type { ClubMembership } from "@/types/api";
 
 /**
  * Authenticated Accueil — discovery first, next outing pinned as dock.
+ *
+ * Intentionally NO NewMemberIntro / home-new-member-intro / BIENVENUE card.
+ * Header → filters (Tout/Course/Marche) → outing list or quiet empty line.
+ * Cache-bust note: 2026-11-17-accueil-no-bienvenue
  */
 export default function HomeScreen() {
   const scrollRef = useRef<ScrollView>(null);

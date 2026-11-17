@@ -117,8 +117,11 @@ async function main() {
     );
     check(
       "no_new_member_intro",
-      !(await page.getByTestId("home-new-member-intro").count()),
-      "new-member welcome card removed",
+      !(await page.getByTestId("home-new-member-intro").count()) &&
+        !/Rejoins une sortie ouverte|BIENVENUE(?!\s*·)/i.test(
+          await page.locator("body").innerText(),
+        ),
+      "new-member welcome card removed from Accueil",
     );
     check(
       "no_pace_checklist",
