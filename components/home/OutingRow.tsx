@@ -24,8 +24,9 @@ type OutingRowProps = {
 const AVATAR_TONES = [h.primary, "#333E35", "#576158"] as const;
 
 /**
- * Discovery feed card — keep the cover + host strip;
- * body below the title stays light (no stats dashboard box).
+ * Discovery feed card — cover + host strip stay;
+ * activity type sits on the cover (or in host meta when no photo),
+ * never alone on its own row.
  */
 export function OutingRow({ session, onPress }: OutingRowProps) {
   const host =
@@ -66,6 +67,11 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
     durationBit?.value ?? null,
   ].filter(Boolean) as string[];
 
+  const hasExtraChips = womenOnly || language || joined;
+  const whenWithType = cover
+    ? whereLine || "À venir"
+    : [activity, whereLine || "À venir"].filter(Boolean).join(" · ");
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -82,8 +88,25 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
             resizeMode="cover"
             accessibilityIgnoresInvertColors
           />
+          <View
+            style={[
+              styles.coverChip,
+              isWalk ? styles.coverChipWalk : styles.coverChipRun,
+            ]}
+            testID={`home-outing-labels-${session.id}`}
+          >
+            <Text
+              style={[
+                styles.coverChipText,
+                isWalk ? styles.coverChipTextWalk : styles.coverChipTextRun,
+              ]}
+            >
+              {activity}
+            </Text>
+          </View>
         </View>
       ) : null}
+
       <View style={styles.hostRow}>
         <View
           style={[styles.hostAvatar, { backgroundColor: AVATAR_TONES[0] }]}
@@ -96,7 +119,7 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
             {host || "Organisateur"}
           </Text>
           <Text style={styles.when} numberOfLines={1}>
-            {whereLine || "À venir"}
+            {whenWithType}
           </Text>
         </View>
         {time ? (
@@ -106,30 +129,28 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
         ) : null}
       </View>
 
-      <View style={styles.labels} testID={`home-outing-labels-${session.id}`}>
-        <View style={[styles.chip, isWalk ? styles.chipWalk : styles.chipRun]}>
-          <Text
-            style={[styles.chipText, isWalk ? styles.chipTextWalk : styles.chipTextRun]}
-          >
-            {activity}
-          </Text>
+      {hasExtraChips ? (
+        <View
+          style={styles.labels}
+          testID={cover ? undefined : `home-outing-labels-${session.id}`}
+        >
+          {womenOnly ? (
+            <View style={styles.chipWomen} testID={`home-outing-women-${session.id}`}>
+              <Text style={styles.chipWomenText}>Entre femmes</Text>
+            </View>
+          ) : null}
+          {language ? (
+            <View style={styles.chipLang}>
+              <Text style={styles.chipLangText}>Langue</Text>
+            </View>
+          ) : null}
+          {joined ? (
+            <View style={styles.chipJoined}>
+              <Text style={styles.chipJoinedText}>Inscrit</Text>
+            </View>
+          ) : null}
         </View>
-        {womenOnly ? (
-          <View style={styles.chipWomen} testID={`home-outing-women-${session.id}`}>
-            <Text style={styles.chipWomenText}>Entre femmes</Text>
-          </View>
-        ) : null}
-        {language ? (
-          <View style={styles.chipLang}>
-            <Text style={styles.chipLangText}>Langue</Text>
-          </View>
-        ) : null}
-        {joined ? (
-          <View style={styles.chipJoined}>
-            <Text style={styles.chipJoinedText}>Inscrit</Text>
-          </View>
-        ) : null}
-      </View>
+      ) : null}
 
       <View style={styles.body}>
         <Text style={styles.title} numberOfLines={2}>
@@ -242,6 +263,32 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  coverChip: {
+    position: "absolute",
+    left: 12,
+    bottom: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  coverChipRun: {
+    backgroundColor: "rgba(10, 22, 16, 0.72)",
+  },
+  coverChipWalk: {
+    backgroundColor: "rgba(18, 22, 20, 0.68)",
+  },
+  coverChipText: {
+    fontFamily: h.font.hanken.semibold,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.2,
+  },
+  coverChipTextRun: {
+    color: "#E8F5E9",
+  },
+  coverChipTextWalk: {
+    color: "#ECEFEE",
+  },
   hostRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -293,24 +340,6 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 6,
   },
-  chip: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  chipRun: {
-    backgroundColor: "rgba(0,95,52,0.1)",
-  },
-  chipWalk: {
-    backgroundColor: "rgba(63,73,65,0.1)",
-  },
-  chipText: {
-    fontFamily: h.font.hanken.semibold,
-    fontSize: 11,
-    lineHeight: 14,
-  },
-  chipTextRun: { color: h.primary },
-  chipTextWalk: { color: h.textSecondary },
   chipWomen: {
     paddingHorizontal: 8,
     paddingVertical: 3,
