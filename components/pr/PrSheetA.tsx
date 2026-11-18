@@ -459,7 +459,10 @@ const styles = StyleSheet.create({
     flex: 1,
     height: redesignTheme.cta.height,
     borderRadius: redesignTheme.cta.radius,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    // Quiet secondary — outline, no fill fight with primary
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -467,28 +470,29 @@ const styles = StyleSheet.create({
     flex: 1,
     height: redesignTheme.cta.height,
     borderRadius: redesignTheme.cta.radius,
-    // Brand forest green — high contrast vs pale sage CTAs on this sheet
-    backgroundColor: "#005F34",
+    // Same solid sage primary as Créer un compte / Rejoindre on dark surfaces
+    backgroundColor: "#C3D5B3",
     alignItems: "center",
     justifyContent: "center",
   },
   saveBtnDisabled: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(195,213,179,0.22)",
   },
   cancelText: {
     fontFamily: welcomeFontFamily.semibold,
     fontSize: 15,
     fontWeight: "600",
-    color: redesignTheme.text.primary,
+    color: "rgba(255,255,255,0.72)",
   },
   saveText: {
     fontFamily: welcomeFontFamily.semibold,
     fontSize: 15,
-    fontWeight: "600",
-    color: "#FFFFFF",
+    fontWeight: "700",
+    // Dark on sage — high contrast (matches onboarding primary CTAs)
+    color: "#111214",
   },
   saveTextDisabled: {
-    color: redesignTheme.text.faint,
+    color: "rgba(17,18,20,0.45)",
   },
   btnPressed: {
     opacity: 0.85,
