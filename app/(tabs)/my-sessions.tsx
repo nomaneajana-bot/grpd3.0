@@ -2,6 +2,7 @@ import { router, useFocusEffect, useLocalSearchParams, type Href } from "expo-ro
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -1305,26 +1306,49 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   desistBtn: {
+    minHeight: t.touchMin,
+    height: 44,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(26,28,29,0.14)",
+    backgroundColor: "transparent",
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    minHeight: t.touchMin,
-    paddingRight: 8,
+    justifyContent: "center",
+    ...(Platform.OS === "web"
+      ? ({
+          cursor: "pointer",
+          outlineStyle: "none",
+          outlineWidth: 0,
+          boxShadow: "none",
+        } as object)
+      : null),
   },
   desistText: {
-    fontFamily: t.font.hanken.medium,
+    fontFamily: t.font.hanken.semibold,
     fontSize: 14,
     lineHeight: 18,
-    color: t.outline,
+    color: t.textSecondary,
   },
   detailsBtn: {
-    height: 40,
+    minHeight: t.touchMin,
+    height: 44,
     paddingHorizontal: 18,
     borderRadius: 10,
     backgroundColor: t.primary,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
+    ...(Platform.OS === "web"
+      ? ({
+          cursor: "pointer",
+          outlineStyle: "none",
+          outlineWidth: 0,
+          boxShadow: "none",
+        } as object)
+      : null),
   },
   detailsText: {
     fontFamily: t.font.space.bold,
