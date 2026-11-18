@@ -41,9 +41,7 @@ export function StitoParticipantsCard({
 
       <Text style={styles.count} testID="stito-participants-count">
         {displayCount} inscrit{displayCount === 1 ? "" : "s"}
-        {isJoined ? (
-          <Text style={styles.countHint}> (dont toi)</Text>
-        ) : placesHint ? (
+        {!isJoined && placesHint ? (
           <Text style={styles.countHint}> · {placesHint}</Text>
         ) : null}
       </Text>
