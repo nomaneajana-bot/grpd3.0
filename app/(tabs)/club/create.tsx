@@ -1,6 +1,7 @@
 import { type Href, router, Stack, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -309,7 +310,11 @@ export default function ClubCreateScreen() {
           accessibilityRole="button"
           accessibilityLabel="Annuler"
           testID="club-create-cancel"
-          style={styles.cancelLink}
+          style={({ pressed }) => [
+            styles.cancelLink,
+            pressed && styles.cancelLinkPressed,
+            isSubmitting && { opacity: 0.5 },
+          ]}
         >
           <Text style={styles.cancelText}>Annuler</Text>
         </Pressable>
@@ -475,14 +480,38 @@ const styles = StyleSheet.create({
     color: t.textSecondary,
   },
   cancelLink: {
+    alignSelf: "center",
     alignItems: "center",
-    paddingVertical: 12,
-    minHeight: 44,
     justifyContent: "center",
+    marginTop: 4,
+    marginBottom: 8,
+    minHeight: 48,
+    minWidth: 120,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    // Kill default browser button chrome / blue focus ring on web.
+    ...(Platform.OS === "web"
+      ? ({
+          cursor: "pointer",
+          outlineStyle: "none",
+          outlineWidth: 0,
+          boxShadow: "none",
+          appearance: "none",
+          WebkitAppearance: "none",
+        } as object)
+      : null),
+  },
+  cancelLinkPressed: {
+    opacity: 0.7,
   },
   cancelText: {
     fontFamily: t.font.space.semibold,
-    fontSize: 14,
-    color: t.outline,
+    fontSize: 15,
+    lineHeight: 20,
+    color: t.textSecondary,
+    letterSpacing: 0.1,
   },
 });

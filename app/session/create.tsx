@@ -5,6 +5,7 @@ import {
     FlatList,
     Image,
     Modal,
+    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -134,6 +135,7 @@ import {
 } from "../../lib/workoutStore";
 import {
   defaultUpcomingOutingTime,
+  formatOutingDateShort,
   isSelectableOutingDateTime,
   todayISO,
   upcomingDateOptions,
@@ -491,9 +493,7 @@ type TimePickerProps = {
   onSelect: (hour: number, minute: number) => void;
 };
 
-// Time Picker Component (wheel-like with two columns)
-// Note: Uses plain FlatList without Animated to avoid VirtualizedList + useNativeDriver issues.
-// Simple onMomentumScrollEnd handler detects selected index after scroll stops.
+/** Simple hour grid + :00/:15/:30/:45 chips (mobile-web friendly). */
 function TimePicker({
   visible,
   title,
@@ -502,35 +502,17 @@ function TimePicker({
   onClose,
   onSelect,
 }: TimePickerProps) {
-  const hourListRef = useRef<FlatList>(null);
-  const minuteListRef = useRef<FlatList>(null);
   const [localHour, setLocalHour] = useState(selectedHour);
-  const [localMinute, setLocalMinute] = useState(selectedMinute);
-
-  // Add spacer items to center first/last items
-  const hourData = [null, null, ...HOUR_OPTIONS, null, null];
-  const minuteData = [null, null, ...MINUTE_OPTIONS, null, null];
+  const [localMinute, setLocalMinute] = useState(
+    MINUTE_OPTIONS.includes(selectedMinute) ? selectedMinute : 0,
+  );
 
   useEffect(() => {
-    if (visible) {
-      setLocalHour(selectedHour);
-      setLocalMinute(selectedMinute);
-      // Scroll to selected values when picker opens (accounting for 2 spacer items at top)
-      setTimeout(() => {
-        const hourIndex = selectedHour + 2; // +2 for spacer items
-        hourListRef.current?.scrollToOffset({
-          offset: hourIndex * ITEM_HEIGHT,
-          animated: false,
-        });
-        const minuteIndex = MINUTE_OPTIONS.indexOf(selectedMinute) + 2;
-        if (minuteIndex >= 2) {
-          minuteListRef.current?.scrollToOffset({
-            offset: minuteIndex * ITEM_HEIGHT,
-            animated: false,
-          });
-        }
-      }, 100);
-    }
+    if (!visible) return;
+    setLocalHour(selectedHour);
+    setLocalMinute(
+      MINUTE_OPTIONS.includes(selectedMinute) ? selectedMinute : 0,
+    );
   }, [visible, selectedHour, selectedMinute]);
 
   const handleConfirm = () => {
@@ -538,81 +520,19 @@ function TimePicker({
     onClose();
   };
 
-  const handleHourScrollEnd = (event: ScrollEndEvent) => {
-    const offset = event.nativeEvent.contentOffset.y;
-    const index = Math.round(offset / ITEM_HEIGHT);
-    const clampedIndex = Math.max(2, Math.min(index, hourData.length - 3)); // Account for spacers
-    const actualIndex = clampedIndex - 2; // Remove spacer offset
-    if (actualIndex >= 0 && actualIndex < HOUR_OPTIONS.length) {
-      const newHour = HOUR_OPTIONS[actualIndex];
-      setLocalHour(newHour);
-      // Snap precisely to the correct position
-      hourListRef.current?.scrollToOffset({
-        offset: clampedIndex * ITEM_HEIGHT,
-        animated: true,
-      });
-    }
-  };
-
-  const handleMinuteScrollEnd = (event: ScrollEndEvent) => {
-    const offset = event.nativeEvent.contentOffset.y;
-    const index = Math.round(offset / ITEM_HEIGHT);
-    const clampedIndex = Math.max(2, Math.min(index, minuteData.length - 3)); // Account for spacers
-    const actualIndex = clampedIndex - 2; // Remove spacer offset
-    if (actualIndex >= 0 && actualIndex < MINUTE_OPTIONS.length) {
-      const newMinute = MINUTE_OPTIONS[actualIndex];
-      setLocalMinute(newMinute);
-      // Snap precisely to the correct position
-      minuteListRef.current?.scrollToOffset({
-        offset: clampedIndex * ITEM_HEIGHT,
-        animated: true,
-      });
-    }
-  };
-
-  const renderHourItem = ({ item }: { item: number | null }) => {
-    if (item === null) {
-      return <View style={styles.wheelPickerItemWrapper} />;
-    }
-    const isSelected = item === localHour;
-    return (
-      <View style={styles.wheelPickerItemWrapper}>
-        <Text
-          style={[
-            styles.wheelPickerItemText,
-            isSelected && styles.wheelPickerItemTextSelected,
-            !isSelected && styles.wheelPickerItemTextDimmed,
-          ]}
-        >
-          {item.toString().padStart(2, "0")}
-        </Text>
-      </View>
+  const applyNativeTime = (raw: string) => {
+    const m = raw.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return;
+    const h = Math.max(0, Math.min(23, Number(m[1])));
+    let min = Number(m[2]);
+    // Snap to nearest 15 min
+    min = MINUTE_OPTIONS.reduce((best, step) =>
+      Math.abs(step - min) < Math.abs(best - min) ? step : best,
     );
+    setLocalHour(h);
+    setLocalMinute(min);
   };
 
-  const renderMinuteItem = ({ item }: { item: number | null }) => {
-    if (item === null) {
-      return <View style={styles.wheelPickerItemWrapper} />;
-    }
-    const isSelected = item === localMinute;
-    return (
-      <View style={styles.wheelPickerItemWrapper}>
-        <Text
-          style={[
-            styles.wheelPickerItemText,
-            isSelected && styles.wheelPickerItemTextSelected,
-            !isSelected && styles.wheelPickerItemTextDimmed,
-          ]}
-        >
-          {item.toString().padStart(2, "0")}
-        </Text>
-      </View>
-    );
-  };
-
-  // Fixed modal structure: backdrop Pressable is BEHIND the card (not wrapping it).
-  // This prevents the backdrop from intercepting scroll gestures on the FlatLists.
-  // The card is a plain View, allowing FlatLists to receive pan/scroll events directly.
   return (
     <Modal
       visible={visible}
@@ -621,72 +541,83 @@ function TimePicker({
       onRequestClose={onClose}
     >
       <View style={styles.modalBackdrop}>
-        {/* Backdrop Pressable behind card - closes modal on tap */}
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        {/* Card above backdrop - NOT wrapped in any touchable */}
-        <View style={styles.pacePickerCard}>
+        <View style={styles.pacePickerCard} testID="session-time-picker">
           <View style={styles.pickerHeader}>
-            <Text style={styles.pickerTitle}>{title.toUpperCase()}</Text>
+            <Text style={styles.pickerTitle}>{title}</Text>
+            <Text style={styles.timePickerPreview} testID="session-time-preview">
+              {String(localHour).padStart(2, "0")}:
+              {String(localMinute).padStart(2, "0")}
+            </Text>
           </View>
 
-          <View style={styles.wheelPickerContainer}>
-            <View style={styles.wheelPickerColumn}>
-              <Text style={styles.wheelPickerColumnLabel}>HEURES</Text>
-              <View style={styles.wheelPickerWheelContainer}>
-                <View style={styles.wheelPickerCenterHighlight} />
-                <View style={styles.wheelPickerWheel}>
-                  <FlatList
-                    ref={hourListRef}
-                    data={hourData}
-                    renderItem={renderHourItem}
-                    keyExtractor={(item, index) =>
-                      `hour-${item ?? `spacer-${index}`}`
-                    }
-                    showsVerticalScrollIndicator={false}
-                    snapToInterval={ITEM_HEIGHT}
-                    decelerationRate="fast"
-                    scrollEnabled={true}
-                    getItemLayout={(data, index) => ({
-                      length: ITEM_HEIGHT,
-                      offset: ITEM_HEIGHT * index,
-                      index,
-                    })}
-                    contentContainerStyle={styles.wheelPickerListContent}
-                    onScrollToIndexFailed={() => {}}
-                    onMomentumScrollEnd={handleHourScrollEnd}
-                  />
-                </View>
-              </View>
+          {Platform.OS === "web" ? (
+            <View style={styles.nativeTimeWrap}>
+              {React.createElement("input", {
+                type: "time",
+                step: 900,
+                value: `${String(localHour).padStart(2, "0")}:${String(localMinute).padStart(2, "0")}`,
+                onChange: (e: { target: { value: string } }) =>
+                  applyNativeTime(e.target.value),
+                style: {
+                  fontSize: 18,
+                  padding: 10,
+                  borderRadius: 10,
+                  border: `1px solid ${_stito.surfaceContainerHigh}`,
+                  width: "100%",
+                  boxSizing: "border-box",
+                  fontFamily: "inherit",
+                },
+                "data-testid": "session-time-native",
+              })}
+              <Text style={styles.timePickerHint}>
+                Ou choisis ci-dessous (pas de 15 min)
+              </Text>
             </View>
+          ) : null}
 
-            <View style={styles.wheelPickerColumn}>
-              <Text style={styles.wheelPickerColumnLabel}>MINUTES</Text>
-              <View style={styles.wheelPickerWheelContainer}>
-                <View style={styles.wheelPickerCenterHighlight} />
-                <View style={styles.wheelPickerWheel}>
-                  <FlatList
-                    ref={minuteListRef}
-                    data={minuteData}
-                    renderItem={renderMinuteItem}
-                    keyExtractor={(item, index) =>
-                      `minute-${item ?? `spacer-${index}`}`
-                    }
-                    showsVerticalScrollIndicator={false}
-                    snapToInterval={ITEM_HEIGHT}
-                    decelerationRate="fast"
-                    scrollEnabled={true}
-                    getItemLayout={(data, index) => ({
-                      length: ITEM_HEIGHT,
-                      offset: ITEM_HEIGHT * index,
-                      index,
-                    })}
-                    contentContainerStyle={styles.wheelPickerListContent}
-                    onScrollToIndexFailed={() => {}}
-                    onMomentumScrollEnd={handleMinuteScrollEnd}
-                  />
-                </View>
-              </View>
-            </View>
+          <Text style={styles.timeGridLabel}>Heure</Text>
+          <View style={styles.hourGrid} testID="session-time-hour-grid">
+            {HOUR_OPTIONS.map((hour) => {
+              const on = hour === localHour;
+              return (
+                <Pressable
+                  key={hour}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => setLocalHour(hour)}
+                  style={[styles.hourCell, on && styles.hourCellOn]}
+                  testID={`session-time-hour-${hour}`}
+                >
+                  <Text style={[styles.hourCellText, on && styles.hourCellTextOn]}>
+                    {String(hour).padStart(2, "0")}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.timeGridLabel}>Minutes</Text>
+          <View style={styles.minuteRow} testID="session-time-minute-row">
+            {MINUTE_OPTIONS.map((minute) => {
+              const on = minute === localMinute;
+              return (
+                <Pressable
+                  key={minute}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => setLocalMinute(minute)}
+                  style={[styles.minuteChip, on && styles.minuteChipOn]}
+                  testID={`session-time-minute-${minute}`}
+                >
+                  <Text
+                    style={[styles.minuteChipText, on && styles.minuteChipTextOn]}
+                  >
+                    :{String(minute).padStart(2, "0")}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           <View style={styles.wheelPickerActions}>
@@ -701,6 +632,7 @@ function TimePicker({
               style={styles.wheelPickerConfirmButton}
               onPress={handleConfirm}
               activeOpacity={0.8}
+              testID="session-time-confirm"
             >
               <Text style={styles.wheelPickerConfirmText}>Confirmer</Text>
             </TouchableOpacity>
@@ -1463,27 +1395,47 @@ function DistancePicker({
 
 // SessionGroupConfig is now imported from lib/sessionBuilder.ts
 
+/** Read create-route params; web falls back to `window.location.search` if Expo drops them. */
+function readCreateRouteParam(
+  fromRouter: string | string[] | undefined,
+  queryKey: string,
+): string | null {
+  const raw = Array.isArray(fromRouter) ? fromRouter[0] : fromRouter;
+  const trimmed = raw?.trim();
+  if (trimmed) return trimmed;
+  if (typeof window === "undefined") return null;
+  try {
+    const q = new URLSearchParams(window.location.search).get(queryKey);
+    return q?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 export default function CreateSessionScreen() {
-  const { workoutId, sessionId, clubId: clubIdParam, audience: audienceParam } =
-    useLocalSearchParams<{
-      workoutId?: string;
-      sessionId?: string;
-      clubId?: string;
-      audience?: string;
-    }>();
+  const {
+    workoutId,
+    sessionId,
+    clubId: clubIdParam,
+    audience: audienceParam,
+    clubName: clubNameParam,
+  } = useLocalSearchParams<{
+    workoutId?: string;
+    sessionId?: string;
+    clubId?: string;
+    audience?: string;
+    clubName?: string;
+  }>();
   const isEditMode = Boolean(sessionId && !Array.isArray(sessionId));
   const editSessionId = isEditMode
     ? Array.isArray(sessionId)
       ? sessionId[0]
       : sessionId
     : null;
-  const explicitClubId = (() => {
-    const raw = Array.isArray(clubIdParam) ? clubIdParam[0] : clubIdParam;
-    const id = raw?.trim();
-    return id ? id : null;
-  })();
+  const explicitClubId = readCreateRouteParam(clubIdParam, "clubId");
+  const explicitClubNameParam = readCreateRouteParam(clubNameParam, "clubName");
   const explicitAudience = (() => {
-    const raw = Array.isArray(audienceParam) ? audienceParam[0] : audienceParam;
+    const raw = readCreateRouteParam(audienceParam, "audience");
     return raw === "club" || raw === "team" || raw === "public" ? raw : null;
   })();
 
@@ -1696,7 +1648,10 @@ export default function CreateSessionScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
-  const [primaryClubId, setPrimaryClubId] = useState<string | null>(null);
+  // Bind immediately when opened from club CTA — don’t wait for memberships fetch.
+  const [primaryClubId, setPrimaryClubId] = useState<string | null>(
+    explicitClubId,
+  );
   const [clubAdminGroups, setClubAdminGroups] = useState<
     ClubAdminGroupOverride[] | null
   >(null);
@@ -1765,6 +1720,14 @@ export default function CreateSessionScreen() {
 
   // Format time as HH:MM
   const timeLabel = `${selectedHour.toString().padStart(2, "0")}:${selectedMinute.toString().padStart(2, "0")}`;
+
+  const boundClubDisplayName =
+    approvedClubs.find((m) => m.clubId === (explicitClubId || primaryClubId))
+      ?.club?.name ??
+    explicitClubNameParam ??
+    null;
+  // Only pin a top banner when launched from a club CTA (explicit clubId param).
+  const showClubBoundBanner = Boolean(explicitClubId);
 
   // Helper to format pace for display
   const formatPace = (secondsPerKm: number | null): string => {
@@ -2232,6 +2195,9 @@ export default function CreateSessionScreen() {
       });
       const boundClubName =
         approvedClubs.find((m) => m.clubId === publishClubId)?.club?.name ??
+        (publishClubId && publishClubId === explicitClubId
+          ? explicitClubNameParam
+          : null) ??
         null;
       const targetGroupName =
         targetColorGroupId && clubAdminSettings
@@ -2239,11 +2205,11 @@ export default function CreateSessionScreen() {
               (g) => g.id === targetColorGroupId,
             )?.name ?? null
           : null;
-      // Soft public branding uses club name; members-only may target a color group.
-      const hostGroupName =
-        sessionVisibility === "public" && publishClubId
-          ? boundClubName
-          : targetGroupName ?? audienceFields.hostGroupName;
+      // Always brand with the club when bound (Accueil / detail show hostGroupName).
+      // Color-group target is a subtitle-level detail, not a replacement for the club.
+      const hostGroupName = publishClubId
+        ? boundClubName ?? targetGroupName ?? audienceFields.hostGroupName
+        : audienceFields.hostGroupName;
 
       if (sessionVisibility === "members" && !primaryClubId) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -2504,6 +2470,24 @@ export default function CreateSessionScreen() {
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
+        {showClubBoundBanner ? (
+          <View style={styles.clubBoundBanner} testID="create-club-context">
+            <Text style={styles.clubBoundEyebrow}>SORTIE POUR</Text>
+            <Text
+              style={styles.clubBoundName}
+              numberOfLines={2}
+              testID="create-club-context-name"
+            >
+              {boundClubDisplayName ?? "ton club"}
+            </Text>
+            <Text style={styles.clubBoundHint}>
+              {sessionAudience === "club"
+                ? "Réservée aux membres de ce club — tu peux l’ouvrir à tous plus bas."
+                : "Associée à ce club — visible sur Découvrir."}
+            </Text>
+          </View>
+        ) : null}
+
         {/* Card 1 - Type de séance */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>TYPE DE SÉANCE</Text>
@@ -2799,7 +2783,7 @@ export default function CreateSessionScreen() {
           </View>
         </View>
 
-        {/* Infos de base — lieu via chips only (no duplicate Spot row) */}
+        {/* Infos de base — chips + Autre custom lieu; calm date/time row values */}
         <View style={styles.card} testID="session-card-basics">
           <Text style={styles.cardLabel}>INFOS DE BASE</Text>
           <Text style={styles.fieldLabel}>Lieu</Text>
@@ -2807,11 +2791,12 @@ export default function CreateSessionScreen() {
             value={spot}
             onChange={setSpot}
             options={spots}
+            allowCustom
             testID="session-location-slider"
           />
           <View style={styles.divider} />
           <TouchableOpacity
-            style={styles.fieldRow}
+            style={styles.fieldRowStacked}
             onPress={() => setShowDatePicker(true)}
             activeOpacity={0.7}
             testID="session-date-field"
@@ -2819,13 +2804,17 @@ export default function CreateSessionScreen() {
             accessibilityLabel="Choisir une date"
           >
             <Text style={styles.fieldLabel}>Date</Text>
-            <Text style={styles.fieldInput} testID="session-date-value">
-              {dateLabel}
+            <Text
+              style={styles.fieldValueCalm}
+              numberOfLines={1}
+              testID="session-date-value"
+            >
+              {formatOutingDateShort(dateISO)}
             </Text>
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity
-            style={styles.fieldRow}
+            style={styles.fieldRowStacked}
             onPress={() => setShowTimePicker(true)}
             activeOpacity={0.7}
             testID="session-time-field"
@@ -2833,7 +2822,11 @@ export default function CreateSessionScreen() {
             accessibilityLabel="Choisir une heure"
           >
             <Text style={styles.fieldLabel}>Heure</Text>
-            <Text style={styles.fieldInput} testID="session-time-value">
+            <Text
+              style={styles.fieldValueCalm}
+              numberOfLines={1}
+              testID="session-time-value"
+            >
               {timeLabel}
             </Text>
           </TouchableOpacity>
@@ -3421,11 +3414,128 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
   },
+  fieldRowStacked: {
+    paddingVertical: 12,
+    gap: 6,
+  },
   fieldLabel: {
     color: colors.text.secondary,
     fontSize: 14,
     fontWeight: "400",
     flex: 1,
+  },
+  fieldValueCalm: {
+    color: colors.text.primary,
+    fontSize: 17,
+    fontWeight: "500",
+    lineHeight: 22,
+    letterSpacing: -0.2,
+  },
+  clubBoundBanner: {
+    backgroundColor: colors.background.card,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: "rgba(0,95,52,0.18)",
+    gap: 4,
+  },
+  clubBoundEyebrow: {
+    color: colors.text.tertiary,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+  clubBoundName: {
+    color: colors.text.primary,
+    fontSize: 20,
+    fontWeight: "700",
+    letterSpacing: -0.3,
+    lineHeight: 26,
+  },
+  clubBoundHint: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  timePickerPreview: {
+    color: colors.text.primary,
+    fontSize: 28,
+    fontWeight: "600",
+    letterSpacing: -0.5,
+    marginTop: 4,
+  },
+  timePickerHint: {
+    color: colors.text.tertiary,
+    fontSize: 12,
+    marginTop: 8,
+  },
+  nativeTimeWrap: {
+    paddingHorizontal: 4,
+    marginBottom: 12,
+  },
+  timeGridLabel: {
+    color: colors.text.secondary,
+    fontSize: 12,
+    fontWeight: "600",
+    letterSpacing: 0.4,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  hourGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
+  hourCell: {
+    width: "14.5%",
+    minWidth: 40,
+    aspectRatio: 1.15,
+    borderRadius: 10,
+    backgroundColor: colors.background.elevated,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  hourCellOn: {
+    backgroundColor: _stito.primary,
+    borderColor: _stito.primary,
+  },
+  hourCellText: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  hourCellTextOn: {
+    color: _stito.onPrimary,
+  },
+  minuteRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 8,
+  },
+  minuteChip: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: colors.background.elevated,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  minuteChipOn: {
+    backgroundColor: _stito.primary,
+  },
+  minuteChipText: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  minuteChipTextOn: {
+    color: _stito.onPrimary,
   },
   fieldHint: {
     color: colors.text.tertiary,

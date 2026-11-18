@@ -569,9 +569,15 @@ export default function ClubScreen() {
                   const clubId = primaryMembership?.clubId;
                   if (!clubId) return;
                   void persistFocusedClubId(clubId);
-                  router.push(
-                    `/session/create?clubId=${encodeURIComponent(clubId)}&audience=club` as Href,
-                  );
+                  // Object params survive Expo Router web better than a query string alone.
+                  router.push({
+                    pathname: "/session/create",
+                    params: {
+                      clubId,
+                      audience: "club",
+                      clubName: club.name,
+                    },
+                  } as Href);
                 }}
                 style={styles.organiseBtn}
               >

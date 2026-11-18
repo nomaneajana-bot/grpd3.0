@@ -32,8 +32,8 @@ export const MOCK_MEMBERSHIPS_KEY = "mock:club_memberships";
 export const MOCK_OTP_KEY = "mock:otp";
 /** Bump to force a one-time reseed of the richer Casablanca world. */
 export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v5";
-/** v9: replace dead Unsplash cover IDs (404 → blank grey Accueil covers). */
-export const DEMO_SEED_VERSION = "9";
+/** v10: jury diversity clubs (rencontres, english, founders, corporate girls, éco, conseil). */
+export const DEMO_SEED_VERSION = "10";
 
 /** Distinct outing covers — live Unsplash IDs only (verified HTTP 200). */
 const COVER = OUTING_COVERS;
@@ -52,6 +52,66 @@ export const DEMO_WALK_CLUB_CODE = "MARCHE26";
 export const DEMO_LANG_CLUB_ID = "club_french_run_talk";
 export const DEMO_LANG_CLUB_NAME = "French Run & Talk";
 export const DEMO_LANG_CLUB_CODE = "FRTALK26";
+
+/** Extra Casablanca clubs for jury demo — each has ≥1 upcoming Accueil session. */
+export const DEMO_DIVERSITY_CLUBS = [
+  {
+    id: "club_walk_rencontres",
+    name: "Casa Walk Rencontres",
+    slug: "casa-walk-rencontres",
+    code: "RENCONT26",
+    description:
+      "Marches conviviales entre célibataires — ambiance respectueuse, on se rencontre en marchant (pas une appli de dating).",
+    createdById: "demo_coach_amelie",
+  },
+  {
+    id: "club_english_walk",
+    name: "English Walk Casa",
+    slug: "english-walk-casa",
+    code: "ENGWALK26",
+    description:
+      "Practice English while walking — conversation-friendly pace around Casablanca.",
+    createdById: "demo_coach_youssef",
+  },
+  {
+    id: "club_founders_move",
+    name: "Casa Founders Move",
+    slug: "casa-founders-move",
+    code: "FOUND26",
+    description:
+      "Entrepreneurs qui marchent ou courent ensemble — networking léger, idées en mouvement.",
+    createdById: "demo_coach_youssef",
+  },
+  {
+    id: "club_corporate_girls",
+    name: "Corporate Girls Casa",
+    slug: "corporate-girls-casa",
+    code: "CORPG26",
+    description:
+      "Entre femmes pro — footing et marche pour réseaux, confiance et énergie.",
+    createdById: "demo_coach_amelie",
+  },
+  {
+    id: "club_eco_walk",
+    name: "Eco Walk Casa",
+    slug: "eco-walk-casa",
+    code: "ECOWALK26",
+    description:
+      "Marches éco — nature urbaine, zéro stress chrono, sensibilisation douce.",
+    createdById: "demo_coach_amelie",
+  },
+  {
+    id: "club_conseil_marche",
+    name: "Conseil en Marche",
+    slug: "conseil-en-marche",
+    code: "CONSEIL26",
+    description:
+      "Mentoring et conseil entrepreneurial en marchant — 1:1 et petits groupes.",
+    createdById: "demo_coach_youssef",
+  },
+] as const;
+
+export type DemoDiversityClubId = (typeof DEMO_DIVERSITY_CLUBS)[number]["id"];
 
 type DemoPerson = {
   userId: string;
@@ -348,6 +408,8 @@ function buildDemoSessions(): ApiSession[] {
     genderRestriction?: "women_only" | "none";
     openRunners?: number;
     coverImageUrl?: string | null;
+    /** Club / community name shown as Accueil host for jury clarity. */
+    hostGroupName?: string | null;
   };
 
   const specs: SpecExtra[] = [
@@ -693,6 +755,140 @@ function buildDemoSessions(): ApiSession[] {
       purpose: "Endurance fondamentale — groupes selon allure.",
       coverImageUrl: COVER.longRun,
     },
+    // —— Jury diversity clubs (public Accueil cards, distinct hostGroupName) ——
+    {
+      id: "demo_sess_rencontres_corniche",
+      title: "Marche rencontres — Corniche",
+      spot: "Corniche Ain Diab",
+      dayOffset: 0,
+      timeMinutes: 18 * 60 + 15,
+      typeLabel: "MARCHE · Rencontres",
+      volume: "55 min · pas pressé",
+      targetPace: "—",
+      estimatedDistanceKm: 4.5,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Amélie Traoré",
+      coachPhone: "+212600000002",
+      recommendedGroupId: "D",
+      clubId: "club_walk_rencontres",
+      hostGroupName: "Casa Walk Rencontres",
+      purpose:
+        "Marche conviviale entre célibataires — on se présente, on discute, ambiance respectueuse.",
+      coverImageUrl: COVER.rencontres,
+      openRunners: 12,
+    },
+    {
+      id: "demo_sess_english_walk_parc",
+      title: "English Walk — Parc de la Ligue",
+      spot: "Parc de la Ligue Arabe",
+      dayOffset: 0,
+      timeMinutes: 9 * 60 + 30,
+      typeLabel: "MARCHE · English",
+      volume: "50 min · conversation",
+      targetPace: "—",
+      estimatedDistanceKm: 4,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Youssef Benali",
+      coachPhone: "+212600000001",
+      recommendedGroupId: "D",
+      clubId: "club_english_walk",
+      hostGroupName: "English Walk Casa",
+      purpose:
+        "Walk & talk in English — friendly pace, no judgment on level.",
+      coverImageUrl: COVER.englishWalk,
+      openRunners: 10,
+    },
+    {
+      id: "demo_sess_founders_anfa",
+      title: "Founders footing — Anfa",
+      spot: "Anfa Place",
+      dayOffset: 0,
+      timeMinutes: 7 * 60 + 15,
+      typeLabel: "FOOTING · Entrepreneurs",
+      volume: "40 min · easy talk",
+      targetPace: "5:45–6:45/km",
+      estimatedDistanceKm: 7,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Youssef Benali",
+      coachPhone: "+212600000001",
+      recommendedGroupId: "C",
+      clubId: "club_founders_move",
+      hostGroupName: "Casa Founders Move",
+      purpose:
+        "Entrepreneurs — allure conversation, on échange idées avant le bureau.",
+      coverImageUrl: COVER.founders,
+      openRunners: 9,
+    },
+    {
+      id: "demo_sess_corporate_girls",
+      title: "Corporate Girls — footing soir",
+      spot: "Twin Center — Anfa",
+      dayOffset: 0,
+      timeMinutes: 19 * 60 + 30,
+      typeLabel: "FOOTING · Pro femmes",
+      volume: "45 min · allure libre",
+      targetPace: "5:30–6:30/km",
+      estimatedDistanceKm: 8,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Amélie Traoré",
+      coachPhone: "+212600000002",
+      recommendedGroupId: "C",
+      clubId: "club_corporate_girls",
+      hostGroupName: "Corporate Girls Casa",
+      genderRestriction: "women_only",
+      purpose:
+        "Entre femmes pro — réseau, énergie, zéro pression chrono.",
+      coverImageUrl: COVER.corporateGirls,
+      openRunners: 11,
+    },
+    {
+      id: "demo_sess_eco_walk_jardin",
+      title: "Eco Walk — Jardin d’Essai",
+      spot: "Jardin d’Essai Floral",
+      dayOffset: 0,
+      timeMinutes: 16 * 60,
+      typeLabel: "MARCHE · Éco",
+      volume: "60 min · nature urbaine",
+      targetPace: "—",
+      estimatedDistanceKm: 5,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Amélie Traoré",
+      coachPhone: "+212600000002",
+      recommendedGroupId: "D",
+      clubId: "club_eco_walk",
+      hostGroupName: "Eco Walk Casa",
+      purpose:
+        "Marche éco — observer, respirer, parler biodiversité sans jargon.",
+      coverImageUrl: COVER.ecoWalk,
+      openRunners: 14,
+    },
+    {
+      id: "demo_sess_conseil_marche",
+      title: "Conseil en marche — Marina",
+      spot: "Marina Casablanca",
+      dayOffset: 0,
+      timeMinutes: 12 * 60 + 45,
+      typeLabel: "MARCHE · Conseil",
+      volume: "45 min · mentoring",
+      targetPace: "—",
+      estimatedDistanceKm: 3.5,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: "Youssef Benali",
+      coachPhone: "+212600000001",
+      recommendedGroupId: "D",
+      clubId: "club_conseil_marche",
+      hostGroupName: "Conseil en Marche",
+      purpose:
+        "Mentoring en marchant — pitch, blocages, prochaines étapes. Petits groupes.",
+      coverImageUrl: COVER.conseil,
+      openRunners: 8,
+    },
     {
       id: "demo_sess_past_footing",
       title: "Footing Parc Yasmina",
@@ -824,7 +1020,7 @@ function buildDemoSessions(): ApiSession[] {
       isCustom: false,
       createdAt: new Date().toISOString(),
       paceGroups,
-      hostGroupName: null,
+      hostGroupName: spec.hostGroupName?.trim() || null,
       meetingPoint: spec.spot,
       coachAdvice:
         spec.purpose ??
@@ -1155,6 +1351,19 @@ export async function ensureDemoWorld(): Promise<Club & { code: string }> {
   clubs[club.id] = club;
   clubs[walkClub.id] = walkClub;
   clubs[langClub.id] = langClub;
+  for (const d of DEMO_DIVERSITY_CLUBS) {
+    clubs[d.id] = {
+      id: d.id,
+      name: d.name,
+      slug: d.slug,
+      city: DEMO_CLUB_CITY,
+      description: d.description,
+      visibility: "public",
+      createdAt: "2025-09-01T00:00:00.000Z",
+      createdById: d.createdById,
+      code: d.code,
+    };
+  }
   await writeJson(MOCK_CLUBS_KEY, clubs);
 
   const memberships = await readJson<MockMembershipMap>(
@@ -1221,6 +1430,46 @@ export async function ensureDemoWorld(): Promise<Club & { code: string }> {
       createdAt: "2024-04-10T00:00:00.000Z",
     };
   }
+  // Diversity clubs — coaches + a rotating subset of runners for a lived-in roster
+  const diversityMembers = DEMO_PEOPLE.filter((p) => p.role === "member");
+  DEMO_DIVERSITY_CLUBS.forEach((d, clubIndex) => {
+    const coachId = d.createdById;
+    const coach = DEMO_PEOPLE.find((p) => p.userId === coachId);
+    if (coach) {
+      const id = `membership_div_${d.id}_${coach.userId}`;
+      memberships[id] = {
+        id,
+        clubId: d.id,
+        userId: coach.userId,
+        role: "coach",
+        status: "approved",
+        displayName: coach.displayName,
+        avatarUrl: coach.avatarUrl ?? null,
+        sharePrs: true,
+        prSummary: makePrSummary(coach.paceSecondsPerKm),
+        createdAt: "2025-09-05T00:00:00.000Z",
+      };
+    }
+    const slice = diversityMembers.slice(
+      clubIndex % Math.max(1, diversityMembers.length - 3),
+      (clubIndex % Math.max(1, diversityMembers.length - 3)) + 4,
+    );
+    for (const person of slice) {
+      const id = `membership_div_${d.id}_${person.userId}`;
+      memberships[id] = {
+        id,
+        clubId: d.id,
+        userId: person.userId,
+        role: "member",
+        status: "approved",
+        displayName: person.displayName,
+        avatarUrl: person.avatarUrl ?? null,
+        sharePrs: false,
+        prSummary: null,
+        createdAt: "2025-09-08T00:00:00.000Z",
+      };
+    }
+  });
   await writeJson(MOCK_MEMBERSHIPS_KEY, memberships);
 
   const sessions = buildDemoSessions();
@@ -1430,6 +1679,24 @@ export async function ensureDemoUserMembership(
       createdAt: new Date().toISOString(),
     };
   }
+  for (const d of DEMO_DIVERSITY_CLUBS) {
+    const existingDiv = Object.values(memberships).find(
+      (m) => m.userId === user.id && m.clubId === d.id,
+    );
+    if (!existingDiv) {
+      memberships[`membership_div_${d.id}_${user.id}`] = {
+        id: `membership_div_${d.id}_${user.id}`,
+        clubId: d.id,
+        userId: user.id,
+        role: "member",
+        status: "approved",
+        displayName: displayName ?? null,
+        sharePrs: false,
+        prSummary: null,
+        createdAt: new Date().toISOString(),
+      };
+    }
+  }
   await writeJson(MOCK_MEMBERSHIPS_KEY, memberships);
 
   // Pre-join enough outings so Accueil / Mes Sorties / historique look lived-in
@@ -1442,6 +1709,12 @@ export async function ensureDemoUserMembership(
     "demo_sess_marche_parc",
     "demo_sess_fartlek_ain_diab",
     "demo_sess_french_run_talk",
+    "demo_sess_rencontres_corniche",
+    "demo_sess_english_walk_parc",
+    "demo_sess_founders_anfa",
+    "demo_sess_corporate_girls",
+    "demo_sess_eco_walk_jardin",
+    "demo_sess_conseil_marche",
     "demo_sess_past_footing",
     "demo_sess_past_marche",
     "demo_sess_past_long",

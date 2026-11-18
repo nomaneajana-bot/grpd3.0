@@ -115,6 +115,8 @@ export function todayISO(): string {
 /**
  * Next `count` calendar days starting from today (inclusive), as ISO dates.
  * Used by session create date picker — real dates, never invented weekdays.
+ * `label` stays ALL-CAPS for the date *selector*; use `formatOutingDateShort`
+ * for calm single-line row values.
  */
 export function upcomingDateOptions(count = 14): {
   dateISO: string;
@@ -160,6 +162,38 @@ export function upcomingDateOptions(count = 14): {
   return options;
 }
 
+/** Calm single-line create-form row value, e.g. "Mercredi 18 novembre". */
+export function formatOutingDateShort(dateISO: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) return dateISO;
+  const [y, m, d] = dateISO.split("-").map(Number);
+  const date = new Date(y!, m! - 1, d!);
+  if (isNaN(date.getTime())) return dateISO;
+  const dayNames = [
+    "Dimanche",
+    "Lundi",
+    "Mardi",
+    "Mercredi",
+    "Jeudi",
+    "Vendredi",
+    "Samedi",
+  ];
+  const monthNames = [
+    "janvier",
+    "février",
+    "mars",
+    "avril",
+    "mai",
+    "juin",
+    "juillet",
+    "août",
+    "septembre",
+    "octobre",
+    "novembre",
+    "décembre",
+  ];
+  return `${dayNames[date.getDay()]} ${date.getDate()} ${monthNames[date.getMonth()]}`;
+}
+
 /**
  * Reject past calendar days. Returns false for invalid ISO.
  */
@@ -194,7 +228,10 @@ export function isSelectableOutingDateTime(
   return when.getTime() > Date.now();
 }
 
-/** Default create time: next half-hour slot at least 30 minutes ahead; else tomorrow 09:00. */
+/**
+ * Default create time: next 15-min slot ≥30 minutes ahead.
+ * Avoids midnight-ish defaults (e.g. 01:30) — falls back to 09:00 same/next day.
+ */
 export function defaultUpcomingOutingTime(now = new Date()): {
   dateISO: string;
   hour: number;
@@ -202,21 +239,44 @@ export function defaultUpcomingOutingTime(now = new Date()): {
   timeMinutes: number;
 } {
   const candidate = new Date(now.getTime() + 30 * 60 * 1000);
+  // Snap up to next :00 / :15 / :30 / :45
   let minutes = candidate.getMinutes();
   let hour = candidate.getHours();
-  if (minutes > 0 && minutes <= 30) minutes = 30;
-  else if (minutes > 30) {
+  const step = Math.ceil(minutes / 15) * 15;
+  if (step === 60) {
     minutes = 0;
     hour += 1;
+  } else if (step === 0 && minutes > 0) {
+    minutes = 15;
+  } else {
+    minutes = step;
   }
+  if (minutes === 0 && candidate.getMinutes() === 0) {
+    // already on the hour after +30m — keep
+  }
+
+  const pushToMorning = (base: Date) => {
+    const dateISO = `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, "0")}-${String(
+      base.getDate(),
+    ).padStart(2, "0")}`;
+    return { dateISO, hour: 9, minute: 0, timeMinutes: 9 * 60 };
+  };
+
   if (hour >= 24) {
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const dateISO = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(
-      tomorrow.getDate(),
-    ).padStart(2, "0")}`;
-    return { dateISO, hour: 9, minute: 0, timeMinutes: 9 * 60 };
+    return pushToMorning(tomorrow);
   }
+  // Night / very early → sensible daytime default
+  if (hour < 6 || hour >= 22) {
+    if (hour >= 22) {
+      const tomorrow = new Date(candidate);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return pushToMorning(tomorrow);
+    }
+    return pushToMorning(candidate);
+  }
+
   const dateISO = `${candidate.getFullYear()}-${String(candidate.getMonth() + 1).padStart(2, "0")}-${String(
     candidate.getDate(),
   ).padStart(2, "0")}`;

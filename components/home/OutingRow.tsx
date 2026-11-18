@@ -30,8 +30,9 @@ const AVATAR_TONES = [h.primary, "#333E35", "#576158"] as const;
  * never alone on its own row.
  */
 export function OutingRow({ session, onPress }: OutingRowProps) {
+  const clubHost = session.hostGroupName?.trim() || null;
   const host =
-    session.coachName?.trim() || session.hostGroupName?.trim() || null;
+    clubHost || session.coachName?.trim() || null;
   const spot = session.meetingPoint?.trim() || session.spot?.trim() || "";
   const time = formatTimeLabel(session.timeMinutes);
   const date = discoveryDateParts(session);
@@ -54,8 +55,9 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
   const purpose = (session.coachAdvice ?? "").trim();
   const womenOnly = session.genderRestriction === "women_only";
   const language =
-    /langue|langues|french|talk/i.test(session.typeLabel) ||
-    /langue|french|talk/i.test(session.title);
+    /langue|langues|french|talk|english/i.test(session.typeLabel) ||
+    /langue|french|talk|english/i.test(session.title);
+  const themeChip = themeChipFromTypeLabel(session.typeLabel);
   const joined = session.attendanceStatus === "joined";
   const count = confirmedParticipantCount(session);
   const hostInitials = initialsFromName(host) || (isWalk ? "M" : "C");
@@ -77,9 +79,16 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
     durationBit?.value ?? null,
   ].filter(Boolean) as string[];
 
-  const hasExtraChips = womenOnly || language || joined;
+  const hasExtraChips = womenOnly || language || Boolean(themeChip) || joined;
   const whenWithType = showCover
-    ? whereLine || "À venir"
+    ? [
+        clubHost && session.coachName?.trim()
+          ? `avec ${session.coachName.trim()}`
+          : null,
+        whereLine || "À venir",
+      ]
+        .filter(Boolean)
+        .join(" · ")
     : [activity, whereLine || "À venir"].filter(Boolean).join(" · ");
 
   return (
@@ -149,12 +158,17 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
           style={styles.labels}
           testID={showCover ? undefined : `home-outing-labels-${session.id}`}
         >
+          {themeChip ? (
+            <View style={styles.chipTheme} testID={`home-outing-theme-${session.id}`}>
+              <Text style={styles.chipThemeText}>{themeChip}</Text>
+            </View>
+          ) : null}
           {womenOnly ? (
             <View style={styles.chipWomen} testID={`home-outing-women-${session.id}`}>
               <Text style={styles.chipWomenText}>Entre femmes</Text>
             </View>
           ) : null}
-          {language ? (
+          {language && !/english|langue/i.test(themeChip ?? "") ? (
             <View style={styles.chipLang}>
               <Text style={styles.chipLangText}>Langue</Text>
             </View>
@@ -215,6 +229,19 @@ export function OutingRow({ session, onPress }: OutingRowProps) {
       </View>
     </Pressable>
   );
+}
+
+/** Short jury-facing tag from `MARCHE · Rencontres` style type labels. */
+function themeChipFromTypeLabel(typeLabel: string | undefined): string | null {
+  const raw = (typeLabel ?? "").trim();
+  if (!raw.includes("·")) return null;
+  const theme = raw.split("·").slice(1).join("·").trim();
+  if (!theme || theme.length > 22) return null;
+  // Skip generic activity leftovers
+  if (/^(marche|course|footing|long|tempo|series|fartlek)$/i.test(theme)) {
+    return null;
+  }
+  return theme;
 }
 
 /** Pace that fits a meta line without trailing "/…" */
@@ -354,6 +381,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 6,
+  },
+  chipTheme: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: "rgba(0,95,52,0.1)",
+  },
+  chipThemeText: {
+    fontFamily: h.font.hanken.semibold,
+    fontSize: 11,
+    lineHeight: 14,
+    color: h.primary,
   },
   chipWomen: {
     paddingHorizontal: 8,
