@@ -467,7 +467,8 @@ const styles = StyleSheet.create({
     flex: 1,
     height: redesignTheme.cta.height,
     borderRadius: redesignTheme.cta.radius,
-    backgroundColor: redesignTheme.accent.blue,
+    // Brand forest green — high contrast vs pale sage CTAs on this sheet
+    backgroundColor: "#005F34",
     alignItems: "center",
     justifyContent: "center",
   },
