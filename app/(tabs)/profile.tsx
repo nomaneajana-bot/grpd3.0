@@ -26,10 +26,12 @@ import { displayInitial, resolveDisplayName } from "../../lib/displayName";
 import { formatPhoneDisplay } from "../../lib/phoneFormat";
 import { pickProfilePhoto } from "../../lib/pickProfilePhoto";
 import {
+  deleteTestRecord,
   getProfileSnapshot,
   getRunnerProfile,
   getTestRecords,
   saveRunnerProfile,
+  saveTestRecord,
   type RunnerProfile,
   type TestRecord,
 } from "../../lib/profileStore";
@@ -240,7 +242,21 @@ export default function ProfileScreen() {
           <ProfileClubsCard memberships={memberships} />
 
           <ProfileSectionHeader title="03 / Mes records" />
-          <ProfilePrsCard records={prRecords} />
+          <ProfilePrsCard
+            records={prRecords}
+            onSaveRecord={async (record) => {
+              await saveTestRecord(record);
+              const next = await getTestRecords();
+              setPrRecords(next.slice(0, 12));
+              showToast("Record enregistré", "success");
+            }}
+            onDeleteRecord={async (id) => {
+              await deleteTestRecord(id);
+              const next = await getTestRecords();
+              setPrRecords(next.slice(0, 12));
+              showToast("Record supprimé", "success");
+            }}
+          />
 
           <ProfileSectionHeader
             title="04 / Préférences"
