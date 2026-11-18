@@ -572,8 +572,8 @@ function ConfirmedCard({
                 <View style={styles.inscritPill}>
                   <Ionicons
                     name="checkmark-circle"
-                    size={13}
-                    color={t.onSecondaryContainer}
+                    size={12}
+                    color={t.primary}
                   />
                   <Text style={styles.inscritText}>Inscrit</Text>
                 </View>
@@ -586,12 +586,14 @@ function ConfirmedCard({
             ) : null}
           </View>
 
-          <Text style={styles.cardTitle} numberOfLines={2}>
-            {title}
-          </Text>
-          <Text style={styles.spotLine} numberOfLines={1}>
-            {locationLabel(session) || "Lieu à préciser"}
-          </Text>
+          <View style={styles.titleBlock}>
+            <Text style={styles.cardTitle} numberOfLines={2}>
+              {title}
+            </Text>
+            <Text style={styles.spotLine} numberOfLines={1}>
+              {locationLabel(session) || "Lieu à préciser"}
+            </Text>
+          </View>
 
           <View style={styles.metricStrip}>
             <View style={styles.metricCol}>
@@ -609,12 +611,14 @@ function ConfirmedCard({
                 {pace}
               </Text>
             </View>
-            <View style={styles.metricCol}>
-              <Text style={styles.metricLabel}>Durée</Text>
-              <Text style={styles.metricValue} numberOfLines={1}>
-                {dur ?? "—"}
-              </Text>
-            </View>
+            {dur ? (
+              <View style={styles.metricCol}>
+                <Text style={styles.metricLabel}>Durée</Text>
+                <Text style={styles.metricValue} numberOfLines={1}>
+                  {dur}
+                </Text>
+              </View>
+            ) : null}
           </View>
         </View>
       </View>
@@ -626,7 +630,7 @@ function ConfirmedCard({
           onPress={onCancel}
           style={({ pressed }) => [
             styles.desistBtn,
-            pressed && { opacity: 0.75 },
+            pressed && { opacity: 0.7 },
           ]}
           testID={`mes-sorties-desist-${session.id}`}
         >
@@ -638,12 +642,12 @@ function ConfirmedCard({
           onPress={onDetails}
           style={({ pressed }) => [
             styles.detailsBtn,
-            pressed && { opacity: 0.9 },
+            pressed && { opacity: 0.92 },
           ]}
           testID={`mes-sorties-details-${session.id}`}
         >
           <Text style={styles.detailsText}>Détails</Text>
-          <Ionicons name="arrow-forward" size={16} color={t.text} />
+          <Ionicons name="arrow-forward" size={15} color={t.onPrimary} />
         </Pressable>
       </View>
     </View>
@@ -827,12 +831,14 @@ function PastCard({
                 {pace}
               </Text>
             </View>
-            <View style={styles.metricCol}>
-              <Text style={styles.metricLabel}>Durée</Text>
-              <Text style={styles.metricValue} numberOfLines={1}>
-                {dur ?? "—"}
-              </Text>
-            </View>
+            {dur ? (
+              <View style={styles.metricCol}>
+                <Text style={styles.metricLabel}>Durée</Text>
+                <Text style={styles.metricValue} numberOfLines={1}>
+                  {dur}
+                </Text>
+              </View>
+            ) : null}
           </View>
         </View>
       </View>
@@ -1065,7 +1071,7 @@ const styles = StyleSheet.create({
     backgroundColor: t.surfaceContainerLowest,
     borderRadius: t.radiusMain,
     padding: 16,
-    gap: 14,
+    gap: 12,
     borderWidth: 1,
     borderColor: "rgba(232,232,233,0.75)",
     shadowColor: "#1A1C1D",
@@ -1076,17 +1082,18 @@ const styles = StyleSheet.create({
   },
   liveRow: {
     flexDirection: "row",
-    alignItems: "stretch",
+    alignItems: "flex-start",
     gap: 12,
   },
   dateRail: {
-    width: 52,
-    borderRadius: 14,
+    width: 48,
+    borderRadius: 12,
     backgroundColor: "rgba(0,95,52,0.1)",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 10,
-    gap: 2,
+    gap: 1,
+    alignSelf: "stretch",
   },
   dateRailPast: {
     backgroundColor: "rgba(0,95,52,0.08)",
@@ -1121,16 +1128,16 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     color: t.outline,
   },
-  liveBody: { flex: 1, minWidth: 0, gap: 8 },
+  liveBody: { flex: 1, minWidth: 0, gap: 10 },
   hostRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
   },
   hostAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1141,42 +1148,43 @@ const styles = StyleSheet.create({
   },
   hostAvatarText: {
     fontFamily: t.font.hanken.semibold,
-    fontSize: 12,
+    fontSize: 11,
     color: t.onPrimary,
   },
-  hostTextCol: { flex: 1, minWidth: 0, gap: 4 },
+  hostTextCol: { flex: 1, minWidth: 0, gap: 3 },
   hostName: {
-    fontFamily: t.font.space.semibold,
-    fontSize: 14,
-    lineHeight: 18,
-    color: t.text,
+    fontFamily: t.font.hanken.medium,
+    fontSize: 13,
+    lineHeight: 17,
+    color: t.textSecondary,
   },
   chipRow: {
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
-    gap: 6,
+    gap: 5,
   },
   actChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 5,
   },
-  actChipRun: { backgroundColor: "rgba(0,95,52,0.1)" },
-  actChipWalk: { backgroundColor: "rgba(63,73,65,0.12)" },
+  actChipRun: { backgroundColor: "rgba(0,95,52,0.08)" },
+  actChipWalk: { backgroundColor: "rgba(63,73,65,0.1)" },
   actChipText: {
-    fontFamily: t.font.hanken.semibold,
-    fontSize: 11,
-    lineHeight: 14,
+    fontFamily: t.font.hanken.medium,
+    fontSize: 10,
+    lineHeight: 13,
+    letterSpacing: 0.2,
   },
   actChipTextRun: { color: t.primary },
   actChipTextWalk: { color: t.textSecondary },
   timeBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: "rgba(0,95,52,0.1)",
-    minWidth: 52,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: "rgba(0,95,52,0.08)",
+    minWidth: 48,
     alignItems: "center",
   },
   timeBadgePast: {
@@ -1185,12 +1193,16 @@ const styles = StyleSheet.create({
     minWidth: 48,
   },
   timeBadgeText: {
-    fontFamily: t.font.space.bold,
-    fontSize: 14,
-    lineHeight: 18,
+    fontFamily: t.font.space.semibold,
+    fontSize: 13,
+    lineHeight: 16,
     letterSpacing: -0.2,
     color: t.primary,
     fontVariant: ["tabular-nums"],
+  },
+  titleBlock: {
+    gap: 3,
+    paddingTop: 2,
   },
   cardTop: {
     flexDirection: "row",
@@ -1214,32 +1226,32 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontFamily: t.font.space.bold,
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 17,
+    lineHeight: 22,
     letterSpacing: -0.3,
     color: t.text,
   },
   spotLine: {
     fontFamily: t.font.hanken.regular,
     fontSize: 13,
-    lineHeight: 18,
+    lineHeight: 17,
     color: t.textSecondary,
-    marginTop: -2,
   },
   metricStrip: {
     flexDirection: "row",
-    gap: 8,
+    gap: 10,
     backgroundColor: t.surfaceContainerLow,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 9,
+    marginTop: 2,
   },
   metricCol: { flex: 1, minWidth: 0, gap: 2 },
   metricLabel: {
     fontFamily: t.font.hanken.medium,
     fontSize: 10,
-    lineHeight: 13,
-    letterSpacing: 0.4,
+    lineHeight: 12,
+    letterSpacing: 0.35,
     textTransform: "uppercase",
     color: t.outline,
   },
@@ -1262,16 +1274,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: "rgba(118,252,167,0.45)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+    backgroundColor: "rgba(0,95,52,0.06)",
   },
   inscritText: {
-    fontFamily: t.font.hanken.semibold,
-    fontSize: 11,
-    lineHeight: 14,
-    color: t.onSecondaryContainer,
+    fontFamily: t.font.hanken.medium,
+    fontSize: 10,
+    lineHeight: 13,
+    color: t.primary,
   },
   pendingPill: {
     flexDirection: "row",
@@ -1290,6 +1302,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: "rgba(232,232,233,0.9)",
     paddingTop: 12,
+    gap: 12,
   },
   desistBtn: {
     flexDirection: "row",
@@ -1299,23 +1312,25 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   desistText: {
-    ...t.type.labelMd,
-    color: t.textSecondary,
-    fontFamily: t.font.space.semibold,
+    fontFamily: t.font.hanken.medium,
+    fontSize: 14,
+    lineHeight: 18,
+    color: t.outline,
   },
   detailsBtn: {
-    height: 36,
-    paddingHorizontal: 16,
+    height: 40,
+    paddingHorizontal: 18,
     borderRadius: 10,
-    backgroundColor: t.surfaceContainer,
+    backgroundColor: t.primary,
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
   detailsText: {
-    ...t.type.labelMd,
-    color: t.text,
     fontFamily: t.font.space.bold,
+    fontSize: 14,
+    lineHeight: 18,
+    color: t.onPrimary,
   },
   pendingBox: {
     backgroundColor: t.surfaceContainerLow,
