@@ -65,8 +65,21 @@ import {
 } from "@/lib/clubMemberGroups";
 import { AssignMemberGroupSheet } from "@/components/club/AssignMemberGroupSheet";
 import { MemberGroupRow } from "@/components/club/MemberGroupRow";
+import { ClubCotisationCard } from "@/components/payment/ClubCotisationCard";
+import { PaymentModalitySheet } from "@/components/payment/PaymentModalitySheet";
 import { apiSessionToSessionData, type SessionData } from "@/lib/sessionData";
 import { getJoinedSessions } from "@/lib/joinedSessionsStore";
+import {
+  buildTransferRef,
+  clubCotisationConfig,
+} from "@/lib/hybridPayment";
+import {
+  getClubCotisation,
+  markClubAJour,
+  markClubTransferDeclared,
+  upsertClubCotisation,
+  type ClubCotisationRecord,
+} from "@/lib/clubCotisationStore";
 import {
   getReferencePaces,
   getRunnerProfile,
@@ -92,6 +105,9 @@ export default function ClubScreen() {
   const [focusedClubId, setFocusedClubId] = useState<string | null>(null);
   const [membersExpanded, setMembersExpanded] = useState(false);
   const [pendingJoinCount, setPendingJoinCount] = useState(0);
+  const [cotisationRecord, setCotisationRecord] =
+    useState<ClubCotisationRecord | null>(null);
+  const [cotisationSheetOpen, setCotisationSheetOpen] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   const loadData = useCallback(async (refresh = false) => {
@@ -156,6 +172,8 @@ export default function ClubScreen() {
         setPendingJoinCount(
           isAdminPrimary ? clubDetail?.pendingMembers?.length ?? 0 : 0,
         );
+        const cotis = await getClubCotisation(primary.clubId);
+        setCotisationRecord(cotis);
         const authUser = await getAuthUser();
         setAuthUserId(authUser?.id ?? null);
 
@@ -194,6 +212,7 @@ export default function ClubScreen() {
         setAuthUserId(null);
         setUserGroupId(null);
         setPendingJoinCount(0);
+        setCotisationRecord(null);
       }
     } catch (error) {
       console.warn("Failed to load club data:", error);
@@ -479,6 +498,23 @@ export default function ClubScreen() {
                 );
               }}
             />
+
+            {club && clubCotisationConfig(club.id) ? (
+              <ClubCotisationCard
+                amountMad={clubCotisationConfig(club.id)!.amountMad}
+                periodLabel={clubCotisationConfig(club.id)!.periodLabel}
+                record={cotisationRecord}
+                isOrganizer={isClubAdmin}
+                onPay={() => setCotisationSheetOpen(true)}
+                onMarkAJour={() => {
+                  void (async () => {
+                    const next = await markClubAJour(club.id);
+                    setCotisationRecord(next);
+                    showToast("Membre à jour.", "success");
+                  })();
+                }}
+              />
+            ) : null}
 
             {isClubAdmin ? (
               <Pressable
@@ -899,6 +935,65 @@ export default function ClubScreen() {
           </View>
         )}
       </ScrollView>
+      {club && clubCotisationConfig(club.id) ? (
+        <PaymentModalitySheet
+          visible={cotisationSheetOpen}
+          title={`Cotisation · ${club.name}`}
+          amountMad={clubCotisationConfig(club.id)!.amountMad}
+          ribAlias={clubCotisationConfig(club.id)!.ribAlias}
+          transferRef={buildTransferRef(
+            "COTIS",
+            club.id,
+            authUserId ?? "toi",
+          )}
+          context="cotisation"
+          onChooseCash={() => {
+            void (async () => {
+              const amount = clubCotisationConfig(club.id)!.amountMad;
+              const rec: ClubCotisationRecord = {
+                clubId: club.id,
+                modality: "cash",
+                status: "pending_cash",
+                modalityChosenAt: Date.now(),
+                amountMad: amount,
+              };
+              await upsertClubCotisation(rec);
+              setCotisationRecord(rec);
+              setCotisationSheetOpen(false);
+              showToast("Cotisation · Espèces — organisateur marque À jour.", "success");
+            })();
+          }}
+          onConfirmTransfer={() => {
+            void (async () => {
+              const cfg = clubCotisationConfig(club.id)!;
+              const existing = await getClubCotisation(club.id);
+              if (existing?.status === "awaiting_declare") {
+                const next = await markClubTransferDeclared(club.id);
+                setCotisationRecord(next);
+              } else {
+                const rec: ClubCotisationRecord = {
+                  clubId: club.id,
+                  modality: "transfer",
+                  status: "transfer_pending",
+                  modalityChosenAt: Date.now(),
+                  transferDeclaredAt: Date.now(),
+                  transferRef: buildTransferRef(
+                    "COTIS",
+                    club.id,
+                    authUserId ?? "toi",
+                  ),
+                  amountMad: cfg.amountMad,
+                };
+                await upsertClubCotisation(rec);
+                setCotisationRecord(rec);
+              }
+              setCotisationSheetOpen(false);
+              showToast("Cotisation · Virement en attente.", "success");
+            })();
+          }}
+          onClose={() => setCotisationSheetOpen(false)}
+        />
+      ) : null}
       </ScreenContainer>
     </SafeAreaView>
   );

@@ -11,9 +11,14 @@ type Props = {
   /** Open (not joined) primary CTA — e.g. Rejoindre la sortie */
   primaryLabel: string;
   secondaryHint?: string;
+  /** Joined status chip — e.g. Confirmé · Espèces / Payé */
+  joinedStatusLabel?: string;
   onPrimary: () => void;
   /** Joined-only: open cancel confirmation (never conflated with status). */
   onCancelParticipation?: () => void;
+  /** Optional secondary action while joined (e.g. J’ai viré). */
+  joinedActionLabel?: string;
+  onJoinedAction?: () => void;
   tabBarOffset?: number;
 };
 
@@ -28,8 +33,11 @@ export function StitoStickyJoinBar({
   busy,
   primaryLabel,
   secondaryHint,
+  joinedStatusLabel = "Tu es inscrit",
   onPrimary,
   onCancelParticipation,
+  joinedActionLabel,
+  onJoinedAction,
   tabBarOffset = 0,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -51,8 +59,26 @@ export function StitoStickyJoinBar({
         <View style={styles.joinedWrap} testID="stito-joined-status">
           <View style={styles.statusRow}>
             <Ionicons name="checkmark-circle" size={22} color={t.primary} />
-            <Text style={styles.statusText}>Tu es inscrit</Text>
+            <Text style={styles.statusText} numberOfLines={1}>
+              {joinedStatusLabel}
+            </Text>
           </View>
+          {joinedActionLabel && onJoinedAction ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={joinedActionLabel}
+              onPress={onJoinedAction}
+              disabled={busy}
+              style={({ pressed }) => [
+                styles.joinedAction,
+                pressed && { opacity: 0.9 },
+                busy && { opacity: 0.6 },
+              ]}
+              testID="stito-payment-joined-action"
+            >
+              <Text style={styles.joinedActionText}>{joinedActionLabel}</Text>
+            </Pressable>
+          ) : null}
           {onCancelParticipation ? (
             <Pressable
               accessibilityRole="button"
@@ -142,6 +168,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     color: t.primary,
+  },
+  joinedAction: {
+    minHeight: 44,
+    width: "100%",
+    borderRadius: 8,
+    backgroundColor: t.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  joinedActionText: {
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 14,
+    color: t.onPrimary,
   },
   cancelLink: {
     paddingVertical: 8,

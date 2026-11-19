@@ -125,6 +125,11 @@ function sessionDataToApiSession(data: SessionData): ApiSession {
     coverImageUrl: data.coverImageUrl ?? null,
     attendanceStatus: data.attendanceStatus ?? null,
     attendanceGroupId: data.attendanceGroupId ?? null,
+    feeMad: data.feeMad ?? null,
+    paymentStrict: data.paymentStrict ?? null,
+    ribAlias: data.ribAlias ?? null,
+    transferRefPrefix: data.transferRefPrefix ?? null,
+    requiresClubCotisation: data.requiresClubCotisation ?? null,
   };
 }
 

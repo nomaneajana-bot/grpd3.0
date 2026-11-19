@@ -33,7 +33,7 @@ export const MOCK_OTP_KEY = "mock:otp";
 /** Bump to force a one-time reseed of the richer Casablanca world. */
 export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v5";
 /** v10: jury diversity clubs (rencontres, english, founders, corporate girls, éco, conseil). */
-export const DEMO_SEED_VERSION = "10";
+export const DEMO_SEED_VERSION = "11";
 
 /** Distinct outing covers — live Unsplash IDs only (verified HTTP 200). */
 const COVER = OUTING_COVERS;
@@ -410,6 +410,11 @@ function buildDemoSessions(): ApiSession[] {
     coverImageUrl?: string | null;
     /** Club / community name shown as Accueil host for jury clarity. */
     hostGroupName?: string | null;
+    feeMad?: number;
+    paymentStrict?: boolean;
+    ribAlias?: string;
+    transferRefPrefix?: string;
+    requiresClubCotisation?: boolean;
   };
 
   const specs: SpecExtra[] = [
@@ -841,9 +846,60 @@ function buildDemoSessions(): ApiSession[] {
       hostGroupName: "Corporate Girls Casa",
       genderRestriction: "women_only",
       purpose:
-        "Entre femmes pro — réseau, énergie, zéro pression chrono.",
+        "Entre femmes pro — réseau, énergie, zéro pression chrono. Membres à jour = 1 tap ; invitée = 40 MAD.",
       coverImageUrl: COVER.corporateGirls,
       openRunners: 11,
+      requiresClubCotisation: true,
+      feeMad: 40,
+      ribAlias: "CIH · Corporate Girls GRPD",
+      transferRefPrefix: "CG",
+    },
+    {
+      id: "demo_sess_paid_corniche",
+      title: "Footing payant — Corniche",
+      spot: "Corniche Ain Diab",
+      dayOffset: 1,
+      timeMinutes: 18 * 60,
+      typeLabel: "FOOTING · Payant",
+      volume: "50 min · allure confort",
+      targetPace: "5:30–6:30/km",
+      estimatedDistanceKm: 9,
+      visibility: "public",
+      withPaceGroups: true,
+      coachName: "Youssef Benali",
+      coachPhone: "+212600000001",
+      recommendedGroupId: "C",
+      purpose:
+        "Prop1 — 50 MAD · Espèces ou Virement avant d’avoir la place.",
+      coverImageUrl: COVER.packRoad,
+      openRunners: 8,
+      feeMad: 50,
+      ribAlias: "CIH · GRPD Sorties Casa",
+      transferRefPrefix: "GRPD",
+    },
+    {
+      id: "demo_sess_paid_strict_piste",
+      title: "Séries payantes — places limitées",
+      spot: "Piste Mohammed V",
+      dayOffset: 2,
+      timeMinutes: 7 * 60 + 30,
+      typeLabel: "SERIES · Strict",
+      volume: "8×400 m · récup 90s",
+      targetPace: "4:00–5:00/km",
+      estimatedDistanceKm: 6,
+      visibility: "public",
+      withPaceGroups: true,
+      coachName: "Amélie Traoré",
+      coachPhone: "+212600000002",
+      recommendedGroupId: "B",
+      purpose:
+        "Prop2 — 80 MAD strict · Virement : J’ai viré sous 45 min sinon place libérée.",
+      coverImageUrl: COVER.trackNight,
+      openRunners: 6,
+      feeMad: 80,
+      paymentStrict: true,
+      ribAlias: "CIH · GRPD Piste",
+      transferRefPrefix: "STRICT",
     },
     {
       id: "demo_sess_eco_walk_jardin",
@@ -1030,6 +1086,11 @@ function buildDemoSessions(): ApiSession[] {
       coverImageUrl: spec.coverImageUrl ?? null,
       attendanceStatus: null,
       attendanceGroupId: null,
+      feeMad: spec.feeMad ?? null,
+      paymentStrict: spec.paymentStrict ?? null,
+      ribAlias: spec.ribAlias ?? null,
+      transferRefPrefix: spec.transferRefPrefix ?? null,
+      requiresClubCotisation: spec.requiresClubCotisation ?? null,
     } satisfies ApiSession;
   });
 }
@@ -1712,7 +1773,7 @@ export async function ensureDemoUserMembership(
     "demo_sess_rencontres_corniche",
     "demo_sess_english_walk_parc",
     "demo_sess_founders_anfa",
-    "demo_sess_corporate_girls",
+    // Skip corporate_girls + paid_* so jury can demo Prop1/2/3 join flows
     "demo_sess_eco_walk_jardin",
     "demo_sess_conseil_marche",
     "demo_sess_past_footing",
@@ -1799,6 +1860,8 @@ const DEMO_RESET_KEYS = [
   "grpd_settings_prefs_v1",
 ];
 
+// Payment / cotisation keys cleared via prefix in resetDemoData.
+
 /** Clear AsyncStorage demo state and reseed the Casablanca world. */
 export async function resetDemoData(): Promise<void> {
   if (!DEMO_MODE) {
@@ -1808,9 +1871,15 @@ export async function resetDemoData(): Promise<void> {
   const joinedUserKeys = allKeys.filter((k) =>
     k.startsWith("joinedSessions:v1"),
   );
+  const paymentKeys = allKeys.filter(
+    (k) =>
+      k.startsWith("grpd_session_payment_v1:") ||
+      k.startsWith("grpd_club_cotisation_v1:"),
+  );
   await AsyncStorage.multiRemove([
     ...DEMO_RESET_KEYS,
     ...joinedUserKeys,
+    ...paymentKeys,
   ]);
   await ensureDemoWorld();
 }

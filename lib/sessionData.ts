@@ -91,6 +91,12 @@ export type SessionData = {
     | "declined"
     | null;
   attendanceGroupId?: string | null;
+  /** Hybrid payment — MAD fee; null/0 = free join. */
+  feeMad?: number | null;
+  paymentStrict?: boolean | null;
+  ribAlias?: string | null;
+  transferRefPrefix?: string | null;
+  requiresClubCotisation?: boolean | null;
 };
 
 export type SessionVisibility = "public" | "members";
@@ -130,6 +136,11 @@ export function apiSessionToSessionData(api: {
     | "declined"
     | null;
   attendanceGroupId?: string | null;
+  feeMad?: number | null;
+  paymentStrict?: boolean | null;
+  ribAlias?: string | null;
+  transferRefPrefix?: string | null;
+  requiresClubCotisation?: boolean | null;
 }): SessionData {
   const apiPaceGroups = api.paceGroups ?? null;
   const hasPaceGroupsField = Array.isArray(apiPaceGroups);
@@ -198,6 +209,11 @@ export function apiSessionToSessionData(api: {
         : null,
     attendanceStatus: api.attendanceStatus ?? null,
     attendanceGroupId: api.attendanceGroupId ?? null,
+    feeMad: api.feeMad ?? null,
+    paymentStrict: api.paymentStrict ?? null,
+    ribAlias: api.ribAlias ?? null,
+    transferRefPrefix: api.transferRefPrefix ?? null,
+    requiresClubCotisation: api.requiresClubCotisation ?? null,
   };
 }
 

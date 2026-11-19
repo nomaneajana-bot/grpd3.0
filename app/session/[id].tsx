@@ -27,7 +27,24 @@ import { StitoPurposeSection } from "../../components/outingDetail/StitoPurposeS
 import { StitoLogisticsCard } from "../../components/outingDetail/StitoLogisticsCard";
 import { StitoParticipantsCard } from "../../components/outingDetail/StitoParticipantsCard";
 import { StitoAccessNote } from "../../components/outingDetail/StitoAccessNote";
+import { PaymentModalitySheet } from "../../components/payment/PaymentModalitySheet";
+import { OrganizerPaymentPanel } from "../../components/payment/OrganizerPaymentPanel";
 import { stitoTheme } from "../../constants/stitoTheme";
+import {
+  buildTransferRef,
+  clubCotisationConfig,
+  sessionPaymentChip,
+} from "../../lib/hybridPayment";
+import { isClubAJour } from "../../lib/clubCotisationStore";
+import {
+  clearSessionPayment,
+  getSessionPayment,
+  liberateSessionPayment,
+  markSessionPaid,
+  markSessionTransferDeclared,
+  upsertSessionPayment,
+  type SessionPaymentRecord,
+} from "../../lib/sessionPaymentStore";
 import { formatTimeLabel, initialsFromName } from "../../lib/homeViewModel";
 import { formatOutingDateTime } from "../../lib/mesSortiesViewModel";
 import {
@@ -350,9 +367,19 @@ export default function SessionScreen() {
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [isLeavingOuting, setIsLeavingOuting] = useState(false);
   const [isJoiningOuting, setIsJoiningOuting] = useState(false);
+  const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
+  const [paymentRecord, setPaymentRecord] =
+    useState<SessionPaymentRecord | null>(null);
+  const [clubAJour, setClubAJour] = useState(false);
+  const [transferRefPreview, setTransferRefPreview] = useState("GRPD-REF");
   const canJoin = session
     ? session.visibility !== "members" || Boolean(isApprovedMember)
     : false;
+
+  const sessionFeeMad = session?.feeMad && session.feeMad > 0 ? session.feeMad : 0;
+  const sessionPaid = sessionFeeMad > 0;
+  const sessionStrict = Boolean(session?.paymentStrict);
+  const sessionRequiresCotisation = Boolean(session?.requiresClubCotisation);
 
   const [clubRoster, setClubRoster] = useState<ClubRosterMember[]>([]);
   const [isCoachLoading, setIsCoachLoading] = useState(false);
@@ -474,6 +501,20 @@ export default function SessionScreen() {
       setHasStoredJoin(false);
     };
     void loadJoinedSession();
+    void (async () => {
+      const [pay, aJour, auth] = await Promise.all([
+        getSessionPayment(session.id),
+        session.clubId ? isClubAJour(session.clubId) : Promise.resolve(false),
+        getAuthUser(),
+      ]);
+      if (cancelled) return;
+      setPaymentRecord(pay);
+      setClubAJour(aJour);
+      const prefix = session.transferRefPrefix?.trim() || "GRPD";
+      setTransferRefPreview(
+        buildTransferRef(prefix, session.id, auth?.id ?? "toi"),
+      );
+    })();
     return () => {
       cancelled = true;
     };
@@ -671,20 +712,29 @@ export default function SessionScreen() {
   const selectedPaceGroupId = (selectedGroupId ??
     sessionAnchorGroupId) as ClubPaceGroupId | null;
 
-  const handleSave = async () => {
-    if (isJoiningOuting || hasStoredJoin) return;
+  const resolveJoinGroupId = (): string | null => {
     const hasPaceGroups = (session.paceGroups?.length ?? 0) > 0;
-    const currentGroupId = hasPaceGroups
-      ? selectedGroupId ||
-        session.recommendedGroupId ||
-        session.paceGroups[0]?.id ||
-        null
-      : "open";
+    if (!hasPaceGroups) return "open";
+    return (
+      selectedGroupId ||
+      session.recommendedGroupId ||
+      session.paceGroups[0]?.id ||
+      null
+    );
+  };
+
+  /** FIFO seat after modality (or free / cotisation à jour one-tap). */
+  const performJoinSeat = async (opts?: {
+    silentToast?: boolean;
+  }): Promise<boolean> => {
+    if (isJoiningOuting) return false;
+    const hasPaceGroups = (session.paceGroups?.length ?? 0) > 0;
+    const currentGroupId = resolveJoinGroupId();
     if (hasPaceGroups && !currentGroupId) {
       showToast("Choisis un groupe.", "error");
-      return;
+      return false;
     }
-    if (hasPaceGroups) {
+    if (hasPaceGroups && currentGroupId) {
       const joinState = resolveCrossGroupJoinState({
         memberGroupId: memberHomeGroupId,
         sessionTargetGroupId: currentGroupId as ClubPaceGroupId,
@@ -695,7 +745,7 @@ export default function SessionScreen() {
           "Cette séance n'est pas disponible pour ton groupe.",
           "error",
         );
-        return;
+        return false;
       }
     }
     setIsJoiningOuting(true);
@@ -712,7 +762,6 @@ export default function SessionScreen() {
           apiErr && typeof apiErr === "object" && "status" in apiErr
             ? Number((apiErr as { status?: number }).status)
             : null;
-        // Members-only / auth failures must not fake success via local join.
         if (
           session.visibility === "members" ||
           status === 401 ||
@@ -726,13 +775,12 @@ export default function SessionScreen() {
               : "Impossible de t'inscrire pour le moment.",
             "error",
           );
-          return;
+          return false;
         }
-        // Transient failures (e.g. demo fail-next flag / 5xx): keep join CTA for retry.
         if (status === 503 || status === 500 || status === 502) {
           console.warn("API join temporary failure:", apiErr);
           showToast("Inscription temporairement impossible. Réessaie.", "error");
-          return;
+          return false;
         }
         console.warn("API join failed, saving locally:", apiErr);
       }
@@ -740,18 +788,137 @@ export default function SessionScreen() {
       await upsertJoinedSession(session.id, storedGroupId);
       setJoinedGroupId(hasPaceGroups ? storedGroupId : null);
       setHasStoredJoin(true);
-      showToast(
-        apiJoined
-          ? "Tu es inscrit à cette séance."
-          : "Inscription enregistrée sur cet appareil.",
-        "success",
-      );
+      if (!opts?.silentToast) {
+        showToast(
+          apiJoined
+            ? "Tu es inscrit à cette séance."
+            : "Inscription enregistrée sur cet appareil.",
+          "success",
+        );
+      }
+      return true;
     } catch (error) {
       console.warn("Failed to save joined session:", error);
       showToast("Impossible d'enregistrer le groupe.", "error");
+      return false;
     } finally {
       setIsJoiningOuting(false);
     }
+  };
+
+  const handleSave = async () => {
+    if (isJoiningOuting || hasStoredJoin) return;
+
+    // Prop3: club cotisation gate — à jour = one-tap; else guest Prop1 fee or block
+    if (sessionRequiresCotisation && session.clubId && clubAJour) {
+      await performJoinSeat();
+      return;
+    }
+    if (
+      sessionRequiresCotisation &&
+      session.clubId &&
+      !clubAJour &&
+      !sessionPaid
+    ) {
+      showToast(
+        "Règle d’abord ta cotisation club (onglet Clubs) pour rejoindre.",
+        "error",
+      );
+      return;
+    }
+
+    // Prop1 / Prop2 / guest one-off: modality required before seat
+    if (sessionPaid) {
+      setPaymentSheetOpen(true);
+      return;
+    }
+
+    await performJoinSeat();
+  };
+
+  const handlePaymentCash = async () => {
+    setPaymentSheetOpen(false);
+    const ok = await performJoinSeat({ silentToast: true });
+    if (!ok) return;
+    const rec: SessionPaymentRecord = {
+      sessionId: session.id,
+      modality: "cash",
+      status: "confirmed_cash",
+      modalityChosenAt: Date.now(),
+      amountMad: sessionFeeMad,
+      strict: sessionStrict,
+    };
+    await upsertSessionPayment(rec);
+    setPaymentRecord(rec);
+    showToast("Confirmé · Espèces — paie sur place.", "success");
+  };
+
+  /** Prop2: hold seat when entering Virement RIB step. */
+  const handlePaymentStartTransfer = async () => {
+    if (!sessionStrict) return;
+    const ok = await performJoinSeat({ silentToast: true });
+    if (!ok) return;
+    const rec: SessionPaymentRecord = {
+      sessionId: session.id,
+      modality: "transfer",
+      status: "awaiting_declare",
+      modalityChosenAt: Date.now(),
+      transferRef: transferRefPreview,
+      amountMad: sessionFeeMad,
+      strict: true,
+    };
+    await upsertSessionPayment(rec);
+    setPaymentRecord(rec);
+  };
+
+  const handlePaymentTransferDeclared = async () => {
+    setPaymentSheetOpen(false);
+    if (sessionStrict && paymentRecord?.status === "awaiting_declare") {
+      const next = await markSessionTransferDeclared(session.id);
+      setPaymentRecord(next);
+      showToast("Confirmé · Virement en attente.", "success");
+      return;
+    }
+    const ok = await performJoinSeat({ silentToast: true });
+    if (!ok) return;
+    const rec: SessionPaymentRecord = {
+      sessionId: session.id,
+      modality: "transfer",
+      status: "transfer_pending",
+      modalityChosenAt: Date.now(),
+      transferDeclaredAt: Date.now(),
+      transferRef: transferRefPreview,
+      amountMad: sessionFeeMad,
+      strict: sessionStrict,
+    };
+    await upsertSessionPayment(rec);
+    setPaymentRecord(rec);
+    showToast("Confirmé · Virement en attente.", "success");
+  };
+
+  const handleOrganizerRecu = async () => {
+    const next = await markSessionPaid(session.id);
+    setPaymentRecord(next);
+    showToast("Payé — reçu confirmé.", "success");
+  };
+
+  const handleOrganizerLiberate = async () => {
+    await liberateSessionPayment(session.id);
+    try {
+      const client = createApiClient();
+      await leaveSessionApi(client, session.id);
+    } catch {
+      /* local liberate still applies */
+    }
+    await removeJoinedSession(session.id);
+    await clearSessionPayment(session.id);
+    setHasStoredJoin(false);
+    setPaymentRecord(null);
+    showToast("Place libérée (Non reçu).", "success");
+  };
+
+  const handleDeclareTransferFromBar = async () => {
+    setPaymentSheetOpen(true);
   };
 
   const handleRequestJoin = async () => {
@@ -869,8 +1036,10 @@ export default function SessionScreen() {
         }
       }
       await removeJoinedSession(sessionId);
+      await clearSessionPayment(sessionId);
       setJoinedGroupId(null);
       setHasStoredJoin(false);
+      setPaymentRecord(null);
       const defaultId =
         session.recommendedGroupId || session.paceGroups[0]?.id || null;
       setSelectedGroupId(defaultId);
@@ -1197,8 +1366,32 @@ export default function SessionScreen() {
                 joinedCount={joinedCount}
                 names={participantNames}
                 isJoined={hasStoredJoin}
-                statusLabel={hasStoredJoin ? "Confirmé" : null}
+                statusLabel={
+                  hasStoredJoin
+                    ? sessionPaymentChip(paymentRecord?.status) ?? "Confirmé"
+                    : null
+                }
               />
+              {isOrganizer && sessionPaid ? (
+                <OrganizerPaymentPanel
+                  record={paymentRecord}
+                  memberLabel="Toi (démo jury)"
+                  onMarkReceived={() => void handleOrganizerRecu()}
+                  onLiberate={() => void handleOrganizerLiberate()}
+                />
+              ) : null}
+              {!isOrganizer &&
+              hasStoredJoin &&
+              sessionPaid &&
+              paymentRecord &&
+              paymentRecord.status !== "paid" ? (
+                <OrganizerPaymentPanel
+                  record={paymentRecord}
+                  memberLabel="Simulateur organisateur"
+                  onMarkReceived={() => void handleOrganizerRecu()}
+                  onLiberate={() => void handleOrganizerLiberate()}
+                />
+              ) : null}
             </View>
           );
         })()}
@@ -1533,11 +1726,56 @@ export default function SessionScreen() {
         <StitoStickyJoinBar
           joined={hasStoredJoin}
           busy={isJoiningOuting || isLeavingOuting}
-          primaryLabel="Rejoindre la sortie"
+          primaryLabel={
+            sessionPaid
+              ? `Rejoindre · ${sessionFeeMad} MAD`
+              : sessionRequiresCotisation && !clubAJour
+                ? "Rejoindre (cotisation)"
+                : "Rejoindre la sortie"
+          }
+          secondaryHint={
+            sessionPaid
+              ? sessionStrict
+                ? "Payant strict · Espèces ou Virement (45 min)"
+                : "Payant · choisis Espèces ou Virement"
+              : sessionRequiresCotisation && clubAJour
+                ? "Cotisation à jour · un tap"
+                : undefined
+          }
+          joinedStatusLabel={
+            sessionPaymentChip(paymentRecord?.status) ?? "Tu es inscrit"
+          }
+          joinedActionLabel={
+            paymentRecord?.status === "awaiting_declare"
+              ? "J’ai viré"
+              : undefined
+          }
+          onJoinedAction={
+            paymentRecord?.status === "awaiting_declare"
+              ? () => void handleDeclareTransferFromBar()
+              : undefined
+          }
           onPrimary={() => void handleSave()}
           onCancelParticipation={openLeaveConfirm}
         />
       ) : null}
+
+      <PaymentModalitySheet
+        visible={paymentSheetOpen}
+        title={session.title}
+        amountMad={sessionFeeMad || clubCotisationConfig(session.clubId)?.amountMad || 0}
+        ribAlias={
+          session.ribAlias?.trim() ||
+          clubCotisationConfig(session.clubId)?.ribAlias ||
+          "CIH · GRPD Sorties"
+        }
+        transferRef={transferRefPreview}
+        strict={sessionStrict}
+        onChooseCash={() => void handlePaymentCash()}
+        onStartTransfer={() => void handlePaymentStartTransfer()}
+        onConfirmTransfer={() => void handlePaymentTransferDeclared()}
+        onClose={() => setPaymentSheetOpen(false)}
+      />
 
       {/* M06 — cancel participation (not leave club) */}
       <Modal

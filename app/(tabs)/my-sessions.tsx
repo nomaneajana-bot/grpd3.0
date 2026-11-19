@@ -18,6 +18,11 @@ import { stitoTheme as t } from "@/constants/stitoTheme";
 import { createApiClient, getMySessions, leaveSession } from "@/lib/api";
 import { resolveApiTransport } from "@/lib/api/mode";
 import { DEMO_MODE } from "@/lib/featureFlags";
+import { sessionPaymentChip } from "@/lib/hybridPayment";
+import {
+  getAllSessionPayments,
+  type SessionPaymentRecord,
+} from "@/lib/sessionPaymentStore";
 import {
   getJoinedSessions,
   removeJoinedSession,
@@ -140,6 +145,9 @@ export default function MySessionsScreen() {
   const [cancelTarget, setCancelTarget] = useState<SessionData | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [paymentsBySession, setPaymentsBySession] = useState<
+    Record<string, SessionPaymentRecord>
+  >({});
 
   useEffect(() => {
     if (params.tab == null) return;
@@ -173,7 +181,10 @@ export default function MySessionsScreen() {
       } catch (e) {
         console.warn("API my-sessions failed, using local only:", e);
       }
-      const joined = await getJoinedSessions();
+      const [joined, payments] = await Promise.all([
+        getJoinedSessions(),
+        getAllSessionPayments(),
+      ]);
       const jids = new Set(joined.map((j) => j.sessionId));
       sessions = sessions.map((s) => {
         if (jids.has(s.id) && !s.attendanceStatus) {
@@ -183,6 +194,7 @@ export default function MySessionsScreen() {
       });
       setAllSessions(sessions);
       setJoinedSessions(joined);
+      setPaymentsBySession(payments);
     } catch (e) {
       console.warn("Failed to load mes sorties:", e);
     } finally {
@@ -397,6 +409,10 @@ export default function MySessionsScreen() {
                   <ConfirmedCard
                     key={s.id}
                     session={s}
+                    paymentChip={
+                      sessionPaymentChip(paymentsBySession[s.id]?.status) ??
+                      null
+                    }
                     onDetails={() => openSession(s.id)}
                     onCancel={() => setCancelTarget(s)}
                   />
@@ -522,10 +538,12 @@ export default function MySessionsScreen() {
 
 function ConfirmedCard({
   session,
+  paymentChip,
   onDetails,
   onCancel,
 }: {
   session: SessionData;
+  paymentChip?: string | null;
   onDetails: () => void;
   onCancel: () => void;
 }) {
@@ -576,7 +594,9 @@ function ConfirmedCard({
                     size={12}
                     color={t.primary}
                   />
-                  <Text style={styles.inscritText}>Inscrit</Text>
+                  <Text style={styles.inscritText}>
+                    {paymentChip ?? "Inscrit"}
+                  </Text>
                 </View>
               </View>
             </View>

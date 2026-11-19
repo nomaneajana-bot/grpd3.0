@@ -384,6 +384,14 @@ export type ApiSession = {
   coverImageUrl?: string | null;
   attendanceStatus?: AttendanceStatus | null;
   attendanceGroupId?: string | null;
+  /** Hybrid payment (demo / sticky) — fee in MAD; omit/0 = free. */
+  feeMad?: number | null;
+  /** Prop2 — virement must be declared within window or seat frees. */
+  paymentStrict?: boolean | null;
+  ribAlias?: string | null;
+  transferRefPrefix?: string | null;
+  /** Prop3 — members need club cotisation à jour (guests use feeMad). */
+  requiresClubCotisation?: boolean | null;
 };
 
 export type SessionCreateInput = {
