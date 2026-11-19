@@ -1,10 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { redesignTheme } from "@/constants/redesignTheme";
-import { welcomeFontFamily } from "@/lib/welcomeFonts";
-
-import { Kicker } from "./Kicker";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 
 type SectionHeaderProps = {
   variant?: "kicker" | "numbered";
@@ -27,7 +24,7 @@ export function SectionHeader({
         {variant === "numbered" && number ? (
           <Text style={styles.number}>{number}</Text>
         ) : null}
-        <Kicker>{label}</Kicker>
+        <Text style={styles.kicker}>{label}</Text>
       </View>
       {rightLabel ? (
         onRightPress ? (
@@ -47,7 +44,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: redesignTheme.screen.horizontalPadding,
+    paddingHorizontal: 16,
     paddingTop: 24,
     paddingBottom: 10,
   },
@@ -58,15 +55,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   number: {
-    fontFamily: welcomeFontFamily.medium,
+    fontFamily: t.font.space.medium,
     fontSize: 10,
-    color: redesignTheme.text.faint,
+    color: t.outline,
     letterSpacing: 0.6,
   },
+  kicker: {
+    ...t.type.labelSm,
+    color: t.textSecondary,
+    textTransform: "uppercase",
+    fontFamily: t.font.space.bold,
+  },
   right: {
-    fontFamily: welcomeFontFamily.medium,
+    fontFamily: t.font.space.semibold,
     fontSize: 12,
-    fontWeight: "500",
-    color: redesignTheme.accent.blue,
+    color: t.primary,
   },
 });

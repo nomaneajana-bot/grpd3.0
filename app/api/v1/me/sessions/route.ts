@@ -1,9 +1,9 @@
 // GET /api/v1/me/sessions – list sessions joined by current user
 
 import { NextRequest } from "next/server";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
+import { requireAuth } from "../../../../../lib/server/auth-helpers";
+import { prisma } from "../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../lib/server/api-response";
 
 function serializeSession(session: {
   id: string;
@@ -65,7 +65,7 @@ function serializeSession(session: {
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const attendance = await prisma.sessionAttendance.findMany({
       where: {
         userId,

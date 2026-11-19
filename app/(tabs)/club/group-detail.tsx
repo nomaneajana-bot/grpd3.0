@@ -7,20 +7,20 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
 
+import { AssignMemberGroupSheet } from "@/components/club/AssignMemberGroupSheet";
 import { GroupMemberRow } from "@/components/club/GroupMemberRow";
 import { InterGroupPolicyInfoBox } from "@/components/club/InterGroupPolicyInfoBox";
 import { InterGroupPolicyPicker } from "@/components/club/InterGroupPolicyPicker";
 import { NavRow } from "@/components/ui/NavRow";
-import { TextActionButton } from "@/components/ui/TextActionButton";
-import { SectionLabel } from "@/components/redesign/SectionLabel";
 import { Toast } from "@/components/ui/Toast";
-import { borderRadius, colors, spacing, typography } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 import { useToast } from "@/hooks/useToast";
 import {
   createApiClient,
@@ -41,28 +41,40 @@ import {
   getClubPaceGroupDef,
   type ClubPaceGroupId,
 } from "@/lib/clubPaceGroups";
+import {
+  isMemberOrgEnabled,
+  memberAssignedGroupId,
+  memberGroupColor,
+  sortedActiveColorGroups,
+} from "@/lib/clubMemberGroups";
 import { groupPolicyInfoText } from "@/lib/interGroupPolicy";
 import { useUnsavedChangesGuard } from "@/lib/useUnsavedChangesGuard";
 import type { ClubRosterMember } from "@/types/api";
 
-function memberSinceLabel(): string {
-  return "Membre du club";
-}
-
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    return `${parts[0]![0]}${parts[parts.length - 1]![0]}`.toUpperCase();
   }
   return parts[0]?.slice(0, 2).toUpperCase() ?? "?";
 }
 
+/**
+ * Club colour-group detail — Stito light.
+ * One composition: group identity, quiet meta, member list (row = move).
+ */
 export default function ClubGroupDetailScreen() {
   const { clubId, groupId } = useLocalSearchParams<{
     clubId?: string;
     groupId?: string;
   }>();
-  const gid = (groupId ?? "A") as ClubPaceGroupId;
+  const rawGroupId = groupId ?? "A";
+  const isLegacyPaceId =
+    rawGroupId === "A" ||
+    rawGroupId === "B" ||
+    rawGroupId === "C" ||
+    rawGroupId === "D";
+  const gid = (isLegacyPaceId ? rawGroupId : "A") as ClubPaceGroupId;
   const def = getClubPaceGroupDef(gid);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -74,6 +86,8 @@ export default function ClubGroupDetailScreen() {
   const [changeMember, setChangeMember] = useState<ClubRosterMember | null>(
     null,
   );
+  const [editName, setEditName] = useState("");
+  const [editNote, setEditNote] = useState("");
   const initialSnapshotRef = useRef<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
@@ -96,10 +110,17 @@ export default function ClubGroupDetailScreen() {
       setHasAdminAccess(Boolean(adminMembership));
       setRoster(rosterResult.members ?? []);
       setSettings(adminCfg);
+      const color = adminCfg.colorGroups?.find((g) => g.id === rawGroupId);
+      if (color) {
+        setEditName(color.name);
+        setEditNote(color.note?.trim() ?? "");
+      }
       const group = adminCfg.groups.find((g) => g.id === gid);
       setAccessPolicy(group?.accessPolicy ?? "inherit");
       initialSnapshotRef.current = JSON.stringify({
         accessPolicy: group?.accessPolicy ?? "inherit",
+        editName: color?.name ?? "",
+        editNote: color?.note?.trim() ?? "",
       });
     } catch (error) {
       console.warn("Failed to load group detail:", error);
@@ -107,47 +128,90 @@ export default function ClubGroupDetailScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [clubId, gid, showToast]);
+  }, [clubId, gid, rawGroupId, showToast]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const displayName = settings ? getGroupDisplayName(gid, settings) : def.label;
-  const paceLabel =
-    settings?.groups.find((g) => g.id === gid)?.paceLabel ?? def.paceLabel;
+  const colorGroup = settings?.colorGroups?.find((g) => g.id === rawGroupId);
+  const displayName = colorGroup
+    ? colorGroup.name
+    : settings
+      ? getGroupDisplayName(gid, settings)
+      : def.label;
+  const paceLabel = colorGroup
+    ? colorGroup.note?.trim() || null
+    : settings?.groups.find((g) => g.id === gid)?.paceLabel ?? def.paceLabel;
+  const accentColor = colorGroup
+    ? memberGroupColor(colorGroup.colorKey)
+    : def.dotColor;
 
   const membersInGroup = useMemo(() => {
     if (!settings) return [];
+    if (colorGroup || settings.memberOrgEnabled) {
+      return roster.filter(
+        (m) => memberAssignedGroupId(m.userId, settings) === rawGroupId,
+      );
+    }
     return roster.filter(
       (m) => assignMemberToClubGroup(m, settings) === gid,
     );
-  }, [roster, settings, gid]);
+  }, [roster, settings, gid, rawGroupId, colorGroup]);
 
   const isDirty = useMemo(() => {
     if (!initialSnapshotRef.current) return false;
     return (
-      JSON.stringify({ accessPolicy }) !== initialSnapshotRef.current
+      JSON.stringify({
+        accessPolicy,
+        editName: editName.trim(),
+        editNote: editNote.trim(),
+      }) !== initialSnapshotRef.current
     );
-  }, [accessPolicy]);
+  }, [accessPolicy, editName, editNote]);
 
   const { tryLeave, markLeaving } = useUnsavedChangesGuard({
     isDirty: hasAdminAccess && isDirty,
+    leaveHref: "/(tabs)/club" as Href,
   });
 
   const handleSave = async () => {
     if (!clubId || !settings) return;
     setIsSaving(true);
     try {
-      const next = mergeClubAdminSettings({
+      let next = mergeClubAdminSettings({
         ...settings,
         groups: settings.groups.map((g) =>
           g.id === gid ? { ...g, accessPolicy } : g,
         ),
       });
+      if (colorGroup) {
+        const trimmed = editName.trim();
+        if (!trimmed) {
+          showToast("Le nom du groupe est requis.", "error");
+          setIsSaving(false);
+          return;
+        }
+        next = mergeClubAdminSettings({
+          ...next,
+          colorGroups: (next.colorGroups ?? []).map((g) =>
+            g.id === rawGroupId
+              ? {
+                  ...g,
+                  name: trimmed,
+                  note: editNote.trim() || undefined,
+                }
+              : g,
+          ),
+        });
+      }
       await saveClubAdminSettings(clubId, next);
       setSettings(next);
-      initialSnapshotRef.current = JSON.stringify({ accessPolicy });
+      initialSnapshotRef.current = JSON.stringify({
+        accessPolicy,
+        editName: editName.trim(),
+        editNote: editNote.trim(),
+      });
       markLeaving();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast("Groupe enregistré.", "success");
@@ -159,37 +223,63 @@ export default function ClubGroupDetailScreen() {
     }
   };
 
-  const handleAssignMember = async (
-    member: ClubRosterMember,
-    targetGroupId: ClubPaceGroupId,
-  ) => {
-    if (!clubId || !settings) return;
+  const handleAssignMember = async (targetGroupId: string | null) => {
+    if (!clubId || !settings || !changeMember) return;
+    const member = changeMember;
     try {
       const client = createApiClient();
-      await setClubMemberGroup(client, clubId, {
-        userId: member.userId,
-        groupId: targetGroupId,
-      });
+      const eligibleFromLegacy = (settings.groups ?? [])
+        .filter((g) => g.active !== false)
+        .map((g) => g.id);
+      const eligibleFromColor = (settings.colorGroups ?? [])
+        .filter((g) => g.active !== false)
+        .map((g) => g.id);
+      const eligibleGroupIds = [
+        ...new Set([...eligibleFromLegacy, ...eligibleFromColor]),
+      ];
+      const memberGroups = { ...settings.memberGroups };
+      if (targetGroupId) {
+        await setClubMemberGroup(client, clubId, {
+          userId: member.userId,
+          groupId: targetGroupId,
+          ...(eligibleGroupIds.length > 0 ? { eligibleGroupIds } : {}),
+        });
+        memberGroups[member.userId] = targetGroupId;
+      } else {
+        delete memberGroups[member.userId];
+      }
       const next = mergeClubAdminSettings({
         ...settings,
-        memberGroups: {
-          ...settings.memberGroups,
-          [member.userId]: targetGroupId,
-        },
+        memberGroups,
       });
       await saveClubAdminSettings(clubId, next);
       setSettings(next);
       setChangeMember(null);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      showToast("Membre mis à jour.", "success");
+      const label = targetGroupId
+        ? sortedActiveColorGroups(next).find((g) => g.id === targetGroupId)
+            ?.name ??
+          (targetGroupId.length === 1 ? `Groupe ${targetGroupId}` : "groupe")
+        : "Sans groupe";
+      showToast(`${member.displayName ?? member.userId} → ${label}`, "success");
     } catch (error) {
       console.warn("Assign member failed:", error);
       showToast("Impossible de changer le groupe.", "error");
     }
   };
 
+  const useColorOrg = Boolean(
+    colorGroup || (settings && isMemberOrgEnabled(settings)),
+  );
+
+  const memberCountLabel =
+    membersInGroup.length === 1
+      ? "1 membre"
+      : `${membersInGroup.length} membres`;
+  const metaLine = [memberCountLabel, paceLabel].filter(Boolean).join(" · ");
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <Stack.Screen options={{ headerShown: false }} />
       {toast ? (
         <Toast
@@ -200,63 +290,107 @@ export default function ClubGroupDetailScreen() {
       ) : null}
 
       <View style={styles.header}>
-        <Pressable onPress={() => void tryLeave()} style={styles.backRow}>
+        <Pressable
+          onPress={() => void tryLeave()}
+          style={styles.backRow}
+          accessibilityRole="button"
+          accessibilityLabel="Retour"
+          testID="club-group-detail-back"
+        >
           <Text style={styles.backIcon}>←</Text>
           <Text style={styles.backLabel}>Retour</Text>
         </Pressable>
-        <View style={styles.headerRow}>
-          <View style={styles.titleRow}>
-            <View style={[styles.dot, { backgroundColor: def.dotColor }]} />
-            <Text style={styles.screenTitle} numberOfLines={2}>
+
+        <View style={styles.titleBlock}>
+          <View style={[styles.dot, { backgroundColor: accentColor }]} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              style={styles.screenTitle}
+              numberOfLines={2}
+              testID="club-group-detail-title"
+            >
               {displayName}
             </Text>
+            {metaLine ? (
+              <Text style={styles.metaLine} testID="club-group-detail-meta">
+                {metaLine}
+              </Text>
+            ) : null}
           </View>
-          {hasAdminAccess ? (
-            <TextActionButton
-              label="Modifier"
-              variant="secondary"
+          {hasAdminAccess && isLegacyPaceId && !colorGroup ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Modifier le groupe"
               onPress={() =>
                 router.push({
                   pathname: "/(tabs)/club/group-create",
                   params: { clubId: clubId ?? "", groupId: gid },
                 } as Href)
               }
-            />
+              hitSlop={8}
+            >
+              <Text style={styles.editLink}>Modifier</Text>
+            </Pressable>
           ) : null}
         </View>
       </View>
 
       {isLoading ? (
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={colors.accent.primary} />
+          <ActivityIndicator size="large" color={t.primary} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{membersInGroup.length}</Text>
-              <Text style={styles.statLabel}>MEMBRES</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: def.dotColor }]}>
-                {paceLabel}
+        <ScrollView
+          contentContainerStyle={styles.content}
+          testID="club-group-detail-scroll"
+        >
+          {hasAdminAccess && colorGroup ? (
+            <View style={styles.editCard} testID="club-group-edit-form">
+              <Text style={styles.sectionLabel}>NOM DU GROUPE</Text>
+              <TextInput
+                style={styles.input}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Ex. Rouge — rapide"
+                placeholderTextColor={t.outline}
+                testID="club-group-edit-name"
+              />
+              <Text style={[styles.sectionLabel, { marginTop: 14 }]}>
+                NOTE (OPTIONNEL)
               </Text>
-              <Text style={styles.statLabel}>ALLURE</Text>
+              <TextInput
+                style={styles.input}
+                value={editNote}
+                onChangeText={setEditNote}
+                placeholder="Ex. Sub 4:45"
+                placeholderTextColor={t.outline}
+                testID="club-group-edit-note"
+              />
             </View>
-          </View>
+          ) : null}
 
-          <SectionLabel>MEMBRES</SectionLabel>
-          <View style={styles.card}>
+          <Text style={styles.sectionLabel}>MEMBRES</Text>
+          <View style={styles.listCard}>
             {membersInGroup.length === 0 ? (
-              <Text style={styles.hint}>Aucun membre dans ce groupe.</Text>
+              <Text style={styles.empty} testID="club-group-empty">
+                Aucun membre dans ce groupe.
+              </Text>
             ) : (
               membersInGroup.map((member) => (
                 <GroupMemberRow
                   key={member.userId}
                   name={member.displayName ?? member.userId}
                   initials={initials(member.displayName ?? "?")}
-                  memberSinceLabel={memberSinceLabel()}
-                  groupId={gid}
+                  avatarUrl={member.avatarUrl}
+                  groupId={useColorOrg ? undefined : gid}
+                  avatarColor={useColorOrg ? accentColor : undefined}
+                  memberUserId={member.userId}
+                  onPress={() => {
+                    if (!clubId) return;
+                    router.push(
+                      `/runner/${encodeURIComponent(member.userId)}?clubId=${encodeURIComponent(clubId)}` as Href,
+                    );
+                  }}
                   onChangePress={
                     hasAdminAccess
                       ? () => setChangeMember(member)
@@ -265,33 +399,44 @@ export default function ClubGroupDetailScreen() {
                 />
               ))
             )}
-            {hasAdminAccess ? (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.addMemberBtn,
-                  pressed && styles.addMemberBtnPressed,
-                ]}
-                onPress={() =>
-                  router.push({
-                    pathname: "/(tabs)/club/settings",
-                    params: { clubId: clubId ?? "" },
-                  } as Href)
-                }
-              >
-                <Text style={styles.addMemberIcon}>+</Text>
-                <Text style={styles.addMemberText}>
-                  Ajouter un membre au groupe
-                </Text>
-              </Pressable>
-            ) : null}
           </View>
 
-          {hasAdminAccess && settings ? (
+          {hasAdminAccess ? (
+            <Pressable
+              testID="club-group-assign-from-detail"
+              accessibilityRole="button"
+              accessibilityLabel="Affecter depuis Paramètres du club"
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/club/settings",
+                  params: { clubId: clubId ?? "" },
+                } as Href)
+              }
+              style={({ pressed }) => [
+                styles.settingsLink,
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <Text style={styles.settingsLinkText}>
+                Affecter depuis Paramètres du club →
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {useColorOrg ? (
+            <Text style={styles.persistHint} testID="club-group-persist-hint">
+              Affectation club — le membre reste ici jusqu&apos;à un
+              changement. Pas à chaque sortie.
+            </Text>
+          ) : null}
+
+          {hasAdminAccess && settings && !useColorOrg ? (
             <>
-              <SectionLabel>POLITIQUE D&apos;ACCÈS INTER-GROUPES</SectionLabel>
+              <Text style={styles.sectionLabel}>
+                POLITIQUE D&apos;ACCÈS INTER-GROUPES
+              </Text>
               <Text style={styles.policyQuestion}>
-                Qui peut s&apos;inscrire aux séances de ce groupe ? (coureurs
-                d&apos;un autre groupe)
+                Qui peut s&apos;inscrire aux séances de ce groupe ?
               </Text>
               <InterGroupPolicyPicker
                 value={accessPolicy}
@@ -321,12 +466,13 @@ export default function ClubGroupDetailScreen() {
         </ScrollView>
       )}
 
-      {hasAdminAccess ? (
+      {hasAdminAccess && (colorGroup || !useColorOrg) ? (
         <View style={styles.footer}>
           <Pressable
             style={[styles.saveBtn, isSaving && styles.saveBtnDisabled]}
-            onPress={handleSave}
+            onPress={() => void handleSave()}
             disabled={isSaving}
+            testID="club-group-save"
           >
             <Text style={styles.saveBtnText}>
               {isSaving ? "Enregistrement…" : "Enregistrer"}
@@ -335,196 +481,248 @@ export default function ClubGroupDetailScreen() {
         </View>
       ) : null}
 
-      <Modal visible={changeMember != null} transparent animationType="fade">
-        <Pressable
-          style={styles.modalBackdrop}
-          onPress={() => setChangeMember(null)}
-        >
-          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.modalTitle}>Changer de groupe</Text>
-            {changeMember ? (
-              <Text style={styles.modalSub}>
-                {changeMember.displayName ?? changeMember.userId}
-              </Text>
-            ) : null}
-            <View style={styles.modalChips}>
-              {(["A", "B", "C", "D"] as const).map((id) => {
-                const chipDef = getClubPaceGroupDef(id);
-                const isCurrent =
-                  changeMember && settings
-                    ? assignMemberToClubGroup(changeMember, settings) === id
-                    : false;
-                return (
-                  <Pressable
-                    key={id}
-                    style={({ pressed }) => [
-                      styles.modalChip,
-                      isCurrent && styles.modalChipCurrent,
-                      pressed && styles.modalChipPressed,
-                    ]}
-                    onPress={() => {
-                      if (changeMember) {
-                        void handleAssignMember(changeMember, id);
-                      }
-                    }}
-                  >
-                    <View
-                      style={[
-                        styles.modalChipDot,
-                        { backgroundColor: chipDef.dotColor },
+      {settings && useColorOrg ? (
+        <AssignMemberGroupSheet
+          visible={changeMember != null}
+          memberName={
+            changeMember?.displayName?.trim() ||
+            changeMember?.userId ||
+            "Membre"
+          }
+          settings={settings}
+          currentGroupId={
+            changeMember
+              ? memberAssignedGroupId(changeMember.userId, settings)
+              : null
+          }
+          onSelect={(gidNext) => void handleAssignMember(gidNext)}
+          onClose={() => setChangeMember(null)}
+        />
+      ) : (
+        <Modal visible={changeMember != null} transparent animationType="fade">
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setChangeMember(null)}
+            testID="club-group-assign-backdrop"
+          >
+            <Pressable
+              style={styles.modalCard}
+              onPress={(e) => e.stopPropagation()}
+              testID="club-group-assign-modal"
+            >
+              <Text style={styles.modalTitle}>Changer de groupe</Text>
+              {changeMember ? (
+                <Text style={styles.modalSub}>
+                  {changeMember.displayName ?? changeMember.userId}
+                </Text>
+              ) : null}
+              <View style={styles.modalChips}>
+                {(["A", "B", "C", "D"] as const).map((id) => {
+                  const chipDef = getClubPaceGroupDef(id);
+                  const isCurrent =
+                    changeMember && settings
+                      ? assignMemberToClubGroup(changeMember, settings) === id
+                      : false;
+                  return (
+                    <Pressable
+                      key={id}
+                      testID={`club-group-assign-${id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Assigner au groupe ${id}`}
+                      accessibilityState={{ selected: Boolean(isCurrent) }}
+                      style={({ pressed }) => [
+                        styles.modalChip,
+                        isCurrent && styles.modalChipCurrent,
+                        pressed && { opacity: 0.85 },
                       ]}
-                    />
-                    <Text
-                      style={[
-                        styles.modalChipText,
-                        isCurrent && styles.modalChipTextCurrent,
-                      ]}
+                      onPress={() => {
+                        void handleAssignMember(id);
+                      }}
                     >
-                      Groupe {id}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+                      <View
+                        style={[
+                          styles.modalChipDot,
+                          { backgroundColor: chipDef.dotColor },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.modalChipText,
+                          isCurrent && styles.modalChipTextCurrent,
+                        ]}
+                      >
+                        Groupe {id}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.background.primary },
+  safeArea: { flex: 1, backgroundColor: t.canvas },
   header: {
-    paddingHorizontal: spacing.screenHorizontal,
-    paddingTop: spacing.md,
+    paddingHorizontal: t.space.lg,
+    paddingTop: t.space.md,
+    paddingBottom: t.space.sm,
   },
-  backRow: { flexDirection: "row", alignItems: "center", marginBottom: spacing.sm },
-  backIcon: { color: colors.text.accent, fontSize: 18, marginRight: 6 },
-  backLabel: { color: colors.text.accent, fontSize: 16, fontWeight: "500" },
-  headerRow: {
+  backRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: t.space.sm,
+    minHeight: 44,
+  },
+  backIcon: { color: t.primary, fontSize: 18, marginRight: 6 },
+  backLabel: {
+    color: t.primary,
+    fontSize: 16,
+    fontFamily: t.font.hanken.medium,
+  },
+  titleBlock: {
     flexDirection: "row",
     alignItems: "flex-start",
-    justifyContent: "space-between",
     gap: 12,
-    marginBottom: spacing.sm,
   },
-  titleRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
-  dot: { width: 10, height: 10, borderRadius: 5 },
+  dot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginTop: 10,
+  },
   screenTitle: {
-    flex: 1,
-    color: colors.text.primary,
-    fontSize: typography.sizes.xl,
-    fontWeight: "700",
+    ...t.type.pageTitle,
+    color: t.text,
+    fontSize: 26,
+  },
+  metaLine: {
+    marginTop: 4,
+    fontFamily: t.font.hanken.regular,
+    fontSize: 14,
+    color: t.textSecondary,
+  },
+  editLink: {
+    marginTop: 8,
+    color: t.primary,
+    fontFamily: t.font.space.semibold,
+    fontSize: 14,
   },
   loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
   content: {
-    paddingHorizontal: spacing.screenHorizontal,
-    paddingBottom: 120,
+    paddingHorizontal: t.space.lg,
+    paddingBottom: 48,
   },
-  statsRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.surface.s3,
-    borderRadius: borderRadius.lg,
-    padding: 14,
-    alignItems: "center",
+  sectionLabel: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    color: t.outline,
+    marginTop: 8,
+    marginBottom: 8,
   },
-  statValue: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.lg,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  statLabel: {
-    color: colors.text.secondary,
-    fontSize: 10,
-    fontWeight: "700",
-    marginTop: 4,
-    letterSpacing: 0.5,
-  },
-  card: {
-    backgroundColor: colors.surface.s3,
-    borderRadius: borderRadius.lg,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginBottom: 16,
-  },
-  hint: { color: colors.text.secondary, fontSize: 13, paddingVertical: 12 },
-  addMemberBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+  editCard: {
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
     borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: colors.border.active,
-    backgroundColor: colors.accent.primaryDim,
-    borderRadius: borderRadius.pill,
+    borderColor: "rgba(232,232,233,0.9)",
+    paddingHorizontal: 14,
     paddingVertical: 12,
-    marginVertical: 10,
+    marginBottom: 12,
   },
-  addMemberBtnPressed: {
-    opacity: 0.9,
-    backgroundColor: colors.accent.primaryMid,
+  input: {
+    backgroundColor: t.surfaceContainerLow,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(232,232,233,0.9)",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    color: t.text,
+    fontFamily: t.font.hanken.medium,
+    fontSize: 15,
   },
-  addMemberIcon: {
-    color: colors.text.accent,
-    fontSize: 18,
-    fontWeight: "700",
+  listCard: {
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
+    paddingHorizontal: 14,
+    paddingVertical: 4,
   },
-  addMemberText: {
-    color: colors.text.accent,
-    fontWeight: "700",
-    fontSize: typography.sizes.md,
+  empty: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 14,
+    color: t.textSecondary,
+    paddingVertical: 16,
+  },
+  settingsLink: {
+    marginTop: 14,
+    alignSelf: "flex-start",
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  settingsLinkText: {
+    color: t.primary,
+    fontFamily: t.font.space.semibold,
+    fontSize: 14,
+  },
+  persistHint: {
+    marginTop: 8,
+    fontFamily: t.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.outline,
   },
   policyQuestion: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
-    lineHeight: 18,
+    fontFamily: t.font.hanken.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    color: t.textSecondary,
     marginBottom: 12,
   },
   previewNav: { marginTop: 12, marginBottom: 8 },
   footer: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: spacing.screenHorizontal,
-    paddingBottom: spacing.lg,
-    paddingTop: spacing.sm,
-    backgroundColor: colors.background.primary,
+    paddingHorizontal: t.space.lg,
+    paddingBottom: t.space.lg,
+    paddingTop: t.space.sm,
+    backgroundColor: t.canvas,
   },
   saveBtn: {
-    backgroundColor: colors.text.primary,
-    borderRadius: borderRadius.pill,
+    backgroundColor: t.primary,
+    borderRadius: 14,
     paddingVertical: 14,
     alignItems: "center",
   },
-  saveBtnDisabled: { opacity: 0.6 },
+  saveBtnDisabled: { opacity: 0.7 },
   saveBtnText: {
-    color: colors.background.primary,
-    fontWeight: "700",
-    fontSize: typography.sizes.md,
+    color: t.onPrimary,
+    fontFamily: t.font.space.bold,
+    fontSize: 15,
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(26,28,29,0.45)",
     justifyContent: "center",
     padding: 24,
   },
   modalCard: {
-    backgroundColor: colors.surface.s3,
-    borderRadius: borderRadius.lg,
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
     padding: 20,
   },
   modalTitle: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.lg,
-    fontWeight: "700",
+    fontFamily: t.font.space.bold,
+    fontSize: 18,
+    color: t.text,
   },
   modalSub: {
-    color: colors.text.secondary,
+    fontFamily: t.font.hanken.regular,
+    color: t.textSecondary,
     marginTop: 6,
     marginBottom: 16,
   },
@@ -535,17 +733,14 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: borderRadius.pill,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border.default,
-    backgroundColor: colors.surface.s2,
+    borderColor: "rgba(232,232,233,0.95)",
+    backgroundColor: t.surfaceContainerLow,
   },
   modalChipCurrent: {
-    borderColor: colors.accent.primary,
-    backgroundColor: colors.accent.primaryDim,
-  },
-  modalChipPressed: {
-    opacity: 0.9,
+    borderColor: "rgba(0,95,52,0.35)",
+    backgroundColor: "rgba(0,95,52,0.08)",
   },
   modalChipDot: {
     width: 8,
@@ -553,11 +748,11 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   modalChipText: {
-    color: colors.text.secondary,
-    fontWeight: "700",
-    fontSize: typography.sizes.sm,
+    color: t.textSecondary,
+    fontFamily: t.font.space.semibold,
+    fontSize: 13,
   },
   modalChipTextCurrent: {
-    color: colors.text.accent,
+    color: t.primary,
   },
 });

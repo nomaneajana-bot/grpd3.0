@@ -1,0 +1,92 @@
+{
+  "batch": "architecture-remediation-notifications",
+  "issue_ids": [
+    "ISSUE-017",
+    "D4"
+  ],
+  "tested_sha": "272ae1b359d0795c412113cc9488390c89c4a259",
+  "environment": "demo",
+  "hosted_claim": false,
+  "push_delivery_claimed": false,
+  "push_delivery_implemented": false,
+  "notes": {
+    "push_helper": "lib/notifications.ts exists; web returns null; devices API missing connected — deferred, not settings-implied delivery"
+  },
+  "checks": [
+    {
+      "id": "caption_denies_push_delivery",
+      "ok": true,
+      "detail": "settings caption"
+    },
+    {
+      "id": "caption_device_local_only",
+      "ok": true,
+      "detail": "local"
+    },
+    {
+      "id": "persists_via_settings_store",
+      "ok": true,
+      "detail": "wiring"
+    },
+    {
+      "id": "store_is_local_asyncstorage",
+      "ok": true,
+      "detail": "key"
+    },
+    {
+      "id": "push_helper_null_on_web",
+      "ok": true,
+      "detail": "web no-op"
+    },
+    {
+      "id": "onboarding_copy_no_active_push_claim",
+      "ok": true,
+      "detail": "onboarding honesty"
+    },
+    {
+      "id": "devices_connected_marked_missing",
+      "ok": true,
+      "detail": "inventory"
+    },
+    {
+      "id": "ui_no_push_delivery_claim",
+      "ok": true,
+      "detail": "caption visible"
+    },
+    {
+      "id": "ui_has_session_reminder_row",
+      "ok": true,
+      "detail": "row"
+    },
+    {
+      "id": "notification_switches_present",
+      "ok": true,
+      "detail": "count=6"
+    },
+    {
+      "id": "caption_survives_reload",
+      "ok": true,
+      "detail": "reload"
+    },
+    {
+      "id": "prefs_persisted_local_storage",
+      "ok": true,
+      "detail": "{\"shareStatsWithClub\":false,\"language\":\"fr\",\"units\":\"km\",\"notifications\":{\"sessionReminders\":false,\"coachMessages\":true,"
+    },
+    {
+      "id": "no_fake_push_enabled_copy",
+      "ok": true,
+      "detail": "no fake"
+    },
+    {
+      "id": "desktop_notif_honesty_readable",
+      "ok": true,
+      "detail": "desktop"
+    }
+  ],
+  "summary": {
+    "passed": 14,
+    "failed": 0,
+    "total": 14
+  }
+}

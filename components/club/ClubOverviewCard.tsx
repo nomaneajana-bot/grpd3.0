@@ -1,112 +1,144 @@
-import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
-import { Chip } from "@/components/ui/Chip";
-import { redesignTheme } from "@/constants/redesignTheme";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 import { clubInitialsFromName } from "@/lib/clubPaceGroups";
-import { welcomeFontFamily } from "@/lib/welcomeFonts";
 
 type ClubOverviewCardProps = {
   clubName: string;
   memberCount: number;
   foundedYear: string | null;
   city?: string | null;
-  status: "member" | "pending";
+  purpose?: string | null;
+  visibility?: "public" | "members" | null;
+  /** @deprecated Status chrome removed — kept optional for call-site compat. */
+  status?: "admin" | "member" | "pending";
 };
 
+/**
+ * Club identity card — Stito light, handoff-safe.
+ * No status essay, fake km, or verified decorations.
+ */
 export function ClubOverviewCard({
   clubName,
   memberCount,
   foundedYear,
   city,
-  status,
+  purpose,
+  visibility,
 }: ClubOverviewCardProps) {
   const initials = clubInitialsFromName(clubName);
-  const metaParts = [`${memberCount} membres`];
-  if (city?.trim()) metaParts.push(city.trim());
-  else if (foundedYear) metaParts.push(`Fondé ${foundedYear}`);
+  const accessLabel =
+    visibility === "members"
+      ? "Sur invitation"
+      : visibility === "public"
+        ? "Public"
+        : null;
+  const locationLine = [city?.trim(), accessLabel].filter(Boolean).join(" · ");
+  const memberLine = `${memberCount} membre${memberCount === 1 ? "" : "s"}`;
+  const metaLine = [
+    locationLine || null,
+    memberLine,
+    foundedYear && !city?.trim() ? `Fondé ${foundedYear}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <LinearGradient
-      colors={[
-        "rgba(47,123,255,0.12)",
-        redesignTheme.card.background,
-      ]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.card}
-    >
-      <View style={styles.logo}>
-        <Text style={styles.logoText}>{initials}</Text>
+    <View style={styles.card} testID="club-overview-card">
+      <View style={styles.heroBand}>
+        <View style={styles.heroMark}>
+          <Text style={styles.heroMarkText}>{initials}</Text>
+        </View>
+        <View style={styles.heroBody}>
+          {metaLine ? (
+            <View style={styles.metaRow}>
+              <Ionicons name="location-outline" size={14} color={t.primary} />
+              <Text style={styles.meta} testID="club-overview-meta" numberOfLines={2}>
+                {metaLine}
+              </Text>
+            </View>
+          ) : null}
+          <Text style={styles.name} numberOfLines={2} testID="club-overview-name">
+            {clubName}
+          </Text>
+        </View>
       </View>
-      <View style={styles.body}>
-        <Text style={styles.name} numberOfLines={2}>
-          {clubName}
+
+      {purpose?.trim() ? (
+        <Text style={styles.purpose} testID="club-overview-purpose">
+          {purpose.trim()}
         </Text>
-        <Text style={styles.meta}>{metaParts.join(" · ")}</Text>
-      </View>
-      <Chip
-        label={status === "member" ? "MEMBRE" : "EN ATTENTE"}
-        variant="success"
-        style={styles.chip}
-        textStyle={styles.chipText}
-      />
-    </LinearGradient>
+      ) : (
+        <Text style={styles.purposeMuted} testID="club-overview-purpose-empty">
+          Aucun objectif renseigné pour ce club.
+        </Text>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
+    padding: 18,
+    gap: 14,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
+  },
+  heroBand: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: redesignTheme.card.radiusXl,
-    padding: 16,
-    gap: 12,
-    marginHorizontal: redesignTheme.screen.horizontalPadding,
-    borderWidth: 1,
-    borderColor: redesignTheme.accent.blueBorder,
-    overflow: "hidden",
+    gap: 14,
   },
-  logo: {
-    width: 50,
-    height: 50,
-    borderRadius: 14,
-    backgroundColor: redesignTheme.accent.blue,
+  heroMark: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: t.secondaryContainer,
     alignItems: "center",
     justifyContent: "center",
   },
-  logoText: {
-    color: "#FFFFFF",
+  heroMarkText: {
+    color: t.onSecondaryContainer,
     fontSize: 16,
-    fontWeight: "800",
-    letterSpacing: 0.5,
+    fontFamily: t.font.space.bold,
+    letterSpacing: 0.4,
   },
-  body: {
+  heroBody: {
     flex: 1,
     minWidth: 0,
+    gap: 4,
   },
-  name: {
-    fontFamily: welcomeFontFamily.bold,
-    fontSize: redesignTheme.type.title.fontSize,
-    fontWeight: "700",
-    letterSpacing: -0.3,
-    color: redesignTheme.text.primary,
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   meta: {
-    fontFamily: welcomeFontFamily.regular,
-    fontSize: redesignTheme.type.caption.fontSize,
-    color: redesignTheme.text.dim,
-    marginTop: 3,
+    ...t.type.labelMd,
+    color: t.textSecondary,
+    flex: 1,
   },
-  chip: {
-    backgroundColor: "rgba(43,201,122,0.15)",
-    borderColor: "rgba(43,201,122,0.35)",
+  name: {
+    ...t.type.cardTitleLg,
+    fontSize: 22,
+    lineHeight: 26,
+    color: t.text,
   },
-  chipText: {
-    color: redesignTheme.accent.green,
-    fontWeight: "700",
-    fontSize: 10,
-    letterSpacing: 0.5,
+  purpose: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 15,
+    lineHeight: 22,
+    color: t.textSecondary,
+  },
+  purposeMuted: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    color: t.outline,
   },
 });

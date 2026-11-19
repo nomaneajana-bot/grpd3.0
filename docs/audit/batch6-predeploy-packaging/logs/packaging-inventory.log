@@ -1,0 +1,26 @@
+=== packaging inventory ===
+14M	dist-connected
+14M	dist-demo
+1.7M	.packaging/serverless
+total 1660
+drwxr-xr-x 2 ubuntu ubuntu   4096 Oct 16 01:56 .
+drwxr-xr-x 3 ubuntu ubuntu   4096 Oct 16 01:55 ..
+-rw-r--r-- 1 ubuntu ubuntu 568247 Oct 16 01:56 api-v1.cjs
+-rw-r--r-- 1 ubuntu ubuntu 993569 Oct 16 01:56 api-v1.cjs.map
+-rw-r--r-- 1 ubuntu ubuntu 120083 Oct 16 01:56 api-v1.meta.json
+-rw-r--r-- 1 ubuntu ubuntu    206 Oct 16 01:56 bundle-summary.json
+{
+  "outfile": "/workspace/.packaging/serverless/api-v1.cjs",
+  "bytes": 568247,
+  "inputCount": 158,
+  "includes": {
+    "jose": true,
+    "next": true,
+    "vercelDispatch": true,
+    "appJwt": true
+  }
+}=== vercel access ===
+CLI: logged out (whoami previously)
+MCP namespaceStatus: needsAuth
+status: BLOCKED — no login/auth/account creation attempted
+no .vercel dir linked in workspace

@@ -1,0 +1,96 @@
+import React from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import { stitoTheme as t } from "@/constants/stitoTheme";
+import { initialsFromName } from "@/lib/homeViewModel";
+
+type Props = {
+  hostName: string;
+  hostRole?: string | null;
+  clubName?: string | null;
+  onClubPress?: () => void;
+};
+
+export function StitoHostCard({
+  hostName,
+  hostRole,
+  clubName,
+  onClubPress,
+}: Props) {
+  const initials = initialsFromName(hostName) || "·";
+  return (
+    <View style={styles.row} testID="stito-host-card">
+      <View style={styles.avatar} accessibilityLabel={`Initiales ${initials}`}>
+        <Text style={styles.avatarText}>{initials}</Text>
+      </View>
+      <View style={styles.textCol}>
+        <Text style={styles.name} numberOfLines={1} testID="session-organizer-name">
+          {hostName}
+        </Text>
+        {[hostRole, clubName].filter(Boolean).length > 0 ? (
+          <Text style={styles.meta} numberOfLines={1}>
+            {[hostRole, clubName].filter(Boolean).join(" · ")}
+          </Text>
+        ) : null}
+      </View>
+      {onClubPress && clubName ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Voir le club"
+          onPress={onClubPress}
+          style={({ pressed }) => [styles.link, pressed && { opacity: 0.85 }]}
+          testID="stito-host-club-btn"
+        >
+          <Text style={styles.linkText}>Club →</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 2,
+  },
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: t.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 15,
+    color: t.onPrimary,
+  },
+  textCol: { flex: 1, minWidth: 0, gap: 2 },
+  name: {
+    fontFamily: t.font.space.semibold,
+    fontSize: 16,
+    lineHeight: 20,
+    letterSpacing: -0.2,
+    color: t.text,
+  },
+  meta: {
+    fontFamily: t.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.textSecondary,
+  },
+  link: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    backgroundColor: "rgba(216,227,216,0.55)",
+  },
+  linkText: {
+    fontFamily: t.font.hanken.semibold,
+    fontSize: 12,
+    color: t.primary,
+  },
+});

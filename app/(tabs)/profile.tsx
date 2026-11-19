@@ -12,52 +12,61 @@ import {
 import type { TextStyle, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ProfileGoalCard } from "../../components/profile/ProfileGoalCard";
-import { ProfilePhysicalCard } from "../../components/profile/ProfilePhysicalCard";
-import { ProfileRecordsCard } from "../../components/profile/ProfileRecordsCard";
+import { ProfileClubsCard } from "../../components/profile/ProfileClubsCard";
+import { ProfilePrsCard } from "../../components/profile/ProfilePrsCard";
 import { ProfileSectionHeader } from "../../components/profile/ProfileSectionHeader";
-import { ProfileStatsGrid } from "../../components/profile/ProfileStatsGrid";
-import { ProfileStreakCard } from "../../components/profile/ProfileStreakCard";
 import { ProfileUserCard } from "../../components/profile/ProfileUserCard";
 import { LoadingState } from "../../components/ui/LoadingState";
-import { profileTheme } from "../../constants/profileTheme";
-import { colors, typography } from "../../constants/ui";
-import { createApiClient, listSessions } from "../../lib/api";
+import { ScreenContainer } from "../../components/ui/ScreenContainer";
+import { stitoTheme as t } from "../../constants/stitoTheme";
+import { Toast } from "../../components/ui/Toast";
+import { createApiClient, getMyMemberships, updateMyPrs } from "../../lib/api";
 import { getAuthUser } from "../../lib/authStore";
-import {
-  buildGoalProgress,
-  computeAveragePaceFromSessions,
-  computeStreakSessionCount,
-  computeWeekActivity,
-  countAttendedSessions,
-  findTenKRecord,
-  formatPaceShort,
-  formatRaceTime,
-  sumKmYearToDate,
-} from "../../lib/profileMetrics";
+import { displayInitial, resolveDisplayName } from "../../lib/displayName";
 import { formatPhoneDisplay } from "../../lib/phoneFormat";
+import { pickProfilePhoto } from "../../lib/pickProfilePhoto";
 import {
+  deleteTestRecord,
   getProfileSnapshot,
+  getRunnerProfile,
   getTestRecords,
+  saveRunnerProfile,
+  saveTestRecord,
   type RunnerProfile,
   type TestRecord,
 } from "../../lib/profileStore";
 import {
-  apiSessionToSessionData,
-  getAllSessionsIncludingStored,
-  type SessionData,
-} from "../../lib/sessionData";
-import { isSessionVisibleToProfile } from "../../lib/sessionVisibility";
-import { formatPace } from "../../lib/testHelpers";
+  getSettingsPreferences,
+  type SettingsPreferences,
+} from "../../lib/settingsPreferencesStore";
+import { useToast } from "../../hooks/useToast";
+import type { AuthUser, ClubMembership } from "../../types/api";
 
+const LANGUAGE_LABELS: Record<SettingsPreferences["language"], string> = {
+  fr: "Français",
+  en: "English",
+};
+
+const UNITS_LABELS: Record<SettingsPreferences["units"], string> = {
+  km: "Kilomètres",
+  mi: "Miles",
+};
+
+/**
+ * Community profile — Stito light. Membership identity only.
+ * No fake verified badge, km totals, or invented cadence stats.
+ */
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
-  const [tests, setTests] = useState<TestRecord[]>([]);
-  const [sessions, setSessions] = useState<SessionData[]>([]);
-  const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [memberships, setMemberships] = useState<ClubMembership[]>([]);
+  const [prRecords, setPrRecords] = useState<TestRecord[]>([]);
+  const [prefs, setPrefs] = useState<SettingsPreferences | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
+  const { toast, showToast, hideToast } = useToast();
 
   const loadProfile = useCallback(async (refresh = false) => {
     if (refresh) setIsRefreshing(true);
@@ -66,40 +75,34 @@ export default function ProfileScreen() {
       const snapshot = await getProfileSnapshot();
       setProfile(snapshot.profile);
 
-      const loadedTests = await getTestRecords();
-      setTests(loadedTests);
-
       try {
-        const authUser = await getAuthUser();
-        if (authUser?.phone) {
-          setPhoneNumber(authUser.phone);
+        const user = await getAuthUser();
+        setAuthUser(user);
+        if (user?.phone) {
+          setPhoneNumber(user.phone);
+        } else {
+          setPhoneNumber(null);
         }
       } catch (error) {
         console.warn("Failed to load phone number:", error);
       }
 
-      const [localSessions, apiSessions, joined] = await Promise.all([
-        getAllSessionsIncludingStored(),
-        (async () => {
-          try {
-            const client = createApiClient();
-            const apiResult = await listSessions(client);
-            return (apiResult.sessions ?? []).map(apiSessionToSessionData);
-          } catch {
-            return [] as SessionData[];
-          }
-        })(),
-        (async () => {
-          const { getJoinedSessions } = await import("../../lib/joinedSessionsStore");
-          return getJoinedSessions();
-        })(),
-      ]);
+      setPrefs(await getSettingsPreferences());
 
-      const sessionMap = new Map<string, SessionData>();
-      localSessions.forEach((s) => sessionMap.set(s.id, s));
-      apiSessions.forEach((s) => sessionMap.set(s.id, s));
-      setSessions(Array.from(sessionMap.values()));
-      setJoinedIds(new Set(joined.map((j) => j.sessionId)));
+      try {
+        const records = await getTestRecords();
+        setPrRecords(records.slice(0, 6));
+      } catch {
+        setPrRecords([]);
+      }
+
+      try {
+        const client = createApiClient();
+        const result = await getMyMemberships(client);
+        setMemberships(result.memberships ?? []);
+      } catch {
+        setMemberships([]);
+      }
     } catch (error) {
       console.warn("PROFILE_LOAD_ERROR", error);
     } finally {
@@ -114,165 +117,179 @@ export default function ProfileScreen() {
     }, [loadProfile]),
   );
 
-  const profileName =
-    profile?.firstName?.trim() || profile?.name?.trim() || "Coureur";
-  const profileInitial = profileName.charAt(0).toUpperCase();
-  const cityLabel = "Casablanca";
+  const profileName = resolveDisplayName({ profile, authUser });
+  const profileInitial = displayInitial(profileName);
 
-  const accessibleSessions = useMemo(
-    () => sessions.filter((s) => isSessionVisibleToProfile(s, profile)),
-    [sessions, profile],
-  );
-
-  const sessionsCount = useMemo(
-    () => countAttendedSessions(accessibleSessions, joinedIds),
-    [accessibleSessions, joinedIds],
-  );
-
-  const kmYtd = useMemo(
-    () => sumKmYearToDate(accessibleSessions, joinedIds),
-    [accessibleSessions, joinedIds],
-  );
-
-  const streakSessionCount = useMemo(
-    () => computeStreakSessionCount(accessibleSessions, joinedIds),
-    [accessibleSessions, joinedIds],
-  );
-
-  const weekActivity = useMemo(
-    () => computeWeekActivity(accessibleSessions, joinedIds),
-    [accessibleSessions, joinedIds],
-  );
-
-  const tenKRecord = useMemo(() => findTenKRecord(tests), [tests]);
-
-  const pr10kLabel = useMemo(() => {
-    if (tenKRecord?.durationSeconds) {
-      return formatRaceTime(tenKRecord.durationSeconds);
-    }
-    return "—";
-  }, [tenKRecord]);
-
-  const pr10kPaceLabel = useMemo(() => {
-    if (tenKRecord?.paceSecondsPerKm) {
-      return formatPace(tenKRecord.paceSecondsPerKm);
-    }
-    return null;
-  }, [tenKRecord]);
-
-  const avgPaceLabel = useMemo(() => {
-    const avg = computeAveragePaceFromSessions(accessibleSessions, joinedIds);
-    if (avg != null) return formatPaceShort(avg);
-    return "—";
-  }, [accessibleSessions, joinedIds]);
-
-  const goalProgress = useMemo(
-    () =>
-      buildGoalProgress(
-        profile?.mainGoal,
-        tests,
-        profile?.targetDeadline ?? null,
-      ),
-    [profile, tests],
-  );
+  /** City only from real club membership — never invent a home city. */
+  const cityLabel = useMemo(() => {
+    const fromClub = memberships.find(
+      (m) => m.status === "approved" && m.club?.city?.trim(),
+    )?.club?.city;
+    return fromClub?.trim() || null;
+  }, [memberships]);
 
   const subtitle = useMemo(() => {
-    const parts = [cityLabel];
-    if (phoneNumber) {
-      parts.push(formatPhoneDisplay(phoneNumber));
-    }
+    const parts: string[] = [];
+    if (cityLabel) parts.push(cityLabel);
+    if (phoneNumber) parts.push(formatPhoneDisplay(phoneNumber));
+    else if (authUser?.email) parts.push(authUser.email);
     return parts.join(" · ");
-  }, [phoneNumber]);
+  }, [cityLabel, phoneNumber, authUser?.email]);
 
   const handleSettings = () => {
     router.push("/profile/settings");
   };
 
-  const handleEditTests = () => {
-    router.push("/profile/update-tests");
-  };
-
-  const handleSeeAllRecords = () => {
-    router.push("/profile/update-tests");
-  };
-
-  const handlePhysicalProfile = () => {
-    router.push("/profile/update-tests");
+  const handleAvatarPress = async () => {
+    if (avatarBusy) return;
+    setAvatarBusy(true);
+    try {
+      const uri = await pickProfilePhoto();
+      if (!uri) return;
+      const current =
+        profile ??
+        (await getRunnerProfile()) ??
+        ({
+          name: profileName,
+          vo2max: null,
+          weightKg: null,
+          mainGoal: "10k",
+        } as RunnerProfile);
+      const next: RunnerProfile = { ...current, avatarUrl: uri };
+      await saveRunnerProfile(next);
+      setProfile(next);
+      try {
+        const client = createApiClient();
+        await updateMyPrs(client, {
+          displayName: resolveDisplayName({ profile: next, authUser }),
+          avatarUrl: uri,
+        });
+      } catch (error) {
+        console.warn("Failed to sync avatar:", error);
+      }
+      showToast("Photo de profil mise à jour.", "success");
+    } catch (error) {
+      console.warn("Avatar pick failed:", error);
+      showToast(
+        error instanceof Error ? error.message : "Impossible d’ajouter la photo.",
+        "error",
+      );
+    } finally {
+      setAvatarBusy(false);
+    }
   };
 
   if (isLoading && !profile) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
         <LoadingState message="Chargement du profil…" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.toprow}>
-        <Text style={styles.pg}>Profil</Text>
-        <TouchableOpacity
-          onPress={handleSettings}
-          style={styles.gearBtn}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Paramètres"
-        >
-          <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={() => loadProfile(true)}
-            tintColor={colors.text.accent}
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScreenContainer style={{ backgroundColor: t.canvas }}>
+        {toast ? (
+          <Toast
+            message={toast.message}
+            variant={toast.variant}
+            onDismiss={hideToast}
+            tone="onLight"
+            placement="top"
           />
-        }
-      >
-        <ProfileUserCard
-          name={profileName}
-          initial={profileInitial}
-          subtitle={subtitle}
-          onEditPress={handleSettings}
-        />
+        ) : null}
+        <View style={styles.toprow}>
+          <Text style={styles.pg} accessibilityRole="header">
+            Profil
+          </Text>
+          <TouchableOpacity
+            onPress={handleSettings}
+            style={styles.gearBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Paramètres"
+            testID="profile-settings"
+          >
+            <Ionicons name="settings-outline" size={20} color={t.text} />
+          </TouchableOpacity>
+        </View>
 
-        <ProfileStreakCard
-          sessionCount={streakSessionCount}
-          kmYtd={kmYtd}
-          weekActivity={weekActivity}
-        />
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => loadProfile(true)}
+              tintColor={t.primary}
+            />
+          }
+        >
+          <ProfileUserCard
+            name={profileName}
+            initial={profileInitial}
+            subtitle={subtitle}
+            avatarUrl={profile?.avatarUrl}
+            onEditPress={handleSettings}
+            onAvatarPress={() => void handleAvatarPress()}
+            avatarBusy={avatarBusy}
+          />
 
-        <ProfileStatsGrid
-          sessions={sessionsCount}
-          kmYtd={kmYtd}
-          pr10k={pr10kLabel}
-          pr10kPace={pr10kPaceLabel}
-          avgPace={avgPaceLabel}
-        />
+          <ProfileSectionHeader title="02 / Équipes & collectifs" />
+          <ProfileClubsCard memberships={memberships} />
 
-        <ProfileSectionHeader title="OBJECTIF" />
-        <ProfileGoalCard goal={goalProgress} onEdit={handleSettings} />
+          <ProfileSectionHeader title="03 / Mes records" />
+          <ProfilePrsCard
+            records={prRecords}
+            onSaveRecord={async (record) => {
+              await saveTestRecord(record);
+              const next = await getTestRecords();
+              setPrRecords(next.slice(0, 12));
+              showToast("Record enregistré", "success");
+            }}
+            onDeleteRecord={async (id) => {
+              await deleteTestRecord(id);
+              const next = await getTestRecords();
+              setPrRecords(next.slice(0, 12));
+              showToast("Record supprimé", "success");
+            }}
+          />
 
-        <ProfileSectionHeader
-          title="RECORDS PERSONNELS"
-          actionLabel="Tout voir"
-          onAction={handleSeeAllRecords}
-        />
-        <ProfileRecordsCard
-          tests={tests}
-          onAdd={handleEditTests}
-          onPressRecord={handleEditTests}
-        />
-
-        <ProfileSectionHeader title="PROFIL PHYSIQUE" />
-        <ProfilePhysicalCard onPress={handlePhysicalProfile} />
-      </ScrollView>
+          <ProfileSectionHeader
+            title="04 / Préférences"
+            actionLabel="Paramètres"
+            onAction={handleSettings}
+          />
+          <View style={styles.prefsCard} testID="profile-preferences">
+            <View style={styles.prefRow}>
+              <Text style={styles.prefLabel}>Langue</Text>
+              <Text style={styles.prefValue}>
+                {LANGUAGE_LABELS[prefs?.language ?? "fr"]}
+              </Text>
+            </View>
+            <View style={styles.prefDivider} />
+            <View style={styles.prefRow}>
+              <Text style={styles.prefLabel}>Unités</Text>
+              <Text style={styles.prefValue}>
+                {UNITS_LABELS[prefs?.units ?? "km"]}
+              </Text>
+            </View>
+            <View style={styles.prefDivider} />
+            <TouchableOpacity
+              onPress={handleSettings}
+              style={styles.prefRow}
+              accessibilityRole="button"
+              accessibilityLabel="Ouvrir les paramètres"
+              testID="profile-prefs-settings"
+            >
+              <Text style={styles.prefLink}>Ouvrir les paramètres</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
@@ -284,32 +301,38 @@ type ProfileStyles = {
   gearBtn: ViewStyle;
   scroll: ViewStyle;
   content: ViewStyle;
+  prefsCard: ViewStyle;
+  prefRow: ViewStyle;
+  prefLabel: TextStyle;
+  prefValue: TextStyle;
+  prefLink: TextStyle;
+  prefDivider: ViewStyle;
 };
 
 const styles = StyleSheet.create<ProfileStyles>({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.canvas,
   },
   toprow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: profileTheme.screenPaddingHorizontal,
+    paddingHorizontal: 16,
     paddingTop: 6,
     paddingBottom: 10,
   },
   pg: {
-    fontSize: typography.sizes["3xl"],
-    fontWeight: "700",
-    color: "#FFFFFF",
-    letterSpacing: -0.3,
+    ...t.type.pageTitle,
+    color: t.text,
   },
   gearBtn: {
-    width: profileTheme.gearButtonSize,
-    height: profileTheme.gearButtonSize,
-    borderRadius: profileTheme.gearButtonSize / 2,
-    backgroundColor: profileTheme.gearButtonBg,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: t.card,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -317,8 +340,42 @@ const styles = StyleSheet.create<ProfileStyles>({
     flex: 1,
   },
   content: {
-    paddingHorizontal: profileTheme.screenPaddingHorizontal,
+    paddingHorizontal: 16,
     paddingTop: 4,
     paddingBottom: 40,
+  },
+  prefsCard: {
+    backgroundColor: t.card,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(232,232,233,0.9)",
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    marginBottom: 9,
+  },
+  prefRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+  },
+  prefLabel: {
+    color: t.textSecondary,
+    fontSize: 13,
+    fontFamily: t.font.hanken.regular,
+  },
+  prefValue: {
+    color: t.text,
+    fontSize: 13,
+    fontFamily: t.font.space.semibold,
+  },
+  prefLink: {
+    color: t.primary,
+    fontSize: 13,
+    fontFamily: t.font.space.semibold,
+  },
+  prefDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: t.outlineVariant,
   },
 });

@@ -1,0 +1,123 @@
+{
+  "batch": "Batch 6 \u2014 LOCAL runtime wiring (Codex corrections: jose JWT + PIN login + real connected tests)",
+  "issues": [
+    "ISSUE-004",
+    "ISSUE-008"
+  ],
+  "tested_sha": "4dad7495bcb1239dcc65e2a451d07f99db9cf43d",
+  "prior_not_cleared": {
+    "codex_review_of": "74fef39",
+    "prior_tested": "83b5e096d4f17ade3cd1660c7a1293f7d2906cbf",
+    "status": "NOT cleared \u2014 corrections applied this tip"
+  },
+  "branch": "cursor/green-home-ux-join-3184",
+  "environment": "local_postgres_integration",
+  "hosted_claim": false,
+  "deploy_claim": false,
+  "auth": {
+    "adapter": "jose HS256 app JWT (AUTH_JWT_SECRET) + optional Supabase verify",
+    "claims_enforced": [
+      "alg HS256",
+      "issuer grpd",
+      "nonempty sub",
+      "required finite numeric exp",
+      "nbf when present"
+    ],
+    "login_route": "POST /api/v1/auth/pin/login (D02 PIN allowlist)",
+    "req_auth_fallback": false,
+    "synthetic_secret_in_tests": true,
+    "secrets_in_repo": false
+  },
+  "entry": {
+    "vercel_function": "api/v1/[...path].ts",
+    "dispatch": "lib/server/vercel-dispatch.ts",
+    "cancel_request_registered": true,
+    "pin_login_registered": true,
+    "health": "GET /api/v1/health"
+  },
+  "batch5_semantics": "preserved (leaveClubForUserTx / cancelPendingClubRequestForUserTx)",
+  "checks": {
+    "pg_batch5_lifecycle_and_route_bearer": {
+      "ok": true,
+      "detail": "15/15"
+    },
+    "pg_batch6_health_json": {
+      "ok": true
+    },
+    "pg_batch6_unknown_path_json_404_not_html": {
+      "ok": true
+    },
+    "pg_batch6_missing_invalid_expired_claim_broken_bearer_401": {
+      "ok": true
+    },
+    "pg_batch6_organizer_participant_leave_cancel_isolation": {
+      "ok": true
+    },
+    "pg_batch6_connected_client_real_resolver_no_spy": {
+      "ok": true
+    },
+    "pg_batch6_missing_url_fails_not_silent_mock": {
+      "ok": true
+    },
+    "pg_batch6_demo_independent_of_connected_url": {
+      "ok": true
+    },
+    "pg_batch6_pin_login_entry_to_token_to_protected_leave": {
+      "ok": true
+    },
+    "pg_batch6_bad_login_rejected": {
+      "ok": true
+    },
+    "pg_batch6_vercel_json_api_rewrite": {
+      "ok": true
+    },
+    "unit_app_jwt_jose_claims": {
+      "ok": true,
+      "detail": "11/11 app-jwt.unit"
+    },
+    "unit_lifecycle_and_apiMode_demo": {
+      "ok": true,
+      "detail": "113/113 unit suite"
+    },
+    "typecheck_server_workspace_typescript": {
+      "ok": true,
+      "detail": "PASS 37 entrypoints (typescript 5.9.3)"
+    },
+    "hosted_preview_deploy": {
+      "ok": false,
+      "status": "NOT_RUN",
+      "detail": "Batch6 local only; no deploy"
+    }
+  },
+  "summary": {
+    "passed": 22,
+    "failed": 0,
+    "blocked_or_not_run": 1,
+    "pg_batch5": 15,
+    "pg_batch6": 7,
+    "unit_tests": 113,
+    "typecheck_server": true
+  },
+  "logs": [
+    "docs/audit/batch6-runtime-wiring/logs/pg-integration-batch5.log",
+    "docs/audit/batch6-runtime-wiring/logs/pg-integration-batch6.log",
+    "docs/audit/batch6-runtime-wiring/logs/unit-regressions.log",
+    "docs/audit/batch6-runtime-wiring/logs/typecheck-server.log",
+    "docs/audit/batch6-runtime-wiring/logs/config-names.log"
+  ],
+  "config_names_only": [
+    "DATABASE_URL",
+    "AUTH_JWT_SECRET",
+    "PIN_ALLOWLIST_JSON",
+    "EXPO_PUBLIC_API_URL",
+    "EXPO_PUBLIC_DEMO_MODE",
+    "EXPO_PUBLIC_USE_MOCK_API",
+    "SUPABASE_URL",
+    "SUPABASE_JWT_SECRET"
+  ],
+  "deployment_plan_settings_status": "UNVERIFIED (not inspected this batch)",
+  "note": "Local Batch6 Codex corrections only. Preview settings UNVERIFIED \u2014 not labeled missing from source alone. No new DB created. No deploy/prod/merge/spend/OCIF.",
+  "generated_at": "2026-10-16T01:42:00.000Z",
+  "tip_sha": "557233e3516cc486f840b599bd940d6603a6fda6",
+  "evidence_docs_sha": "e30fa085b8a54797f650a482fb17b8c617069842"
+}

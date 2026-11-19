@@ -1,0 +1,22 @@
+{
+  "sha": "f4e8412297d69fc3f3f1c09390d93539cd45d911",
+  "referenceRoute": "/reference/green-home",
+  "liveDiscover": "/",
+  "tokenSource": "components/experiences/ExperienceUI.tsx",
+  "branchSource": "origin/cursor/d03-mobile-mvp",
+  "phoneSheet": "/opt/cursor/artifacts/contact-sheet/CONTACT-SHEET-phone.png",
+  "desktopSheet": "/opt/cursor/artifacts/contact-sheet/CONTACT-SHEET-desktop.png",
+  "e2e": {
+    "passed": 24,
+    "failed": 0,
+    "mode": "offline-demo",
+    "join": "explore-sortie-longue-facile"
+  },
+  "preview": {
+    "demo": "EXPO_PUBLIC_DEMO_MODE=true npx expo start --web --port 8081",
+    "reference": "http://localhost:8081/reference/green-home",
+    "live": "http://localhost:8081/",
+    "hosted": "blocked \u2014 no hosted preview credentials in this run",
+    "native": "blocked \u2014 EAS credentials missing (docs/BUILD_HANDOFF.md)"
+  }
+}

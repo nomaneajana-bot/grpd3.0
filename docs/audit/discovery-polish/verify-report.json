@@ -1,0 +1,9 @@
+{
+  "hasSupport": true,
+  "hasDateCol": true,
+  "hasSpotJunk": false,
+  "hasAllCapsTitle": false,
+  "sentenceCaseOk": true,
+  "realSpot": true,
+  "pass": true
+}

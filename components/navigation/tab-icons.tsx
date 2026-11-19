@@ -3,14 +3,18 @@ import Svg, { Circle, Path, Rect } from "react-native-svg";
 
 type IconProps = { color: string; size?: number };
 
+/** Accueil — compass / explore (Noa-Stito BottomNav). */
 export function TabIconHome({ color, size = 20 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Circle cx={10} cy={10} r={7.25} stroke={color} strokeWidth={1.5} />
       <Path
-        d="M3 9.5L10 3l7 6.5V17a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"
+        d="M12.8 7.2l-1.55 4.05L7.2 12.8l1.55-4.05L12.8 7.2z"
         stroke={color}
-        strokeWidth={1.5}
+        strokeWidth={1.4}
+        strokeLinejoin="round"
       />
+      <Circle cx={10} cy={10} r={1.15} fill={color} />
     </Svg>
   );
 }

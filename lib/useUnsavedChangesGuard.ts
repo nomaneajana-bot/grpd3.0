@@ -1,4 +1,4 @@
-import { router, useNavigation } from "expo-router";
+import { type Href, router, useNavigation } from "expo-router";
 import { useCallback, useEffect, useRef } from "react";
 
 import { confirmAction } from "./confirmAction";
@@ -6,6 +6,8 @@ import { confirmAction } from "./confirmAction";
 type UseUnsavedChangesGuardOptions = {
   isDirty: boolean;
   enabled?: boolean;
+  /** When set, leave navigates here instead of router.back() (safer on web tabs). */
+  leaveHref?: Href;
 };
 
 /**
@@ -15,6 +17,7 @@ type UseUnsavedChangesGuardOptions = {
 export function useUnsavedChangesGuard({
   isDirty,
   enabled = true,
+  leaveHref,
 }: UseUnsavedChangesGuardOptions) {
   const navigation = useNavigation();
   const isLeavingRef = useRef(false);
@@ -34,16 +37,24 @@ export function useUnsavedChangesGuard({
     isLeavingRef.current = true;
   }, []);
 
+  const leave = useCallback(() => {
+    if (leaveHref) {
+      router.navigate(leaveHref);
+      return;
+    }
+    router.back();
+  }, [leaveHref]);
+
   const tryLeave = useCallback(async () => {
     if (isLeavingRef.current) {
-      router.back();
+      leave();
       return;
     }
     const ok = await confirmDiscard();
     if (!ok) return;
     isLeavingRef.current = true;
-    router.back();
-  }, [confirmDiscard]);
+    leave();
+  }, [confirmDiscard, leave]);
 
   useEffect(() => {
     if (!enabled) return;

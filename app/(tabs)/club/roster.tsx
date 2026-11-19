@@ -32,7 +32,7 @@ const ROLE_OPTIONS: { value: "all" | ClubRole; label: string }[] = [
   { value: "all", label: "Tous" },
   { value: "member", label: "Membre" },
   { value: "coach", label: "Coach" },
-  { value: "admin", label: "Admin" },
+  { value: "admin", label: "Administrateur" },
 ];
 
 function formatPace(secondsPerKm: number | null): string {
@@ -56,16 +56,23 @@ function formatDate(iso?: string | null): string {
   }
 }
 
-function MemberRow({ member }: { member: ClubRosterMember }) {
+function MemberRow({
+  member,
+  onPress,
+}: {
+  member: ClubRosterMember;
+  onPress?: () => void;
+}) {
   const records = member.prSummary?.records ?? [];
   const hasPrs = member.sharePrs && records.length > 0;
+  const name = member.displayName || member.userId || "—";
 
-  return (
-    <View style={styles.memberCard}>
+  const body = (
+    <>
       <View style={styles.memberHeader}>
         <View style={styles.memberTitleRow}>
           <Text style={styles.memberName} numberOfLines={1}>
-            {member.displayName || member.userId || "—"}
+            {name}
           </Text>
           <View style={styles.rolePill}>
             <Text style={styles.rolePillText}>{member.role}</Text>
@@ -94,8 +101,27 @@ function MemberRow({ member }: { member: ClubRosterMember }) {
           )}
         </View>
       )}
-    </View>
+    </>
   );
+
+  if (onPress) {
+    return (
+      <Pressable
+        style={({ pressed }) => [
+          styles.memberCard,
+          pressed && { opacity: 0.85 },
+        ]}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`Voir le profil de ${name}`}
+        testID={`roster-member-${member.userId}`}
+      >
+        {body}
+      </Pressable>
+    );
+  }
+
+  return <View style={styles.memberCard}>{body}</View>;
 }
 
 export default function RosterScreen() {
@@ -292,6 +318,14 @@ export default function RosterScreen() {
                   <MemberRow
                     key={member.membershipId}
                     member={member}
+                    onPress={
+                      clubId
+                        ? () =>
+                            router.push(
+                              `/runner/${encodeURIComponent(member.userId)}?clubId=${encodeURIComponent(clubId)}`,
+                            )
+                        : undefined
+                    }
                   />
                 ))}
               </>

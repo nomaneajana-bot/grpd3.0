@@ -21,6 +21,10 @@ export type RunnerProfile = {
   sharePrsWithCoach?: boolean; // default true
   // Extended fields (backward compatible - all optional)
   firstName?: string;
+  /** Optional profile photo (data URL or remote URL). */
+  avatarUrl?: string | null;
+  /** French copy agreement — homme | femme */
+  gender?: "female" | "male" | null;
   defaultGroup?: "A" | "B" | "C" | "D" | null; // deprecated
   targetRaceType?: "5k" | "10k" | "half" | "marathon" | "other" | null;
   targetRaceLabel?: string | null; // used only when type === 'other'
@@ -119,6 +123,44 @@ export async function saveRunnerProfile(profile: RunnerProfile): Promise<void> {
   } catch (error) {
     console.warn("PROFILE_STORE_SAVE_PROFILE_ERROR", error);
   }
+}
+
+/** Drop local runner identity (logout / account switch). */
+export async function clearRunnerProfile(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(PROFILE_KEY);
+  } catch (error) {
+    console.warn("PROFILE_STORE_CLEAR_PROFILE_ERROR", error);
+  }
+}
+
+/**
+ * After email signup/login, persist the chosen display name so Profile/Accueil
+ * do not fall back to the phone-era "Coureur" placeholder.
+ */
+export async function seedRunnerProfileFromAuth(params: {
+  name?: string | null;
+  email?: string | null;
+}): Promise<RunnerProfile> {
+  const fromName = params.name?.trim() || "";
+  const fromEmail = params.email?.includes("@")
+    ? params.email.split("@")[0]?.trim() || ""
+    : "";
+  const display = fromName || fromEmail || "Coureur";
+
+  const existing = await getRunnerProfile();
+  const next: RunnerProfile = {
+    ...(existing ?? {
+      name: display,
+      vo2max: null,
+      weightKg: null,
+      mainGoal: "10k",
+    }),
+    name: display,
+    firstName: display,
+  };
+  await saveRunnerProfile(next);
+  return next;
 }
 
 // ---- Reference paces ----
@@ -401,25 +443,30 @@ export async function getAllTestRecords(): Promise<TestRecord[]> {
       }
     }
 
-    // Normalize labels first based on mode
+    // Normalize labels first based on mode (keep optional “ · note” suffix)
     const normalized = validated.map((record) => {
+      const noteSuffix = record.label.includes(" · ")
+        ? record.label.slice(record.label.indexOf(" · "))
+        : "";
       let canonicalLabel = record.label;
       if (
         record.mode === "time_over_distance" &&
         record.distanceMeters != null
       ) {
-        canonicalLabel = formatDistanceLabel(record.distanceMeters);
+        canonicalLabel = formatDistanceLabel(record.distanceMeters) + noteSuffix;
       } else if (
         record.mode === "distance_over_time" &&
         record.durationSeconds != null
       ) {
-        canonicalLabel = formatDurationLabel(record.durationSeconds);
+        canonicalLabel =
+          formatDurationLabel(record.durationSeconds) + noteSuffix;
       } else if (record.durationSeconds != null) {
         // Fallback: if mode not set, use duration if available
-        canonicalLabel = formatDurationLabel(record.durationSeconds);
+        canonicalLabel =
+          formatDurationLabel(record.durationSeconds) + noteSuffix;
       } else if (record.distanceMeters != null) {
         // Fallback: if mode not set, use distance if available
-        canonicalLabel = formatDistanceLabel(record.distanceMeters);
+        canonicalLabel = formatDistanceLabel(record.distanceMeters) + noteSuffix;
       }
 
       return {
@@ -457,25 +504,30 @@ export async function getTestRecords(): Promise<TestRecord[]> {
       }
     }
 
-    // Normalize labels first based on mode
+    // Normalize labels first based on mode (keep optional “ · note” suffix)
     const normalized = validated.map((record) => {
+      const noteSuffix = record.label.includes(" · ")
+        ? record.label.slice(record.label.indexOf(" · "))
+        : "";
       let canonicalLabel = record.label;
       if (
         record.mode === "time_over_distance" &&
         record.distanceMeters != null
       ) {
-        canonicalLabel = formatDistanceLabel(record.distanceMeters);
+        canonicalLabel = formatDistanceLabel(record.distanceMeters) + noteSuffix;
       } else if (
         record.mode === "distance_over_time" &&
         record.durationSeconds != null
       ) {
-        canonicalLabel = formatDurationLabel(record.durationSeconds);
+        canonicalLabel =
+          formatDurationLabel(record.durationSeconds) + noteSuffix;
       } else if (record.durationSeconds != null) {
         // Fallback: if mode not set, use duration if available
-        canonicalLabel = formatDurationLabel(record.durationSeconds);
+        canonicalLabel =
+          formatDurationLabel(record.durationSeconds) + noteSuffix;
       } else if (record.distanceMeters != null) {
         // Fallback: if mode not set, use distance if available
-        canonicalLabel = formatDistanceLabel(record.distanceMeters);
+        canonicalLabel = formatDistanceLabel(record.distanceMeters) + noteSuffix;
       }
 
       return {
@@ -523,20 +575,24 @@ export async function saveTestRecord(record: TestRecord): Promise<void> {
     // Normalize label to canonical format based on mode
     // time_over_distance = distance PR (use distance label)
     // distance_over_time = duration PR (use duration label)
+    // Preserve optional “ · note” suffix from manual entry.
+    const noteSuffix = record.label.includes(" · ")
+      ? record.label.slice(record.label.indexOf(" · "))
+      : "";
     let canonicalLabel = record.label;
     if (record.mode === "time_over_distance" && record.distanceMeters != null) {
-      canonicalLabel = formatDistanceLabel(record.distanceMeters);
+      canonicalLabel = formatDistanceLabel(record.distanceMeters) + noteSuffix;
     } else if (
       record.mode === "distance_over_time" &&
       record.durationSeconds != null
     ) {
-      canonicalLabel = formatDurationLabel(record.durationSeconds);
+      canonicalLabel = formatDurationLabel(record.durationSeconds) + noteSuffix;
     } else if (record.durationSeconds != null) {
       // Fallback: if mode not set, use duration if available
-      canonicalLabel = formatDurationLabel(record.durationSeconds);
+      canonicalLabel = formatDurationLabel(record.durationSeconds) + noteSuffix;
     } else if (record.distanceMeters != null) {
       // Fallback: if mode not set, use distance if available
-      canonicalLabel = formatDistanceLabel(record.distanceMeters);
+      canonicalLabel = formatDistanceLabel(record.distanceMeters) + noteSuffix;
     }
 
     const normalizedRecord: TestRecord = {

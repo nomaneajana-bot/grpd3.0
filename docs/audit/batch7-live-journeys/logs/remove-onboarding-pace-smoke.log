@@ -1,0 +1,23 @@
+SHOT /opt/cursor/artifacts/no-pace-01-role.png
+SHOT /opt/cursor/artifacts/no-pace-02-after-role.png
+PASS role_lands_on_goal http://127.0.0.1:8082/onboarding/goal :: 
+Ton intention
+Pas une promesse — un cap.
+Marche & bien-être
+MARCHE
+Reprendre 
+PASS allure_ui_absent 
+Ton intention
+Pas une promesse — un cap.
+Marche & bien-être
+MARCHE
+Reprendre en douceur, sans pression de performance
+
+SHOT /opt/cursor/artifacts/no-pace-03-deeplink-pace.png
+PASS pace_deeplink_redirects_to_goal http://127.0.0.1:8082/onboarding/goal :: 
+Ton intention
+Pas une promesse — un cap.
+Marche & bien-être
+MARCHE
+Reprendre 
+SUMMARY { pass: 3, fail: 0 }

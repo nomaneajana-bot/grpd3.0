@@ -1,9 +1,12 @@
 import React from "react";
 import { StyleSheet, Switch, Text, View } from "react-native";
 
-import { colors, typography } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 
-const TOGGLE_TRACK = { false: "#3A3A3C", true: "#2F7BFF" };
+const TOGGLE_TRACK = {
+  false: t.surfaceContainerHigh,
+  true: t.primary,
+};
 
 type SettingsToggleRowProps = {
   title: string;
@@ -29,7 +32,7 @@ export function SettingsToggleRow({
         onValueChange={onValueChange}
         trackColor={TOGGLE_TRACK}
         thumbColor="#FFFFFF"
-        ios_backgroundColor="#3A3A3C"
+        ios_backgroundColor={t.surfaceContainerHigh}
       />
     </View>
   );
@@ -43,19 +46,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 12,
+    backgroundColor: t.card,
   },
   textCol: {
     flex: 1,
   },
   title: {
-    fontSize: typography.sizes.base,
-    fontWeight: "700",
-    color: colors.text.primary,
+    fontSize: 16,
+    fontFamily: t.font.space.semibold,
+    color: t.text,
     marginBottom: 2,
   },
   subtitle: {
-    fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
+    fontSize: 13,
+    fontFamily: t.font.hanken.regular,
+    color: t.textSecondary,
     lineHeight: 18,
   },
 });

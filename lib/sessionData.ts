@@ -1,6 +1,7 @@
 // Shared session data - exported from session detail screen for reuse
 
 import { formatDateLabel } from "./dateHelpers";
+import { OUTING_COVERS } from "./outingCovers";
 import type { Workout } from "./workoutTypes";
 
 export type PaceGroup = {
@@ -32,6 +33,13 @@ export type LegacySessionGroupOverride = {
   paceSecondsPerKm?: number | null;
 };
 
+/** Optional D03 community outing metadata (green home filters). */
+export type SessionExperience = {
+  kind?: "community" | "training";
+  format?: "language" | "community" | string;
+  activity?: "walk" | "run";
+};
+
 export type SessionData = {
   id: string;
   title: string;
@@ -40,6 +48,7 @@ export type SessionData = {
   dateISO?: string; // NEW: ISO date string (YYYY-MM-DD) for proper date handling
   timeMinutes?: number; // NEW: Minutes since midnight (0-1439) for time handling
   typeLabel: string;
+  experience?: SessionExperience;
   volume: string;
   targetPace: string;
   paceGroups: PaceGroup[]; // Legacy: kept for backward compatibility and display (computed from paceGroupsOverride when available)
@@ -64,11 +73,15 @@ export type SessionData = {
   coachAdvice?: string; // Coach's advice for this session
   coachPhone?: string; // Coach/organizer phone number for WhatsApp
   coachName?: string; // Coach/organizer name
+  /** Optional cover photo for discovery cards (URL or data URL). */
+  coverImageUrl?: string | null;
   visibility?: SessionVisibility; // "public" | "members" (members-only sessions)
   hostGroupName?: string | null; // Group/club name for members-only sessions
   genderRestriction?: "women_only" | null; // Optional gender restriction (e.g., girls-only runs)
   /** Set when session is from API (club-linked). Used for matching membership. */
   clubId?: string | null;
+  /** Organizer identity when known (API). Used to gate modify/delete vs join/leave. */
+  hostUserId?: string | null;
   attendanceStatus?:
     | "joined"
     | "suggested"
@@ -78,6 +91,12 @@ export type SessionData = {
     | "declined"
     | null;
   attendanceGroupId?: string | null;
+  /** Hybrid payment — MAD fee; null/0 = free join. */
+  feeMad?: number | null;
+  paymentStrict?: boolean | null;
+  ribAlias?: string | null;
+  transferRefPrefix?: string | null;
+  requiresClubCotisation?: boolean | null;
 };
 
 export type SessionVisibility = "public" | "members";
@@ -103,8 +122,10 @@ export function apiSessionToSessionData(api: {
   coachAdvice?: string | null;
   coachPhone?: string | null;
   coachName?: string | null;
+  coverImageUrl?: string | null;
   workoutId?: string | null;
   isCustom?: boolean;
+  hostUserId?: string | null;
   paceGroups?: { id: string; label: string; paceRange: string; runnersCount?: number; avgPaceSecondsPerKm?: number }[];
   attendanceStatus?:
     | "joined"
@@ -115,9 +136,15 @@ export function apiSessionToSessionData(api: {
     | "declined"
     | null;
   attendanceGroupId?: string | null;
+  feeMad?: number | null;
+  paymentStrict?: boolean | null;
+  ribAlias?: string | null;
+  transferRefPrefix?: string | null;
+  requiresClubCotisation?: boolean | null;
 }): SessionData {
   const apiPaceGroups = api.paceGroups ?? null;
   const hasPaceGroupsField = Array.isArray(apiPaceGroups);
+  // Empty array must stay empty (walk/language without pace groups) — never invent a group.
   const paceGroups = hasPaceGroupsField
     ? apiPaceGroups.map((g) => ({
         id: g.id,
@@ -126,15 +153,22 @@ export function apiSessionToSessionData(api: {
         runnersCount: g.runnersCount ?? 0,
         avgPaceSecondsPerKm: g.avgPaceSecondsPerKm ?? 300,
       }))
-    : [
-        {
-          id: api.recommendedGroupId || "C",
-          label: `Groupe ${api.recommendedGroupId || "C"}`,
-          paceRange: api.targetPace,
-          runnersCount: 0,
-          avgPaceSecondsPerKm: 300,
-        },
-      ];
+    : api.recommendedGroupId
+      ? [
+          {
+            id: api.recommendedGroupId || "C",
+            label: `Groupe ${api.recommendedGroupId || "C"}`,
+            paceRange: api.targetPace,
+            runnersCount: 0,
+            avgPaceSecondsPerKm: 300,
+          },
+        ]
+      : [];
+  const typeUpper = (api.typeLabel || "").toUpperCase();
+  const isWalkLike =
+    typeUpper.includes("MARCHE") ||
+    typeUpper.includes("WALKING") ||
+    typeUpper.startsWith("LANGUES");
   return {
     id: api.id,
     title: api.title,
@@ -146,30 +180,47 @@ export function apiSessionToSessionData(api: {
     volume: api.volume,
     targetPace: api.targetPace,
     paceGroups,
-    recommendedGroupId: api.recommendedGroupId,
+    recommendedGroupId: api.recommendedGroupId || "",
+    experience: isWalkLike
+      ? {
+          kind: "community" as const,
+          activity: "walk" as const,
+          format: typeUpper.startsWith("LANGUES")
+            ? ("language" as const)
+            : ("community" as const),
+        }
+      : undefined,
     estimatedDistanceKm: api.estimatedDistanceKm,
     workoutId: api.workoutId ?? undefined,
-    isCustom: api.isCustom ?? true,
+    // API/club sessions are joinable by default; only explicit true means user-owned draft
+    isCustom: api.isCustom ?? false,
     visibility: (api.visibility as SessionVisibility) ?? "public",
     hostGroupName: api.hostGroupName ?? null,
     meetingPoint: api.meetingPoint ?? undefined,
     coachAdvice: api.coachAdvice ?? undefined,
     coachPhone: api.coachPhone ?? undefined,
     coachName: api.coachName ?? undefined,
+    coverImageUrl: api.coverImageUrl ?? null,
     clubId: api.clubId ?? null,
+    hostUserId: api.hostUserId ?? null,
     genderRestriction:
       api.genderRestriction === "women" || api.genderRestriction === "women_only"
         ? "women_only"
         : null,
     attendanceStatus: api.attendanceStatus ?? null,
     attendanceGroupId: api.attendanceGroupId ?? null,
+    feeMad: api.feeMad ?? null,
+    paymentStrict: api.paymentStrict ?? null,
+    ribAlias: api.ribAlias ?? null,
+    transferRefPrefix: api.transferRefPrefix ?? null,
+    requiresClubCotisation: api.requiresClubCotisation ?? null,
   };
 }
 
 export const SESSION_MAP: Record<string, SessionData> = {
   "reprise-femmes-corniche": {
     id: "reprise-femmes-corniche",
-    title: "REPRISE 100% FEMMES",
+    title: "Reprise 100% femmes",
     spot: "Corniche El Hank",
     dateLabel: "MERCREDI 12 NOVEMBRE · 19:00",
     dateISO: "2025-11-12",
@@ -179,6 +230,10 @@ export const SESSION_MAP: Record<string, SessionData> = {
     targetPace: "5:30–6:30/km",
     estimatedDistanceKm: 8,
     genderRestriction: "women_only",
+    coachName: "Amélie Traoré",
+    coachAdvice:
+      "Reprise douce, uniquement entre femmes — ambiance bienveillante.",
+    coverImageUrl: OUTING_COVERS.womenPack,
     paceGroups: [
       {
         id: "A",
@@ -213,8 +268,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
   },
   "marina-fartlek-long": {
     id: "marina-fartlek-long",
-    title: "FARTLEK LONG",
-    spot: "Spot 1",
+    title: "Fartlek long",
+    spot: "Marina Casablanca",
     dateLabel: "LUNDI 10 NOVEMBRE 06:00",
     dateISO: "2025-11-10",
     timeMinutes: 360, // 06:00
@@ -222,6 +277,7 @@ export const SESSION_MAP: Record<string, SessionData> = {
     volume: "3:00 effort x 6 · Récup 2:00",
     targetPace: "5:20–6:00/km",
     estimatedDistanceKm: 10,
+    coverImageUrl: OUTING_COVERS.packRoad,
     paceGroups: [
       {
         id: "A",
@@ -255,7 +311,7 @@ export const SESSION_MAP: Record<string, SessionData> = {
     recommendedGroupId: "C",
     workout: {
       id: "marina-fartlek-long-workout",
-      title: "FARTLEK LONG",
+      title: "Fartlek long",
       warmup: {
         id: "warmup",
         label: "Échauffement",
@@ -307,8 +363,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
   },
   "marina-fartlek-court": {
     id: "marina-fartlek-court",
-    title: "FARTLEK COURT",
-    spot: "Spot 2",
+    title: "Fartlek court",
+    spot: "Parc de la Ligue Arabe",
     dateLabel: "MARDI 11 NOVEMBRE 18:00",
     dateISO: "2025-11-11",
     timeMinutes: 1080, // 18:00
@@ -349,7 +405,7 @@ export const SESSION_MAP: Record<string, SessionData> = {
     recommendedGroupId: "B",
     workout: {
       id: "marina-fartlek-court-workout",
-      title: "FARTLEK COURT",
+      title: "Fartlek court",
       warmup: {
         id: "warmup",
         label: "Échauffement",
@@ -401,8 +457,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
   },
   "explore-fartlek-progressif": {
     id: "explore-fartlek-progressif",
-    title: "FARTLEK PROGRESSIF",
-    spot: "Spot 1",
+    title: "Fartlek progressif",
+    spot: "Anfa Park",
     dateLabel: "MERCREDI 12 NOVEMBRE 18:00",
     dateISO: "2025-11-12",
     timeMinutes: 1080, // 18:00
@@ -410,6 +466,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
     volume: "4:00 effort x 5 · Récup 2:30",
     targetPace: "5:10–5:40/km",
     estimatedDistanceKm: 8,
+    coachName: "Youssef Benali",
+    coachAdvice: "Jeux d'allure progressifs — on monte ensemble sans se cramer.",
     paceGroups: [
       {
         id: "A",
@@ -443,7 +501,7 @@ export const SESSION_MAP: Record<string, SessionData> = {
     recommendedGroupId: "B",
     workout: {
       id: "explore-fartlek-progressif-workout",
-      title: "FARTLEK PROGRESSIF",
+      title: "Fartlek progressif",
       warmup: {
         id: "warmup",
         label: "Échauffement",
@@ -495,8 +553,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
   },
   "explore-sortie-longue-facile": {
     id: "explore-sortie-longue-facile",
-    title: "SORTIE LONGUE FACILE",
-    spot: "Spot 2",
+    title: "Sortie longue facile",
+    spot: "Corniche Ain Diab",
     dateLabel: "SAMEDI 15 NOVEMBRE 07:00",
     dateISO: "2025-11-15",
     timeMinutes: 420, // 07:00
@@ -504,6 +562,8 @@ export const SESSION_MAP: Record<string, SessionData> = {
     volume: "1h30 sortie continue",
     targetPace: "5:30–6:10/km",
     estimatedDistanceKm: 15,
+    coachName: "Youssef Benali",
+    coachAdvice: "Endurance conversationnelle — on garde de la marge jusqu'au bout.",
     paceGroups: [
       {
         id: "A",
@@ -537,7 +597,7 @@ export const SESSION_MAP: Record<string, SessionData> = {
     recommendedGroupId: "B",
     workout: {
       id: "explore-sortie-longue-facile-workout",
-      title: "SORTIE LONGUE FACILE",
+      title: "Sortie longue facile",
       main: {
         id: "main",
         label: "Sortie continue",

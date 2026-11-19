@@ -40,6 +40,8 @@ type PrSheetAProps = {
   isAdding?: boolean;
   onClose: () => void;
   onSave: (test: TestRecord) => void;
+  /** Optional delete when editing an existing record. */
+  onDelete?: () => void;
 };
 
 export function PrSheetA({
@@ -48,6 +50,7 @@ export function PrSheetA({
   isAdding = false,
   onClose,
   onSave,
+  onDelete,
 }: PrSheetAProps) {
   const [preset, setPreset] = useState<PresetId>("5k");
   const [customDistance, setCustomDistance] = useState("");
@@ -55,6 +58,10 @@ export function PrSheetA({
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [seconds, setSeconds] = useState("");
+  const [testDate, setTestDate] = useState(
+    () => new Date().toISOString().slice(0, 10),
+  );
+  const [note, setNote] = useState("");
 
   useEffect(() => {
     if (!visible) return;
@@ -81,12 +88,16 @@ export function PrSheetA({
         setMinutes(String(Math.floor((t % 3600) / 60)));
         setSeconds(String(t % 60));
       }
+      setTestDate(test.testDate ?? new Date().toISOString().slice(0, 10));
+      setNote("");
     } else {
       setPreset("5k");
       setCustomDistance("");
       setHours("");
       setMinutes("");
       setSeconds("");
+      setTestDate(new Date().toISOString().slice(0, 10));
+      setNote("");
     }
   }, [visible, test]);
 
@@ -124,7 +135,10 @@ export function PrSheetA({
     if (!valid || !distanceMeters || !durationSeconds || !paceSecondsPerKm) return;
 
     const mode: TestMode = "time_over_distance";
-    const label = formatDistanceLabel(distanceMeters);
+    const baseLabel = formatDistanceLabel(distanceMeters);
+    const noteTrim = note.trim();
+    const label = noteTrim ? `${baseLabel} · ${noteTrim}` : baseLabel;
+    const dateTrim = testDate.trim();
     const record: TestRecord = {
       id: test?.id ?? `test_${Date.now()}`,
       kind: "distance",
@@ -133,7 +147,9 @@ export function PrSheetA({
       distanceMeters,
       durationSeconds,
       paceSecondsPerKm,
-      testDate: test?.testDate ?? new Date().toISOString().slice(0, 10),
+      testDate: /^\d{4}-\d{2}-\d{2}$/.test(dateTrim)
+        ? dateTrim
+        : new Date().toISOString().slice(0, 10),
       testType: "solo",
       createdAt: test?.createdAt ?? Date.now(),
     };
@@ -152,7 +168,7 @@ export function PrSheetA({
         <View style={styles.sheet}>
           <View style={styles.topbar}>
             <Text style={styles.title}>
-              {isAdding ? "Nouveau PR" : "Modifier le PR"}
+              {isAdding ? "Nouveau record" : "Modifier le record"}
             </Text>
             <Pressable onPress={onClose} hitSlop={8}>
               <Text style={styles.close}>Fermer</Text>
@@ -246,6 +262,34 @@ export function PrSheetA({
               />
             </View>
 
+            <Kicker useMono style={styles.sectionKicker}>
+              DATE (OPTIONNEL)
+            </Kicker>
+            <TextInput
+              style={styles.dateInput}
+              value={testDate}
+              onChangeText={setTestDate}
+              placeholder="AAAA-MM-JJ"
+              placeholderTextColor={redesignTheme.text.faint}
+              autoCapitalize="none"
+              autoCorrect={false}
+              testID="pr-sheet-date"
+              accessibilityLabel="Date du record"
+            />
+
+            <Kicker useMono style={styles.sectionKicker}>
+              NOTE (OPTIONNEL)
+            </Kicker>
+            <TextInput
+              style={styles.noteInput}
+              value={note}
+              onChangeText={setNote}
+              placeholder="Ex. Semi Casa, footing chrono…"
+              placeholderTextColor={redesignTheme.text.faint}
+              testID="pr-sheet-note"
+              accessibilityLabel="Note"
+            />
+
             <View style={styles.ctaRow}>
               <Pressable
                 style={({ pressed }) => [
@@ -264,6 +308,7 @@ export function PrSheetA({
                 ]}
                 onPress={handleSave}
                 disabled={!valid}
+                testID="pr-sheet-save"
               >
                 <Text
                   style={[
@@ -275,6 +320,21 @@ export function PrSheetA({
                 </Text>
               </Pressable>
             </View>
+
+            {onDelete && !isAdding ? (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.deleteBtn,
+                  pressed && styles.btnPressed,
+                ]}
+                onPress={onDelete}
+                testID="pr-sheet-delete"
+                accessibilityRole="button"
+                accessibilityLabel="Supprimer ce record"
+              >
+                <Text style={styles.deleteText}>Supprimer</Text>
+              </Pressable>
+            ) : null}
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -399,7 +459,10 @@ const styles = StyleSheet.create({
     flex: 1,
     height: redesignTheme.cta.height,
     borderRadius: redesignTheme.cta.radius,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    // Quiet secondary — outline, no fill fight with primary
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -407,29 +470,65 @@ const styles = StyleSheet.create({
     flex: 1,
     height: redesignTheme.cta.height,
     borderRadius: redesignTheme.cta.radius,
-    backgroundColor: redesignTheme.accent.blue,
+    // Same solid sage primary as Créer un compte / Rejoindre on dark surfaces
+    backgroundColor: "#C3D5B3",
     alignItems: "center",
     justifyContent: "center",
   },
   saveBtnDisabled: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(195,213,179,0.22)",
   },
   cancelText: {
     fontFamily: welcomeFontFamily.semibold,
     fontSize: 15,
     fontWeight: "600",
-    color: redesignTheme.text.primary,
+    color: "rgba(255,255,255,0.72)",
   },
   saveText: {
     fontFamily: welcomeFontFamily.semibold,
     fontSize: 15,
-    fontWeight: "600",
-    color: "#FFFFFF",
+    fontWeight: "700",
+    // Dark on sage — high contrast (matches onboarding primary CTAs)
+    color: "#111214",
   },
   saveTextDisabled: {
-    color: redesignTheme.text.faint,
+    color: "rgba(17,18,20,0.45)",
   },
   btnPressed: {
     opacity: 0.85,
+  },
+  dateInput: {
+    marginHorizontal: redesignTheme.screen.horizontalPadding,
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    paddingHorizontal: 14,
+    color: redesignTheme.text.primary,
+    fontFamily: welcomeFontFamily.medium,
+    fontSize: 15,
+  },
+  noteInput: {
+    marginHorizontal: redesignTheme.screen.horizontalPadding,
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    paddingHorizontal: 14,
+    color: redesignTheme.text.primary,
+    fontFamily: welcomeFontFamily.regular,
+    fontSize: 15,
+  },
+  deleteBtn: {
+    marginTop: 16,
+    marginHorizontal: redesignTheme.screen.horizontalPadding,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteText: {
+    fontFamily: welcomeFontFamily.medium,
+    fontSize: 14,
+    color: "#E57373",
   },
 });

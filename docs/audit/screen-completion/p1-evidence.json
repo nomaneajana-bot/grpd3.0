@@ -1,0 +1,101 @@
+{
+  "prompt": 1,
+  "journey": "home-discovery-detail",
+  "tested_sha": "fc816507fd7dc06f13f3e2f97fb3510efe249554",
+  "tested_at": "2026-10-25T21:14:23.593Z",
+  "environment": "demo",
+  "hosted_claim": false,
+  "checks": [
+    {
+      "id": "p1_title_space_grotesk",
+      "ok": true,
+      "detail": "SpaceGrotesk_700Bold"
+    },
+    {
+      "id": "p1_section_space_grotesk",
+      "ok": true,
+      "detail": "SpaceGrotesk_700Bold"
+    },
+    {
+      "id": "p1_body_hanken_or_space",
+      "ok": true,
+      "detail": "HankenGrotesk_400Regular"
+    },
+    {
+      "id": "p1_fonts_registered",
+      "ok": true,
+      "detail": "SpaceGrotesk_400Regular,SpaceGrotesk_500Medium,SpaceGrotesk_600SemiBold,SpaceGrotesk_700Bold,HankenGrotesk_400Regular,HankenGrotesk_500Medium,HankenGrotesk_600SemiBold,HankenGrotesk_700Bold"
+    },
+    {
+      "id": "p1_no_fabricated_weather_community",
+      "ok": true,
+      "detail": "no weather/community/notification chrome"
+    },
+    {
+      "id": "p1_no_proximity_label",
+      "ok": true,
+      "detail": "discovery uses découvrir not proximité"
+    },
+    {
+      "id": "p1_no_near_you_copy",
+      "ok": true,
+      "detail": "\nCasablanca\n\nY\nDIMANCHE 25 OCTOBRE\nOn sort ?\nCette semaine, avec les tiens.\n\n"
+    },
+    {
+      "id": "p1_no_soft_next_when_unjoined",
+      "ok": true,
+      "detail": "{\"joinedIds\":[],\"hasNextCard\":false,\"hasIntro\":true}"
+    },
+    {
+      "id": "p1_new_member_or_empty_truthful",
+      "ok": true,
+      "detail": "intro or empty discovery"
+    },
+    {
+      "id": "p1_card_opens_exact_id",
+      "ok": true,
+      "detail": "{\"id\":\"marina-fartlek-long\",\"url\":\"http://127.0.0.1:8082/session/marina-fartlek-long\",\"titleBefore\":\"06:00\"}"
+    },
+    {
+      "id": "p1_detail_shows_title_or_logistics",
+      "ok": true,
+      "detail": "‹\nDétail de la sortie\n·\nCASABLANCA\n···\nFARTLEK\nOuverte à tous\nFARTLEK LONG\nQUAND\nLun. 26 oct. · 06:0"
+    },
+    {
+      "id": "p1_filter_run",
+      "ok": true,
+      "detail": "home-filter-run visible=true n=2"
+    },
+    {
+      "id": "p1_filter_walk",
+      "ok": true,
+      "detail": "home-filter-walk visible=true n=2"
+    },
+    {
+      "id": "p1_filter_all",
+      "ok": true,
+      "detail": "home-filter-all visible=true n=2"
+    },
+    {
+      "id": "p1_narrow320_title_visible",
+      "ok": true,
+      "detail": "{\"x\":20,\"y\":96,\"width\":280,\"height\":36}"
+    },
+    {
+      "id": "p1_desktop_title_space",
+      "ok": true,
+      "detail": "SpaceGrotesk_700Bold"
+    },
+    {
+      "id": "p1_accueil_tab_hit",
+      "ok": true,
+      "detail": "{\"x\":0,\"y\":737,\"width\":320,\"height\":53}"
+    }
+  ],
+  "issues": [],
+  "summary": {
+    "pass": 17,
+    "fail": 0,
+    "total": 17
+  }
+}

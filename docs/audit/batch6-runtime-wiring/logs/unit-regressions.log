@@ -1,0 +1,25 @@
+
+> grpd3.0@1.0.0 test:unit
+> jest --testPathIgnorePatterns=integration
+
+PASS lib/__tests__/dateHelpers.test.ts
+PASS lib/__tests__/storageSchemas.test.ts
+PASS lib/__tests__/sessionBuilder.test.ts
+PASS lib/__tests__/clubPaceGroups.test.ts
+PASS lib/coach/__tests__/ruleBasedCoachEngine.test.ts
+PASS lib/__tests__/apiMode.test.ts
+PASS lib/__tests__/clubMembershipLifecycle.unit.test.ts
+PASS lib/__tests__/mockListSessionsPrivacy.test.ts
+PASS lib/server/__tests__/app-jwt.unit.test.ts
+PASS lib/__tests__/interGroupPolicy.test.ts
+PASS lib/__tests__/sessionLogic.test.ts
+PASS lib/__tests__/otpIsolation.test.ts
+PASS lib/__tests__/attendanceStatusLogic.test.ts
+PASS lib/__tests__/sessionDisplay.test.ts
+PASS lib/__tests__/testHelpers.test.ts
+
+Test Suites: 15 passed, 15 total
+Tests:       113 passed, 113 total
+Snapshots:   0 total
+Time:        4.137 s, estimated 5 s
+Ran all test suites.

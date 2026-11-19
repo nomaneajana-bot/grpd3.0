@@ -1,0 +1,10 @@
+PASS lib/__tests__/loginVerifyErrors.unit.test.ts
+PASS lib/__tests__/otpIsolation.test.ts
+PASS lib/__tests__/liveJourneyMocks.unit.test.ts
+PASS lib/__tests__/mockSessionPersistence.unit.test.ts
+
+Test Suites: 4 passed, 4 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        2.084 s
+Ran all test suites matching /lib\/__tests__\/loginVerifyErrors.unit.test.ts|lib\/__tests__\/mockSessionPersistence.unit.test.ts|lib\/__tests__\/otpIsolation.test.ts|lib\/__tests__\/liveJourneyMocks.unit.test.ts/i.

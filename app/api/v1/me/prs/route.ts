@@ -2,20 +2,21 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { requireAuth } from "@/lib/server/auth-helpers";
+import { prisma } from "../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../lib/server/api-response";
+import { requireAuth } from "../../../../../lib/server/auth-helpers";
 
 const bodySchema = z.object({
   clubId: z.string().optional(),
   sharePrs: z.boolean().optional(),
   displayName: z.string().min(1).max(80).optional(),
+  avatarUrl: z.string().nullable().optional(),
   prSummary: z.any().optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const body = await req.json().catch(() => null);
     const parsed = bodySchema.safeParse(body ?? {});
     if (!parsed.success) {
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { clubId, sharePrs, displayName, prSummary } = parsed.data;
+    const { clubId, sharePrs, displayName, avatarUrl, prSummary } = parsed.data;
 
     let membership = null;
     if (clubId) {
@@ -50,15 +51,21 @@ export async function POST(req: NextRequest) {
     const updateData: Record<string, unknown> = {};
     if (sharePrs !== undefined) updateData.sharePrs = sharePrs;
     if (displayName) updateData.displayName = displayName;
+    if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
     if (prSummary !== undefined) updateData.prSummary = prSummary;
 
     if (Object.keys(updateData).length === 0) {
       return jsonError("Nothing to update", "VALIDATION_ERROR", 400);
     }
 
-    const updated = await prisma.clubMembership.update({
-      where: { id: membership.id },
+    // Keep avatar / name consistent across every club membership for this user.
+    await prisma.clubMembership.updateMany({
+      where: { userId },
       data: updateData,
+    });
+
+    const updated = await prisma.clubMembership.findUnique({
+      where: { id: membership.id },
     });
 
     return jsonOk(updated);

@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GRPD — Maquettes du parcours communauté</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;max-width:100%;overflow-x:hidden}
+  body{background:#08090a;color:#F3F2ED;font-family:Inter,-apple-system,BlinkMacSystemFont,Arial,sans-serif}
+  header{padding:40px 24px;max-width:1200px}
+  header h1{font-size:clamp(28px,5vw,38px);margin:12px 0}
+  header p{color:#B1B2B6;max-width:800px;line-height:1.6}
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));
+    gap:32px;
+    padding:0 16px 48px;
+    width:100%;
+    max-width:1400px;
+    margin:0 auto;
+  }
+  .board{max-width:min(440px,100%);margin:auto;width:100%}
+  .caption{font-size:13px;color:#C3D5B3;margin:14px 0;letter-spacing:1px}
+  .phone{
+    width:100%;
+    max-width:390px;
+    min-height:844px;
+    margin:0 auto;
+    background:#111214;
+    border:1px solid #383B40;
+    border-radius:32px;
+    padding:24px;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .top{display:flex;justify-content:space-between;color:#C3D5B3;font-size:13px;margin:10px 0 28px;gap:12px}
+  .phone h1{font-size:clamp(28px,8vw,34px);line-height:1.12;letter-spacing:-1px;margin:0 0 15px;white-space:pre-line;overflow-wrap:anywhere}
+  .phone h2{font-size:22px;line-height:1.25;margin:12px 0;overflow-wrap:anywhere}
+  .phone h3{font-size:19px;margin:24px 0 10px}
+  p{font-size:16px;line-height:1.5;color:#B1B2B6;margin:10px 0 18px;overflow-wrap:anywhere}
+  .small{font-size:13px}
+  .tag{font-size:11px;font-weight:700;letter-spacing:1.5px;color:#C3D5B3;margin:18px 0}
+  .card,.field,.facts{
+    background:#1C1E21;border:1px solid #383B40;border-radius:20px;padding:18px;margin:10px 0;
+    overflow-wrap:anywhere;
+  }
+  .field{font-size:16px;border-radius:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .field span{color:#C3D5B3;flex-shrink:0}
+  .tall{line-height:1.6;display:block}
+  label{display:block;font-size:13px;margin-top:20px}
+  a{color:#C3D5B3}
+  .line{height:1px;background:#383B40;margin:24px 0}
+  .bottom{margin-top:auto;padding-top:26px}
+  .button{border:0;width:100%;padding:18px 10px;border-radius:18px;background:#C3D5B3;color:#111214;font-size:15px;font-weight:700;text-align:center}
+  .secondary{display:block;text-align:center;font-size:14px;color:#C3D5B3;margin:18px 0 4px}
+  .note{font-size:11px;margin-top:22px;color:#B1B2B6}
+  .facts b{font-size:16px;color:#F3F2ED}
+  .facts p:last-child{margin-bottom:0}
+  /* Design-sheet annotation only — never copy into product UI */
+  .design-annotation{
+    font-size:11px;margin-top:16px;color:#6A6B70;font-style:italic;
+    border-left:2px solid #383B40;padding-left:10px;
+  }
+  .design-annotation::before{content:"ANNOTATION DESIGN · ";letter-spacing:0.5px;font-style:normal;font-weight:700;color:#8A8B90}
+  @media (max-width:420px){
+    header{padding:24px 16px}
+    .grid{padding:0 8px 32px;gap:24px}
+    .phone{padding:18px;border-radius:24px;min-height:780px}
+  }
+  @media print{
+    header{padding:16px}
+    .grid{display:block;padding:0}
+    .board{break-after:page}
+    .phone{min-height:800px}
+    .caption{margin-top:10px}
+    body{background:#fff;color:#111}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="caption">GRPD / DESIGN POUR REVUE / 13 OCTOBRE 2026</div>
+  <h1>Un club. Une intention. Une sortie.</h1>
+  <p>Maquettes éditables — même direction charbon et sauge que l’accueil. Huit écrans ou états d’un parcours cohérent, pas huit nouveaux menus. Données fictives pour la conception ; aucune validation utilisateur revendiquée.</p>
+</header>
+<main class="grid">
+  <section class="board" id="m01">
+    <div class="caption">M01 / Aperçu · idée de club</div>
+    <article class="phone">
+      <div class="top"><span>← Retour</span><span>GRPD</span></div>
+      <h1>Une langue.
+Une promenade.</h1>
+      <p>Un exemple pour imaginer ton club.</p>
+      <div class="tag">IDÉE · LANGUES</div>
+      <h2>English, outside</h2>
+      <p>Pratiquer l’anglais en marchant, sans salle de classe ni pression.</p>
+      <div class="line"></div>
+      <p>Ce club est une idée : aucune sortie ni inscription n’est ouverte.</p>
+      <h3>Fais-en ton club</h3>
+      <p>Choisis un nom, une ville et ce que tu veux partager. Tu organiseras les sorties ensuite.</p>
+      <div class="bottom"><div class="button">Créer mon club</div><div class="secondary">Retour à Découvrir</div></div>
+      <div class="note">MAQUETTE · données fictives · M01</div>
+    </article>
+  </section>
+
+  <section class="board" id="m02">
+    <div class="caption">M02 / Créer un club</div>
+    <article class="phone">
+      <div class="top"><span>← Retour</span><span>GRPD</span></div>
+      <h1>Une bonne raison
+de se retrouver.</h1>
+      <p>Le sujet est libre. La marche ou la course vous réunit.</p>
+      <label>Nom du club</label>
+      <div class="field"><span style="color:#F3F2ED;flex:1">English, outside</span></div>
+      <label>Ville</label>
+      <div class="field"><span style="color:#F3F2ED;flex:1">Casablanca</span></div>
+      <label>Pourquoi vous retrouver ?</label>
+      <div class="field tall">Pratiquer l’anglais en marchant.<br>Tous les niveaux sont bienvenus.</div>
+      <p class="small">Langues, quartier, rencontres, spiritualité… À toi de choisir.</p>
+      <label>Accès au club</label>
+      <div class="field"><span style="color:#F3F2ED">Sur invitation</span><span>✓</span></div>
+      <p class="small">L’adhésion au club ne t’inscrit à aucune sortie.</p>
+      <div class="bottom"><div class="button">Créer le club</div><div class="secondary">Annuler</div></div>
+      <div class="note">MAQUETTE · données fictives · M02</div>
+    </article>
+  </section>
+
+  <section class="board" id="m03">
+    <div class="caption">M03 / Club · membre</div>
+    <article class="phone">
+      <div class="top"><span>← Retour</span><span>GRPD</span></div>
+      <h1>English, outside</h1>
+      <p>Casablanca · Club sur invitation</p>
+      <div class="tag">TU ES MEMBRE</div>
+      <p>Pratiquer l’anglais en marchant. Tous les niveaux sont bienvenus.</p>
+      <div class="line"></div>
+      <h3>Les sorties du club</h3>
+      <div class="card">
+        <div class="tag">MARCHE · MEMBRES</div>
+        <h2>English by the sea</h2>
+        <p>Sam. 17 oct. · 09:00<br>Corniche, Casablanca</p>
+        <p class="small">Tu n’es pas inscrit·e à cette sortie.</p>
+        <a>Voir la sortie →</a>
+      </div>
+      <p class="small">Chaque sortie a sa propre inscription.</p>
+      <div class="bottom"><div class="button">Voir les sorties</div><div class="secondary">Gérer mon adhésion</div></div>
+      <div class="note">MAQUETTE · données fictives · M03</div>
+    </article>
+  </section>
+
+  <section class="board" id="m04">
+    <div class="caption">M04 / Sortie · avant inscription</div>
+    <article class="phone">
+      <div class="top"><span>← Retour</span><span>GRPD</span></div>
+      <h1>English by
+the sea</h1>
+      <p>Une marche pour pratiquer, à ton rythme.</p>
+      <div class="tag">MARCHE · MEMBRES DU CLUB</div>
+      <div class="facts">
+        <b>Samedi 17 octobre</b>
+        <p>09:00 · Casablanca</p>
+        <b>Rendez-vous</b>
+        <p>Entrée du phare, Corniche</p>
+      </div>
+      <h3>À quoi s’attendre</h3>
+      <p>Une conversation tranquille en anglais. Aucun niveau sportif ni allure imposée.</p>
+      <div class="line"></div>
+      <p>Organisée par Salma<br><a>English, outside →</a></p>
+      <p class="small">Tu rejoins cette sortie uniquement.</p>
+      <div class="bottom"><div class="button">M’inscrire à cette sortie</div><div class="secondary">Retour au club</div></div>
+      <div class="note">MAQUETTE · données fictives · M04</div>
+    </article>
+  </section>
+
+  <section class="board" id="m05">
+    <div class="caption">M05 / Sortie · participation confirmée</div>
+    <article class="phone">
+      <div class="top"><span>← Retour</span><span>GRPD</span></div>
+      <h1>Tu viens avec nous.</h1>
+      <p>English by the sea</p>
+      <div class="tag">INSCRIPTION CONFIRMÉE</div>
+      <div class="card">
+        <h2>Sam. 17 oct. · 09:00</h2>
+        <p>Entrée du phare, Corniche<br>Casablanca</p>
+      </div>
+      <p>Retrouve cette sortie dans « Mes sorties ».</p>
+      <div class="line"></div>
+      <h3>Un changement de programme ?</h3>
+      <p>Tu peux annuler ta participation. Tu resteras membre du club.</p>
+      <div class="field"><span style="color:#F3F2ED">Annuler ma participation →</span></div>
+      <div class="bottom"><div class="button">Voir mes sorties</div><div class="secondary">Retour à la sortie</div></div>
+      <div class="note">MAQUETTE · données fictives · M05</div>
+    </article>
+  </section>
+
+  <section class="board" id="m06">
+    <div class="caption">M06 / Annulation · confirmation</div>
+    <article class="phone">
+      <div class="top"><span>← Retour</span><span>GRPD</span></div>
+      <h1>Tu ne viens plus ?</h1>
+      <p>English by the sea · 17 oct. à 09:00</p>
+      <div class="card">
+        <h2>Annuler ta participation</h2>
+        <p>Tu ne figureras plus parmi les participants à cette sortie.</p>
+        <p>Ton adhésion à English, outside reste inchangée.</p>
+      </div>
+      <p class="small">Cette action ne supprime pas la sortie pour les autres.</p>
+      <div class="bottom"><div class="button">Confirmer l’annulation</div><div class="secondary">Garder ma place</div></div>
+      <div class="note">MAQUETTE · données fictives · M06</div>
+    </article>
+  </section>
+
+  <section class="board" id="m07">
+    <div class="caption">M07 / Demande · en attente</div>
+    <article class="phone">
+      <div class="top"><span>← Retour</span><span>GRPD</span></div>
+      <h1>Ta demande
+est envoyée.</h1>
+      <p>English, outside</p>
+      <div class="tag">EN ATTENTE D’APPROBATION</div>
+      <p>Le club doit accepter ta demande avant que tu puisses accéder à ses sorties privées.</p>
+      <div class="line"></div>
+      <h3>Et maintenant ?</h3>
+      <p>Tu peux continuer à découvrir les sorties publiques.</p>
+      <p class="small">Une demande n’est ni une adhésion confirmée ni une inscription à une sortie.</p>
+      <div class="field"><span style="color:#F3F2ED">Annuler ma demande →</span></div>
+      <div class="bottom"><div class="button">Découvrir les sorties</div><div class="secondary">Retour aux clubs</div></div>
+      <div class="note">MAQUETTE · données fictives · M07</div>
+    </article>
+  </section>
+
+  <section class="board" id="m08">
+    <div class="caption">M08 / Accès · détail indisponible</div>
+    <article class="phone">
+      <div class="top"><span>← Retour</span><span>GRPD</span></div>
+      <h1>Cette sortie
+n’est pas accessible.</h1>
+      <p>Elle est introuvable ou ton compte n’y a pas accès.</p>
+      <div class="card">
+        <h2>Retrouvons ton chemin</h2>
+        <p>Vérifie que tu utilises le bon compte ou retourne à tes clubs.</p>
+      </div>
+      <!-- PRODUCT UI MUST NOT RENDER THE NEXT LINE — design annotation only -->
+      <p class="design-annotation">Aucun nom de club, lieu, date ou participant privé ne doit être révélé ici.</p>
+      <div class="bottom"><div class="button">Retour à mes clubs</div><div class="secondary">Découvrir les sorties</div></div>
+      <div class="note">MAQUETTE · données fictives · M08</div>
+    </article>
+  </section>
+</main>
+</body>
+</html>

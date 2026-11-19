@@ -40,7 +40,21 @@ export type TokenBundle = {
 export type AuthUser = {
   id: string;
   phone: string;
+  email?: string | null;
+  name?: string | null;
   profileComplete: boolean;
+};
+
+export type EmailAuthInput = {
+  email: string;
+  password: string;
+  displayName?: string;
+  deviceId?: string;
+};
+
+export type EmailAuthResult = {
+  user: AuthUser;
+  tokens: TokenBundle;
 };
 
 export type OtpVerifyInput = {
@@ -201,6 +215,7 @@ export type ClubMembership = {
   role: ClubRole;
   status: ClubMembershipStatus;
   displayName?: string | null;
+  avatarUrl?: string | null;
   sharePrs?: boolean;
   prSummary?: PrSummary | null;
   createdAt?: string;
@@ -214,6 +229,10 @@ export type ClubMembershipsResult = {
 export type ClubCreateInput = {
   name: string;
   city?: string | null;
+  /** Free-form purpose / description (unrestricted). */
+  purpose?: string | null;
+  /** Public = discoverable; members = private club. Default public. */
+  visibility?: ClubVisibility;
 };
 
 export type ClubUpdateInput = {
@@ -225,7 +244,10 @@ export type ClubUpdateInput = {
 
 export type ClubMemberGroupInput = {
   userId: string;
-  groupId: "A" | "B" | "C" | "D";
+  /** Legacy A–D or opt-in color-group id. */
+  groupId: string;
+  /** When set, server requires groupId ∈ this list (active club groups). */
+  eligibleGroupIds?: string[];
 };
 
 export type ClubJoinByCodeInput = {
@@ -275,6 +297,7 @@ export type ClubRosterMember = {
   membershipId: string;
   userId: string;
   displayName?: string | null;
+  avatarUrl?: string | null;
   role: ClubRole;
   status: ClubMembershipStatus;
   sharePrs: boolean;
@@ -290,6 +313,7 @@ export type UpdateMyPrsInput = {
   clubId?: string;
   sharePrs?: boolean;
   displayName?: string;
+  avatarUrl?: string | null;
   prSummary?: PrSummary | null;
 };
 
@@ -356,8 +380,18 @@ export type ApiSession = {
   coachAdvice?: string | null;
   coachPhone?: string | null;
   coachName?: string | null;
+  /** Optional cover for discovery / outing cards. */
+  coverImageUrl?: string | null;
   attendanceStatus?: AttendanceStatus | null;
   attendanceGroupId?: string | null;
+  /** Hybrid payment (demo / sticky) — fee in MAD; omit/0 = free. */
+  feeMad?: number | null;
+  /** Prop2 — virement must be declared within window or seat frees. */
+  paymentStrict?: boolean | null;
+  ribAlias?: string | null;
+  transferRefPrefix?: string | null;
+  /** Prop3 — members need club cotisation à jour (guests use feeMad). */
+  requiresClubCotisation?: boolean | null;
 };
 
 export type SessionCreateInput = {
@@ -382,11 +416,13 @@ export type SessionCreateInput = {
   coachAdvice?: string | null;
   coachPhone?: string | null;
   coachName?: string | null;
+  coverImageUrl?: string | null;
 };
 
 export type SessionCreateResult = ApiSession;
 
-export type SessionJoinInput = { groupId: string };
+/** groupId may be empty/"open" for walk/language outings without pace groups. */
+export type SessionJoinInput = { groupId?: string | null };
 
 export type SessionJoinResult = {
   id: string;

@@ -1,0 +1,11 @@
+{
+  "url": "http://127.0.0.1:8081/session/explore-fartlek-progressif",
+  "hasAllureCard": true,
+  "noChooserWall": true,
+  "noCompatShout": true,
+  "hasSummary": true,
+  "hasChange": true,
+  "hasRejoindre": true,
+  "pickerOpens": true,
+  "pass": true
+}

@@ -1,0 +1,78 @@
+{
+  "feature": "club-persistent-member-groups",
+  "tested_sha": "a7b707521d014bddd6bd81cd8d398cf7df3aa9b0",
+  "tested_at": "2026-10-27T16:48:06.269Z",
+  "environment": "demo",
+  "hosted_claim": false,
+  "checks": [
+    {
+      "id": "club_created",
+      "ok": true,
+      "detail": "club_1793119689689_06snbz0q"
+    },
+    {
+      "id": "member_org_toggle",
+      "ok": true,
+      "detail": "toggle"
+    },
+    {
+      "id": "assign_persist_hint",
+      "ok": true,
+      "detail": "hint"
+    },
+    {
+      "id": "assign_roster_row",
+      "ok": true,
+      "detail": "row"
+    },
+    {
+      "id": "assign_sheet_chip",
+      "ok": true,
+      "detail": "chip"
+    },
+    {
+      "id": "adminstore_persists_assignment",
+      "ok": true,
+      "detail": "{\"org\":true,\"groups\":5,\"members\":1}"
+    },
+    {
+      "id": "hub_assign_nav",
+      "ok": true,
+      "detail": "nav"
+    },
+    {
+      "id": "session_shows_club_groups_note",
+      "ok": true,
+      "detail": "←\nRetour\nOrganiser une sortie\nTYPE DE SÉANCE\nChoisis le format, puis renseigne titre, objectif et st"
+    },
+    {
+      "id": "session_pace_not_member_assign",
+      "ok": true,
+      "detail": "pace clarified or hidden"
+    },
+    {
+      "id": "session_manage_assign_cta",
+      "ok": true,
+      "detail": "cta"
+    },
+    {
+      "id": "assignment_survives_reload",
+      "ok": true,
+      "detail": "{\"user_1793119688663_gq5cdnzv\":\"g_mvqx62m0_ddo2h0\"}"
+    },
+    {
+      "id": "assigned_label_recorded",
+      "ok": true,
+      "detail": "Conversation"
+    }
+  ],
+  "notes": {
+    "server_catalog": "BLOCKED — AdminStore client catalog only",
+    "session_pace": "Outing allures optional; member assign is club-level"
+  },
+  "summary": {
+    "pass": 12,
+    "fail": 0,
+    "total": 12
+  }
+}

@@ -2,8 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Chip } from "@/components/ui/Chip";
-import { redesignTheme } from "@/constants/redesignTheme";
-import { welcomeFontFamily } from "@/lib/welcomeFonts";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 import type { ClubFeedItem } from "@/lib/clubActivityFeed";
 
 type ClubFeedRowProps = {
@@ -14,7 +13,7 @@ type ClubFeedRowProps = {
 export function ClubFeedRow({ item, onPress }: ClubFeedRowProps) {
   const content = (
     <>
-      <View style={[styles.avatar, { backgroundColor: item.color }]}>
+      <View style={[styles.avatar, { backgroundColor: item.color || t.primary }]}>
         <Text style={styles.avatarText}>{item.initials}</Text>
       </View>
       <View style={styles.body}>
@@ -25,7 +24,12 @@ export function ClubFeedRow({ item, onPress }: ClubFeedRowProps) {
         <Text style={styles.when}>{item.when}</Text>
       </View>
       {item.kind === "pr" ? (
-        <Chip label="PR" variant="custom" style={styles.prChip} textStyle={styles.prChipText} />
+        <Chip
+          label="PR"
+          variant="custom"
+          style={styles.prChip}
+          textStyle={styles.prChipText}
+        />
       ) : null}
     </>
   );
@@ -51,10 +55,12 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    backgroundColor: redesignTheme.card.background,
-    borderRadius: redesignTheme.card.radiusLg,
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
     marginBottom: 8,
     minHeight: 64,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
   },
   pressed: {
     opacity: 0.85,
@@ -67,9 +73,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarText: {
-    color: "#FFFFFF",
+    color: t.onPrimary,
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: t.font.space.bold,
   },
   body: {
     flex: 1,
@@ -80,28 +86,26 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   who: {
-    fontFamily: welcomeFontFamily.bold,
-    fontWeight: "700",
-    color: redesignTheme.text.primary,
+    fontFamily: t.font.space.bold,
+    color: t.text,
   },
   what: {
-    fontFamily: welcomeFontFamily.regular,
-    fontWeight: "400",
-    color: redesignTheme.text.dim,
+    fontFamily: t.font.hanken.regular,
+    color: t.textSecondary,
   },
   when: {
-    fontFamily: welcomeFontFamily.regular,
+    fontFamily: t.font.hanken.regular,
     fontSize: 11,
-    color: redesignTheme.text.faint,
+    color: t.outline,
     marginTop: 4,
   },
   prChip: {
-    backgroundColor: "rgba(240,138,58,0.15)",
-    borderColor: "rgba(240,138,58,0.3)",
+    backgroundColor: "rgba(245,120,64,0.12)",
+    borderColor: "rgba(245,120,64,0.3)",
     alignSelf: "flex-start",
   },
   prChipText: {
-    color: redesignTheme.accent.orange,
+    color: "#C45A1A",
     fontSize: 10,
     fontWeight: "600",
   },

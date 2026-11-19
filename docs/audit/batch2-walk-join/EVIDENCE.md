@@ -1,0 +1,74 @@
+# Batch 2 evidence (Codex corrections)
+
+- **tested_sha:** `75356094d741c63cbfbfca2fa7301042784a2fbf`
+- **environment:** `demo` (hosted_claim=false)
+- **summary:** 42 PASS / 0 FAIL / 0 BLOCKED / 42 total
+- **future_fixture:** 2026-10-16 10:30
+- **outing_id:** `session_1791944262593_z0o5p33h`
+- **batch1_full_regression:** {"path":"docs/audit/batch2-walk-join/batch1-full-regression-evidence.json","tested_sha":"75356094d741c63cbfbfca2fa7301042784a2fbf","summary":{"passed":31,"failed":0,"total":31},"environment":"demo","hosted_claim":false,"exit_code":0}
+
+## Checks
+
+- PASS `login_host` — 0611111111
+- PASS `past_datetime_blocks_publish` — Date/heure invalide — choisis un créneau encore à venir. | form={"date":"MERCREDI 14 OCTOBRE","time":"00:00"}
+- PASS `future_datetime_fixture_selected` — {"date":"VENDREDI 16 OCTOBRE","time":"10:30"}
+- PASS `unique_spot_seeded` — Phare W2V7HC6VT
+- PASS `walk_hides_pace_groups_card` — absent
+- PASS `language_no_english_default` — {"ph":"Ex. Français, darija…","val":""}
+- PASS `create_form_shows_future_fixture` — {"date":"VENDREDI 16 OCTOBRE","time":"10:30"}
+- PASS `walk_publish_real_outing_id` — /session/session_1791944262593_z0o5p33h
+- PASS `detail_title_matches` — Marche W2V7HC6VT
+- PASS `detail_purpose_matches` — Objectif unique W2V7HC6VT — pratiquer à ton rythme.
+- PASS `detail_spot_matches` — Phare W2V7HC6VT
+- PASS `detail_datetime_matches_entered` — detailDate=VENDREDI 16 OCTOBRE 10:30 · Phare W2V7HC6VT
+- PASS `detail_language_optional_shown` — Darija W2V7HC6VT
+- PASS `creator_auto_attendance_observed` — status=joined (UNRESOLVED — not deciding)
+- PASS `second_outing_distinct_id` — session_1791944267821_t0e61raw vs session_1791944262593_z0o5p33h
+- PASS `original_outing_not_overwritten` — session_1791944262593_z0o5p33h
+- PASS `login_participant` — 0622222222
+- PASS `other_outing_unjoined_ui_for_participant` — {"otherUi":{"join":true,"joined":false},"otherAtt":{"userId":"user_1791944274691_6qirnssm","status":null,"rows":0,"joinedRows":0,"groupId":null,"localJoined":false,"legacyGlobalLen":0}}
+- PASS `join_controlled_failure_recoverable` — {"afterFail":{"join":true,"joined":false,"flag":false},"attFail":{"userId":"user_1791944274691_6qirnssm","status":null,"rows":0,"joinedRows":0,"groupId":null,"localJoined":false,"legacyGlobalLen":0}}
+- PASS `join_rapid_double_single_attendance` — {"userId":"user_1791944274691_6qirnssm","status":"joined","rows":1,"joinedRows":1,"groupId":"open","localJoined":true,"legacyGlobalLen":0}
+- PASS `m05_joined_panel_and_attendance` — {"userId":"user_1791944274691_6qirnssm","status":"joined","rows":1,"joinedRows":1,"groupId":"open","localJoined":true,"legacyGlobalLen":0}
+- PASS `join_persists_after_reload` — {"joinedReload":true,"attReload":{"userId":"user_1791944274691_6qirnssm","status":"joined","rows":1,"joinedRows":1,"groupId":"open","localJoined":true,"legacyGlobalLen":0}}
+- PASS `m06_cancel_modal_french_no_bilingual` — {"visible":true,"bilingual":false,"frenchClub":true,"confirmReachable":true,"keepReachable":true,"vw":320,"vh":568}
+- PASS `m06_short_phone_controls_reachable` — {"visible":true,"bilingual":false,"frenchClub":true,"confirmReachable":true,"keepReachable":true,"vw":320,"vh":568}
+- PASS `m06_keep_place_retains_join` — kept
+- PASS `m06_confirm_cancels_attendance` — {"userId":"user_1791944274691_6qirnssm","status":"left","rows":1,"joinedRows":0,"groupId":null,"localJoined":false,"legacyGlobalLen":0}
+- PASS `cancelled_not_in_joined_attendance` — {"userId":"user_1791944274691_6qirnssm","status":"left","rows":1,"joinedRows":0,"groupId":null,"localJoined":false,"legacyGlobalLen":0}
+- PASS `cancelled_not_listed_as_joined_in_my_sessions` — {"hasTitle":false,"joinedHints":false,"path":"/my-sessions"}
+- PASS `m07_gutters_phone` — {"viewportWidth":390,"titleLeft":24,"btnLeft":24,"consistent":true}
+- PASS `m07_gutters_desktop` — {"viewportWidth":1280,"titleLeft":184,"btnLeft":184,"consistent":true}
+- PASS `batch1_invite_for_member` — PRIVWV2G
+- PASS `batch1_member_host_sees_logistics` — /session/session_1791944331187_jl46fjkx
+- PASS `batch1_approved_member_sees_logistics` — PRIVW2V7HC6VT
+- PASS `batch1_member_b_left_club` — leave clicked
+- PASS `batch1_ex_member_gated` — gated
+- PASS `batch1_outsider_direct_link_gated` — gated
+- PASS `batch1_outsider_list_no_logistics` — PRIVW2V7HC6VT
+- PASS `batch1_pending_setup_genuine` — {"status":"pending","approved":false,"pending":true}
+- PASS `batch1_pending_direct_link_gated` — gated
+- PASS `batch1_pending_list_no_logistics` — PRIVW2V7HC6VT
+- PASS `m06_annotation_absent_from_product` — no bilingual annotation
+- PASS `batch1_full_script_regression` — {"passed":31,"failed":0,"total":31}
+
+## Screenshots
+
+- `docs/audit/batch2-walk-join/screenshots/01-host-home.png`
+- `docs/audit/batch2-walk-join/screenshots/02-past-datetime-blocked.png`
+- `docs/audit/batch2-walk-join/screenshots/03-walk-form-future-filled.png`
+- `docs/audit/batch2-walk-join/screenshots/04-detail-after-publish.png`
+- `docs/audit/batch2-walk-join/screenshots/05-other-outing-unjoined.png`
+- `docs/audit/batch2-walk-join/screenshots/06-m04-before-join.png`
+- `docs/audit/batch2-walk-join/screenshots/07-m05-joined.png`
+- `docs/audit/batch2-walk-join/screenshots/08-m06-short-phone.png`
+- `docs/audit/batch2-walk-join/screenshots/09-after-cancel.png`
+- `docs/audit/batch2-walk-join/screenshots/10-my-sessions-after-cancel.png`
+- `docs/audit/batch2-walk-join/screenshots/11-m07-after-phone.png`
+- `docs/audit/batch2-walk-join/screenshots/12-m07-after-desktop.png`
+- `docs/audit/batch2-walk-join/screenshots/13-batch1-member-detail.png`
+- `docs/audit/batch2-walk-join/screenshots/14-batch1-member-b.png`
+- `docs/audit/batch2-walk-join/screenshots/15-batch1-ex-member.png`
+- `docs/audit/batch2-walk-join/screenshots/16-batch1-outsider.png`
+- `docs/audit/batch2-walk-join/screenshots/17-batch1-pending.png`
+- `docs/audit/batch2-walk-join/screenshots/m07-before-flush.png`

@@ -1,9 +1,11 @@
 // GET /api/v1/sessions/:id – session detail
 
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { sessionIdParamSchema } from "@/lib/server/validators";
+import { prisma } from "../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../lib/server/api-response";
+import { getAuthUserId } from "../../../../../lib/server/auth-helpers";
+import { requireClubPermission } from "../../../../../lib/server/role-checks";
+import { sessionIdParamSchema } from "../../../../../lib/server/validators";
 
 function serializeSession(session: {
   id: string;
@@ -30,6 +32,7 @@ function serializeSession(session: {
   coachAdvice: string | null;
   coachPhone: string | null;
   coachName: string | null;
+  coverImageUrl?: string | null;
 }) {
   return {
     id: session.id,
@@ -56,6 +59,7 @@ function serializeSession(session: {
     coachAdvice: session.coachAdvice ?? undefined,
     coachPhone: session.coachPhone ?? undefined,
     coachName: session.coachName ?? undefined,
+    coverImageUrl: session.coverImageUrl ?? undefined,
   };
 }
 
@@ -80,6 +84,23 @@ export async function GET(
     });
 
     if (!session) return jsonError("Session not found", "NOT_FOUND", 404);
+
+    // Members-only: hide existence from non-members (direct-link privacy).
+    // Host retains access even without current membership.
+    if (session.visibility === "members") {
+      const userId = await getAuthUserId(req);
+      const isHost = Boolean(userId) && session.hostUserId === userId;
+      if (!isHost) {
+        if (!userId || !session.clubId) {
+          return jsonError("Session not found", "NOT_FOUND", 404);
+        }
+        try {
+          await requireClubPermission(userId, session.clubId, "view");
+        } catch {
+          return jsonError("Session not found", "NOT_FOUND", 404);
+        }
+      }
+    }
 
     return jsonOk(serializeSession(session));
   } catch (e) {

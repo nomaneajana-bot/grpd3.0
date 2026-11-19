@@ -8,109 +8,114 @@ export const hairline = Platform.OS === "web" ? 0.5 : StyleSheet.hairlineWidth;
 /** Prototype GRPD hairline — rgba white 7% */
 export const hairlineColor = "rgba(255, 255, 255, 0.07)";
 
+/**
+ * Aligned to NEW GREEN HOME (D03 experienceTheme):
+ * bg #111214 · card #1C1E21 · text #F3F2ED · muted #B1B2B6 · accent #C3D5B3 · line #383B40
+ * Source: components/experiences/ExperienceUI.tsx · reference: /reference/green-home
+ */
 export const colors = {
   background: {
-    /** --bg / GRPD.bg */
-    primary: "#000000",
+    /** communityTheme.bg */
+    primary: "#111214",
     /** --s1 */
-    frame: "#141416",
-    /** --s2 (cards) / GRPD.card */
-    card: "#141414",
+    frame: "#16181B",
+    /** communityTheme.card */
+    card: "#1C1E21",
     /** --s3 */
-    elevated: "#242428",
+    elevated: "#24262A",
     /** --s4 */
-    elevated2: "#2C2C32",
-    input: "#1C1C1F",
-    inputDark: "#242428",
+    elevated2: "#2C2E32",
+    input: "#1C1E21",
+    inputDark: "#24262A",
   },
   surface: {
-    s1: "#141414",
-    /** GRPD.card2 */
-    s2: "#1C1C1E",
-    s3: "#242428",
-    s4: "#2C2C32",
+    s1: "#1C1E21",
+    s2: "#222428",
+    s3: "#2A2C30",
+    s4: "#323438",
   },
   text: {
-    /** --text */
-    primary: "#EFEFEF",
-    /** --t2 */
-    secondary: "#7A7A8A",
-    /** --t3 / GRPD.textFaint */
-    tertiary: "#3A3A48",
-    faint: "#3A3A48",
-    disabled: "#3A3A48",
-    /** on blue tint */
-    accent: "#6BA4F8",
+    /** communityTheme.text */
+    primary: "#F3F2ED",
+    /** communityTheme.muted */
+    secondary: "#B1B2B6",
+    tertiary: "#8A8B90",
+    faint: "#6A6B70",
+    disabled: "#6A6B70",
+    /** community accent (links / emphasis) */
+    accent: "#C3D5B3",
     warning: "#F59040",
-    success: "#4DD990",
-    error: "#FF3B30",
+    success: "#C3D5B3",
+    error: "#FFB7AA",
   },
   accent: {
-    /** --blue / GRPD.accent */
-    primary: "#2F7BFF",
-    /** --blue-dim */
-    primaryDim: "#112044",
-    /** --blue-mid */
-    primaryMid: "#1A3A7A",
-    success: "#22C162",
-    /** --orange */
+    /** communityTheme.accent — soft sage green CTAs */
+    primary: "#C3D5B3",
+    /** dim surface for green-tinted panels */
+    primaryDim: "#1A2218",
+    primaryMid: "#2A3828",
+    success: "#C3D5B3",
+    charcoal: "#111214",
+    sage: "#C3D5B3",
+    sageDim: "rgba(195, 213, 179, 0.14)",
+    /** --orange (streak / warn — retained) */
     orange: "#F5782A",
     orangeDim: "#2A1608",
     warning: "#F59040",
-    error: "#FF3B30",
+    error: "#FFB7AA",
   },
   tag: {
-    blueBg: "#112044",
-    blueText: "#6BA4F8",
-    greenBg: "#0A2318",
-    greenText: "#4DD990",
+    blueBg: "#1A2218",
+    blueText: "#C3D5B3",
+    greenBg: "#1A2218",
+    greenText: "#C3D5B3",
     orangeBg: "#2A1608",
     orangeText: "#F59040",
     purpleBg: "#1E1035",
     purpleText: "#A87BF8",
     pinkBg: "#2A0E1C",
     pinkText: "#EC7AAA",
-    grayBg: "#242428",
-    grayText: "#7A7A8A",
+    grayBg: "#2A2C30",
+    grayText: "#B1B2B6",
   },
-  /** Teal — coach-only surfaces */
+  /** Coach surfaces — green-home adjacent (neutral olive, not neon teal) */
   coach: {
-    bg: "#0A2222",
-    border: "rgba(45, 212, 191, 0.35)",
-    text: "#5EEAD4",
-    muted: "#94A3B8",
+    bg: "#1A2218",
+    border: "rgba(195, 213, 179, 0.35)",
+    text: "#C3D5B3",
+    muted: "#B1B2B6",
   },
   border: {
-    /** --bd / GRPD.hairline on cards */
-    default: hairlineColor,
-    hairline: hairlineColor,
-    light: "#22222A",
-    medium: "#2C2C32",
-    active: "#2E7CF6",
-    accent: "#2E7CF6",
+    /** communityTheme.line */
+    default: "#383B40",
+    hairline: "#383B40",
+    light: "#2A2C30",
+    medium: "#383B40",
+    active: "#C3D5B3",
+    accent: "#C3D5B3",
   },
   overlay: {
     backdrop: "rgba(0, 0, 0, 0.75)",
     backdropLight: "rgba(0, 0, 0, 0.6)",
   },
   pill: {
-    default: "#242428",
-    active: "rgba(46, 124, 246, 0.2)",
-    custom: "rgba(122, 122, 138, 0.2)",
-    success: "rgba(34, 193, 98, 0.18)",
+    default: "#2A2C30",
+    active: "rgba(195, 213, 179, 0.22)",
+    custom: "rgba(177, 178, 182, 0.2)",
+    success: "rgba(195, 213, 179, 0.18)",
   },
   workoutBlock: {
-    cool: "#0A1820",
-    coolBorder: "#1A3040",
-    mainBorder: "#112044",
+    cool: "#16181B",
+    coolBorder: "#383B40",
+    mainBorder: "#2A3828",
   },
   whatsapp: {
-    bg: "#1A3A1A",
-    text: "#3ED87A",
-    border: "#2A5A2A",
+    bg: "#1A2218",
+    text: "#C3D5B3",
+    border: "#2A3828",
   },
   groupRow: {
-    selectedBg: "#1A3A7A",
+    selectedBg: "#1A2218",
     recommendedBg: "#1C1008",
     recommendedBorder: "#F5782A",
   },
@@ -129,12 +134,12 @@ export const spacing = {
   screenHorizontal: 14,
 };
 
-/** --r: 14px */
+/** Community home radii (D03 cards 22 / CTA 16). */
 export const borderRadius = {
-  sm: 11,
-  md: 12,
-  lg: 14,
-  xl: 20,
+  sm: 12,
+  md: 14,
+  lg: 16,
+  xl: 22,
   pill: 999,
 };
 
@@ -185,17 +190,17 @@ export const commonStyles = {
   button: {
     primary: {
       backgroundColor: colors.accent.primary,
-      borderRadius: 13,
+      borderRadius: 16,
       paddingHorizontal: spacing.lg,
-      paddingVertical: 13,
+      paddingVertical: 17,
     },
     secondary: {
-      borderRadius: 13,
+      borderRadius: 16,
       paddingHorizontal: spacing.lg,
-      paddingVertical: 12,
-      borderWidth: hairline,
+      paddingVertical: 16,
+      borderWidth: 1,
       borderColor: colors.border.default,
-      backgroundColor: colors.surface.s3,
+      backgroundColor: colors.background.card,
     },
   },
 };

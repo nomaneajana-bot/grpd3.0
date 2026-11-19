@@ -13,7 +13,14 @@ import "react-native-reanimated";
 import { colors } from "@/constants/ui";
 import { useAuthGate } from "@/hooks/use-auth-gate";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useWelcomeFonts } from "@/lib/welcomeFonts";
+import { useFonts } from "expo-font";
+import { stitoFontAssets } from "@/lib/stitoFonts";
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from "@expo-google-fonts/inter";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -54,16 +61,42 @@ export const unstable_settings = {
   anchor: "(tabs)",
 };
 
+/** Don't leave users on Chargement forever if fonts/auth stall (web preview). */
+const BOOT_FAIL_OPEN_MS = 4500;
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { isLoading } = useAuthGate();
-  const [fontsLoaded] = useWelcomeFonts();
+  // Stito UI: Space Grotesk + Hanken; Inter retained for /avenir welcome surfaces.
+  const [fontsLoaded, fontError] = useFonts({
+    ...stitoFontAssets,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+  const [bootTimedOut, setBootTimedOut] = React.useState(false);
 
   useEffect(() => {
-    if (!isLoading && fontsLoaded) {
+    if (fontError) {
+      console.warn("Font load failed — continuing with system fallback:", fontError);
+    }
+  }, [fontError]);
+
+  useEffect(() => {
+    const id = setTimeout(() => setBootTimedOut(true), BOOT_FAIL_OPEN_MS);
+    return () => clearTimeout(id);
+  }, []);
+
+  const fontsReady = fontsLoaded || Boolean(fontError) || bootTimedOut;
+  const authReady = !isLoading || bootTimedOut;
+  const bootReady = fontsReady && authReady;
+
+  useEffect(() => {
+    if (bootReady) {
       SplashScreen.hideAsync().catch(() => undefined);
     }
-  }, [isLoading, fontsLoaded]);
+  }, [bootReady]);
 
   // Set global web styles
   useEffect(() => {
@@ -81,9 +114,9 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <View style={styles.rootContainer}>
-          {isLoading || !fontsLoaded ? (
-            <View style={styles.loadingContainer}>
+        <View style={styles.rootContainer} testID="root-layout">
+          {!bootReady ? (
+            <View style={styles.loadingContainer} testID="root-boot-loading">
               <ActivityIndicator size="large" color={colors.accent.primary} />
               <Text style={styles.loadingLabel}>Chargement…</Text>
             </View>
