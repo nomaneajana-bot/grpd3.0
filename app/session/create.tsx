@@ -1440,8 +1440,8 @@ export default function CreateSessionScreen() {
   })();
 
   // Spots are loaded from persistent storage
-  const [spots, setSpots] = useState<string[]>(["Marina", "Parc", "Piste"]);
-  const [spot, setSpot] = useState<string>("Marina");
+  const [spots, setSpots] = useState<string[]>(["Circuit Rodriguez, Casablanca", "Marina Juice, Casablanca", "Vélodrome Casablanca"]);
+  const [spot, setSpot] = useState<string>("Circuit Rodriguez, Casablanca");
   const [hasInitializedAudience, setHasInitializedAudience] = useState(false);
 
   // Load spots from storage on mount

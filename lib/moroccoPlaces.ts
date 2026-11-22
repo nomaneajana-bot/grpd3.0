@@ -15,6 +15,9 @@ export type MoroccoCity = (typeof MOROCCO_CITIES)[number];
 
 /** Default rendez-vous spots — Casablanca-first, reused as location slider options. */
 export const DEFAULT_LOCATIONS = [
+  "Circuit Rodriguez, Casablanca",
+  "Marina Juice, Casablanca",
+  "Vélodrome Casablanca",
   "Marina",
   "Corniche El Hank",
   "Parc de la Ligue Arabe",

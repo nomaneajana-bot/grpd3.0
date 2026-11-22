@@ -33,10 +33,10 @@ export const DEMO_CLUB_COTISATION: Record<
   string,
   { amountMad: number; periodLabel: string; ribAlias: string }
 > = {
-  club_corporate_girls: {
+  club_jaime_courir: {
     amountMad: 200,
     periodLabel: "Mensuelle",
-    ribAlias: "CIH · Corporate Girls GRPD",
+    ribAlias: "CIH · j’aime courir",
   },
 };
 

@@ -70,6 +70,7 @@ import {
 import {
   DEMO_CLUB_ID,
   DEMO_CLUB_NAME as CASA_CLUB_NAME,
+  DEMO_PEOPLE,
   MOCK_CLUBS_KEY,
   MOCK_MEMBERSHIPS_KEY,
   MOCK_OTP_KEY,
@@ -225,33 +226,6 @@ async function writeJson<T>(key: string, value: T): Promise<void> {
   await AsyncStorage.setItem(key, JSON.stringify(value));
 }
 
-type SeedRosterSpec = {
-  key: string;
-  displayName: string;
-  paceSecondsPerKm: number;
-};
-
-const SEED_ROSTER_SPECS: SeedRosterSpec[] = [
-  { key: 'kaoutar', displayName: 'Kaoutar Allaeddine', paceSecondsPerKm: 255 },
-  { key: 'yassine', displayName: 'Yassine Samir', paceSecondsPerKm: 262 },
-  { key: 'abdelali', displayName: 'Abdelali Anik', paceSecondsPerKm: 278 },
-  { key: 'abdellatif', displayName: 'Abdellatif Mansouri', paceSecondsPerKm: 285 },
-  { key: 'sara', displayName: 'Sara Kabbaj', paceSecondsPerKm: 292 },
-  { key: 'imane', displayName: 'Imane Rami', paceSecondsPerKm: 305 },
-  { key: 'mohamed', displayName: 'Mohamed Lahlou', paceSecondsPerKm: 318 },
-  { key: 'nadia', displayName: 'Nadia Jabri', paceSecondsPerKm: 325 },
-  { key: 'karim', displayName: 'Karim Benali', paceSecondsPerKm: 338 },
-  { key: 'salma', displayName: 'Salma Idrissi', paceSecondsPerKm: 345 },
-  { key: 'omar', displayName: 'Omar Tazi', paceSecondsPerKm: 358 },
-  { key: 'hajar', displayName: 'Hajar Alaoui', paceSecondsPerKm: 372 },
-  { key: 'amine', displayName: 'Amine Berrada', paceSecondsPerKm: 388 },
-  { key: 'lina', displayName: 'Lina Mansour', paceSecondsPerKm: 405 },
-  { key: 'reda', displayName: 'Reda Chakir', paceSecondsPerKm: 418 },
-  { key: 'fatima', displayName: 'Fatima Zahra', paceSecondsPerKm: 435 },
-  { key: 'youssef', displayName: 'Youssef Alaoui', paceSecondsPerKm: 448 },
-  { key: 'leila', displayName: 'Leila Bennis', paceSecondsPerKm: 465 },
-];
-
 function makePrSummary(paceSecondsPerKm: number) {
   return {
     updatedAt: new Date().toISOString(),
@@ -344,30 +318,20 @@ async function ensureDemoClubMembership(clubId: string): Promise<void> {
 
 async function ensureSeedRoster(clubId: string): Promise<void> {
   const memberships = await readMemberships();
-  const seedCount = Object.values(memberships).filter(
-    (m) =>
-      m.clubId === clubId &&
-      m.status === 'approved' &&
-      m.userId.startsWith('seed_member_'),
-  ).length;
-
-  if (seedCount < SEED_ROSTER_SPECS.length) {
-    for (const spec of SEED_ROSTER_SPECS) {
-      const userId = `seed_member_${spec.key}`;
-      const existing = Object.values(memberships).find(
-        (m) => m.userId === userId && m.clubId === clubId,
-      );
-      if (existing) continue;
-      await upsertMembership({
-        userId,
-        clubId,
-        status: 'approved',
-        role: 'member',
-        displayName: spec.displayName,
-        sharePrs: true,
-        prSummary: makePrSummary(spec.paceSecondsPerKm),
-      });
-    }
+  for (const person of DEMO_PEOPLE) {
+    const existing = Object.values(memberships).find(
+      (m) => m.userId === person.userId && m.clubId === clubId,
+    );
+    if (existing) continue;
+    await upsertMembership({
+      userId: person.userId,
+      clubId,
+      status: 'approved',
+      role: person.role === 'coach' ? 'coach' : 'member',
+      displayName: person.displayName,
+      sharePrs: true,
+      prSummary: makePrSummary(person.paceSecondsPerKm),
+    });
   }
 
   await ensureDemoClubMembership(clubId);
