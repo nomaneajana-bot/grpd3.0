@@ -26,7 +26,7 @@ import {
   DEMO_COACH_PRIMARY,
   DEMO_COACH_SECONDARY,
   DEMO_PEOPLE,
-  demoCoachUserIdForName,
+  demoHostUserIdForName,
   type DemoPerson,
 } from "./demoRoster";
 export { DEMO_PEOPLE } from "./demoRoster";
@@ -40,8 +40,8 @@ export const MOCK_MEMBERSHIPS_KEY = "mock:club_memberships";
 export const MOCK_OTP_KEY = "mock:otp";
 /** Bump to force a one-time reseed of the richer Casablanca world. */
 export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v5";
-/** v12: only j’aime courir + J❤️COURIR roster + Rodriguez / Marina Juice / Vélodrome. */
-export const DEMO_SEED_VERSION = "12";
+/** v13: Accueil full of public Course/Marche sorties (j’aime courir only). */
+export const DEMO_SEED_VERSION = "13";
 
 /** Distinct outing covers — live Unsplash IDs only (verified HTTP 200). */
 const COVER = OUTING_COVERS;
@@ -229,20 +229,38 @@ function buildDemoSessions(): ApiSession[] {
     requiresClubCotisation?: boolean;
   };
 
+  // Accueil discovery = public only, filtered by selected day.
+  // Seed late tonight (survives evening demos) + fill the next 6 days.
+  const H = {
+    abdelali: DEMO_COACH_PRIMARY.displayName,
+    ilham: DEMO_COACH_SECONDARY.displayName,
+    walid: "Walid Tagmout",
+    ghizlane: "Ghizlane Rabhi",
+    youness: "Youness Machkour",
+    fatima: "Fatima Mechkouk",
+    nora: "Nora El Jamal",
+    mohamed: "Mohamed Oubenaakka",
+    laila: "Laila Nasr",
+    hamza: "Hamza Regui",
+    meriem: "Meriem Esseda",
+    ines: "Ines Rajiallah",
+  } as const;
+
   const specs: SpecExtra[] = [
+    // ——— Today (late) — Accueil default day ———
     {
       id: "demo_sess_footing_rodriguez",
       title: "Footing Circuit Rodriguez",
       spot: "Circuit Rodriguez, Casablanca",
       dayOffset: 0,
-      timeMinutes: 19 * 60,
+      timeMinutes: 21 * 60 + 30,
       typeLabel: "FOOTING",
       volume: "45 min · allure facile",
       targetPace: "5:30–6:30/km",
       estimatedDistanceKm: 8,
       visibility: "public",
       withPaceGroups: true,
-      coachName: DEMO_COACH_PRIMARY.displayName,
+      coachName: H.abdelali,
       coachPhone: "+212600000001",
       recommendedGroupId: "C",
       purpose: "Sortie phare j’aime courir — Circuit Rodriguez.",
@@ -252,18 +270,61 @@ function buildDemoSessions(): ApiSession[] {
       hostGroupName: DEMO_CLUB_NAME,
     },
     {
+      id: "demo_sess_marche_marina_soir",
+      title: "Marche douce Marina Juice",
+      spot: "Marina Juice, Casablanca",
+      dayOffset: 0,
+      timeMinutes: 21 * 60,
+      typeLabel: "MARCHE",
+      volume: "40 min · pas conversation",
+      targetPace: "—",
+      estimatedDistanceKm: 4,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: H.ilham,
+      coachPhone: "+212600000002",
+      recommendedGroupId: "D",
+      purpose: "Boucle marina en soirée — rythme marche.",
+      coverImageUrl: COVER.walkPark,
+      openRunners: 11,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    {
+      id: "demo_sess_corniche_night",
+      title: "Course Corniche de nuit",
+      spot: "Corniche El Hank",
+      dayOffset: 0,
+      timeMinutes: 22 * 60,
+      typeLabel: "COURSE",
+      volume: "8 km · allure confort",
+      targetPace: "5:45–6:45/km",
+      estimatedDistanceKm: 8,
+      visibility: "public",
+      withPaceGroups: true,
+      coachName: H.walid,
+      coachPhone: "+212600000010",
+      recommendedGroupId: "C",
+      purpose: "Aller-retour Corniche sous les lampadaires.",
+      coverImageUrl: COVER.cornicheDawn,
+      openRunners: 10,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    // ——— Tomorrow ———
+    {
       id: "demo_sess_marina_juice",
       title: "Footing Marina Juice",
       spot: "Marina Juice, Casablanca",
-      dayOffset: 0,
-      timeMinutes: 8 * 60 + 30,
+      dayOffset: 1,
+      timeMinutes: 7 * 60 + 30,
       typeLabel: "FOOTING",
       volume: "40 min · rythme cool",
       targetPace: "5:45–6:45/km",
       estimatedDistanceKm: 7,
       visibility: "public",
       withPaceGroups: true,
-      coachName: DEMO_COACH_SECONDARY.displayName,
+      coachName: H.ilham,
       coachPhone: "+212600000002",
       recommendedGroupId: "C",
       purpose: "Matinée Marina Juice — café après l’effort.",
@@ -282,9 +343,9 @@ function buildDemoSessions(): ApiSession[] {
       volume: "10×400 m · récup 90s",
       targetPace: "4:00–5:00/km",
       estimatedDistanceKm: 6,
-      visibility: "members",
+      visibility: "public",
       withPaceGroups: true,
-      coachName: DEMO_COACH_PRIMARY.displayName,
+      coachName: H.abdelali,
       coachPhone: "+212600000001",
       recommendedGroupId: "B",
       purpose: "Travail de vitesse au Vélodrome — groupes A–D.",
@@ -293,43 +354,23 @@ function buildDemoSessions(): ApiSession[] {
       hostGroupName: DEMO_CLUB_NAME,
     },
     {
-      id: "demo_sess_soir_members",
-      title: "Allure confort club",
-      spot: "Circuit Rodriguez, Casablanca",
-      dayOffset: 0,
+      id: "demo_sess_marche_ligue",
+      title: "Marche Parc de la Ligue",
+      spot: "Parc de la Ligue Arabe",
+      dayOffset: 1,
       timeMinutes: 18 * 60,
-      typeLabel: "FOOTING",
-      volume: "8 km · groupes A–D",
-      targetPace: "5:00–6:30/km",
-      estimatedDistanceKm: 8,
-      visibility: "members",
-      withPaceGroups: true,
-      coachName: DEMO_COACH_SECONDARY.displayName,
-      coachPhone: "+212600000002",
-      recommendedGroupId: "C",
-      purpose: "Sortie club du soir — choisis ton groupe.",
-      coverImageUrl: COVER.packRoad,
-      clubId: DEMO_CLUB_ID,
-      hostGroupName: DEMO_CLUB_NAME,
-    },
-    {
-      id: "demo_sess_footing_sunset",
-      title: "Footing coucher de soleil",
-      spot: "Marina Juice, Casablanca",
-      dayOffset: 3,
-      timeMinutes: 18 * 60,
-      typeLabel: "FOOTING",
-      volume: "50 min · conversation",
-      targetPace: "6:00–7:00/km",
-      estimatedDistanceKm: 7,
+      typeLabel: "MARCHE",
+      volume: "50 min · découverte",
+      targetPace: "—",
+      estimatedDistanceKm: 5,
       visibility: "public",
       withPaceGroups: false,
-      coachName: DEMO_COACH_SECONDARY.displayName,
-      coachPhone: "+212600000002",
+      coachName: H.laila,
+      coachPhone: "+212600000011",
       recommendedGroupId: "D",
-      purpose: "Boucle douce autour de la Marina.",
-      coverImageUrl: COVER.waterfront,
-      openRunners: 10,
+      purpose: "Tour du parc à pied — tous niveaux.",
+      coverImageUrl: COVER.trailLight,
+      openRunners: 13,
       clubId: DEMO_CLUB_ID,
       hostGroupName: DEMO_CLUB_NAME,
     },
@@ -338,14 +379,14 @@ function buildDemoSessions(): ApiSession[] {
       title: "Footing payant — Marina Juice",
       spot: "Marina Juice, Casablanca",
       dayOffset: 1,
-      timeMinutes: 18 * 60,
+      timeMinutes: 18 * 60 + 30,
       typeLabel: "FOOTING · Payant",
       volume: "50 min · allure confort",
       targetPace: "5:30–6:30/km",
       estimatedDistanceKm: 9,
       visibility: "public",
       withPaceGroups: true,
-      coachName: DEMO_COACH_PRIMARY.displayName,
+      coachName: H.abdelali,
       coachPhone: "+212600000001",
       recommendedGroupId: "C",
       purpose: "Prop1 — 50 MAD · Espèces ou Virement avant d’avoir la place.",
@@ -354,6 +395,28 @@ function buildDemoSessions(): ApiSession[] {
       feeMad: 50,
       ribAlias: "CIH · j’aime courir",
       transferRefPrefix: "GRPD",
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    // ——— +2 ———
+    {
+      id: "demo_sess_anfa_run",
+      title: "Footing Anfa Park",
+      spot: "Anfa Park",
+      dayOffset: 2,
+      timeMinutes: 7 * 60,
+      typeLabel: "FOOTING",
+      volume: "45 min · endurance",
+      targetPace: "5:15–6:15/km",
+      estimatedDistanceKm: 9,
+      visibility: "public",
+      withPaceGroups: true,
+      coachName: H.youness,
+      coachPhone: "+212600000012",
+      recommendedGroupId: "B",
+      purpose: "Boucles Anfa — groupes A–D.",
+      coverImageUrl: COVER.cityStride,
+      openRunners: 15,
       clubId: DEMO_CLUB_ID,
       hostGroupName: DEMO_CLUB_NAME,
     },
@@ -369,7 +432,7 @@ function buildDemoSessions(): ApiSession[] {
       estimatedDistanceKm: 6,
       visibility: "public",
       withPaceGroups: true,
-      coachName: DEMO_COACH_SECONDARY.displayName,
+      coachName: H.ilham,
       coachPhone: "+212600000002",
       recommendedGroupId: "B",
       purpose:
@@ -380,6 +443,47 @@ function buildDemoSessions(): ApiSession[] {
       paymentStrict: true,
       ribAlias: "CIH · j’aime courir Vélodrome",
       transferRefPrefix: "STRICT",
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    {
+      id: "demo_sess_marche_ain_diab",
+      title: "Marche Ain Diab",
+      spot: "Ain Diab",
+      dayOffset: 2,
+      timeMinutes: 18 * 60 + 30,
+      typeLabel: "MARCHE",
+      volume: "55 min · bord de mer",
+      targetPace: "—",
+      estimatedDistanceKm: 5,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: H.nora,
+      coachPhone: "+212600000013",
+      recommendedGroupId: "D",
+      purpose: "Marche front de mer — rythme libre.",
+      coverImageUrl: COVER.waterfront,
+      openRunners: 12,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    {
+      id: "demo_sess_soir_members",
+      title: "Allure confort club",
+      spot: "Circuit Rodriguez, Casablanca",
+      dayOffset: 2,
+      timeMinutes: 19 * 60,
+      typeLabel: "FOOTING",
+      volume: "8 km · groupes A–D",
+      targetPace: "5:00–6:30/km",
+      estimatedDistanceKm: 8,
+      visibility: "members",
+      withPaceGroups: true,
+      coachName: H.ghizlane,
+      coachPhone: "+212600000014",
+      recommendedGroupId: "C",
+      purpose: "Sortie club du soir — choisis ton groupe.",
+      coverImageUrl: COVER.packRoad,
       clubId: DEMO_CLUB_ID,
       hostGroupName: DEMO_CLUB_NAME,
     },
@@ -395,7 +499,7 @@ function buildDemoSessions(): ApiSession[] {
       estimatedDistanceKm: 8,
       visibility: "members",
       withPaceGroups: false,
-      coachName: DEMO_COACH_PRIMARY.displayName,
+      coachName: H.abdelali,
       coachPhone: "+212600000001",
       recommendedGroupId: "C",
       purpose:
@@ -409,6 +513,221 @@ function buildDemoSessions(): ApiSession[] {
       ribAlias: "CIH · j’aime courir",
       transferRefPrefix: "COTIS",
     },
+    // ——— +3 ———
+    {
+      id: "demo_sess_footing_sunset",
+      title: "Footing coucher de soleil",
+      spot: "Marina Juice, Casablanca",
+      dayOffset: 3,
+      timeMinutes: 18 * 60,
+      typeLabel: "FOOTING",
+      volume: "50 min · conversation",
+      targetPace: "6:00–7:00/km",
+      estimatedDistanceKm: 7,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: H.meriem,
+      coachPhone: "+212600000015",
+      recommendedGroupId: "D",
+      purpose: "Boucle douce autour de la Marina.",
+      coverImageUrl: COVER.longRun,
+      openRunners: 10,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    {
+      id: "demo_sess_bouskoura_long",
+      title: "Long run Bouskoura",
+      spot: "Forêt de Bouskoura",
+      dayOffset: 3,
+      timeMinutes: 8 * 60,
+      typeLabel: "COURSE",
+      volume: "14 km · endurance",
+      targetPace: "5:30–6:30/km",
+      estimatedDistanceKm: 14,
+      visibility: "public",
+      withPaceGroups: true,
+      coachName: H.mohamed,
+      coachPhone: "+212600000016",
+      recommendedGroupId: "C",
+      purpose: "Sortie longue en forêt — emporte de l’eau.",
+      coverImageUrl: COVER.trailLight,
+      openRunners: 16,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    {
+      id: "demo_sess_marche_maarif",
+      title: "Marche quartier Maarif",
+      spot: "Maarif",
+      dayOffset: 3,
+      timeMinutes: 19 * 60,
+      typeLabel: "MARCHE",
+      volume: "45 min · urbain",
+      targetPace: "—",
+      estimatedDistanceKm: 4,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: H.fatima,
+      coachPhone: "+212600000017",
+      recommendedGroupId: "D",
+      purpose: "Marche de quartier — rythme cool.",
+      coverImageUrl: COVER.womenPack,
+      openRunners: 9,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    // ——— +4 ———
+    {
+      id: "demo_sess_rodriguez_matin",
+      title: "Footing matinal Rodriguez",
+      spot: "Circuit Rodriguez, Casablanca",
+      dayOffset: 4,
+      timeMinutes: 6 * 60 + 45,
+      typeLabel: "FOOTING",
+      volume: "40 min · réveil muscles",
+      targetPace: "5:30–6:30/km",
+      estimatedDistanceKm: 7,
+      visibility: "public",
+      withPaceGroups: true,
+      coachName: H.hamza,
+      coachPhone: "+212600000018",
+      recommendedGroupId: "C",
+      purpose: "Départ tôt — Circuit Rodriguez.",
+      coverImageUrl: COVER.packRoad,
+      openRunners: 11,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    {
+      id: "demo_sess_velodrome_tempo",
+      title: "Tempo Vélodrome",
+      spot: "Vélodrome Casablanca",
+      dayOffset: 4,
+      timeMinutes: 18 * 60 + 15,
+      typeLabel: "SERIES",
+      volume: "5×1000 m · récup 2 min",
+      targetPace: "4:15–5:00/km",
+      estimatedDistanceKm: 8,
+      visibility: "public",
+      withPaceGroups: true,
+      coachName: H.abdelali,
+      coachPhone: "+212600000001",
+      recommendedGroupId: "B",
+      purpose: "Qualité piste — emporte des pointes si tu as.",
+      coverImageUrl: COVER.trackNight,
+      openRunners: 10,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    {
+      id: "demo_sess_marche_marina_matin",
+      title: "Marche café Marina",
+      spot: "Marina",
+      dayOffset: 4,
+      timeMinutes: 9 * 60,
+      typeLabel: "MARCHE",
+      volume: "35 min · soft",
+      targetPace: "—",
+      estimatedDistanceKm: 3,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: H.ines,
+      coachPhone: "+212600000019",
+      recommendedGroupId: "D",
+      purpose: "Marche puis café — rythme découverte.",
+      coverImageUrl: COVER.walkPark,
+      openRunners: 8,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    // ——— +5 ———
+    {
+      id: "demo_sess_corniche_sunrise",
+      title: "Course lever de soleil",
+      spot: "Corniche El Hank",
+      dayOffset: 5,
+      timeMinutes: 6 * 60 + 30,
+      typeLabel: "COURSE",
+      volume: "10 km · easy",
+      targetPace: "5:45–6:45/km",
+      estimatedDistanceKm: 10,
+      visibility: "public",
+      withPaceGroups: true,
+      coachName: H.walid,
+      coachPhone: "+212600000010",
+      recommendedGroupId: "C",
+      purpose: "Corniche au lever du jour.",
+      coverImageUrl: COVER.cornicheDawn,
+      openRunners: 14,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    {
+      id: "demo_sess_marche_rodriguez",
+      title: "Marche Circuit Rodriguez",
+      spot: "Circuit Rodriguez, Casablanca",
+      dayOffset: 5,
+      timeMinutes: 18 * 60,
+      typeLabel: "MARCHE",
+      volume: "50 min · récup active",
+      targetPace: "—",
+      estimatedDistanceKm: 5,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: H.ghizlane,
+      coachPhone: "+212600000014",
+      recommendedGroupId: "D",
+      purpose: "Récupération en marchant sur le circuit.",
+      coverImageUrl: COVER.trailLight,
+      openRunners: 10,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    // ——— +6 ———
+    {
+      id: "demo_sess_week_end_pack",
+      title: "Pack week-end Anfa",
+      spot: "Anfa Park",
+      dayOffset: 6,
+      timeMinutes: 9 * 60,
+      typeLabel: "FOOTING",
+      volume: "12 km · social",
+      targetPace: "5:30–6:45/km",
+      estimatedDistanceKm: 12,
+      visibility: "public",
+      withPaceGroups: true,
+      coachName: H.ilham,
+      coachPhone: "+212600000002",
+      recommendedGroupId: "C",
+      purpose: "Sortie week-end — photo de groupe à la fin.",
+      coverImageUrl: COVER.cityStride,
+      openRunners: 18,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    {
+      id: "demo_sess_marche_bouskoura",
+      title: "Marche forêt Bouskoura",
+      spot: "Forêt de Bouskoura",
+      dayOffset: 6,
+      timeMinutes: 10 * 60 + 30,
+      typeLabel: "MARCHE",
+      volume: "60 min · nature",
+      targetPace: "—",
+      estimatedDistanceKm: 6,
+      visibility: "public",
+      withPaceGroups: false,
+      coachName: H.nora,
+      coachPhone: "+212600000013",
+      recommendedGroupId: "D",
+      purpose: "Marche en sous-bois — chaussures confort.",
+      coverImageUrl: COVER.trailLight,
+      openRunners: 12,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    // ——— Past (Mes Sorties history) ———
     {
       id: "demo_sess_past_footing",
       title: "Footing du week-end",
@@ -422,7 +741,7 @@ function buildDemoSessions(): ApiSession[] {
       estimatedDistanceKm: 10,
       visibility: "public",
       withPaceGroups: true,
-      coachName: DEMO_COACH_PRIMARY.displayName,
+      coachName: H.abdelali,
       coachPhone: "+212600000001",
       recommendedGroupId: "C",
       coverImageUrl: COVER.packRoad,
@@ -442,7 +761,7 @@ function buildDemoSessions(): ApiSession[] {
       estimatedDistanceKm: 5,
       visibility: "members",
       withPaceGroups: true,
-      coachName: DEMO_COACH_SECONDARY.displayName,
+      coachName: H.ilham,
       coachPhone: "+212600000002",
       recommendedGroupId: "B",
       coverImageUrl: COVER.trackNight,
@@ -462,7 +781,7 @@ function buildDemoSessions(): ApiSession[] {
       estimatedDistanceKm: 8,
       visibility: "public",
       withPaceGroups: false,
-      coachName: DEMO_COACH_PRIMARY.displayName,
+      coachName: H.abdelali,
       coachPhone: "+212600000001",
       recommendedGroupId: "D",
       coverImageUrl: COVER.waterfront,
@@ -473,15 +792,24 @@ function buildDemoSessions(): ApiSession[] {
   ];
 
 
+  let day0PastIndex = 0;
   return specs.map((spec) => {
     const day = new Date(startOfToday.getTime() + spec.dayOffset * DAY_MS);
+    let timeMinutes = spec.timeMinutes;
     if (spec.pastDaysAgo != null) {
       day.setDate(day.getDate() - spec.pastDaysAgo);
     } else if (spec.dayOffset === 0) {
-      // If today's evening session already passed, push +7d for dayOffset 0
-      const sessionMs = day.getTime() + spec.timeMinutes * 60 * 1000;
+      // Keep Accueil "Aujourd'hui" filled: snap past tonight slots forward, staggered.
+      const sessionMs = day.getTime() + timeMinutes * 60 * 1000;
       if (sessionMs <= now.getTime()) {
-        day.setDate(day.getDate() + 7);
+        const soon =
+          now.getHours() * 60 + now.getMinutes() + 40 + day0PastIndex * 25;
+        day0PastIndex += 1;
+        if (soon <= 23 * 60 + 30) {
+          timeMinutes = soon;
+        } else {
+          day.setDate(day.getDate() + 1);
+        }
       }
     }
     const dateISO = isoDate(day);
@@ -499,7 +827,7 @@ function buildDemoSessions(): ApiSession[] {
           ]
         : [];
 
-    // Invariant (a): members ⇒ clubId; public must not inherit club context
+    // Invariant (a): members ⇒ clubId; public keeps club branding via hostGroupName
     const clubId =
       spec.visibility === "members"
         ? (spec.clubId ?? DEMO_CLUB_ID)
@@ -509,9 +837,9 @@ function buildDemoSessions(): ApiSession[] {
       id: spec.id,
       title: spec.title,
       spot: spec.spot,
-      dateLabel: formatDateLabel(day, spec.timeMinutes),
+      dateLabel: formatDateLabel(day, timeMinutes),
       dateISO,
-      timeMinutes: spec.timeMinutes,
+      timeMinutes,
       typeLabel: spec.typeLabel,
       volume: spec.volume,
       targetPace: spec.targetPace,
@@ -520,7 +848,7 @@ function buildDemoSessions(): ApiSession[] {
       clubId,
       visibility: spec.visibility,
       genderRestriction: spec.genderRestriction ?? "none",
-      hostUserId: demoCoachUserIdForName(spec.coachName),
+      hostUserId: demoHostUserIdForName(spec.coachName),
       workoutId: null,
       // Club/demo outings are joinable community sessions, not user-owned drafts
       isCustom: false,
@@ -547,23 +875,25 @@ function buildDemoSessions(): ApiSession[] {
 
 function buildDemoAttendances(sessions: ApiSession[]): MockAttendance[] {
   const runners = DEMO_PEOPLE.filter((p) => p.role === "member");
-  const coaches = DEMO_PEOPLE.filter((p) => p.role === "coach");
   const rows: MockAttendance[] = [];
 
   sessions.forEach((session, sessionIndex) => {
     const hasGroups = (session.paceGroups?.length ?? 0) > 0;
     // Rotate which runners join so each session looks populated
-    const sliceStart = sessionIndex % Math.max(1, runners.length - 5);
-    const joinedRunners = runners.slice(sliceStart, sliceStart + 6);
-    const hostCoach =
-      coaches.find((c) => c.userId === session.hostUserId) ?? coaches[0];
+    const sliceStart = sessionIndex % Math.max(1, runners.length - 8);
+    const joinedRunners = runners
+      .filter((r) => r.userId !== session.hostUserId)
+      .slice(sliceStart, sliceStart + 8);
+    const host =
+      DEMO_PEOPLE.find((p) => p.userId === session.hostUserId) ??
+      DEMO_COACH_PRIMARY;
 
     rows.push({
-      id: `att_${session.id}_${hostCoach.userId}`,
+      id: `att_${session.id}_${host.userId}`,
       sessionId: session.id,
-      userId: hostCoach.userId,
-      displayName: hostCoach.displayName,
-      groupId: hasGroups ? groupForPace(hostCoach.paceSecondsPerKm) : null,
+      userId: host.userId,
+      displayName: host.displayName,
+      groupId: hasGroups ? groupForPace(host.paceSecondsPerKm) : null,
       status: "joined",
     });
 
@@ -933,10 +1263,14 @@ export async function ensureDemoUserMembership(
   // Pre-join lived-in outings (skip paid_* + cotisation outing for jury payment flows)
   const joinSessionIds = [
     "demo_sess_footing_rodriguez",
+    "demo_sess_marche_marina_soir",
+    "demo_sess_corniche_night",
     "demo_sess_marina_juice",
     "demo_sess_velodrome_series",
+    "demo_sess_marche_ligue",
     "demo_sess_soir_members",
     "demo_sess_footing_sunset",
+    "demo_sess_anfa_run",
     "demo_sess_past_footing",
     "demo_sess_past_velodrome",
     "demo_sess_past_marina",

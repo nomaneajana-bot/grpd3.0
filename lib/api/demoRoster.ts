@@ -109,3 +109,10 @@ export function demoCoachUserIdForName(coachName: string): string {
   const idx = coachName.length % 2;
   return (idx === 0 ? DEMO_COACH_PRIMARY : DEMO_COACH_SECONDARY).userId;
 }
+
+/** Resolve any roster member as Accueil host (coaches + runners). */
+export function demoHostUserIdForName(hostName: string): string {
+  const exact = DEMO_PEOPLE.find((p) => p.displayName === hostName);
+  if (exact) return exact.userId;
+  return demoCoachUserIdForName(hostName);
+}
