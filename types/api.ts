@@ -444,7 +444,8 @@ export type SessionLeaveAttendance = {
 
 export type SessionLeaveResult = { attendance: SessionLeaveAttendance };
 
-export type SessionParticipantsGroupId = "A" | "B" | "C" | "D" | null;
+/** Pace letter, custom club level id, or null (unassigned). */
+export type SessionParticipantsGroupId = string | null;
 
 export type SessionParticipant = {
   userId: string;
@@ -464,7 +465,7 @@ export type SessionParticipantsResult = {
     requested: number;
   };
   groups: Array<{
-    groupId: "A" | "B" | "C" | "D" | null;
+    groupId: SessionParticipantsGroupId;
     count: number;
     participants: SessionParticipant[];
   }>;

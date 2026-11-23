@@ -736,6 +736,20 @@ export default function ClubScreen() {
                 <SectionHeader label="ADMINISTRATION" />
                 <GroupedList>
                   <ClubNavCard
+                    title="Groupes / Niveaux"
+                    subtitle="Défauts A–D, customs, affecter les coureurs"
+                    icon="layers-outline"
+                    testID="club-niveaux-nav"
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(tabs)/club/niveaux",
+                        params: {
+                          clubId: primaryMembership?.clubId ?? "",
+                        },
+                      } as Href)
+                    }
+                  />
+                  <ClubNavCard
                     title="Partager une clé"
                     subtitle="Lien ou code — hors de l’annuaire"
                     icon="key-outline"

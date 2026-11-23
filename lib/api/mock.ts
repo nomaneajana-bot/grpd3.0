@@ -41,6 +41,8 @@ import type {
   RunLeaveResult,
   RunMatchResult,
   RunMember,
+  SessionAssignInput,
+  SessionAssignResult,
   SessionCreateInput,
   SessionJoinInput,
   SessionJoinRequestResult,
@@ -1103,9 +1105,7 @@ async function mockJoinSession(
   const displayName = profile?.firstName ?? profile?.name ?? user.phone;
   const rawGroup = (input.groupId || '').trim();
   const groupId =
-    rawGroup && rawGroup !== 'open'
-      ? (rawGroup as 'A' | 'B' | 'C' | 'D')
-      : null;
+    rawGroup && rawGroup !== 'open' ? rawGroup : null;
   // Stable id → upsert is idempotent under rapid double-tap (exactly one row).
   const id = `att_${sessionId}_${user.id}`;
   const existingRows = await readAttendanceForSession(sessionId);
@@ -1496,9 +1496,71 @@ async function mockSetMemberGroup(
     '../clubAdminStore'
   );
   const settings = await getClubAdminSettings(clubId);
-  settings.memberGroups[input.userId] = input.groupId;
-  await saveClubAdminSettings(clubId, settings);
+  const nextGroups = { ...settings.memberGroups };
+  const gid = (input.groupId ?? '').trim();
+  if (gid) nextGroups[input.userId] = gid;
+  else delete nextGroups[input.userId];
+  await saveClubAdminSettings(clubId, {
+    ...settings,
+    memberGroups: nextGroups,
+  });
   return { ok: true };
+}
+
+/** Coach session assign — attendance only; never mutates club memberGroups. */
+async function mockAssignSessionGroup(
+  sessionId: string,
+  input: SessionAssignInput,
+): Promise<SessionAssignResult> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+
+  const session = await resolveDemoSession(sessionId);
+  if (!session) throw new ApiError(404, 'Session not found');
+
+  if (session.clubId) {
+    const memberships = await readMemberships();
+    const isCoach = Object.values(memberships).some(
+      (m) =>
+        m.clubId === session.clubId &&
+        m.userId === user.id &&
+        m.status === 'approved' &&
+        (m.role === 'admin' || m.role === 'coach'),
+    );
+    const isHost = session.hostUserId === user.id;
+    if (!isCoach && !isHost) throw new ApiError(403, 'Forbidden');
+  }
+
+  const groupId = (input.groupId || '').trim() || null;
+  const rows = await readAttendanceForSession(sessionId);
+  const existing = rows.find((r) => r.userId === input.userId);
+  const id = existing?.id ?? `att_${sessionId}_${input.userId}`;
+  const rosterName =
+    DEMO_PEOPLE.find((p) => p.userId === input.userId)?.displayName ??
+    existing?.displayName ??
+    input.userId;
+
+  const status =
+    existing?.status === 'joined' || existing?.status === 'suggested'
+      ? existing.status
+      : ('suggested' as const);
+
+  const row = await upsertAttendance({
+    id,
+    sessionId,
+    userId: input.userId,
+    displayName: rosterName,
+    groupId,
+    status,
+  });
+
+  return {
+    id: row.id,
+    sessionId,
+    userId: row.userId,
+    groupId: row.groupId,
+    status: row.status,
+  };
 }
 
 async function mockGetClubDetail(clubId: string): Promise<ClubDetail> {
@@ -1962,6 +2024,15 @@ export async function mockApiRequest<T>(
   const sessionLeaveMatch = path.match(/^\/api\/v1\/sessions\/([^/]+)\/leave$/);
   if (sessionLeaveMatch && method === 'POST') {
     return (await mockLeaveSession(sessionLeaveMatch[1])) as T;
+  }
+  const sessionAssignMatch = path.match(
+    /^\/api\/v1\/sessions\/([^/]+)\/assign$/,
+  );
+  if (sessionAssignMatch && method === 'POST') {
+    return (await mockAssignSessionGroup(
+      sessionAssignMatch[1],
+      body as SessionAssignInput,
+    )) as T;
   }
   if (path.startsWith('/api/v1/sessions/') && path.endsWith('/request')) {
     return (await mockRequestSessionJoin('')) as T;

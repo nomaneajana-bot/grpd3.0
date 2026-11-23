@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import * as Linking from "expo-linking";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, Stack, useLocalSearchParams, type Href } from "expo-router";
 
 import { StitoOutingHero } from "../../components/outingDetail/StitoOutingHero";
 import { StitoMetricsStrip } from "../../components/outingDetail/StitoMetricsStrip";
@@ -71,11 +71,17 @@ import { Toast } from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
 import {
   getClubAdminSettings,
+  memberColorGroupIdFromSettings,
   memberGroupFromSettings,
   type ClubAdminSettings,
 } from "../../lib/clubAdminStore";
 import type { ClubPaceGroupId } from "../../lib/clubPaceGroups";
 import { inferUserClubGroupId } from "../../lib/clubPaceGroups";
+import {
+  memberGroupColor,
+  sortedActiveColorGroups,
+} from "../../lib/clubMemberGroups";
+import { getSessionGroupNotes } from "../../lib/sessionGroupsStore";
 import {
   resolveCrossGroupJoinState,
 } from "../../lib/interGroupPolicy";
@@ -279,12 +285,17 @@ export default function SessionScreen() {
           getRunnerProfile(),
         ]);
         setClubAdminSettings(settings);
-        const assigned =
+        const colorAssigned =
+          authUser && settings
+            ? memberColorGroupIdFromSettings(authUser.id, settings)
+            : null;
+        const letterAssigned =
           authUser && settings
             ? memberGroupFromSettings(authUser.id, settings)
             : null;
         setMemberHomeGroupId(
-          assigned ??
+          colorAssigned ??
+            letterAssigned ??
             inferUserClubGroupId(runner, joined, paces),
         );
       } catch (error) {
@@ -324,15 +335,28 @@ export default function SessionScreen() {
 
   useEffect(() => {
     const loadRoster = async () => {
-      if (!isCoachOrAdmin || !clubId) {
+      if (!isCoachOrAdmin || !clubId || !session?.id) {
         setClubRoster([]);
         return;
       }
       setIsCoachLoading(true);
       try {
         const client = createApiClient();
-        const result = await getClubRoster(client, clubId);
+        const [result, parts] = await Promise.all([
+          getClubRoster(client, clubId),
+          getSessionParticipants(client, session.id),
+        ]);
         setClubRoster(result.members ?? []);
+        if (parts && !("error" in parts)) {
+          const map: Record<string, string> = {};
+          for (const g of parts.groups) {
+            if (!g.groupId) continue;
+            for (const p of g.participants) {
+              map[p.userId] = g.groupId;
+            }
+          }
+          setCoachAssignments(map);
+        }
       } catch (error) {
         console.warn("Failed to load club roster:", error);
         setClubRoster([]);
@@ -340,8 +364,8 @@ export default function SessionScreen() {
         setIsCoachLoading(false);
       }
     };
-    loadRoster();
-  }, [isCoachOrAdmin, clubId]);
+    void loadRoster();
+  }, [isCoachOrAdmin, clubId, session?.id]);
 
   // Initialize selected group state with recommended group as default
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
@@ -393,8 +417,12 @@ export default function SessionScreen() {
   const [participantsError, setParticipantsError] = useState<"forbidden" | "unavailable" | null>(null);
   const [clubAdminSettings, setClubAdminSettings] =
     useState<ClubAdminSettings | null>(null);
-  const [memberHomeGroupId, setMemberHomeGroupId] =
-    useState<ClubPaceGroupId | null>(null);
+  const [memberHomeGroupId, setMemberHomeGroupId] = useState<string | null>(
+    null,
+  );
+  const [sessionGroupNote, setSessionGroupNoteState] = useState<string | null>(
+    null,
+  );
   const [participantsLoading, setParticipantsLoading] = useState(false);
   const [coachAssignments, setCoachAssignments] = useState<
     Record<string, string>
@@ -448,6 +476,37 @@ export default function SessionScreen() {
     session?.id,
     session?.recommendedGroupId,
     session?.paceGroups,
+  ]);
+
+  useEffect(() => {
+    if (!session?.id) {
+      setSessionGroupNoteState(null);
+      return;
+    }
+    const gid = joinedGroupId || selectedGroupId || memberHomeGroupId;
+    if (!gid) {
+      setSessionGroupNoteState(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const notes = await getSessionGroupNotes(session.id);
+      const fromSession = notes[gid]?.trim();
+      const fromClub = clubAdminSettings?.colorGroups?.find((g) => g.id === gid)
+        ?.note?.trim();
+      if (!cancelled) {
+        setSessionGroupNoteState(fromSession || fromClub || null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    session?.id,
+    joinedGroupId,
+    selectedGroupId,
+    memberHomeGroupId,
+    clubAdminSettings,
   ]);
 
   useEffect(() => {
@@ -735,9 +794,23 @@ export default function SessionScreen() {
       return false;
     }
     if (hasPaceGroups && currentGroupId) {
+      const letterHome =
+        memberHomeGroupId === "A" ||
+        memberHomeGroupId === "B" ||
+        memberHomeGroupId === "C" ||
+        memberHomeGroupId === "D"
+          ? memberHomeGroupId
+          : null;
+      const letterTarget =
+        currentGroupId === "A" ||
+        currentGroupId === "B" ||
+        currentGroupId === "C" ||
+        currentGroupId === "D"
+          ? currentGroupId
+          : ("C" as ClubPaceGroupId);
       const joinState = resolveCrossGroupJoinState({
-        memberGroupId: memberHomeGroupId,
-        sessionTargetGroupId: currentGroupId as ClubPaceGroupId,
+        memberGroupId: letterHome,
+        sessionTargetGroupId: letterTarget,
         settings: clubAdminSettings,
       });
       if (joinState === "locked") {
@@ -1437,6 +1510,38 @@ export default function SessionScreen() {
 
         {/* Purpose section already surfaces coachAdvice — skip duplicate note card. */}
 
+        {/* Member calm chip — assigned level for this outing */}
+        {(() => {
+          const chipId =
+            (hasStoredJoin ? joinedGroupId : null) ||
+            selectedGroupId ||
+            memberHomeGroupId;
+          if (!chipId) return null;
+          const pace = session.paceGroups.find((g) => g.id === chipId);
+          const colorG = clubAdminSettings
+            ? sortedActiveColorGroups(clubAdminSettings).find(
+                (g) => g.id === chipId,
+              )
+            : null;
+          const label = pace?.label || colorG?.name || `Groupe ${chipId}`;
+          const color = colorG
+            ? memberGroupColor(colorG.colorKey)
+            : stitoTheme.primary;
+          return (
+            <View style={styles.memberLevelChipRow} testID="session-member-level-chip">
+              <View style={[styles.memberLevelDot, { backgroundColor: color }]} />
+              <Text style={styles.memberLevelChipText}>
+                Ton groupe · {label}
+              </Text>
+              {sessionGroupNote ? (
+                <Text style={styles.memberLevelNote} numberOfLines={1}>
+                  {sessionGroupNote}
+                </Text>
+              ) : null}
+            </View>
+          );
+        })()}
+
         {/* Quiet allure — default home/recommended; optional change. Not a pre-join wall. */}
         {session.paceGroups.length > 0 ? (
           <View style={styles.allureCard} testID="session-allure-card">
@@ -1544,23 +1649,37 @@ export default function SessionScreen() {
         ) : null}
 
 
-        {isCoachOrAdmin &&
-        ((session.paceGroupsOverride ?? []).some((g) => g.isActive) ||
-          session.paceGroups.length > 0) ? (
+        {isCoachOrAdmin && session.clubId && session.paceGroups.length > 0 ? (
           <View style={styles.orgBlock} testID="session-org-block">
             <Text style={styles.orgLabel}>Organisation</Text>
             <Text style={styles.orgHint}>
-              Assigne un groupe si besoin — discret, hors du récit de la sortie.
+              Overrides pour cette sortie seulement — les défauts club restent.
             </Text>
+            <Pressable
+              style={styles.niveauxCta}
+              accessibilityRole="button"
+              accessibilityLabel="Ouvrir Groupes et Niveaux"
+              testID="session-niveaux-cta"
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/club/niveaux",
+                  params: {
+                    clubId: session.clubId ?? "",
+                    sessionId: session.id,
+                  },
+                } as Href)
+              }
+            >
+              <Text style={styles.niveauxCtaTitle}>Groupes / Niveaux</Text>
+              <Text style={styles.niveauxCtaSub}>
+                Réassigner · notes de séance · A–D + customs
+              </Text>
+            </Pressable>
             {isCoachLoading ? (
               <Text style={styles.coachEmptyText}>Chargement...</Text>
-            ) : clubRoster.length === 0 ? (
-              <Text style={styles.coachEmptyText}>
-                Aucun membre disponible.
-              </Text>
-            ) : (
+            ) : clubRoster.length > 0 ? (
               <View style={styles.coachList}>
-                {clubRoster.map((member, index) => (
+                {clubRoster.slice(0, 6).map((member, index) => (
                   <View key={member.membershipId}>
                     {index > 0 && <View style={styles.divider} />}
                     <View style={styles.coachRow}>
@@ -1568,15 +1687,14 @@ export default function SessionScreen() {
                         <Text style={styles.coachMemberName}>
                           {member.displayName || member.userId || "—"}
                         </Text>
-                        <Text style={styles.coachMemberMeta}>
-                          {member.role} ·{" "}
-                          {member.sharePrs ? "PRs partagés" : "PRs privés"}
-                        </Text>
-                        {coachAssignments[member.userId] && (
+                        {coachAssignments[member.userId] ? (
                           <Text style={styles.coachAssignedLabel}>
-                            Assigné : Groupe {coachAssignments[member.userId]}
+                            Cette sortie ·{" "}
+                            {session.paceGroups.find(
+                              (g) => g.id === coachAssignments[member.userId],
+                            )?.label ?? coachAssignments[member.userId]}
                           </Text>
-                        )}
+                        ) : null}
                       </View>
                       <Pressable
                         style={styles.coachAssignButton}
@@ -1589,8 +1707,13 @@ export default function SessionScreen() {
                     </View>
                   </View>
                 ))}
+                {clubRoster.length > 6 ? (
+                  <Text style={styles.orgHint}>
+                    +{clubRoster.length - 6} dans Groupes / Niveaux
+                  </Text>
+                ) : null}
               </View>
-            )}
+            ) : null}
           </View>
         ) : null}
 
@@ -1917,6 +2040,51 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: stitoTheme.textSecondary,
     marginBottom: 8,
+  },
+  niveauxCta: {
+    backgroundColor: stitoTheme.surfaceContainerLow,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 4,
+    marginBottom: 8,
+  },
+  niveauxCtaTitle: {
+    fontFamily: stitoTheme.font.space.semibold,
+    fontSize: 16,
+    color: stitoTheme.text,
+  },
+  niveauxCtaSub: {
+    fontFamily: stitoTheme.font.hanken.regular,
+    fontSize: 13,
+    color: stitoTheme.outline,
+  },
+  memberLevelChipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: stitoTheme.surfaceContainerLow,
+  },
+  memberLevelDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  memberLevelChipText: {
+    fontFamily: stitoTheme.font.hanken.medium,
+    fontSize: 13,
+    color: stitoTheme.text,
+  },
+  memberLevelNote: {
+    flexGrow: 1,
+    fontFamily: stitoTheme.font.hanken.regular,
+    fontSize: 12,
+    color: stitoTheme.outline,
   },
   deleteLink: {
     alignItems: "center",

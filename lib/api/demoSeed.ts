@@ -22,6 +22,7 @@ import type {
 } from "../../types/api";
 import { DEMO_MODE } from "../featureFlags";
 import { OUTING_COVERS } from "../outingCovers";
+import { saveSessionGroupNotes } from "../sessionGroupsStore";
 import {
   DEMO_COACH_PRIMARY,
   DEMO_COACH_SECONDARY,
@@ -40,8 +41,10 @@ export const MOCK_MEMBERSHIPS_KEY = "mock:club_memberships";
 export const MOCK_OTP_KEY = "mock:otp";
 /** Bump to force a one-time reseed of the richer Casablanca world. */
 export const MOCK_DEMO_SEEDED_KEY = "mock:demo_seeded_v5";
-/** v13: Accueil full of public Course/Marche sorties (j’aime courir only). */
-export const DEMO_SEED_VERSION = "13";
+/** v14: coach niveaux — A–D + Débutant, session overrides footing vs fartlek. */
+export const DEMO_SEED_VERSION = "14";
+/** Custom club level (beyond A–D) for coach demo. */
+export const DEMO_LEVEL_DEBUTANT = "g_debutant";
 
 /** Distinct outing covers — live Unsplash IDs only (verified HTTP 200). */
 const COVER = OUTING_COVERS;
@@ -71,7 +74,8 @@ export type MockAttendance = {
   sessionId: string;
   userId: string;
   displayName: string;
-  groupId: "A" | "B" | "C" | "D" | null;
+  /** Club level id (A–D or custom) for this session only. */
+  groupId: string | null;
   status: AttendanceStatus;
 };
 
@@ -227,6 +231,8 @@ function buildDemoSessions(): ApiSession[] {
     ribAlias?: string;
     transferRefPrefix?: string;
     requiresClubCotisation?: boolean;
+    /** Include custom Débutant level on paceGroups (default true when withPaceGroups). */
+    withDebutantLevel?: boolean;
   };
 
   // Accueil discovery = public only, filtered by selected day.
@@ -260,12 +266,37 @@ function buildDemoSessions(): ApiSession[] {
       estimatedDistanceKm: 8,
       visibility: "public",
       withPaceGroups: true,
+      withDebutantLevel: true,
       coachName: H.abdelali,
       coachPhone: "+212600000001",
       recommendedGroupId: "C",
-      purpose: "Sortie phare j’aime courir — Circuit Rodriguez.",
+      purpose:
+        "Sortie phare j’aime courir — Circuit Rodriguez. Coach: niveaux club + overrides footing.",
       coverImageUrl: COVER.packRoad,
       openRunners: 14,
+      clubId: DEMO_CLUB_ID,
+      hostGroupName: DEMO_CLUB_NAME,
+    },
+    {
+      id: "demo_sess_fartlek_anfa",
+      title: "Fartlek Anfa Park",
+      spot: "Anfa Park",
+      dayOffset: 0,
+      timeMinutes: 22 * 60 + 15,
+      typeLabel: "FARTLEK",
+      volume: "8× (2 min vite / 2 min cool)",
+      targetPace: "4:30–6:00/km",
+      estimatedDistanceKm: 9,
+      visibility: "public",
+      withPaceGroups: true,
+      withDebutantLevel: true,
+      coachName: H.ilham,
+      coachPhone: "+212600000002",
+      recommendedGroupId: "B",
+      purpose:
+        "Fartlek — overrides différents du footing (même club defaults).",
+      coverImageUrl: COVER.cityStride,
+      openRunners: 12,
       clubId: DEMO_CLUB_ID,
       hostGroupName: DEMO_CLUB_NAME,
     },
@@ -814,7 +845,7 @@ function buildDemoSessions(): ApiSession[] {
     }
     const dateISO = isoDate(day);
     const paceGroups = spec.withPaceGroups
-      ? PACE_GROUPS_ABCD.map((g) => ({ ...g }))
+      ? buildDemoSessionPaceGroups(spec.withDebutantLevel !== false)
       : spec.openRunners && spec.openRunners > 0
         ? [
             {
@@ -873,9 +904,47 @@ function buildDemoSessions(): ApiSession[] {
   });
 }
 
+/** Club default level for a person (mirrors seedDemoClubAdminSettings). */
+function clubDefaultGroupId(person: DemoPerson, index: number): string {
+  if (person.role === "coach" || index < 2) return "A";
+  if (index % 9 === 0) return DEMO_LEVEL_DEBUTANT;
+  const letters = ["A", "B", "C", "D"] as const;
+  return letters[(index - 2) % 4]!;
+}
+
+/**
+ * Session-only overrides — do not change club memberGroups.
+ * Footing keeps most on club defaults; fartlek pushes faster packs + Débutant recovery.
+ */
+function sessionOverrideGroupId(
+  sessionId: string,
+  person: DemoPerson,
+  clubDefault: string,
+): string {
+  if (sessionId === "demo_sess_footing_rodriguez") {
+    // Footing: move a couple of A runners into C for conversation pack
+    if (person.displayName === "Walid Tagmout") return "C";
+    if (person.displayName === "Ghizlane Rabhi") return DEMO_LEVEL_DEBUTANT;
+    return clubDefault;
+  }
+  if (sessionId === "demo_sess_fartlek_anfa") {
+    // Fartlek: different map — quality in A/B, beginners sheltered
+    if (clubDefault === DEMO_LEVEL_DEBUTANT) return DEMO_LEVEL_DEBUTANT;
+    if (clubDefault === "D") return "C";
+    if (person.displayName === "Youness Machkour") return "A";
+    if (person.displayName === "Hamza Regui") return "B";
+    if (person.displayName === "Nora El Jamal") return DEMO_LEVEL_DEBUTANT;
+    return clubDefault === "C" ? "B" : clubDefault;
+  }
+  return clubDefault;
+}
+
 function buildDemoAttendances(sessions: ApiSession[]): MockAttendance[] {
   const runners = DEMO_PEOPLE.filter((p) => p.role === "member");
   const rows: MockAttendance[] = [];
+  const indexByUser = new Map(
+    DEMO_PEOPLE.map((p, i) => [p.userId, i] as const),
+  );
 
   sessions.forEach((session, sessionIndex) => {
     const hasGroups = (session.paceGroups?.length ?? 0) > 0;
@@ -888,12 +957,19 @@ function buildDemoAttendances(sessions: ApiSession[]): MockAttendance[] {
       DEMO_PEOPLE.find((p) => p.userId === session.hostUserId) ??
       DEMO_COACH_PRIMARY;
 
+    const resolveGroup = (person: DemoPerson): string | null => {
+      if (!hasGroups) return null;
+      const idx = indexByUser.get(person.userId) ?? 0;
+      const clubDefault = clubDefaultGroupId(person, idx);
+      return sessionOverrideGroupId(session.id, person, clubDefault);
+    };
+
     rows.push({
       id: `att_${session.id}_${host.userId}`,
       sessionId: session.id,
       userId: host.userId,
       displayName: host.displayName,
-      groupId: hasGroups ? groupForPace(host.paceSecondsPerKm) : null,
+      groupId: resolveGroup(host),
       status: "joined",
     });
 
@@ -903,7 +979,7 @@ function buildDemoAttendances(sessions: ApiSession[]): MockAttendance[] {
         sessionId: session.id,
         userId: runner.userId,
         displayName: runner.displayName,
-        groupId: hasGroups ? groupForPace(runner.paceSecondsPerKm) : null,
+        groupId: resolveGroup(runner),
         status: "joined",
       });
     });
@@ -931,45 +1007,83 @@ function applyRunnerCounts(
   });
 }
 
-async function seedDemoClubAdminSettings(): Promise<void> {
-  const runGroups = [
+/** Club default levels — A–D + custom Débutant (ids align with session paceGroups). */
+export function buildDemoClubColorGroups() {
+  return [
     {
-      id: "g_casa_rouge",
-      name: "Rouge — rapide",
+      id: "A",
+      name: "Groupe A",
       colorKey: "red" as const,
       sortOrder: 0,
       active: true,
-      note: "Sub 4:45",
+      note: "Sub 4:45 · rapide",
     },
     {
-      id: "g_casa_bleu",
-      name: "Bleu",
+      id: "B",
+      name: "Groupe B",
       colorKey: "blue" as const,
       sortOrder: 1,
       active: true,
       note: "4:45–5:30",
     },
     {
-      id: "g_casa_vert",
-      name: "Vert — confort",
+      id: "C",
+      name: "Groupe C",
       colorKey: "green" as const,
       sortOrder: 2,
       active: true,
-      note: "5:30–6:30",
+      note: "5:30–6:30 · confort",
     },
     {
-      id: "g_casa_gris",
-      name: "Gris — ouvert",
+      id: "D",
+      name: "Groupe D",
       colorKey: "grey" as const,
       sortOrder: 3,
       active: true,
-      note: "Sans chrono",
+      note: "6:30+ · social",
+    },
+    {
+      id: DEMO_LEVEL_DEBUTANT,
+      name: "Débutant",
+      colorKey: "amber" as const,
+      sortOrder: 4,
+      active: true,
+      note: "Premiers pas — marche/course douce",
     },
   ];
-  const groupIds = runGroups.map((g) => g.id);
+}
+
+export function buildDemoSessionPaceGroups(includeDebutant = true) {
+  const base = PACE_GROUPS_ABCD.map((g) => ({ ...g }));
+  if (!includeDebutant) return base;
+  return [
+    ...base,
+    {
+      id: DEMO_LEVEL_DEBUTANT,
+      label: "Débutant",
+      paceRange: "marche / footing doux",
+      runnersCount: 0,
+      avgPaceSecondsPerKm: 480,
+    },
+  ];
+}
+
+async function seedDemoClubAdminSettings(): Promise<void> {
+  const runGroups = buildDemoClubColorGroups();
+  // Stable club defaults — not recreated from pace each outing
   const memberGroups: Record<string, string> = {};
+  const letters = ["A", "B", "C", "D"] as const;
   DEMO_PEOPLE.forEach((p, i) => {
-    memberGroups[p.userId] = groupIds[i % groupIds.length]!;
+    if (i < 2) {
+      memberGroups[p.userId] = "A"; // coaches → A
+      return;
+    }
+    // Sprinkle a few into Débutant for coach demo
+    if (i % 9 === 0) {
+      memberGroups[p.userId] = DEMO_LEVEL_DEBUTANT;
+      return;
+    }
+    memberGroups[p.userId] = letters[(i - 2) % 4]!;
   });
   const runAdmin = {
     name: DEMO_CLUB_NAME,
@@ -1006,7 +1120,7 @@ async function seedDemoClubAdminSettings(): Promise<void> {
       },
       {
         id: "D" as const,
-        paceLabel: "Ouvert",
+        paceLabel: "6:30+",
         active: true,
         displayName: "Groupe D",
         accessPolicy: "free" as const,
@@ -1080,6 +1194,16 @@ export async function ensureDemoWorld(): Promise<Club & { code: string }> {
   await writeJson(MOCK_SESSIONS_KEY, sessionMap);
   await writeJson(MOCK_ATTENDANCE_KEY, attendanceMap);
   await seedDemoClubAdminSettings();
+  // Session-scoped notes (club default notes stay on colorGroups)
+  await saveSessionGroupNotes("demo_sess_footing_rodriguez", {
+    C: "Footing — garder la conversation, pas de fractionné.",
+    [DEMO_LEVEL_DEBUTANT]: "Marche active OK — on reste ensemble.",
+  });
+  await saveSessionGroupNotes("demo_sess_fartlek_anfa", {
+    A: "Fartlek — blocs vites nets, récup trottée.",
+    B: "Même structure, allure un cran sous A.",
+    [DEMO_LEVEL_DEBUTANT]: "Version marche / footing très cool — hors séries.",
+  });
   // Drop admin caches for clubs removed in v12
   const staleAdmin = [
     DEMO_WALK_CLUB_ID,
@@ -1186,17 +1310,23 @@ export function buildParticipantsResult(
     requested: participants.filter((p) => p.status === "requested").length,
   };
 
-  type GroupId = "A" | "B" | "C" | "D" | null;
-  const groupOrder: GroupId[] = ["A", "B", "C", "D", null];
-  const buckets: Record<string, SessionParticipant[]> = {
-    A: [],
-    B: [],
-    C: [],
-    D: [],
-    null: [],
-  };
+  const paceIds = (session.paceGroups ?? []).map((g) => g.id);
+  const groupOrder: Array<string | null> = [
+    ...paceIds.filter((id) => id !== "open"),
+    null,
+  ];
+  // Ensure classic A–D buckets exist even if paceGroups omitted a letter
+  for (const id of ["A", "B", "C", "D", DEMO_LEVEL_DEBUTANT]) {
+    if (!groupOrder.includes(id)) groupOrder.splice(groupOrder.length - 1, 0, id);
+  }
+  const buckets: Record<string, SessionParticipant[]> = { null: [] };
+  for (const id of groupOrder) {
+    if (id != null) buckets[id] = [];
+  }
   for (const p of participants) {
-    buckets[p.groupId ?? "null"].push(p);
+    const key = p.groupId ?? "null";
+    if (!buckets[key]) buckets[key] = [];
+    buckets[key].push(p);
   }
   for (const arr of Object.values(buckets)) {
     arr.sort((a, b) => a.displayName.localeCompare(b.displayName));
@@ -1209,8 +1339,8 @@ export function buildParticipantsResult(
     counts,
     groups: groupOrder.map((groupId) => ({
       groupId,
-      count: buckets[groupId ?? "null"].length,
-      participants: buckets[groupId ?? "null"],
+      count: buckets[groupId ?? "null"]?.length ?? 0,
+      participants: buckets[groupId ?? "null"] ?? [],
     })),
   };
 }
@@ -1263,6 +1393,7 @@ export async function ensureDemoUserMembership(
   // Pre-join lived-in outings (skip paid_* + cotisation outing for jury payment flows)
   const joinSessionIds = [
     "demo_sess_footing_rodriguez",
+    "demo_sess_fartlek_anfa",
     "demo_sess_marche_marina_soir",
     "demo_sess_corniche_night",
     "demo_sess_marina_juice",
