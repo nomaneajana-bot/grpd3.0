@@ -1,0 +1,44 @@
+PASS presence_title 
+REJOINDRE
+Ton club
+t’attend.
+Entre le code à six caractères, ou colle le lien d’invitation.
+CODE D’INVITATION
+ou
+
+Col
+PASS code_and_link_present 
+REJOINDRE
+Ton club
+t’attend.
+Entre le code à six caractères, ou colle le lien d’invitation.
+CODE D’INVITATION
+ou
+
+Col
+PASS not_old_ugly_copy 
+REJOINDRE
+Ton club
+t’attend.
+Entre le code à six caractères, ou colle le lien d’invitation.
+CODE D’INVITATION
+ou
+
+Col
+PASS handles_lookup_without_crash 
+REJOINDRE
+Ton club
+t’attend.
+Entre le code à six caractères, ou colle le lien d’invitation.
+CODE D’INVITATION
+Ce code 
+PASS deeplink_shows_presence_or_auth 
+REJOINDRE
+Ton club
+t’attend.
+Entre le code à six caractères, ou colle le lien d’invitation.
+CODE D’INVITATION
+ou
+
+Col
+SUMMARY { pass: 5, fail: 0 }

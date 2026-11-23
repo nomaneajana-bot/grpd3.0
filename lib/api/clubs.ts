@@ -73,10 +73,23 @@ export async function createClub(
   const name = input.name.trim();
   const slug = slugify(name);
   const city = input.city?.trim() ? input.city.trim() : undefined;
+  const purpose = input.purpose?.trim() ? input.purpose.trim() : undefined;
+  const visibility = input.visibility ?? "public";
   return await client.request<Club>("/api/v1/clubs", {
     method: "POST",
-    body: JSON.stringify({ name, slug, city }),
+    body: JSON.stringify({ name, slug, city, purpose, description: purpose, visibility }),
   });
+}
+
+/** Cancel a pending club join request (mock + API). */
+export async function cancelClubRequest(
+  client: ApiClient,
+  clubId: string,
+): Promise<{ ok: true }> {
+  return await client.request<{ ok: true }>(
+    `/api/v1/clubs/${clubId}/cancel-request`,
+    { method: "POST" },
+  );
 }
 
 export async function createClubInvite(
@@ -190,6 +203,22 @@ export async function requestClubJoinBySlug(
   const raw = slug.trim();
   if (!raw) throw new Error("Club introuvable.");
   return requestClubJoin(client, raw, input);
+}
+
+/**
+ * Name knock lookup — only returns matches when the query is specific enough.
+ * Not a public catalogue browse (empty / short query → []).
+ */
+export async function searchClubsByName(
+  client: ApiClient,
+  query: string,
+): Promise<{ clubs: Club[] }> {
+  const q = query.trim();
+  if (q.length < 2) return { clubs: [] };
+  return await client.request<{ clubs: Club[] }>(
+    `/api/v1/clubs/search?q=${encodeURIComponent(q)}`,
+    { method: "GET" },
+  );
 }
 
 export async function approveClubMember(

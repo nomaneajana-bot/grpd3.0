@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
-import { router, Stack } from "expo-router";
+import { router, Stack, useFocusEffect, type Href } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -19,35 +19,35 @@ import { SettingsGroup } from "@/components/settings/SettingsGroup";
 import { SettingsNavRow } from "@/components/settings/SettingsNavRow";
 import { SettingsSectionLabel } from "@/components/settings/SettingsSectionLabel";
 import { SettingsToggleRow } from "@/components/settings/SettingsToggleRow";
-import { profileTheme } from "@/constants/profileTheme";
-import { colors, typography } from "@/constants/ui";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 import {
   createApiClient,
   getMyMemberships,
   leaveClub,
+  resetDemoData,
   updateMyPrs,
 } from "@/lib/api";
 import { clearAuthData, getAuthUser } from "@/lib/authStore";
 import { getClubAdminSettings } from "@/lib/clubAdminStore";
-import { inferUserClubGroupId } from "@/lib/clubPaceGroups";
 import { confirmAction } from "@/lib/confirmAction";
-import { getJoinedSessions } from "@/lib/joinedSessionsStore";
+import { displayInitial, resolveDisplayName } from "@/lib/displayName";
+import { DEMO_MODE } from "@/lib/featureFlags";
 import { interGroupModeLabel } from "@/lib/interGroupPolicy";
 import { formatPhoneDisplay } from "@/lib/phoneFormat";
 import {
   getRunnerProfile,
-  getReferencePaces,
   getTestRecords,
   saveRunnerProfile,
   type RunnerProfile,
 } from "@/lib/profileStore";
+import { performLogout } from "@/lib/sessionLogout";
 import {
   getSettingsPreferences,
   saveSettingsPreferences,
   type NotificationPreferences,
   type SettingsPreferences,
 } from "@/lib/settingsPreferencesStore";
-import type { ClubMembership, PrSummary } from "@/types/api";
+import type { AuthUser, ClubMembership, PrSummary } from "@/types/api";
 
 const LANGUAGE_LABELS: Record<SettingsPreferences["language"], string> = {
   fr: "Français",
@@ -64,6 +64,7 @@ export default function SettingsScreen() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [sharePrsWithCoach, setSharePrsWithCoach] = useState(true);
   const [shareStatsWithClub, setShareStatsWithClub] = useState(false);
@@ -77,9 +78,9 @@ export default function SettingsScreen() {
   });
 
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
-  const [userGroupId, setUserGroupId] = useState("B");
   const [interGroupPolicyLabel, setInterGroupPolicyLabel] =
     useState("Avertissement");
+  const [isResettingDemo, setIsResettingDemo] = useState(false);
 
   const buildPrSummary = async (): Promise<PrSummary> => {
     const tests = await getTestRecords();
@@ -105,12 +106,18 @@ export default function SettingsScreen() {
         await updateMyPrs(client, {
           sharePrs: false,
           displayName,
+          avatarUrl: runner.avatarUrl ?? null,
           prSummary: null,
         });
         return;
       }
       const prSummary = await buildPrSummary();
-      await updateMyPrs(client, { sharePrs: true, displayName, prSummary });
+      await updateMyPrs(client, {
+        sharePrs: true,
+        displayName,
+        avatarUrl: runner.avatarUrl ?? null,
+        prSummary,
+      });
     } catch (error) {
       console.warn("Failed to sync PRs:", error);
     }
@@ -119,15 +126,17 @@ export default function SettingsScreen() {
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [runner, prefs, paces, authUser] = await Promise.all([
+      const [runner, prefs, user] = await Promise.all([
         getRunnerProfile(),
         getSettingsPreferences(),
-        getReferencePaces(),
         getAuthUser(),
       ]);
 
-      if (authUser?.phone) {
-        setPhoneNumber(authUser.phone);
+      setAuthUser(user);
+      if (user?.phone) {
+        setPhoneNumber(user.phone);
+      } else {
+        setPhoneNumber(null);
       }
 
       if (runner) {
@@ -140,25 +149,29 @@ export default function SettingsScreen() {
       setUnits(prefs.units);
       setNotifications({ ...prefs.notifications });
 
-      if (runner) {
-        try {
-          const client = createApiClient();
-          const { memberships: loadedMemberships } =
-            await getMyMemberships(client);
-          const list = loadedMemberships ?? [];
-          setMemberships(list);
-          const primary =
-            list.find((m) => m.status === "approved") ?? list[0] ?? null;
-          if (primary?.clubId) {
-            const admin = await getClubAdminSettings(primary.clubId);
-            const mode = admin.defaultInterGroupPolicy ?? "warn";
-            setInterGroupPolicyLabel(interGroupModeLabel(mode));
-          }
-          const joined = await getJoinedSessions();
-          setUserGroupId(inferUserClubGroupId(runner, joined, paces));
-        } catch (error) {
-          console.warn("Failed to load club settings context:", error);
+      try {
+        const client = createApiClient();
+        const { memberships: loadedMemberships } =
+          await getMyMemberships(client);
+        const list = (loadedMemberships ?? []).map((m) => ({
+          ...m,
+          clubId: m.clubId || m.club?.id || "",
+        }));
+        setMemberships(list);
+        const primary =
+          list.find((m) => m.status === "approved" && m.clubId) ??
+          list.find((m) => m.clubId) ??
+          null;
+        if (primary?.clubId) {
+          const admin = await getClubAdminSettings(primary.clubId);
+          const mode = admin.defaultInterGroupPolicy ?? "warn";
+          setInterGroupPolicyLabel(interGroupModeLabel(mode));
+        } else {
+          setInterGroupPolicyLabel("Avertissement");
         }
+      } catch (error) {
+        console.warn("Failed to load club settings context:", error);
+        setMemberships([]);
       }
     } catch (error) {
       console.warn("Failed to load settings:", error);
@@ -167,17 +180,41 @@ export default function SettingsScreen() {
     }
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      void loadSettings();
+    }, [loadSettings]),
+  );
+
   useEffect(() => {
-    void loadSettings();
-  }, [loadSettings]);
+    if (typeof document === "undefined") return;
+    const prevBody = document.body.style.backgroundColor;
+    const prevHtml = document.documentElement.style.backgroundColor;
+    document.body.style.backgroundColor = t.canvas;
+    document.documentElement.style.backgroundColor = t.canvas;
+    return () => {
+      document.body.style.backgroundColor = prevBody;
+      document.documentElement.style.backgroundColor = prevHtml;
+    };
+  }, []);
 
+  const resolveClubId = (m: ClubMembership | null | undefined) =>
+    (m?.clubId || m?.club?.id || "").trim();
   const primaryMembership =
-    memberships.find((m) => m.status === "approved") ?? memberships[0] ?? null;
-  const clubName = primaryMembership?.club?.name ?? "ton club";
+    memberships.find(
+      (m) => m.status === "approved" && resolveClubId(m),
+    ) ??
+    memberships.find((m) => resolveClubId(m)) ??
+    null;
+  const primaryClubId = resolveClubId(primaryMembership);
+  const isClubMember = Boolean(primaryClubId);
+  const clubName =
+    primaryMembership?.club?.name?.trim() ||
+    profile?.clubName?.trim() ||
+    null;
 
-  const profileName =
-    profile?.firstName?.trim() || profile?.name?.trim() || "Coureur";
-  const profileInitial = profileName.charAt(0).toUpperCase();
+  const profileName = resolveDisplayName({ profile, authUser });
+  const profileInitial = displayInitial(profileName);
 
   const appVersion =
     Constants.expoConfig?.version ??
@@ -233,26 +270,51 @@ export default function SettingsScreen() {
   };
 
   const handleLeaveClub = async () => {
-    if (!primaryMembership?.clubId) {
+    if (!primaryClubId) {
       Alert.alert("Club", "Tu n'es membre d'aucun club pour le moment.");
       return;
     }
+    const leaveLabel = clubName ?? "ce club";
     const ok = await confirmAction({
       title: "Quitter le club",
-      message: `Tu ne verras plus les séances réservées aux membres de ${clubName}.`,
+      message: `Tu ne verras plus les séances réservées aux membres de ${leaveLabel}.`,
       confirmLabel: "Quitter",
       destructive: true,
     });
     if (!ok) return;
     try {
       const client = createApiClient();
-      await leaveClub(client, primaryMembership.clubId);
+      await leaveClub(client, primaryClubId);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await loadSettings();
       Alert.alert("Club", "Tu as quitté le club.");
     } catch (error) {
       console.warn("Leave club failed:", error);
       Alert.alert("Erreur", "Impossible de quitter le club pour le moment.");
+    }
+  };
+
+  const handleLanguagePress = async () => {
+    const next = language === "fr" ? "en" : "fr";
+    setLanguage(next);
+    try {
+      await saveSettingsPreferences({ language: next });
+      Haptics.selectionAsync();
+    } catch (error) {
+      console.warn("Failed to save language:", error);
+      setLanguage(language);
+    }
+  };
+
+  const handleUnitsPress = async () => {
+    const next = units === "km" ? "mi" : "km";
+    setUnits(next);
+    try {
+      await saveSettingsPreferences({ units: next });
+      Haptics.selectionAsync();
+    } catch (error) {
+      console.warn("Failed to save units:", error);
+      setUnits(units);
     }
   };
 
@@ -268,19 +330,53 @@ export default function SettingsScreen() {
     setIsLoggingOut(true);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      await clearAuthData();
+      const outcome = await performLogout();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/(auth)/phone");
+      // Only when server call failed: local clear succeeded; do not claim global revoke.
+      if (outcome.server === "failed") {
+        Alert.alert("Déconnexion", outcome.userMessage);
+      }
+      router.replace("/(auth)/onboarding" as Href);
     } catch (error) {
       console.warn("Logout failed:", error);
-      router.replace("/(auth)/phone");
+      // Last-resort local clear if orchestration threw mid-flight.
+      try {
+        await clearAuthData();
+      } catch {
+        /* ignore */
+      }
+      Alert.alert(
+        "Déconnexion",
+        "Session effacée sur cet appareil. La révocation serveur n'a pas pu être confirmée.",
+      );
+      router.replace("/(auth)/onboarding" as Href);
     } finally {
       setIsLoggingOut(false);
     }
   };
 
-  const openPlaceholder = (title: string) => {
-    Alert.alert(title, "Bientôt disponible.");
+  const handleResetDemo = async () => {
+    if (!DEMO_MODE || isResettingDemo) return;
+    const ok = await confirmAction({
+      title: "Reset demo",
+      message:
+        "Efface les données locales et réinitialise le monde de démo Casablanca.",
+      confirmLabel: "Réinitialiser",
+      destructive: true,
+    });
+    if (!ok) return;
+    setIsResettingDemo(true);
+    try {
+      await resetDemoData();
+      await clearAuthData();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace("/(auth)/onboarding" as Href);
+    } catch (error) {
+      console.warn("Reset demo failed:", error);
+      Alert.alert("Erreur", "Impossible de réinitialiser la démo.");
+    } finally {
+      setIsResettingDemo(false);
+    }
   };
 
   if (isLoading) {
@@ -304,7 +400,7 @@ export default function SettingsScreen() {
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityLabel="Retour"
         >
-          <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={22} color={t.text} />
         </TouchableOpacity>
         <Text style={styles.screenTitle}>Paramètres</Text>
       </View>
@@ -317,38 +413,58 @@ export default function SettingsScreen() {
       >
         <SettingsSectionLabel>COMPTE</SettingsSectionLabel>
         <SettingsGroup>
-          <SettingsNavRow
-            title="Téléphone"
-            value={
-              phoneNumber ? formatPhoneDisplay(phoneNumber) : "—"
-            }
-            onPress={() => openPlaceholder("Téléphone")}
-          />
+          {authUser?.email ? (
+            <SettingsNavRow
+              title="Email"
+              value={authUser.email}
+              showChevron={false}
+            />
+          ) : (
+            <SettingsNavRow
+              title="Téléphone"
+              value={
+                phoneNumber ? formatPhoneDisplay(phoneNumber) : "—"
+              }
+              showChevron={false}
+            />
+          )}
+          {/* Photo upload unsupported in MVP — display-only, not interactive */}
           <SettingsNavRow
             title="Photo de profil"
-            value={`Initiale ${profileInitial}`}
-            onPress={() => openPlaceholder("Photo de profil")}
+            value={`Initiale ${profileInitial} · non modifiable`}
+            showChevron={false}
           />
         </SettingsGroup>
 
-        <SettingsSectionLabel>PRÉFÉRENCES</SettingsSectionLabel>
+        <SettingsSectionLabel
+          subtitle={
+            <Text style={styles.notificationsCaption} testID="settings-prefs-honesty">
+              Préférences enregistrées sur cet appareil. Elles n&apos;appliquent
+              pas encore une traduction complète de l&apos;app ni une conversion
+              des distances partout.
+            </Text>
+          }
+        >
+          PRÉFÉRENCES
+        </SettingsSectionLabel>
         <SettingsGroup>
           <SettingsNavRow
-            title="Langue"
+            title="Langue (libellé local)"
             value={LANGUAGE_LABELS[language]}
-            onPress={() => openPlaceholder("Langue")}
+            onPress={() => void handleLanguagePress()}
           />
           <SettingsNavRow
-            title="Unités"
+            title="Unités (libellé local)"
             value={UNITS_LABELS[units]}
-            onPress={() => openPlaceholder("Unités")}
+            onPress={() => void handleUnitsPress()}
           />
         </SettingsGroup>
 
         <SettingsSectionLabel
           subtitle={
             <Text style={styles.notificationsCaption}>
-              Ce qui te parvient en notification push.
+              Préférences enregistrées sur cet appareil uniquement. Aucune
+              notification push n&apos;est délivrée pour l&apos;instant.
             </Text>
           }
         >
@@ -403,49 +519,71 @@ export default function SettingsScreen() {
 
         <SettingsSectionLabel
           subtitle={
-            <Text style={styles.clubSubtitle}>
-              Membre de{" "}
-              <Text style={styles.clubName}>{clubName}</Text>
-              {" · "}Groupe {userGroupId}
-            </Text>
+            isClubMember ? (
+              <Text style={styles.clubSubtitle}>
+                Membre de{" "}
+                <Text style={styles.clubName}>{clubName ?? "ton club"}</Text>
+              </Text>
+            ) : (
+              <Text style={styles.clubSubtitle}>Aucun club pour l’instant</Text>
+            )
           }
         >
           CLUB
         </SettingsSectionLabel>
         <SettingsGroup>
-          <SettingsNavRow
-            title="Politique d'accès inter-groupes"
-            value={interGroupPolicyLabel}
-            onPress={() => {
-              if (primaryMembership?.clubId) {
-                router.push("/(tabs)/club/settings");
-              } else {
-                openPlaceholder("Politique d'accès inter-groupes");
-              }
-            }}
-          />
-          <SettingsNavRow
-            title="Quitter le club"
-            destructive
-            onPress={() => void handleLeaveClub()}
-          />
+          {isClubMember ? (
+            <SettingsNavRow
+              title="Politique d'accès inter-groupes"
+              value={interGroupPolicyLabel}
+              onPress={() => router.push("/(tabs)/club/settings")}
+            />
+          ) : (
+            <SettingsNavRow
+              title="Politique d'accès inter-groupes"
+              value="Rejoins un club d'abord"
+              showChevron={false}
+            />
+          )}
+          {isClubMember ? (
+            <SettingsNavRow
+              title="Quitter le club"
+              destructive
+              onPress={() => void handleLeaveClub()}
+            />
+          ) : null}
         </SettingsGroup>
 
         <SettingsSectionLabel>À PROPOS</SettingsSectionLabel>
         <SettingsGroup>
+          {/* Legal / support docs not shipped — non-interactive disposition */}
           <SettingsNavRow
             title="Conditions d'utilisation"
-            onPress={() => openPlaceholder("Conditions d'utilisation")}
+            value="Hors MVP"
+            showChevron={false}
           />
           <SettingsNavRow
             title="Confidentialité"
-            onPress={() => openPlaceholder("Confidentialité")}
+            value="Hors MVP"
+            showChevron={false}
           />
           <SettingsNavRow
             title="Contacter le support"
-            onPress={() => openPlaceholder("Contacter le support")}
+            value="Hors MVP"
+            showChevron={false}
           />
-          <SettingsNavRow title="Version" value={versionLabel} showChevron={false} />
+          <SettingsNavRow
+            title="Version"
+            value={versionLabel}
+            showChevron={false}
+            onLongPress={
+              DEMO_MODE
+                ? () => {
+                    void handleResetDemo();
+                  }
+                : undefined
+            }
+          />
         </SettingsGroup>
 
         <Pressable
@@ -468,10 +606,10 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.canvas,
   },
   header: {
-    paddingHorizontal: profileTheme.screenPaddingHorizontal,
+    paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
     gap: 16,
@@ -480,41 +618,45 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.surface.s3,
+    backgroundColor: t.card,
+    borderWidth: 1,
+    borderColor: "rgba(190,202,190,0.45)",
     alignItems: "center",
     justifyContent: "center",
   },
   screenTitle: {
-    color: colors.text.primary,
-    fontSize: typography.sizes["3xl"],
-    fontWeight: "700",
+    color: t.text,
+    fontSize: 28,
+    fontFamily: t.font.space.bold,
     letterSpacing: -0.3,
   },
   scroll: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: profileTheme.screenPaddingHorizontal,
+    paddingHorizontal: 20,
     paddingBottom: 48,
   },
   notificationsCaption: {
-    fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
+    fontSize: 13,
+    fontFamily: t.font.hanken.regular,
+    color: t.textSecondary,
     lineHeight: 18,
   },
   clubSubtitle: {
-    fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
+    fontSize: 13,
+    fontFamily: t.font.hanken.regular,
+    color: t.textSecondary,
     lineHeight: 18,
   },
   clubName: {
-    color: colors.text.primary,
-    fontWeight: "700",
+    color: t.text,
+    fontFamily: t.font.space.bold,
   },
   logoutButton: {
     marginTop: 24,
     marginBottom: 8,
-    backgroundColor: "#2A1218",
+    backgroundColor: t.errorContainer,
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: "center",
@@ -523,9 +665,9 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   logoutText: {
-    color: colors.accent.error,
-    fontSize: typography.sizes.base,
-    fontWeight: "700",
+    color: t.onErrorContainer,
+    fontSize: 16,
+    fontFamily: t.font.space.bold,
   },
   loadingState: {
     flex: 1,
@@ -533,7 +675,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   loadingText: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.base,
+    color: t.text,
+    fontSize: 16,
+    fontFamily: t.font.hanken.regular,
   },
 });

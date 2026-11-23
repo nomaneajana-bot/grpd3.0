@@ -13,6 +13,7 @@ export default function ClubStackLayout() {
       <Stack.Screen name="group-edit" />
       <Stack.Screen name="group-detail" />
       <Stack.Screen name="group-create" />
+      <Stack.Screen name="niveaux" />
       <Stack.Screen name="policy-preview" />
     </Stack>
   );

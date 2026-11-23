@@ -1,88 +1,257 @@
-import { type Href, router } from "expo-router";
+import { type Href, router, usePathname } from "expo-router";
 import { useEffect, useState } from "react";
-import { ONBOARDING_V2 } from "../lib/featureFlags";
-import { getAuthData } from "../lib/authStore";
+import { Platform } from "react-native";
+import { DEMO_MODE, ONBOARDING_V2 } from "../lib/featureFlags";
+import {
+  getAuthData,
+  isDemoSessionActive,
+  restoreStickyDemoTransport,
+} from "../lib/authStore";
+import {
+  clearDemoQueryParam,
+  enterDemoSession,
+  resumeExistingDemoSession,
+  shouldAutoEnterDemo,
+} from "../lib/demoSession";
+
+/**
+ * Resolve the path used for auth redirects.
+ * On web, prefer `window.location.pathname` so cold opens of `/demo`
+ * are not raced by Expo Router briefly reporting `/` or tabs.
+ */
+function currentPath(pathname: string | undefined): string {
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    const win = window.location.pathname || "";
+    if (win && win !== "/") return win;
+    if (pathname && pathname !== "/" && pathname !== "") return pathname;
+    return win || pathname || "";
+  }
+  return pathname || "";
+}
+
+/** Public pitch / design-reference / demo-entry pages — never force onboarding. */
+function isPublicVisionRoute(path: string): boolean {
+  if (
+    path === "/avenir" ||
+    path.endsWith("/avenir") ||
+    path === "/demo" ||
+    path.endsWith("/demo") ||
+    path === "/pitch" ||
+    path.endsWith("/pitch") ||
+    path.includes("/reference/")
+  ) {
+    return true;
+  }
+  // Preview builds: bare `/` is the share link — hold the gate so `/demo` can seed.
+  if (DEMO_MODE && (path === "/" || path === "")) {
+    return true;
+  }
+  return false;
+}
+
+/** Auth / onboarding routes — do not redirect away mid-flow. */
+function isAuthFlowRoute(path: string): boolean {
+  if (!path) return false;
+  return (
+    path.includes("/onboarding") ||
+    path.includes("/email-signup") ||
+    path.includes("/email") ||
+    path.includes("/phone") ||
+    path.includes("/verify") ||
+    path.startsWith("/(auth)")
+  );
+}
+
+function unauthLandingHref(path: string): Href {
+  if (
+    DEMO_MODE ||
+    shouldAutoEnterDemo() ||
+    path === "/demo" ||
+    path.endsWith("/demo")
+  ) {
+    return "/demo" as Href;
+  }
+  // Self-serve email entry is the default unauth landing (PIN/phone is legacy).
+  return (ONBOARDING_V2 ? "/(auth)/onboarding" : "/(auth)/email") as Href;
+}
 
 /**
  * Hook to check authentication status and redirect unauthenticated users
  * Returns true if authenticated, false if not (and handles redirect)
  */
 export function useAuthGate(): {
-  isAuthenticated: boolean | null; // null = checking, true = authenticated, false = not authenticated
+  isAuthenticated: boolean | null;
   isLoading: boolean;
 } {
+  const pathname = usePathname();
+  const path = currentPath(pathname);
+  const allowUnauthed = isPublicVisionRoute(path) || isAuthFlowRoute(path);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!allowUnauthed);
 
   useEffect(() => {
     let isMounted = true;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const livePath = currentPath(pathname);
+    const stayOnAuth =
+      isPublicVisionRoute(livePath) || isAuthFlowRoute(livePath);
 
     async function checkAuth() {
       try {
-        const authData = await getAuthData();
+        await restoreStickyDemoTransport();
+        // Refresh / ?demo=1 with an existing sticky session → Accueil, no re-login.
+        if (await resumeExistingDemoSession()) {
+          if (!isMounted) return;
+          clearDemoQueryParam();
+          setIsAuthenticated(true);
+          setIsLoading(false);
+          if (
+            livePath === "/" ||
+            livePath === "" ||
+            livePath === "/demo" ||
+            livePath.endsWith("/demo") ||
+            isAuthFlowRoute(livePath)
+          ) {
+            timeoutId = setTimeout(() => {
+              if (!isMounted) return;
+              try {
+                router.replace("/(tabs)" as Href);
+              } catch (err) {
+                console.warn("Router redirect failed:", err);
+              }
+            }, 50);
+          }
+          return;
+        }
 
+        const authData = await getAuthData();
         if (!isMounted) return;
 
         if (authData === null) {
-          // No auth data, redirect to phone screen
+          // Tester shortcut: ?demo=1 seeds mock session + persists for later visits.
+          if (shouldAutoEnterDemo()) {
+            try {
+              await enterDemoSession();
+              if (!isMounted) return;
+              clearDemoQueryParam();
+              setIsAuthenticated(true);
+              setIsLoading(false);
+              timeoutId = setTimeout(() => {
+                if (!isMounted) return;
+                try {
+                  router.replace("/(tabs)" as Href);
+                } catch (err) {
+                  console.warn("Router redirect failed:", err);
+                }
+              }, 50);
+              return;
+            } catch (demoError) {
+              console.warn("Demo auto-enter failed:", demoError);
+            }
+          }
+
           setIsAuthenticated(false);
           setIsLoading(false);
-          // Use setTimeout to ensure router is ready
-          timeoutId = setTimeout(() => {
-            if (isMounted) {
+
+          // Sticky demo without tokens yet, or ?demo=1 → seed via /demo,
+          // never dump the tester onto the marketing welcome.
+          const stickyDemo = await isDemoSessionActive();
+          if (
+            stickyDemo ||
+            shouldAutoEnterDemo() ||
+            (DEMO_MODE && (livePath === "/" || livePath === ""))
+          ) {
+            timeoutId = setTimeout(() => {
+              if (!isMounted) return;
               try {
-                router.replace(
-                  (ONBOARDING_V2
-                    ? "/(auth)/onboarding"
-                    : "/(auth)/phone") as Href,
-                );
+                router.replace("/demo" as Href);
               } catch (err) {
                 console.warn("Router redirect failed:", err);
               }
+            }, 50);
+            return;
+          }
+
+          if (stayOnAuth) {
+            return;
+          }
+          timeoutId = setTimeout(() => {
+            if (!isMounted) return;
+            const nowPath = currentPath(pathname);
+            if (
+              isPublicVisionRoute(nowPath) ||
+              isAuthFlowRoute(nowPath)
+            ) {
+              return;
+            }
+            try {
+              router.replace(unauthLandingHref(nowPath));
+            } catch (err) {
+              console.warn("Router redirect failed:", err);
             }
           }, 200);
         } else {
-          // User is authenticated
+          clearDemoQueryParam();
           setIsAuthenticated(true);
           setIsLoading(false);
-        }
-      } catch (error) {
-        console.warn("Auth check failed:", error);
-        if (isMounted) {
-          // On error, assume not authenticated and redirect
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          timeoutId = setTimeout(() => {
-            if (isMounted) {
+          // Persisted session: leave welcome/auth (and bare `/`) for Accueil.
+          if (
+            livePath === "/" ||
+            livePath === "" ||
+            isAuthFlowRoute(livePath) ||
+            livePath === "/demo" ||
+            livePath.endsWith("/demo")
+          ) {
+            timeoutId = setTimeout(() => {
+              if (!isMounted) return;
               try {
-                router.replace(
-                  (ONBOARDING_V2
-                    ? "/(auth)/onboarding"
-                    : "/(auth)/phone") as Href,
-                );
+                router.replace("/(tabs)" as Href);
               } catch (err) {
                 console.warn("Router redirect failed:", err);
               }
-            }
-          }, 200);
+            }, 50);
+          }
         }
+      } catch (error) {
+        console.warn("Auth check failed:", error);
+        if (!isMounted) return;
+        setIsAuthenticated(false);
+        setIsLoading(false);
+        if (stayOnAuth) return;
+        timeoutId = setTimeout(() => {
+          if (!isMounted) return;
+          const nowPath = currentPath(pathname);
+          try {
+            router.replace(unauthLandingHref(nowPath));
+          } catch (err) {
+            console.warn("Router redirect failed:", err);
+          }
+        }, 200);
       }
     }
 
-    // Small delay to ensure router is initialized
     const initTimeout = setTimeout(() => {
-      checkAuth();
+      void checkAuth();
     }, 50);
+
+    // Fail open if AsyncStorage / auth never resolves (stuck Chargement…).
+    const failOpen = setTimeout(() => {
+      if (!isMounted) return;
+      setIsLoading((prev) => {
+        if (prev) {
+          console.warn("Auth gate timed out — releasing boot loading.");
+        }
+        return false;
+      });
+    }, 4000);
 
     return () => {
       isMounted = false;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      if (timeoutId) clearTimeout(timeoutId);
       clearTimeout(initTimeout);
+      clearTimeout(failOpen);
     };
-  }, []);
+  }, [pathname]);
 
   return {
     isAuthenticated,

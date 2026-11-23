@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type {
+  ApiSession,
   AuthUser,
   Club,
   ClubCreateInput,
@@ -20,8 +21,11 @@ import type {
   ClubRosterResult,
   DeviceRegistrationInput,
   DeviceRegistrationResult,
+  EmailAuthInput,
+  EmailAuthResult,
   LogoutInput,
   LogoutResult,
+  MySessionsResult,
   OtpRequestInput,
   OtpRequestResult,
   OtpVerifyInput,
@@ -37,15 +41,23 @@ import type {
   RunLeaveResult,
   RunMatchResult,
   RunMember,
-  UpcomingRunsResult,
+  SessionAssignInput,
+  SessionAssignResult,
+  SessionCreateInput,
+  SessionJoinInput,
   SessionJoinRequestResult,
-  SessionParticipantsResult,
+  SessionJoinResult,
+  SessionLeaveResult,
   SessionParticipant,
+  SessionParticipantsResult,
+  UpcomingRunsResult,
   UpdateMyPrsInput,
   UpdateMyPrsResult,
 } from '../../types/api';
 import { getAuthUser } from '../authStore';
+import { DEMO_MODE, DEMO_OTP_CODE } from '../featureFlags';
 import { getJoinedSessions, upsertJoinedSession } from '../joinedSessionsStore';
+import { normalizePhone } from '../phone-normalize';
 import {
   getRunnerProfile,
   saveRunnerProfile,
@@ -57,7 +69,27 @@ import {
   upsertStoredRun,
   updateStoredRun,
 } from '../runStore';
+import {
+  DEMO_CLUB_ID,
+  DEMO_CLUB_NAME as CASA_CLUB_NAME,
+  DEMO_PEOPLE,
+  MOCK_CLUBS_KEY,
+  MOCK_MEMBERSHIPS_KEY,
+  MOCK_OTP_KEY,
+  MOCK_PINS_KEY,
+  MOCK_USERS_KEY,
+  buildParticipantsResult,
+  ensureDemoUserMembership,
+  ensureDemoWorld,
+  readAttendanceForSession,
+  readDemoSession,
+  readDemoSessions,
+  resetDemoData as resetDemoDataImpl,
+  upsertAttendance,
+  writeDemoSession,
+} from './demoSeed';
 import { ApiError } from './errors';
+import { getSessionById, type SessionData } from '../sessionData';
 
 type MockOtpRecord = {
   phone: string;
@@ -66,29 +98,73 @@ type MockOtpRecord = {
   expiresAt: number;
 };
 
+/** Materialize a local seed/catalog session into the demo API store for join/leave. */
+function sessionDataToApiSession(data: SessionData): ApiSession {
+  return {
+    id: data.id,
+    title: data.title,
+    spot: data.spot,
+    dateLabel: data.dateLabel,
+    dateISO: data.dateISO ?? null,
+    timeMinutes: data.timeMinutes ?? null,
+    typeLabel: data.typeLabel,
+    volume: data.volume,
+    targetPace: data.targetPace,
+    estimatedDistanceKm: data.estimatedDistanceKm,
+    recommendedGroupId: data.recommendedGroupId,
+    clubId: data.clubId ?? null,
+    visibility: data.visibility ?? 'public',
+    genderRestriction: data.genderRestriction ?? 'none',
+    hostUserId: 'demo_seed_host',
+    workoutId: data.workoutId ?? null,
+    isCustom: data.isCustom ?? false,
+    createdAt: new Date().toISOString(),
+    paceGroups: data.paceGroups ?? [],
+    hostGroupName: data.hostGroupName ?? null,
+    meetingPoint: data.meetingPoint ?? null,
+    coachAdvice: data.coachAdvice ?? null,
+    coachPhone: data.coachPhone ?? null,
+    coachName: data.coachName ?? null,
+    coverImageUrl: data.coverImageUrl ?? null,
+    attendanceStatus: data.attendanceStatus ?? null,
+    attendanceGroupId: data.attendanceGroupId ?? null,
+    feeMad: data.feeMad ?? null,
+    paymentStrict: data.paymentStrict ?? null,
+    ribAlias: data.ribAlias ?? null,
+    transferRefPrefix: data.transferRefPrefix ?? null,
+    requiresClubCotisation: data.requiresClubCotisation ?? null,
+  };
+}
+
+async function resolveDemoSession(sessionId: string): Promise<ApiSession | null> {
+  const existing = await readDemoSession(sessionId);
+  if (existing) return existing;
+  const seed = await getSessionById(sessionId);
+  if (!seed) return null;
+  const api = sessionDataToApiSession(seed);
+  await writeDemoSession(api);
+  return api;
+}
+
 type MockUserMap = Record<string, AuthUser>;
 type MockPinMap = Record<string, string>;
 type MockClubMap = Record<string, Club & { code: string }>;
 type MockMembershipMap = Record<string, ClubMembership>;
 
-const MOCK_OTP_KEY = 'mock:otp';
-const MOCK_USERS_KEY = 'mock:users';
-const MOCK_PINS_KEY = 'mock:pins';
-const MOCK_CLUBS_KEY = 'mock:clubs';
-const MOCK_MEMBERSHIPS_KEY = 'mock:club_memberships';
 const DEMO_PHONE = '0708060337';
 const DEMO_PIN = '123456';
-const DEMO_CLUB_NAME = "j'aime courir";
+const DEMO_CLUB_NAME = DEMO_MODE ? CASA_CLUB_NAME : "j'aime courir";
 /** ~7:45/km — maps to Groupe D in clubPaceGroups */
 const DEMO_USER_PACE_SECONDS_PER_KM = 465;
 
 const ACCESS_TOKEN_TTL = 60 * 60; // 1h
 const REFRESH_TOKEN_TTL = 60 * 60 * 24 * 30; // 30d
 
-export function isMockEnabled(baseUrl?: string): boolean {
-  const explicit = process.env.EXPO_PUBLIC_USE_MOCK_API === 'true';
-  const hasBaseUrl = Boolean((baseUrl ?? process.env.EXPO_PUBLIC_API_URL ?? '').trim());
-  return explicit || !hasBaseUrl;
+export { isMockEnabled } from './mode';
+
+/** Clear AsyncStorage and reseed Casablanca demo world. */
+export async function resetDemoData(): Promise<void> {
+  await resetDemoDataImpl();
 }
 
 function randomId(prefix: string): string {
@@ -106,9 +182,36 @@ function slugify(value: string): string {
 }
 
 function makeInviteCode(slug: string): string {
-  const base = slug.replace(/[^a-z0-9]/g, '').toUpperCase();
-  if (base.length >= 6) return base.slice(0, 8);
-  return `CLUB${Math.floor(Math.random() * 900 + 100)}`;
+  const base = slug.replace(/[^a-z0-9]/g, '').toUpperCase().slice(0, 5);
+  const suffix = Math.random().toString(36).slice(2, 5).toUpperCase();
+  const code = `${base || 'CLUB'}${suffix}`;
+  return code.slice(0, 8);
+}
+
+/** Email + password accounts for local/demo self-serve auth. */
+const MOCK_EMAIL_PASSWORDS_KEY = 'mock:email_passwords_v1';
+
+type MockEmailPasswordMap = Record<string, string>;
+
+/** One-time invite tickets — burned after a successful join. */
+const MOCK_INVITE_TICKETS_KEY = 'mock:club_invite_tickets_v1';
+
+type InviteTicket = {
+  code: string;
+  clubId: string;
+  createdAt: string;
+  usedByUserId?: string;
+  usedAt?: string;
+};
+
+type InviteTicketMap = Record<string, InviteTicket>;
+
+async function readInviteTickets(): Promise<InviteTicketMap> {
+  return readJson<InviteTicketMap>(MOCK_INVITE_TICKETS_KEY, {});
+}
+
+async function writeInviteTickets(map: InviteTicketMap): Promise<void> {
+  await writeJson(MOCK_INVITE_TICKETS_KEY, map);
 }
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {
@@ -124,33 +227,6 @@ async function readJson<T>(key: string, fallback: T): Promise<T> {
 async function writeJson<T>(key: string, value: T): Promise<void> {
   await AsyncStorage.setItem(key, JSON.stringify(value));
 }
-
-type SeedRosterSpec = {
-  key: string;
-  displayName: string;
-  paceSecondsPerKm: number;
-};
-
-const SEED_ROSTER_SPECS: SeedRosterSpec[] = [
-  { key: 'kaoutar', displayName: 'Kaoutar Allaeddine', paceSecondsPerKm: 255 },
-  { key: 'yassine', displayName: 'Yassine Samir', paceSecondsPerKm: 262 },
-  { key: 'abdelali', displayName: 'Abdelali Anik', paceSecondsPerKm: 278 },
-  { key: 'abdellatif', displayName: 'Abdellatif Mansouri', paceSecondsPerKm: 285 },
-  { key: 'sara', displayName: 'Sara Kabbaj', paceSecondsPerKm: 292 },
-  { key: 'imane', displayName: 'Imane Rami', paceSecondsPerKm: 305 },
-  { key: 'mohamed', displayName: 'Mohamed Lahlou', paceSecondsPerKm: 318 },
-  { key: 'nadia', displayName: 'Nadia Jabri', paceSecondsPerKm: 325 },
-  { key: 'karim', displayName: 'Karim Benali', paceSecondsPerKm: 338 },
-  { key: 'salma', displayName: 'Salma Idrissi', paceSecondsPerKm: 345 },
-  { key: 'omar', displayName: 'Omar Tazi', paceSecondsPerKm: 358 },
-  { key: 'hajar', displayName: 'Hajar Alaoui', paceSecondsPerKm: 372 },
-  { key: 'amine', displayName: 'Amine Berrada', paceSecondsPerKm: 388 },
-  { key: 'lina', displayName: 'Lina Mansour', paceSecondsPerKm: 405 },
-  { key: 'reda', displayName: 'Reda Chakir', paceSecondsPerKm: 418 },
-  { key: 'fatima', displayName: 'Fatima Zahra', paceSecondsPerKm: 435 },
-  { key: 'youssef', displayName: 'Youssef Alaoui', paceSecondsPerKm: 448 },
-  { key: 'leila', displayName: 'Leila Bennis', paceSecondsPerKm: 465 },
-];
 
 function makePrSummary(paceSecondsPerKm: number) {
   return {
@@ -169,25 +245,42 @@ function makePrSummary(paceSecondsPerKm: number) {
 
 function isDemoPhone(phone: string): boolean {
   const normalized = phone.replace(/\s/g, '');
-  return (
+  const e164 = `+212${DEMO_PHONE.slice(1)}`;
+  if (
     normalized === DEMO_PHONE ||
-    normalized === `+212${DEMO_PHONE.slice(1)}`
-  );
+    normalized === e164 ||
+    normalized === `+${DEMO_PHONE}`
+  ) {
+    return true;
+  }
+  try {
+    return normalizePhone(normalized) === e164;
+  } catch {
+    return false;
+  }
 }
+
+/** Canonical tester identity for one-tap demo entry. */
+const DEMO_PROFILE_NAME = 'Nouamane Ajana';
 
 async function ensureDemoRunnerProfile(): Promise<void> {
   const existing = await getRunnerProfile();
   const base: RunnerProfile = existing ?? {
-    name: 'Sara B.',
+    name: DEMO_PROFILE_NAME,
     vo2max: null,
     weightKg: null,
     mainGoal: '10k',
   };
+  // Invariant (c): no profile-level group identity
+  const { defaultGroup: _omitGroup, ...rest } = base as RunnerProfile & {
+    defaultGroup?: string;
+  };
   await saveRunnerProfile({
-    ...base,
-    name: base.name || 'Sara B.',
+    ...rest,
+    // Always stamp the demo tester name (overwrite legacy Sara B. / Camille).
+    name: DEMO_PROFILE_NAME,
+    firstName: DEMO_PROFILE_NAME,
     clubName: DEMO_CLUB_NAME,
-    defaultGroup: 'D',
   });
 }
 
@@ -217,7 +310,7 @@ async function ensureDemoClubMembership(clubId: string): Promise<void> {
     clubId,
     status: 'approved',
     role: 'member',
-    displayName: 'Sara B.',
+    displayName: DEMO_PROFILE_NAME,
     sharePrs: true,
     prSummary: makePrSummary(DEMO_USER_PACE_SECONDS_PER_KM),
   });
@@ -227,36 +320,30 @@ async function ensureDemoClubMembership(clubId: string): Promise<void> {
 
 async function ensureSeedRoster(clubId: string): Promise<void> {
   const memberships = await readMemberships();
-  const seedCount = Object.values(memberships).filter(
-    (m) =>
-      m.clubId === clubId &&
-      m.status === 'approved' &&
-      m.userId.startsWith('seed_member_'),
-  ).length;
-
-  if (seedCount < SEED_ROSTER_SPECS.length) {
-    for (const spec of SEED_ROSTER_SPECS) {
-      const userId = `seed_member_${spec.key}`;
-      const existing = Object.values(memberships).find(
-        (m) => m.userId === userId && m.clubId === clubId,
-      );
-      if (existing) continue;
-      await upsertMembership({
-        userId,
-        clubId,
-        status: 'approved',
-        role: 'member',
-        displayName: spec.displayName,
-        sharePrs: true,
-        prSummary: makePrSummary(spec.paceSecondsPerKm),
-      });
-    }
+  for (const person of DEMO_PEOPLE) {
+    const existing = Object.values(memberships).find(
+      (m) => m.userId === person.userId && m.clubId === clubId,
+    );
+    if (existing) continue;
+    await upsertMembership({
+      userId: person.userId,
+      clubId,
+      status: 'approved',
+      role: person.role === 'coach' ? 'coach' : 'member',
+      displayName: person.displayName,
+      sharePrs: true,
+      prSummary: makePrSummary(person.paceSecondsPerKm),
+    });
   }
 
   await ensureDemoClubMembership(clubId);
 }
 
 async function ensureSeedClub(): Promise<Club & { code: string }> {
+  if (DEMO_MODE) {
+    return await ensureDemoWorld();
+  }
+
   const clubs = await readJson<MockClubMap>(MOCK_CLUBS_KEY, {});
   const existing = Object.values(clubs)[0];
 
@@ -294,23 +381,37 @@ async function ensureSeedClub(): Promise<Club & { code: string }> {
 }
 
 async function mockCreateClub(
-  input: ClubCreateInput & { slug?: string },
+  input: ClubCreateInput & { slug?: string; purpose?: string | null; description?: string | null },
 ): Promise<Club> {
   const user = await getAuthUser();
   if (!user) throw new ApiError(401, 'Unauthorized');
+
+  // Demo harness: one-shot controlled failure for retry evidence (never auto-PASS).
+  const g = globalThis as typeof globalThis & {
+    __GRPD_FAIL_NEXT_CLUB_CREATE__?: boolean;
+  };
+  if (g.__GRPD_FAIL_NEXT_CLUB_CREATE__) {
+    g.__GRPD_FAIL_NEXT_CLUB_CREATE__ = false;
+    throw new ApiError(503, 'Temporary club create failure');
+  }
 
   const clubs = await readClubs();
   const name = input.name?.trim();
   if (!name) throw new ApiError(400, 'Name required');
   const slug = input.slug?.trim() || slugify(name);
   const id = randomId('club');
+  const purpose =
+    input.purpose?.trim() ||
+    input.description?.trim() ||
+    null;
+  const visibility = input.visibility === 'members' ? 'members' : 'public';
   const club: Club & { code: string } = {
     id,
     name,
     slug,
     city: input.city?.trim() || null,
-    description: null,
-    visibility: 'public',
+    description: purpose,
+    visibility,
     createdAt: new Date().toISOString(),
     createdById: user.id,
     code: makeInviteCode(slug),
@@ -318,14 +419,37 @@ async function mockCreateClub(
 
   clubs[club.id] = club;
   await writeJson(MOCK_CLUBS_KEY, clubs);
+  const { getRunnerProfile } = await import('../profileStore');
+  const profile = await getRunnerProfile();
+  const displayName =
+    profile?.firstName?.trim() ||
+    profile?.name?.trim() ||
+    null;
   await upsertMembership({
     userId: user.id,
     clubId: club.id,
     status: 'approved',
     role: 'admin',
+    displayName: displayName ?? undefined,
   });
 
   return club;
+}
+
+async function mockCancelClubRequest(clubId: string): Promise<{ ok: true }> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+  const memberships = await readMemberships();
+  const entry = Object.values(memberships).find(
+    (m) =>
+      m.userId === user.id &&
+      m.clubId === clubId &&
+      m.status === 'pending',
+  );
+  if (!entry) throw new ApiError(404, 'Demande introuvable');
+  delete memberships[entry.id];
+  await writeMemberships(memberships);
+  return { ok: true };
 }
 
 async function readClubs(): Promise<MockClubMap> {
@@ -356,8 +480,17 @@ async function getOrCreateUser(phone: string): Promise<AuthUser> {
 
 async function ensureDemoPinAccount(): Promise<void> {
   const pins = await readJson<MockPinMap>(MOCK_PINS_KEY, {});
+  const e164 = `+212${DEMO_PHONE.slice(1)}`;
+  let changed = false;
   if (!pins[DEMO_PHONE]) {
     pins[DEMO_PHONE] = DEMO_PIN;
+    changed = true;
+  }
+  if (!pins[e164]) {
+    pins[e164] = DEMO_PIN;
+    changed = true;
+  }
+  if (changed) {
     await writeJson(MOCK_PINS_KEY, pins);
   }
 }
@@ -472,10 +605,13 @@ async function mockOtpRequest(input: OtpRequestInput): Promise<OtpRequestResult>
   const record: MockOtpRecord = {
     phone: input.phone,
     requestId,
-    code: '123456',
+    code: DEMO_MODE ? DEMO_OTP_CODE : '123456',
     expiresAt: Date.now() + 5 * 60 * 1000,
   };
   await writeJson(MOCK_OTP_KEY, record);
+  if (DEMO_MODE) {
+    await ensureDemoWorld();
+  }
   return {
     requestId,
     expiresInSeconds: 5 * 60,
@@ -485,16 +621,34 @@ async function mockOtpRequest(input: OtpRequestInput): Promise<OtpRequestResult>
 
 async function mockOtpVerify(input: OtpVerifyInput): Promise<OtpVerifyResult> {
   const record = await readJson<MockOtpRecord | null>(MOCK_OTP_KEY, null);
-  if (!record || record.phone !== input.phone) {
-    throw new ApiError(400, 'Code invalide');
+  const demoCodeOk = DEMO_MODE && input.code === DEMO_OTP_CODE;
+
+  if (!demoCodeOk) {
+    if (!record || record.phone !== input.phone) {
+      throw new ApiError(400, 'Code invalide');
+    }
+    if (record.requestId && input.requestId && record.requestId !== input.requestId) {
+      throw new ApiError(400, 'Code invalide');
+    }
+    if (record.code !== input.code) {
+      throw new ApiError(400, 'Code invalide');
+    }
   }
-  if (record.requestId && input.requestId && record.requestId !== input.requestId) {
-    throw new ApiError(400, 'Code invalide');
-  }
-  if (record.code !== input.code) {
-    throw new ApiError(400, 'Code invalide');
-  }
+
   const user = await getOrCreateUser(input.phone);
+  if (DEMO_MODE) {
+    await ensureDemoWorld();
+    // Only the canonical demo phone is pre-approved into Casa club.
+    // Other numbers stay outsiders so invite/pending/outsider journeys remain meaningful.
+    if (isDemoPhone(input.phone)) {
+      await ensureDemoUserMembership(user);
+      await ensureDemoRunnerProfile();
+    }
+  } else if (isDemoPhone(input.phone)) {
+    await ensureSeedClub();
+    await ensureDemoRunnerProfile();
+    await normalizeDemoJoinedSessionsGroup();
+  }
   return {
     user,
     tokens: createTokens(),
@@ -529,21 +683,108 @@ async function mockPinRegister(
 async function mockPinLogin(input: PinLoginInput): Promise<PinAuthResult> {
   const normalizedPhone = input.phone.replace(/\s/g, "");
   const pins = await readPins();
-  if (!pins[normalizedPhone]) {
+  const pin =
+    pins[normalizedPhone] ??
+    pins[DEMO_PHONE] ??
+    pins[`+212${DEMO_PHONE.slice(1)}`];
+  if (!pin) {
     throw new ApiError(404, "Compte introuvable");
   }
-  if (pins[normalizedPhone] !== input.pin) {
+  if (pin !== input.pin) {
     throw new ApiError(401, "Code incorrect");
   }
-  const user = await getOrCreateUser(
-    normalizedPhone.startsWith("+")
+  // Keep demo identity on a single E.164 key so memberships resolve later.
+  const phoneKey = isDemoPhone(normalizedPhone)
+    ? `+212${DEMO_PHONE.slice(1)}`
+    : normalizedPhone.startsWith("+")
       ? normalizedPhone
-      : `+${normalizedPhone}`,
-  );
-  if (isDemoPhone(normalizedPhone)) {
-    await ensureSeedClub();
+      : `+${normalizedPhone}`;
+  let user = await getOrCreateUser(phoneKey);
+  if (isDemoPhone(normalizedPhone) || isDemoPhone(phoneKey)) {
+    user = { ...user, name: DEMO_PROFILE_NAME, phone: phoneKey };
+    const users = await readJson<MockUserMap>(MOCK_USERS_KEY, {});
+    users[phoneKey] = user;
+    await writeJson(MOCK_USERS_KEY, users);
+    await ensureDemoWorld();
+    await ensureDemoUserMembership(user, DEMO_PROFILE_NAME);
     await ensureDemoRunnerProfile();
-    await normalizeDemoJoinedSessionsGroup();
+  } else if (DEMO_MODE) {
+    await ensureDemoWorld();
+  }
+  return {
+    user,
+    tokens: createTokens(),
+  };
+}
+
+function normalizeMockEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+async function readEmailPasswords(): Promise<MockEmailPasswordMap> {
+  return await readJson<MockEmailPasswordMap>(MOCK_EMAIL_PASSWORDS_KEY, {});
+}
+
+async function writeEmailPasswords(value: MockEmailPasswordMap): Promise<void> {
+  await writeJson(MOCK_EMAIL_PASSWORDS_KEY, value);
+}
+
+async function getOrCreateEmailUser(
+  email: string,
+  displayName?: string,
+): Promise<AuthUser> {
+  const users = await readJson<MockUserMap>(MOCK_USERS_KEY, {});
+  const existing = Object.values(users).find(
+    (u) => (u.email ?? "").toLowerCase() === email,
+  );
+  if (existing) return existing;
+  const user: AuthUser = {
+    id: randomId('user'),
+    phone: "",
+    email,
+    name: displayName?.trim() || email.split("@")[0] || "Runner",
+    profileComplete: true,
+  };
+  users[email] = user;
+  await writeJson(MOCK_USERS_KEY, users);
+  return user;
+}
+
+async function mockEmailRegister(
+  input: EmailAuthInput,
+): Promise<EmailAuthResult> {
+  const email = normalizeMockEmail(input.email);
+  if (!email.includes("@") || !email.includes(".")) {
+    throw new ApiError(400, "Email invalide");
+  }
+  if (!input.password || input.password.length < 8) {
+    throw new ApiError(400, "Mot de passe trop court (8+ caractères)");
+  }
+  const passwords = await readEmailPasswords();
+  if (passwords[email]) {
+    throw new ApiError(409, "Un compte existe déjà avec cet email");
+  }
+  passwords[email] = input.password;
+  await writeEmailPasswords(passwords);
+  const user = await getOrCreateEmailUser(email, input.displayName);
+  if (DEMO_MODE) {
+    await ensureDemoWorld();
+  }
+  return {
+    user,
+    tokens: createTokens(),
+  };
+}
+
+async function mockEmailLogin(input: EmailAuthInput): Promise<EmailAuthResult> {
+  const email = normalizeMockEmail(input.email);
+  const passwords = await readEmailPasswords();
+  if (!passwords[email] || passwords[email] !== input.password) {
+    throw new ApiError(401, "Email ou mot de passe incorrect");
+  }
+  const user = await getOrCreateEmailUser(email, input.displayName);
+  if (DEMO_MODE) {
+    await ensureDemoWorld();
   }
   return {
     user,
@@ -682,9 +923,9 @@ async function mockGetMemberships(): Promise<ClubMembershipsResult> {
   if (!user) {
     return { memberships: [] };
   }
-  const club = await ensureSeedClub();
-  if (isDemoPhone(user.phone)) {
-    await ensureDemoClubMembership(club.id);
+  // Demo tester: always attach Casa world memberships (connected prod + DEMO).
+  if (user.phone && isDemoPhone(user.phone)) {
+    await ensureDemoUserMembership(user, DEMO_PROFILE_NAME);
   }
   const clubs = await readClubs();
   const memberships = await readMemberships();
@@ -695,6 +936,279 @@ async function mockGetMemberships(): Promise<ClubMembershipsResult> {
       club: clubs[m.clubId],
     }));
   return { memberships: list };
+}
+
+async function mockListSessions(query: {
+  clubId?: string | null;
+}): Promise<{ sessions: ApiSession[] }> {
+  // Persist/list for both DEMO_MODE and explicit mock (USE_MOCK_API).
+  let sessions = await readDemoSessions();
+  if (query.clubId) {
+    sessions = sessions.filter((s) => s.clubId === query.clubId);
+  }
+  const user = await getAuthUser();
+  // Align with hosted GET /api/v1/sessions: members-only logistics stay off lists
+  // for outsiders / pending. Host + approved members retain access.
+  if (user) {
+    const memberships = await readMemberships();
+    const approvedClubIds = new Set(
+      Object.values(memberships)
+        .filter((m) => m.userId === user.id && m.status === 'approved')
+        .map((m) => m.clubId),
+    );
+    sessions = sessions.filter((session) => {
+      if (session.visibility !== 'members') return true;
+      if (session.hostUserId === user.id) return true;
+      return Boolean(session.clubId && approvedClubIds.has(session.clubId));
+    });
+    const attendanceAll = await Promise.all(
+      sessions.map(async (s) => ({
+        session: s,
+        rows: await readAttendanceForSession(s.id),
+      })),
+    );
+    sessions = attendanceAll.map(({ session, rows }) => {
+      const mine = rows.find((r) => r.userId === user.id);
+      return {
+        ...session,
+        attendanceStatus: mine?.status ?? null,
+        attendanceGroupId: mine?.groupId ?? null,
+      };
+    });
+  } else {
+    sessions = sessions.filter((s) => s.visibility !== 'members');
+  }
+  return { sessions };
+}
+
+async function mockGetSession(sessionId: string): Promise<ApiSession> {
+  const session = await resolveDemoSession(sessionId);
+  if (!session) throw new ApiError(404, 'Session not found');
+  const user = await getAuthUser();
+
+  // Members-only: hide existence from non-members (direct-link privacy).
+  // Host retains access even if they are no longer a member.
+  if (session.visibility === 'members') {
+    if (!user) throw new ApiError(404, 'Session not found');
+    const isHost = session.hostUserId === user.id;
+    if (!isHost) {
+      const memberships = await readMemberships();
+      const isMember = Object.values(memberships).some(
+        (m) =>
+          m.userId === user.id &&
+          m.clubId === session.clubId &&
+          m.status === 'approved',
+      );
+      if (!isMember) throw new ApiError(404, 'Session not found');
+    }
+  }
+
+  if (user) {
+    const rows = await readAttendanceForSession(sessionId);
+    const mine = rows.find((r) => r.userId === user.id);
+    return {
+      ...session,
+      attendanceStatus: mine?.status ?? null,
+      attendanceGroupId: mine?.groupId ?? null,
+    };
+  }
+  return session;
+}
+
+async function mockCreateSession(input: SessionCreateInput): Promise<ApiSession> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+
+  const visibility = input.visibility ?? 'public';
+  const clubId = input.clubId ?? null;
+  // Invariant (a): members ⇒ clubId
+  if (visibility === 'members' && !clubId) {
+    throw new ApiError(400, 'clubId required for members-only sessions');
+  }
+  // Reject past/invalid date+time (aligned with sessionBuilder / create form).
+  if (input.dateISO && input.timeMinutes != null) {
+    const { isSelectableOutingDateTime } = await import('../dateHelpers');
+    if (!isSelectableOutingDateTime(input.dateISO, input.timeMinutes)) {
+      throw new ApiError(400, 'Date/heure doit être dans le futur');
+    }
+  }
+
+  const session: ApiSession = {
+    id: randomId('session'),
+    title: input.title,
+    spot: input.spot,
+    dateLabel: input.dateLabel,
+    dateISO: input.dateISO ?? null,
+    timeMinutes: input.timeMinutes ?? null,
+    typeLabel: input.typeLabel,
+    volume: input.volume,
+    targetPace: input.targetPace,
+    estimatedDistanceKm: input.estimatedDistanceKm,
+    recommendedGroupId: input.recommendedGroupId,
+  // Soft association: public may keep an explicit clubId for branding
+  // (access stays open). Members-only still requires clubId (invariant a).
+  clubId,
+  visibility,
+    genderRestriction: input.genderRestriction ?? 'none',
+    hostUserId: user.id,
+    workoutId: input.workoutId ?? null,
+    isCustom: input.isCustom ?? true,
+    createdAt: new Date().toISOString(),
+    paceGroups: input.paceGroups ?? [],
+    hostGroupName: input.hostGroupName ?? null,
+    meetingPoint: input.meetingPoint ?? null,
+    coachAdvice: input.coachAdvice ?? null,
+    coachPhone: input.coachPhone ?? null,
+    coachName: input.coachName ?? null,
+    coverImageUrl: input.coverImageUrl ?? null,
+    attendanceStatus: null,
+    attendanceGroupId: null,
+  };
+
+  // Always persist in the mock transport (DEMO and explicit mock).
+  await writeDemoSession(session);
+  return session;
+}
+
+async function mockJoinSession(
+  sessionId: string,
+  input: SessionJoinInput,
+): Promise<SessionJoinResult> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+
+  // Demo harness: one-shot controlled failure for retry evidence (never auto-PASS).
+  const g = globalThis as typeof globalThis & {
+    __GRPD_FAIL_NEXT_JOIN__?: boolean;
+  };
+  if (g.__GRPD_FAIL_NEXT_JOIN__) {
+    g.__GRPD_FAIL_NEXT_JOIN__ = false;
+    throw new ApiError(503, 'Temporary join failure');
+  }
+
+  const session = await resolveDemoSession(sessionId);
+  if (!session) throw new ApiError(404, 'Session not found');
+
+  // Invariant (a) for members-only: must be club member
+  if (session.visibility === 'members') {
+    const memberships = await readMemberships();
+    const isMember = Object.values(memberships).some(
+      (m) =>
+        m.userId === user.id &&
+        m.clubId === session.clubId &&
+        m.status === 'approved',
+    );
+    if (!isMember) throw new ApiError(403, 'Members only');
+  }
+
+  const profile = await getRunnerProfile();
+  const displayName = profile?.firstName ?? profile?.name ?? user.phone;
+  const rawGroup = (input.groupId || '').trim();
+  const groupId =
+    rawGroup && rawGroup !== 'open' ? rawGroup : null;
+  // Stable id → upsert is idempotent under rapid double-tap (exactly one row).
+  const id = `att_${sessionId}_${user.id}`;
+  const existingRows = await readAttendanceForSession(sessionId);
+  const priorJoined = existingRows.find(
+    (r) => r.userId === user.id && r.status === 'joined',
+  );
+  // Invariant (b)/(no auto-confirm): join is an explicit runner action → status joined
+  // Walk/language outings may join without a pace group (groupId null / "open").
+  await upsertAttendance({
+    id: priorJoined?.id ?? id,
+    sessionId,
+    userId: user.id,
+    displayName,
+    groupId: groupId ?? priorJoined?.groupId ?? null,
+    status: 'joined',
+  });
+  await upsertJoinedSession(sessionId, groupId ?? 'open');
+
+  return {
+    id: priorJoined?.id ?? id,
+    sessionId,
+    userId: user.id,
+    groupId: groupId ?? priorJoined?.groupId ?? null,
+    status: 'joined',
+  };
+}
+
+async function mockLeaveSession(sessionId: string): Promise<SessionLeaveResult> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+
+  const session = await resolveDemoSession(sessionId);
+  if (!session) throw new ApiError(404, 'Not found');
+
+  const id = `att_${sessionId}_${user.id}`;
+  const rows = await readAttendanceForSession(sessionId);
+  const existing = rows.find((r) => r.userId === user.id);
+  await upsertAttendance({
+    id: existing?.id ?? id,
+    sessionId,
+    userId: user.id,
+    displayName: existing?.displayName ?? user.phone,
+    groupId: existing?.groupId ?? null,
+    status: 'left',
+  });
+
+  return {
+    attendance: {
+      id: existing?.id ?? id,
+      sessionId,
+      userId: user.id,
+      status: 'left',
+      groupId: existing?.groupId ?? null,
+    },
+  };
+}
+
+async function mockMySessions(): Promise<MySessionsResult> {
+  const user = await getAuthUser();
+  if (!user) return { sessions: [] };
+  const sessions = await readDemoSessions();
+  const withMine: ApiSession[] = [];
+  for (const session of sessions) {
+    const rows = await readAttendanceForSession(session.id);
+    const mine = rows.find(
+      (r) => r.userId === user.id && r.status === 'joined',
+    );
+    if (mine) {
+      withMine.push({
+        ...session,
+        attendanceStatus: 'joined',
+        attendanceGroupId: mine.groupId,
+      });
+    }
+  }
+  return { sessions: withMine };
+}
+
+async function mockSessionParticipants(
+  sessionId: string,
+): Promise<SessionParticipantsResult> {
+  const session = await resolveDemoSession(sessionId);
+  if (!session) throw new ApiError(404, 'Session not found');
+
+  // Members-only gate: non-members cannot list participants
+  if (session.visibility === 'members') {
+    const user = await getAuthUser();
+    if (!user) throw new ApiError(401, 'Unauthorized');
+    const isHost = session.hostUserId === user.id;
+    if (!isHost) {
+      const memberships = await readMemberships();
+      const isMember = Object.values(memberships).some(
+        (m) =>
+          m.userId === user.id &&
+          m.clubId === session.clubId &&
+          m.status === 'approved',
+      );
+      if (!isMember) throw new ApiError(403, 'Members only');
+    }
+  }
+
+  const attendance = await readAttendanceForSession(sessionId);
+  return buildParticipantsResult(session, attendance);
 }
 
 async function mockLeaveClub(clubId: string): Promise<{ ok: true }> {
@@ -710,6 +1224,39 @@ async function mockLeaveClub(clubId: string): Promise<{ ok: true }> {
     delete memberships[entry.id];
     await writeMemberships(memberships);
   }
+
+  // Leaving a club must revoke members-only attendance for that club
+  // (membership ≠ attendance, but members-only access requires membership).
+  const { removeJoinedSession, getJoinedSessions } = await import(
+    '../joinedSessionsStore'
+  );
+  const { getUserSessions } = await import('../sessionStore');
+  const storedSessions = await readDemoSessions();
+  const localSessions = await getUserSessions().catch(() => []);
+  const membersOnlyIds = new Set<string>();
+  for (const session of [...storedSessions, ...localSessions]) {
+    if (session.clubId === clubId && session.visibility === 'members') {
+      membersOnlyIds.add(session.id);
+    }
+  }
+  for (const sessionId of membersOnlyIds) {
+    const rows = await readAttendanceForSession(sessionId);
+    const mine = rows.find((r) => r.userId === user.id);
+    if (mine && mine.status === 'joined') {
+      await upsertAttendance({
+        ...mine,
+        status: 'left',
+      });
+    }
+    await removeJoinedSession(sessionId);
+  }
+  const joined = await getJoinedSessions();
+  for (const row of joined) {
+    if (membersOnlyIds.has(row.sessionId)) {
+      await removeJoinedSession(row.sessionId);
+    }
+  }
+
   return { ok: true };
 }
 
@@ -720,9 +1267,45 @@ async function mockJoinByCode(
   if (!user) {
     throw new ApiError(401, 'Unauthorized');
   }
+  const rawCode = input.code.trim();
+  const codeKey = rawCode.toLowerCase();
   const clubs = await readClubs();
+
+  // Prefer one-time tickets minted via Générer.
+  const tickets = await readInviteTickets();
+  const ticket =
+    tickets[codeKey] ||
+    Object.values(tickets).find((t) => t.code.toLowerCase() === codeKey);
+  if (ticket) {
+    if (ticket.usedByUserId) {
+      throw new ApiError(410, 'Cette clé a déjà été utilisée.');
+    }
+    const club = clubs[ticket.clubId];
+    if (!club) {
+      throw new ApiError(404, 'Club not found');
+    }
+    const memberships = await readMemberships();
+    const hasAdmin = Object.values(memberships).some(
+      (m) => m.clubId === club.id && m.role === 'admin',
+    );
+    const membership = await upsertMembership({
+      userId: user.id,
+      clubId: club.id,
+      status: 'approved',
+      role: hasAdmin ? 'member' : 'admin',
+    });
+    tickets[ticket.code.toLowerCase()] = {
+      ...ticket,
+      usedByUserId: user.id,
+      usedAt: new Date().toISOString(),
+    };
+    await writeInviteTickets(tickets);
+    return { membership: { ...membership, club } };
+  }
+
+  // Standing club.code (demo seed keys like CASA2026) still works.
   const club = Object.values(clubs).find(
-    (c) => c.code.toLowerCase() === input.code.trim().toLowerCase(),
+    (c) => c.code.toLowerCase() === codeKey,
   );
   if (!club) {
     throw new ApiError(404, 'Club not found');
@@ -738,6 +1321,31 @@ async function mockJoinByCode(
     role: hasAdmin ? 'member' : 'admin',
   });
   return { membership: { ...membership, club } };
+}
+
+async function mockSearchClubs(query: string): Promise<{ clubs: Club[] }> {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return { clubs: [] };
+  const clubs = await readClubs();
+  const matches = Object.values(clubs)
+    .filter((c) => {
+      const name = (c.name || "").toLowerCase();
+      const slug = (c.slug || "").toLowerCase();
+      // Name/slug only — not a city catalogue browse.
+      return name.includes(q) || slug.includes(q);
+    })
+    .slice(0, 8)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug ?? null,
+      city: c.city ?? null,
+      description: c.description ?? null,
+      visibility: c.visibility,
+      createdAt: c.createdAt,
+      createdById: c.createdById ?? null,
+    }));
+  return { clubs: matches };
 }
 
 async function mockRequestJoin(
@@ -769,17 +1377,53 @@ async function mockRequestJoin(
 }
 
 async function mockCreateInvite(clubId: string): Promise<{ code: string }> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+
   const clubs = await readClubs();
   const club = clubs[clubId];
   if (!club) {
     throw new ApiError(404, 'Club not found');
   }
-  if (!club.code) {
-    club.code = makeInviteCode(club.slug ?? club.name);
-    clubs[club.id] = club;
-    await writeJson(MOCK_CLUBS_KEY, clubs);
+
+  const memberships = await readMemberships();
+  const isAdmin = Object.values(memberships).some(
+    (m) =>
+      m.clubId === clubId &&
+      m.userId === user.id &&
+      m.status === 'approved' &&
+      (m.role === 'admin' || m.role === 'coach'),
+  );
+  if (!isAdmin) throw new ApiError(403, 'Forbidden');
+
+  // Always mint a fresh one-time ticket (not the standing club.code).
+  let code = makeInviteCode(club.slug ?? club.name);
+  const tickets = await readInviteTickets();
+  while (tickets[code.toLowerCase()]) {
+    code = makeInviteCode(`${club.slug ?? club.name}${Math.random()}`);
   }
-  return { code: club.code };
+  tickets[code.toLowerCase()] = {
+    code,
+    clubId,
+    createdAt: new Date().toISOString(),
+  };
+  await writeInviteTickets(tickets);
+
+  // Surface latest ticket on admin settings for the Paramètres field.
+  try {
+    const { getClubAdminSettings, saveClubAdminSettings } = await import(
+      '../clubAdminStore'
+    );
+    const settings = await getClubAdminSettings(clubId);
+    await saveClubAdminSettings(clubId, {
+      ...settings,
+      accessCode: code,
+    });
+  } catch {
+    /* settings optional */
+  }
+
+  return { code };
 }
 
 async function mockUpdateClub(
@@ -852,9 +1496,71 @@ async function mockSetMemberGroup(
     '../clubAdminStore'
   );
   const settings = await getClubAdminSettings(clubId);
-  settings.memberGroups[input.userId] = input.groupId;
-  await saveClubAdminSettings(clubId, settings);
+  const nextGroups = { ...settings.memberGroups };
+  const gid = (input.groupId ?? '').trim();
+  if (gid) nextGroups[input.userId] = gid;
+  else delete nextGroups[input.userId];
+  await saveClubAdminSettings(clubId, {
+    ...settings,
+    memberGroups: nextGroups,
+  });
   return { ok: true };
+}
+
+/** Coach session assign — attendance only; never mutates club memberGroups. */
+async function mockAssignSessionGroup(
+  sessionId: string,
+  input: SessionAssignInput,
+): Promise<SessionAssignResult> {
+  const user = await getAuthUser();
+  if (!user) throw new ApiError(401, 'Unauthorized');
+
+  const session = await resolveDemoSession(sessionId);
+  if (!session) throw new ApiError(404, 'Session not found');
+
+  if (session.clubId) {
+    const memberships = await readMemberships();
+    const isCoach = Object.values(memberships).some(
+      (m) =>
+        m.clubId === session.clubId &&
+        m.userId === user.id &&
+        m.status === 'approved' &&
+        (m.role === 'admin' || m.role === 'coach'),
+    );
+    const isHost = session.hostUserId === user.id;
+    if (!isCoach && !isHost) throw new ApiError(403, 'Forbidden');
+  }
+
+  const groupId = (input.groupId || '').trim() || null;
+  const rows = await readAttendanceForSession(sessionId);
+  const existing = rows.find((r) => r.userId === input.userId);
+  const id = existing?.id ?? `att_${sessionId}_${input.userId}`;
+  const rosterName =
+    DEMO_PEOPLE.find((p) => p.userId === input.userId)?.displayName ??
+    existing?.displayName ??
+    input.userId;
+
+  const status =
+    existing?.status === 'joined' || existing?.status === 'suggested'
+      ? existing.status
+      : ('suggested' as const);
+
+  const row = await upsertAttendance({
+    id,
+    sessionId,
+    userId: input.userId,
+    displayName: rosterName,
+    groupId,
+    status,
+  });
+
+  return {
+    id: row.id,
+    sessionId,
+    userId: row.userId,
+    groupId: row.groupId,
+    status: row.status,
+  };
 }
 
 async function mockGetClubDetail(clubId: string): Promise<ClubDetail> {
@@ -903,6 +1609,7 @@ async function mockGetClubRoster(clubId: string): Promise<ClubRosterResult> {
       membershipId: m.id,
       userId: m.userId,
       displayName: m.displayName ?? null,
+      avatarUrl: m.avatarUrl ?? null,
       role: m.role,
       status: m.status,
       sharePrs: m.sharePrs ?? true,
@@ -918,28 +1625,30 @@ async function mockUpdateMyPrs(
   if (!user) throw new ApiError(401, 'Non authentifié');
 
   const memberships = await readMemberships();
+  const mine = Object.values(memberships).filter((m) => m.userId === user.id);
   let membership: ClubMembership | undefined;
 
   if (input.clubId) {
-    membership = Object.values(memberships).find(
-      (m) => m.userId === user.id && m.clubId === input.clubId,
-    );
+    membership = mine.find((m) => m.clubId === input.clubId);
   } else {
     membership =
-      Object.values(memberships).find(
-        (m) => m.userId === user.id && m.status === 'approved',
-      ) ??
-      Object.values(memberships).find((m) => m.userId === user.id);
+      mine.find((m) => m.status === 'approved') ?? mine[0];
   }
 
   if (!membership) throw new ApiError(404, 'Membership introuvable');
 
-  membership.sharePrs =
-    input.sharePrs !== undefined ? input.sharePrs : membership.sharePrs ?? true;
-  if (input.displayName) membership.displayName = input.displayName;
-  if ('prSummary' in input) membership.prSummary = input.prSummary ?? null;
+  const apply = (row: ClubMembership) => {
+    row.sharePrs =
+      input.sharePrs !== undefined ? input.sharePrs : row.sharePrs ?? true;
+    if (input.displayName) row.displayName = input.displayName;
+    if ('avatarUrl' in input) row.avatarUrl = input.avatarUrl ?? null;
+    if ('prSummary' in input) row.prSummary = input.prSummary ?? null;
+    memberships[row.id] = row;
+  };
 
-  memberships[membership.id] = membership;
+  // Keep avatar / name consistent across all clubs for this user.
+  for (const row of mine) apply(row);
+
   await writeMemberships(memberships);
 
   const clubs = await readClubs();
@@ -1192,6 +1901,12 @@ export async function mockApiRequest<T>(
   if (path === '/api/v1/auth/pin/login' && method === 'POST') {
     return (await mockPinLogin(body as PinLoginInput)) as T;
   }
+  if (path === '/api/v1/auth/email/register' && method === 'POST') {
+    return (await mockEmailRegister(body as EmailAuthInput)) as T;
+  }
+  if (path === '/api/v1/auth/email/login' && method === 'POST') {
+    return (await mockEmailLogin(body as EmailAuthInput)) as T;
+  }
   if (path === '/api/v1/auth/token/refresh' && method === 'POST') {
     return (await mockRefresh(body as RefreshInput)) as T;
   }
@@ -1228,12 +1943,26 @@ export async function mockApiRequest<T>(
   if (path === '/api/v1/clubs' && method === 'POST') {
     return (await mockCreateClub(body as ClubCreateInput & { slug?: string })) as T;
   }
+  if (
+    (path === '/api/v1/clubs/search' || path.startsWith('/api/v1/clubs/search?')) &&
+    method === 'GET'
+  ) {
+    const qs = path.includes('?') ? path.split('?')[1] ?? '' : '';
+    const params = new URLSearchParams(qs);
+    return (await mockSearchClubs(params.get('q') ?? '')) as T;
+  }
   if (path === '/api/v1/clubs/join-by-code' && method === 'POST') {
     return (await mockJoinByCode(body as ClubJoinByCodeInput)) as T;
   }
   const clubLeaveMatch = path.match(/^\/api\/v1\/clubs\/([^/]+)\/leave$/);
   if (clubLeaveMatch && method === 'POST') {
     return (await mockLeaveClub(clubLeaveMatch[1])) as T;
+  }
+  const clubCancelMatch = path.match(
+    /^\/api\/v1\/clubs\/([^/]+)\/cancel-request$/,
+  );
+  if (clubCancelMatch && method === 'POST') {
+    return (await mockCancelClubRequest(clubCancelMatch[1])) as T;
   }
   if (path.startsWith('/api/v1/clubs/') && path.endsWith('/request')) {
     const clubId = path.split('/api/v1/clubs/')[1]?.split('/')[0];
@@ -1268,6 +1997,43 @@ export async function mockApiRequest<T>(
     const clubId = path.split('/api/v1/clubs/')[1];
     return (await mockGetClubDetail(clubId)) as T;
   }
+
+  if (path === '/api/v1/me/sessions' && method === 'GET') {
+    return (await mockMySessions()) as T;
+  }
+
+  if (
+    (path === '/api/v1/sessions' || path.startsWith('/api/v1/sessions?')) &&
+    method === 'GET'
+  ) {
+    const qs = path.includes('?') ? path.split('?')[1] ?? '' : '';
+    const params = new URLSearchParams(qs);
+    return (await mockListSessions({ clubId: params.get('clubId') })) as T;
+  }
+  if (path === '/api/v1/sessions' && method === 'POST') {
+    return (await mockCreateSession(body as SessionCreateInput)) as T;
+  }
+
+  const sessionJoinMatch = path.match(/^\/api\/v1\/sessions\/([^/]+)\/join$/);
+  if (sessionJoinMatch && method === 'POST') {
+    return (await mockJoinSession(
+      sessionJoinMatch[1],
+      body as SessionJoinInput,
+    )) as T;
+  }
+  const sessionLeaveMatch = path.match(/^\/api\/v1\/sessions\/([^/]+)\/leave$/);
+  if (sessionLeaveMatch && method === 'POST') {
+    return (await mockLeaveSession(sessionLeaveMatch[1])) as T;
+  }
+  const sessionAssignMatch = path.match(
+    /^\/api\/v1\/sessions\/([^/]+)\/assign$/,
+  );
+  if (sessionAssignMatch && method === 'POST') {
+    return (await mockAssignSessionGroup(
+      sessionAssignMatch[1],
+      body as SessionAssignInput,
+    )) as T;
+  }
   if (path.startsWith('/api/v1/sessions/') && path.endsWith('/request')) {
     return (await mockRequestSessionJoin('')) as T;
   }
@@ -1276,9 +2042,22 @@ export async function mockApiRequest<T>(
     /^\/api\/v1\/sessions\/([^/]+)\/participants$/,
   );
   if (participantsMatch && method === 'GET') {
-    const sessionId = participantsMatch[1];
-    return buildScreenshotDemoSessionParticipants(sessionId) as T;
+    return (await mockSessionParticipants(participantsMatch[1])) as T;
+  }
+
+  const sessionGetMatch = path.match(/^\/api\/v1\/sessions\/([^/]+)$/);
+  if (sessionGetMatch && method === 'GET') {
+    return (await mockGetSession(sessionGetMatch[1])) as T;
   }
 
   throw new ApiError(404, 'Not found');
+}
+
+/** Demo evidence harness — page.evaluate smokes may call mock without inventing a new platform. */
+if (typeof globalThis !== "undefined") {
+  (
+    globalThis as typeof globalThis & {
+      __GRPD_MOCK_API_REQUEST__?: typeof mockApiRequest;
+    }
+  ).__GRPD_MOCK_API_REQUEST__ = mockApiRequest;
 }

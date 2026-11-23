@@ -1,34 +1,51 @@
 import React from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { borderRadius, colors, hairline, typography } from "@/constants/ui";
+import { Avatar } from "@/components/ui/Avatar";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 import type { ClubPaceGroupId } from "@/lib/clubPaceGroups";
 import { getClubPaceGroupDef } from "@/lib/clubPaceGroups";
 
 type GroupMemberRowProps = {
   name: string;
   initials: string;
+  avatarUrl?: string | null;
   memberSinceLabel?: string;
   groupId?: ClubPaceGroupId;
+  /** Prefer this when using club color groups (not legacy A–D). */
+  avatarColor?: string;
+  memberUserId?: string;
+  onPress?: () => void;
   onChangePress?: () => void;
 };
 
+/**
+ * Quiet roster row — tap opens profile; optional side action moves groups.
+ */
 export function GroupMemberRow({
   name,
   initials,
+  avatarUrl,
   memberSinceLabel,
   groupId,
+  avatarColor: avatarColorProp,
+  memberUserId,
+  onPress,
   onChangePress,
 }: GroupMemberRowProps) {
-  const avatarColor = groupId
-    ? getClubPaceGroupDef(groupId).avatarColor
-    : colors.accent.primary;
+  const avatarColor =
+    avatarColorProp ??
+    (groupId ? getClubPaceGroupDef(groupId).avatarColor : t.primary);
 
-  return (
-    <View style={styles.row}>
-      <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-        <Text style={styles.avatarText}>{initials}</Text>
-      </View>
+  const body = (
+    <>
+      <Avatar
+        name={name}
+        initial={initials}
+        uri={avatarUrl}
+        size={36}
+        backgroundColor={avatarColor}
+      />
       <View style={styles.meta}>
         <Text style={styles.name} numberOfLines={1}>
           {name}
@@ -39,18 +56,51 @@ export function GroupMemberRow({
           </Text>
         ) : null}
       </View>
-      {onChangePress ? (
+      {onPress || onChangePress ? <Text style={styles.chevron}>›</Text> : null}
+    </>
+  );
+
+  return (
+    <View
+      style={styles.wrap}
+      testID={memberUserId ? `club-group-member-${memberUserId}` : undefined}
+    >
+      <Pressable
+        style={({ pressed }) => [
+          styles.row,
+          styles.rowFlex,
+          pressed && styles.rowPressed,
+        ]}
+        testID={
+          memberUserId ? `club-group-member-open-${memberUserId}` : undefined
+        }
+        onPress={onPress ?? onChangePress}
+        disabled={!onPress && !onChangePress}
+        accessibilityRole="button"
+        accessibilityLabel={
+          onPress ? `Voir le profil de ${name}` : `Changer le groupe de ${name}`
+        }
+        hitSlop={4}
+      >
+        {body}
+      </Pressable>
+      {onPress && onChangePress ? (
         <Pressable
-          onPress={onChangePress}
-          accessibilityRole="button"
-          hitSlop={8}
           style={({ pressed }) => [
             styles.changeBtn,
-            pressed && styles.changeBtnPressed,
-            Platform.OS === "web" && styles.changeBtnWeb,
+            pressed && styles.rowPressed,
           ]}
+          testID={
+            memberUserId
+              ? `club-group-member-change-${memberUserId}`
+              : "club-group-member-change"
+          }
+          onPress={onChangePress}
+          accessibilityRole="button"
+          accessibilityLabel={`Changer le groupe de ${name}`}
+          hitSlop={4}
         >
-          <Text style={styles.changeText}>Changer</Text>
+          <Text style={styles.changeBtnText}>Groupe</Text>
         </Pressable>
       ) : null}
     </View>
@@ -58,60 +108,58 @@ export function GroupMemberRow({
 }
 
 const styles = StyleSheet.create({
+  wrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(232,232,233,0.95)",
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingVertical: 10,
-    borderBottomWidth: hairline,
-    borderBottomColor: colors.border.default,
+    paddingVertical: 12,
+    minHeight: t.touchMin,
   },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
+  rowFlex: {
+    flex: 1,
+    minWidth: 0,
   },
-  avatarText: {
-    color: colors.text.primary,
-    fontSize: 13,
-    fontWeight: "700",
+  rowPressed: {
+    opacity: 0.72,
+  },
+  changeBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: t.surfaceContainerLow,
+    marginLeft: 4,
+  },
+  changeBtnText: {
+    fontFamily: t.font.hanken.medium,
+    fontSize: 12,
+    color: t.primary,
   },
   meta: {
     flex: 1,
     minWidth: 0,
   },
   name: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.md,
-    fontWeight: "600",
+    color: t.text,
+    fontSize: 15,
+    fontFamily: t.font.space.semibold,
   },
   sub: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
+    color: t.outline,
+    fontSize: 12,
+    fontFamily: t.font.hanken.regular,
     marginTop: 2,
   },
-  changeBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: borderRadius.pill,
-    backgroundColor: colors.accent.primaryDim,
-    borderWidth: hairline,
-    borderColor: colors.border.active,
-    flexShrink: 0,
-  },
-  changeBtnPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.98 }],
-  },
-  changeBtnWeb: {
-    cursor: "pointer",
-  },
-  changeText: {
-    color: colors.text.accent,
-    fontSize: typography.sizes.sm,
-    fontWeight: "700",
+  chevron: {
+    color: t.outline,
+    fontSize: 22,
+    fontFamily: t.font.space.bold,
+    paddingLeft: 4,
+    lineHeight: 24,
   },
 });

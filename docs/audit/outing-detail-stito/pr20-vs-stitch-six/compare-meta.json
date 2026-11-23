@@ -1,0 +1,16 @@
+{
+  "tested_sha": "b386149da99b9348a73099c7260607b0825da320",
+  "correction_6733219_ancestor": true,
+  "data_mode": "demo",
+  "hosted_claim": false,
+  "url": "http://127.0.0.1:8090/session/demo_sess_footing_corniche",
+  "title": "FOOTING CORNICHE",
+  "nav": "Détail de la sortie",
+  "has_rejoindre": true,
+  "has_detail_title_fr": true,
+  "has_fake_map": false,
+  "has_verified": false,
+  "has_confirme_badge_prejoin": false,
+  "reference_png": "docs/design-reference/stitch-six-2026-10-17/stitch_grpd_mobile_homepage_redesign/grpd_d_tail_de_la_sortie_avant_inscription/screen.png",
+  "reference_tip": "64dc1d12a5742389a2bd1cdc22e8a83785a7f851"
+}

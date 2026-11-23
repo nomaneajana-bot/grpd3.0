@@ -1,0 +1,25 @@
+{
+  "checks": [
+    {
+      "id": "role_lands_on_goal",
+      "ok": true,
+      "detail": "http://127.0.0.1:8082/onboarding/goal :: \nTon intention\nPas une promesse — un cap.\nMarche & bien-être\nMARCHE\nReprendre en douceur, sans pression de performance\nRégularité\nCourir plus souvent, sans viser une distance\n5 km\nPremier objectif ch"
+    },
+    {
+      "id": "allure_ui_absent",
+      "ok": true,
+      "detail": "\nTon intention\nPas une promesse — un cap.\nMarche & bien-être\nMARCHE\nReprendre en douceur, sans pression de performance\nRégularité\nCourir plus souvent, sans viser une distance\n5 km\nPremier objectif chronométré\n10 km\nEndurance intermédiaire\nSemi-marathon\n21,1 km — un cap structura"
+    },
+    {
+      "id": "pace_deeplink_redirects_to_goal",
+      "ok": true,
+      "detail": "http://127.0.0.1:8082/onboarding/goal :: \nTon intention\nPas une promesse — un cap.\nMarche & bien-être\nMARCHE\nReprendre en douceur, sans pression de performance\nRégularité\nCourir plus souvent, sans viser une distance\n5 km\nPremier objectif ch"
+    }
+  ],
+  "base": "http://127.0.0.1:8082",
+  "tested_at": "2026-10-16T21:00:19.439Z",
+  "summary": {
+    "pass": 3,
+    "fail": 0
+  }
+}

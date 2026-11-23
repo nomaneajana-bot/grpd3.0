@@ -3,17 +3,19 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
     Alert,
     FlatList,
+    Image,
     Modal,
+    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
-    Switch,
     Text,
     TextInput,
     TouchableOpacity,
     TouchableWithoutFeedback,
     View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
@@ -22,8 +24,61 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import { useUnsavedChangesGuard } from "../../lib/useUnsavedChangesGuard";
 
+import { LocationSlider } from "../../components/ui/LocationSlider";
 import { SelectableChip } from "../../components/ui/SelectableChip";
-import { colors } from "../../constants/ui";
+import { stitoTheme as _stito } from "../../constants/stitoTheme";
+
+/** Light Stito palette shim — keeps create.tsx color keys, maps to canvas. */
+const colors = {
+  background: {
+    primary: _stito.canvas,
+    frame: _stito.surfaceContainerLow,
+    card: _stito.card,
+    elevated: _stito.surfaceContainer,
+    elevated2: _stito.surfaceContainerHigh,
+    input: _stito.surfaceContainerLow,
+    inputDark: _stito.surfaceContainer,
+  },
+  surface: {
+    s1: _stito.card,
+    s2: _stito.surfaceContainerLow,
+    s3: _stito.surfaceContainer,
+    s4: _stito.surfaceContainerHigh,
+  },
+  text: {
+    primary: _stito.text,
+    secondary: _stito.textSecondary,
+    tertiary: _stito.outline,
+    faint: _stito.outlineVariant,
+    disabled: _stito.outlineVariant,
+    accent: _stito.primary,
+    warning: "#C45A1A",
+    success: _stito.primary,
+    error: _stito.error,
+  },
+  accent: {
+    primary: _stito.primary,
+    primaryDim: "rgba(0,95,52,0.1)",
+    primaryMid: "rgba(0,95,52,0.18)",
+    success: _stito.primary,
+    charcoal: _stito.onPrimary,
+    sage: _stito.primary,
+    sageDim: "rgba(0,95,52,0.12)",
+    orange: "#C45A1A",
+    orangeDim: "rgba(196,90,26,0.12)",
+    warning: "#C45A1A",
+    error: _stito.error,
+  },
+  border: {
+    default: _stito.outlineVariant,
+    medium: _stito.outline,
+    active: _stito.primary,
+    accent: _stito.primary,
+  },
+  pill: {
+    active: "rgba(0,95,52,0.12)",
+  },
+} as const;
 import {
     createSession as createSessionApi,
     createApiClient,
@@ -43,16 +98,31 @@ import {
 import { getSessionById } from "../../lib/sessionData";
 import {
   fieldsToSessionAudience,
+  normalizeSessionAudience,
   SESSION_AUDIENCE_OPTIONS,
   sessionAudienceToFields,
   type SessionAudience,
 } from "../../lib/sessionAudience";
+import { confirmAction } from "../../lib/confirmAction";
 import {
   getClubAdminSettings,
   type ClubAdminGroupOverride,
+  type ClubAdminSettings,
 } from "../../lib/clubAdminStore";
+import {
+  isMemberOrgEnabled,
+  sortedActiveColorGroups,
+} from "../../lib/clubMemberGroups";
+import { resolvePublishClubId } from "../../lib/sessionClubAssociation";
+import { getFocusedClubId } from "../../lib/focusedClubStore";
 import { createSession as createSessionLocal, updateSession } from "../../lib/sessionStore";
-import type { SessionCreateInput } from "../../types/api";
+import { pickOutingCover } from "../../lib/pickOutingCover";
+import {
+  buildPaceFourchetteLabel,
+  splitPaceFourchette,
+} from "../../lib/paceFourchette";
+import { PaceFourchetteField } from "../../components/session/PaceFourchetteField";
+import type { ClubMembership, SessionCreateInput } from "../../types/api";
 import {
     getWorkoutBasePaceSeconds,
     getWorkoutIntervalDefaults,
@@ -63,18 +133,18 @@ import {
     markWorkoutUsed,
     type WorkoutEntity,
 } from "../../lib/workoutStore";
+import {
+  defaultUpcomingOutingTime,
+  formatOutingDateShort,
+  isSelectableOutingDateTime,
+  todayISO,
+  upcomingDateOptions,
+} from "../../lib/dateHelpers";
 import type { ScrollEndEvent } from "../../types/events";
 
-// Static options (spots will be stateful)
-const DATE_OPTIONS = [
-  "LUNDI 10",
-  "MARDI 11",
-  "MERCREDI 12",
-  "JEUDI 13",
-  "VENDREDI 14",
-  "SAMEDI 15",
-  "DIMANCHE 16",
-];
+// Real upcoming calendar days (no invented "LUNDI 10")
+const DATE_CHOICES = upcomingDateOptions(14);
+const DEFAULT_OUTING_WHEN = defaultUpcomingOutingTime();
 
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i); // 0-23
 const MINUTE_OPTIONS = [0, 15, 30, 45];
@@ -87,8 +157,6 @@ const CASUAL_TYPE_OPTIONS: Array<{ id: SessionMode; label: string }> = [
   { id: "discovery_run", label: "Découverte" },
   { id: "walking", label: "Marche" },
 ] as const;
-
-const SESSION_TYPE_OPTIONS = ["FARTLEK", "SORTIE LONGUE", "SEUIL"] as const;
 
 // Pace picker options
 const PACE_MINUTE_OPTIONS = Array.from({ length: 6 }, (_, i) => i + 3); // 3-8
@@ -138,33 +206,31 @@ function OptionPicker({
   onClose,
   onSelect,
   allowCustom = false,
-  customLabel = "+ Ajouter un nouveau spot",
+  customLabel = "Nom du lieu",
   onAddCustom,
 }: OptionPickerProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [customValue, setCustomValue] = useState("");
+  const [query, setQuery] = useState("");
 
-  // Reset inputs when picker closes
   useEffect(() => {
-    if (!visible) {
-      setSearchQuery("");
-      setCustomValue("");
-    }
+    if (!visible) setQuery("");
   }, [visible]);
 
-  // Filter options based on search query
-  const filteredOptions = searchQuery
+  const trimmedQuery = query.trim();
+  const filteredOptions = trimmedQuery
     ? options.filter((option) =>
-        option.toLowerCase().includes(searchQuery.toLowerCase()),
+        option.toLowerCase().includes(trimmedQuery.toLowerCase()),
       )
     : options;
+  const exactMatch = options.some(
+    (o) => o.toLowerCase() === trimmedQuery.toLowerCase(),
+  );
+  const canCreate =
+    allowCustom && Boolean(onAddCustom) && trimmedQuery.length > 0 && !exactMatch;
 
   const handleAddCustom = () => {
-    const trimmed = customValue.trim();
-    if (trimmed && onAddCustom) {
-      onAddCustom(trimmed);
-      setCustomValue("");
-    }
+    if (!canCreate || !onAddCustom) return;
+    onAddCustom(trimmedQuery);
+    setQuery("");
   };
 
   return (
@@ -182,42 +248,79 @@ function OptionPicker({
         />
         <View style={styles.pickerContainer}>
           <TouchableWithoutFeedback>
-            <View style={styles.pickerCard}>
+            <View style={styles.pickerCard} testID="session-spot-picker">
+              <View style={styles.pickerHandleWrap} accessibilityElementsHidden>
+                <View style={styles.pickerHandle} />
+              </View>
               <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>{title.toUpperCase()}</Text>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={styles.pickerTitle}>{title}</Text>
+                  {allowCustom ? (
+                    <Text style={styles.pickerSubtitle}>
+                      Choisis un lieu ou ajoute le tien
+                    </Text>
+                  ) : null}
+                </View>
                 <TouchableOpacity
                   onPress={onClose}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Fermer"
                 >
                   <Text style={styles.pickerHeaderAction}>Fermer</Text>
                 </TouchableOpacity>
               </View>
-              
-              {/* Search field */}
-              {allowCustom && (
+
+              {allowCustom ? (
                 <View style={styles.pickerSearchContainer}>
                   <TextInput
                     style={styles.pickerSearchInput}
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    placeholder="Rechercher un spot..."
-                    placeholderTextColor="#808080"
-                    autoCapitalize="none"
+                    value={query}
+                    onChangeText={setQuery}
+                    placeholder={customLabel}
+                    placeholderTextColor={colors.text.tertiary}
+                    autoCapitalize="sentences"
+                    returnKeyType={canCreate ? "done" : "search"}
+                    onSubmitEditing={() => {
+                      if (canCreate) handleAddCustom();
+                      else if (filteredOptions[0]) {
+                        onSelect(filteredOptions[0]);
+                        onClose();
+                      }
+                    }}
+                    testID="session-spot-custom-input"
+                    accessibilityLabel="Lieu de rendez-vous"
                   />
                 </View>
-              )}
+              ) : null}
 
-            <ScrollView
-              style={styles.pickerOptionsList}
-              showsVerticalScrollIndicator={false}
-            >
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((option, index) => {
-                  const isSelected = option === selectedValue;
-                  return (
-                    <View key={option}>
-                      {index > 0 && <View style={styles.pickerOptionDivider} />}
+              <ScrollView
+                style={styles.pickerOptionsList}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {canCreate ? (
+                  <TouchableOpacity
+                    style={styles.pickerCreateRow}
+                    onPress={handleAddCustom}
+                    activeOpacity={0.85}
+                    testID="session-spot-custom-add"
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ajouter ${trimmedQuery}`}
+                  >
+                    <Text style={styles.pickerCreateLabel}>Ajouter</Text>
+                    <Text style={styles.pickerCreateValue} numberOfLines={1}>
+                      {trimmedQuery}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+
+                {filteredOptions.length > 0 ? (
+                  filteredOptions.map((option) => {
+                    const isSelected = option === selectedValue;
+                    return (
                       <TouchableOpacity
+                        key={option}
                         style={[
                           styles.pickerOption,
                           isSelected && styles.pickerOptionSelected,
@@ -227,49 +330,32 @@ function OptionPicker({
                           onClose();
                         }}
                         activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: isSelected }}
                       >
                         <Text
                           style={[
                             styles.pickerOptionText,
                             isSelected && styles.pickerOptionTextSelected,
                           ]}
+                          numberOfLines={1}
                         >
                           {option}
                         </Text>
+                        {isSelected ? (
+                          <Text style={styles.pickerOptionCheck}>✓</Text>
+                        ) : null}
                       </TouchableOpacity>
-                    </View>
-                  );
-                })
-              ) : (
-                <View style={styles.pickerEmptyState}>
-                  <Text style={styles.pickerEmptyText}>Aucun spot trouvé</Text>
-                </View>
-              )}
-            </ScrollView>
-
-              {/* Always-visible custom input field */}
-              {allowCustom && (
-                <View style={styles.pickerCustomInputContainer}>
-                  <TextInput
-                    style={styles.pickerCustomInput}
-                    value={customValue}
-                    onChangeText={setCustomValue}
-                    placeholder={customLabel}
-                    placeholderTextColor="#808080"
-                    onSubmitEditing={handleAddCustom}
-                    returnKeyType="done"
-                  />
-                  {customValue.trim() && (
-                    <TouchableOpacity
-                      style={styles.pickerCustomSaveButton}
-                      onPress={handleAddCustom}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.pickerCustomSaveText}>Ajouter</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
+                    );
+                  })
+                ) : !canCreate ? (
+                  <View style={styles.pickerEmptyState}>
+                    <Text style={styles.pickerEmptyText}>
+                      Aucun lieu correspondant
+                    </Text>
+                  </View>
+                ) : null}
+              </ScrollView>
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -407,9 +493,7 @@ type TimePickerProps = {
   onSelect: (hour: number, minute: number) => void;
 };
 
-// Time Picker Component (wheel-like with two columns)
-// Note: Uses plain FlatList without Animated to avoid VirtualizedList + useNativeDriver issues.
-// Simple onMomentumScrollEnd handler detects selected index after scroll stops.
+/** Simple hour grid + :00/:15/:30/:45 chips (mobile-web friendly). */
 function TimePicker({
   visible,
   title,
@@ -418,35 +502,17 @@ function TimePicker({
   onClose,
   onSelect,
 }: TimePickerProps) {
-  const hourListRef = useRef<FlatList>(null);
-  const minuteListRef = useRef<FlatList>(null);
   const [localHour, setLocalHour] = useState(selectedHour);
-  const [localMinute, setLocalMinute] = useState(selectedMinute);
-
-  // Add spacer items to center first/last items
-  const hourData = [null, null, ...HOUR_OPTIONS, null, null];
-  const minuteData = [null, null, ...MINUTE_OPTIONS, null, null];
+  const [localMinute, setLocalMinute] = useState(
+    MINUTE_OPTIONS.includes(selectedMinute) ? selectedMinute : 0,
+  );
 
   useEffect(() => {
-    if (visible) {
-      setLocalHour(selectedHour);
-      setLocalMinute(selectedMinute);
-      // Scroll to selected values when picker opens (accounting for 2 spacer items at top)
-      setTimeout(() => {
-        const hourIndex = selectedHour + 2; // +2 for spacer items
-        hourListRef.current?.scrollToOffset({
-          offset: hourIndex * ITEM_HEIGHT,
-          animated: false,
-        });
-        const minuteIndex = MINUTE_OPTIONS.indexOf(selectedMinute) + 2;
-        if (minuteIndex >= 2) {
-          minuteListRef.current?.scrollToOffset({
-            offset: minuteIndex * ITEM_HEIGHT,
-            animated: false,
-          });
-        }
-      }, 100);
-    }
+    if (!visible) return;
+    setLocalHour(selectedHour);
+    setLocalMinute(
+      MINUTE_OPTIONS.includes(selectedMinute) ? selectedMinute : 0,
+    );
   }, [visible, selectedHour, selectedMinute]);
 
   const handleConfirm = () => {
@@ -454,81 +520,19 @@ function TimePicker({
     onClose();
   };
 
-  const handleHourScrollEnd = (event: ScrollEndEvent) => {
-    const offset = event.nativeEvent.contentOffset.y;
-    const index = Math.round(offset / ITEM_HEIGHT);
-    const clampedIndex = Math.max(2, Math.min(index, hourData.length - 3)); // Account for spacers
-    const actualIndex = clampedIndex - 2; // Remove spacer offset
-    if (actualIndex >= 0 && actualIndex < HOUR_OPTIONS.length) {
-      const newHour = HOUR_OPTIONS[actualIndex];
-      setLocalHour(newHour);
-      // Snap precisely to the correct position
-      hourListRef.current?.scrollToOffset({
-        offset: clampedIndex * ITEM_HEIGHT,
-        animated: true,
-      });
-    }
-  };
-
-  const handleMinuteScrollEnd = (event: ScrollEndEvent) => {
-    const offset = event.nativeEvent.contentOffset.y;
-    const index = Math.round(offset / ITEM_HEIGHT);
-    const clampedIndex = Math.max(2, Math.min(index, minuteData.length - 3)); // Account for spacers
-    const actualIndex = clampedIndex - 2; // Remove spacer offset
-    if (actualIndex >= 0 && actualIndex < MINUTE_OPTIONS.length) {
-      const newMinute = MINUTE_OPTIONS[actualIndex];
-      setLocalMinute(newMinute);
-      // Snap precisely to the correct position
-      minuteListRef.current?.scrollToOffset({
-        offset: clampedIndex * ITEM_HEIGHT,
-        animated: true,
-      });
-    }
-  };
-
-  const renderHourItem = ({ item }: { item: number | null }) => {
-    if (item === null) {
-      return <View style={styles.wheelPickerItemWrapper} />;
-    }
-    const isSelected = item === localHour;
-    return (
-      <View style={styles.wheelPickerItemWrapper}>
-        <Text
-          style={[
-            styles.wheelPickerItemText,
-            isSelected && styles.wheelPickerItemTextSelected,
-            !isSelected && styles.wheelPickerItemTextDimmed,
-          ]}
-        >
-          {item.toString().padStart(2, "0")}
-        </Text>
-      </View>
+  const applyNativeTime = (raw: string) => {
+    const m = raw.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return;
+    const h = Math.max(0, Math.min(23, Number(m[1])));
+    let min = Number(m[2]);
+    // Snap to nearest 15 min
+    min = MINUTE_OPTIONS.reduce((best, step) =>
+      Math.abs(step - min) < Math.abs(best - min) ? step : best,
     );
+    setLocalHour(h);
+    setLocalMinute(min);
   };
 
-  const renderMinuteItem = ({ item }: { item: number | null }) => {
-    if (item === null) {
-      return <View style={styles.wheelPickerItemWrapper} />;
-    }
-    const isSelected = item === localMinute;
-    return (
-      <View style={styles.wheelPickerItemWrapper}>
-        <Text
-          style={[
-            styles.wheelPickerItemText,
-            isSelected && styles.wheelPickerItemTextSelected,
-            !isSelected && styles.wheelPickerItemTextDimmed,
-          ]}
-        >
-          {item.toString().padStart(2, "0")}
-        </Text>
-      </View>
-    );
-  };
-
-  // Fixed modal structure: backdrop Pressable is BEHIND the card (not wrapping it).
-  // This prevents the backdrop from intercepting scroll gestures on the FlatLists.
-  // The card is a plain View, allowing FlatLists to receive pan/scroll events directly.
   return (
     <Modal
       visible={visible}
@@ -537,72 +541,83 @@ function TimePicker({
       onRequestClose={onClose}
     >
       <View style={styles.modalBackdrop}>
-        {/* Backdrop Pressable behind card - closes modal on tap */}
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        {/* Card above backdrop - NOT wrapped in any touchable */}
-        <View style={styles.pacePickerCard}>
+        <View style={styles.pacePickerCard} testID="session-time-picker">
           <View style={styles.pickerHeader}>
-            <Text style={styles.pickerTitle}>{title.toUpperCase()}</Text>
+            <Text style={styles.pickerTitle}>{title}</Text>
+            <Text style={styles.timePickerPreview} testID="session-time-preview">
+              {String(localHour).padStart(2, "0")}:
+              {String(localMinute).padStart(2, "0")}
+            </Text>
           </View>
 
-          <View style={styles.wheelPickerContainer}>
-            <View style={styles.wheelPickerColumn}>
-              <Text style={styles.wheelPickerColumnLabel}>HEURES</Text>
-              <View style={styles.wheelPickerWheelContainer}>
-                <View style={styles.wheelPickerCenterHighlight} />
-                <View style={styles.wheelPickerWheel}>
-                  <FlatList
-                    ref={hourListRef}
-                    data={hourData}
-                    renderItem={renderHourItem}
-                    keyExtractor={(item, index) =>
-                      `hour-${item ?? `spacer-${index}`}`
-                    }
-                    showsVerticalScrollIndicator={false}
-                    snapToInterval={ITEM_HEIGHT}
-                    decelerationRate="fast"
-                    scrollEnabled={true}
-                    getItemLayout={(data, index) => ({
-                      length: ITEM_HEIGHT,
-                      offset: ITEM_HEIGHT * index,
-                      index,
-                    })}
-                    contentContainerStyle={styles.wheelPickerListContent}
-                    onScrollToIndexFailed={() => {}}
-                    onMomentumScrollEnd={handleHourScrollEnd}
-                  />
-                </View>
-              </View>
+          {Platform.OS === "web" ? (
+            <View style={styles.nativeTimeWrap}>
+              {React.createElement("input", {
+                type: "time",
+                step: 900,
+                value: `${String(localHour).padStart(2, "0")}:${String(localMinute).padStart(2, "0")}`,
+                onChange: (e: { target: { value: string } }) =>
+                  applyNativeTime(e.target.value),
+                style: {
+                  fontSize: 18,
+                  padding: 10,
+                  borderRadius: 10,
+                  border: `1px solid ${_stito.surfaceContainerHigh}`,
+                  width: "100%",
+                  boxSizing: "border-box",
+                  fontFamily: "inherit",
+                },
+                "data-testid": "session-time-native",
+              })}
+              <Text style={styles.timePickerHint}>
+                Ou choisis ci-dessous (pas de 15 min)
+              </Text>
             </View>
+          ) : null}
 
-            <View style={styles.wheelPickerColumn}>
-              <Text style={styles.wheelPickerColumnLabel}>MINUTES</Text>
-              <View style={styles.wheelPickerWheelContainer}>
-                <View style={styles.wheelPickerCenterHighlight} />
-                <View style={styles.wheelPickerWheel}>
-                  <FlatList
-                    ref={minuteListRef}
-                    data={minuteData}
-                    renderItem={renderMinuteItem}
-                    keyExtractor={(item, index) =>
-                      `minute-${item ?? `spacer-${index}`}`
-                    }
-                    showsVerticalScrollIndicator={false}
-                    snapToInterval={ITEM_HEIGHT}
-                    decelerationRate="fast"
-                    scrollEnabled={true}
-                    getItemLayout={(data, index) => ({
-                      length: ITEM_HEIGHT,
-                      offset: ITEM_HEIGHT * index,
-                      index,
-                    })}
-                    contentContainerStyle={styles.wheelPickerListContent}
-                    onScrollToIndexFailed={() => {}}
-                    onMomentumScrollEnd={handleMinuteScrollEnd}
-                  />
-                </View>
-              </View>
-            </View>
+          <Text style={styles.timeGridLabel}>Heure</Text>
+          <View style={styles.hourGrid} testID="session-time-hour-grid">
+            {HOUR_OPTIONS.map((hour) => {
+              const on = hour === localHour;
+              return (
+                <Pressable
+                  key={hour}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => setLocalHour(hour)}
+                  style={[styles.hourCell, on && styles.hourCellOn]}
+                  testID={`session-time-hour-${hour}`}
+                >
+                  <Text style={[styles.hourCellText, on && styles.hourCellTextOn]}>
+                    {String(hour).padStart(2, "0")}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.timeGridLabel}>Minutes</Text>
+          <View style={styles.minuteRow} testID="session-time-minute-row">
+            {MINUTE_OPTIONS.map((minute) => {
+              const on = minute === localMinute;
+              return (
+                <Pressable
+                  key={minute}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => setLocalMinute(minute)}
+                  style={[styles.minuteChip, on && styles.minuteChipOn]}
+                  testID={`session-time-minute-${minute}`}
+                >
+                  <Text
+                    style={[styles.minuteChipText, on && styles.minuteChipTextOn]}
+                  >
+                    :{String(minute).padStart(2, "0")}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           <View style={styles.wheelPickerActions}>
@@ -617,6 +632,7 @@ function TimePicker({
               style={styles.wheelPickerConfirmButton}
               onPress={handleConfirm}
               activeOpacity={0.8}
+              testID="session-time-confirm"
             >
               <Text style={styles.wheelPickerConfirmText}>Confirmer</Text>
             </TouchableOpacity>
@@ -1379,10 +1395,36 @@ function DistancePicker({
 
 // SessionGroupConfig is now imported from lib/sessionBuilder.ts
 
+/** Read create-route params; web falls back to `window.location.search` if Expo drops them. */
+function readCreateRouteParam(
+  fromRouter: string | string[] | undefined,
+  queryKey: string,
+): string | null {
+  const raw = Array.isArray(fromRouter) ? fromRouter[0] : fromRouter;
+  const trimmed = raw?.trim();
+  if (trimmed) return trimmed;
+  if (typeof window === "undefined") return null;
+  try {
+    const q = new URLSearchParams(window.location.search).get(queryKey);
+    return q?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 export default function CreateSessionScreen() {
-  const { workoutId, sessionId } = useLocalSearchParams<{
+  const {
+    workoutId,
+    sessionId,
+    clubId: clubIdParam,
+    audience: audienceParam,
+    clubName: clubNameParam,
+  } = useLocalSearchParams<{
     workoutId?: string;
     sessionId?: string;
+    clubId?: string;
+    audience?: string;
+    clubName?: string;
   }>();
   const isEditMode = Boolean(sessionId && !Array.isArray(sessionId));
   const editSessionId = isEditMode
@@ -1390,10 +1432,16 @@ export default function CreateSessionScreen() {
       ? sessionId[0]
       : sessionId
     : null;
+  const explicitClubId = readCreateRouteParam(clubIdParam, "clubId");
+  const explicitClubNameParam = readCreateRouteParam(clubNameParam, "clubName");
+  const explicitAudience = (() => {
+    const raw = readCreateRouteParam(audienceParam, "audience");
+    return raw === "club" || raw === "team" || raw === "public" ? raw : null;
+  })();
 
   // Spots are loaded from persistent storage
-  const [spots, setSpots] = useState<string[]>(["Marina", "Parc", "Piste"]);
-  const [spot, setSpot] = useState<string>("Marina");
+  const [spots, setSpots] = useState<string[]>(["Circuit Rodriguez, Casablanca", "Marina Juice, Casablanca", "Vélodrome Casablanca"]);
+  const [spot, setSpot] = useState<string>("Circuit Rodriguez, Casablanca");
   const [hasInitializedAudience, setHasInitializedAudience] = useState(false);
 
   // Load spots from storage on mount
@@ -1421,49 +1469,107 @@ export default function CreateSessionScreen() {
         const runner = await getRunnerProfile();
         setProfile(runner);
         if (!hasInitializedAudience && !isEditMode) {
-          if (runner?.clubName) {
-            setSessionAudience("club");
+          // Default to club-reserved; explicit ?audience=public can still open.
+          if (explicitAudience === "public") {
+            setSessionAudience("public");
+          } else {
+            setSessionAudience(
+              normalizeSessionAudience(explicitAudience ?? "club"),
+            );
           }
           setHasInitializedAudience(true);
         }
       } catch (error) {
         console.warn("Failed to load profile for session audience:", error);
+        if (!hasInitializedAudience && !isEditMode) {
+          setSessionAudience("club");
+          setHasInitializedAudience(true);
+        }
       }
     };
 
     loadProfile();
-  }, [hasInitializedAudience, isEditMode]);
+  }, [
+    hasInitializedAudience,
+    isEditMode,
+    explicitClubId,
+    explicitAudience,
+  ]);
+
+  const [approvedClubs, setApprovedClubs] = useState<ClubMembership[]>([]);
 
   useEffect(() => {
     const loadMemberships = async () => {
       try {
         const client = createApiClient();
-        const result = await getMyMemberships(client);
-        const approved = (result.memberships ?? []).find((m) => m.status === "approved");
-        setPrimaryClubId(approved?.clubId ?? null);
+        const [result, focusedId] = await Promise.all([
+          getMyMemberships(client),
+          getFocusedClubId(),
+        ]);
+        const approved = (result.memberships ?? []).filter(
+          (m) => m.status === "approved",
+        );
+        setApprovedClubs(approved);
+        if (explicitClubId) {
+          const bound =
+            approved.find((m) => m.clubId === explicitClubId) ?? null;
+          setPrimaryClubId(bound?.clubId ?? explicitClubId);
+          return;
+        }
+        // Club-reserved is the default: pre-bind focused club, else sole club.
+        if (focusedId && approved.some((m) => m.clubId === focusedId)) {
+          setPrimaryClubId(focusedId);
+        } else if (approved.length === 1) {
+          setPrimaryClubId(approved[0]!.clubId);
+        } else {
+          setPrimaryClubId(null);
+        }
       } catch {
+        setApprovedClubs([]);
         setPrimaryClubId(null);
       }
     };
     loadMemberships();
-  }, []);
+  }, [explicitClubId]);
 
-  // Date and time state
-  const [dateLabel, setDateLabel] = useState<string>("LUNDI 10");
-  const [selectedHour, setSelectedHour] = useState<number>(6);
-  const [selectedMinute, setSelectedMinute] = useState<number>(0);
+  // Date and time — default to an explicitly upcoming local slot (not past 06:00 today).
+  const [dateISO, setDateISO] = useState<string>(DEFAULT_OUTING_WHEN.dateISO);
+  const dateLabel =
+    DATE_CHOICES.find((d) => d.dateISO === dateISO)?.label ?? dateISO;
+  const [selectedHour, setSelectedHour] = useState<number>(DEFAULT_OUTING_WHEN.hour);
+  const [selectedMinute, setSelectedMinute] = useState<number>(
+    DEFAULT_OUTING_WHEN.minute,
+  );
 
   // Session mode: workout-based or casual type
   const [sessionMode, setSessionMode] = useState<SessionMode>("workout");
-  const [sessionType, setSessionType] = useState<
-    "FARTLEK" | "SORTIE LONGUE" | "SEUIL"
-  >("FARTLEK");
+  /** User-entered title — required for walk (must agree on detail). */
+  const [outingTitle, setOutingTitle] = useState("");
+  /** Optional cover photo (URL / data URL) — never required to publish. */
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  /** User-entered purpose / “à quoi s’attendre”. */
+  const [outingPurpose, setOutingPurpose] = useState("");
+  /**
+   * Free-text structure / déroulé — shown for every session mode
+   * (replaces FARTLEK/SORTIE/SEUIL chips + associated-workout picker).
+   */
+  const [structureNotes, setStructureNotes] = useState("");
+  /** Card metrics — what Découvrir / Mes Sorties / Clubs show. */
+  const [distanceKmText, setDistanceKmText] = useState("");
+  const [paceMinText, setPaceMinText] = useState("");
+  const [paceMaxText, setPaceMaxText] = useState("");
+  const [paceLibre, setPaceLibre] = useState(false);
+  const [durationMinText, setDurationMinText] = useState("");
+  /** Inline validation (web Alert dialogs are unreliable for harness). */
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Track if we've loaded the existing session (to prevent re-initialization)
   const [hasLoadedExistingSession, setHasLoadedExistingSession] =
     useState(false);
 
-  const [usePaceGroups, setUsePaceGroups] = useState(true);
+  // Session A–D allure config removed from organise — club member groups cover assignment;
+  // join uses quiet allure / open. Keep flag false so publish never rebuilds empty A–D rows.
+  const [usePaceGroups, setUsePaceGroups] = useState(false);
 
   // Group pace configuration state
   const [groupConfigs, setGroupConfigs] = useState<SessionGroupConfig[]>([
@@ -1542,16 +1648,26 @@ export default function CreateSessionScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
-  const [primaryClubId, setPrimaryClubId] = useState<string | null>(null);
+  // Bind immediately when opened from club CTA — don’t wait for memberships fetch.
+  const [primaryClubId, setPrimaryClubId] = useState<string | null>(
+    explicitClubId,
+  );
   const [clubAdminGroups, setClubAdminGroups] = useState<
     ClubAdminGroupOverride[] | null
   >(null);
+  const [clubAdminSettings, setClubAdminSettings] =
+    useState<ClubAdminSettings | null>(null);
+  const [targetColorGroupId, setTargetColorGroupId] = useState<string | null>(
+    null,
+  );
   const [sessionAudience, setSessionAudience] =
-    useState<SessionAudience>("public");
+    useState<SessionAudience>("club");
 
   useEffect(() => {
     if (!primaryClubId) {
       setClubAdminGroups(null);
+      setClubAdminSettings(null);
+      setTargetColorGroupId(null);
       return;
     }
     let cancelled = false;
@@ -1559,6 +1675,7 @@ export default function CreateSessionScreen() {
       try {
         const settings = await getClubAdminSettings(primaryClubId);
         if (cancelled) return;
+        setClubAdminSettings(settings);
         setClubAdminGroups(settings.groups);
         setGroupConfigs((prev) =>
           prev.map((g) => {
@@ -1568,7 +1685,10 @@ export default function CreateSessionScreen() {
           }),
         );
       } catch {
-        if (!cancelled) setClubAdminGroups(null);
+        if (!cancelled) {
+          setClubAdminGroups(null);
+          setClubAdminSettings(null);
+        }
       }
     })();
     return () => {
@@ -1576,8 +1696,38 @@ export default function CreateSessionScreen() {
     };
   }, [primaryClubId]);
 
+  // Demo/E2E hook: evidence harness can set an explicit date/time fixture.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const w = window as typeof window & {
+      __GRPD_E2E_OUTING_WHEN__?: {
+        dateISO?: string;
+        hour?: number;
+        minute?: number;
+      };
+    };
+    const apply = () => {
+      const fixture = w.__GRPD_E2E_OUTING_WHEN__;
+      if (!fixture) return;
+      if (fixture.dateISO) setDateISO(fixture.dateISO);
+      if (typeof fixture.hour === "number") setSelectedHour(fixture.hour);
+      if (typeof fixture.minute === "number") setSelectedMinute(fixture.minute);
+    };
+    apply();
+    const id = window.setInterval(apply, 400);
+    return () => window.clearInterval(id);
+  }, []);
+
   // Format time as HH:MM
   const timeLabel = `${selectedHour.toString().padStart(2, "0")}:${selectedMinute.toString().padStart(2, "0")}`;
+
+  const boundClubDisplayName =
+    approvedClubs.find((m) => m.clubId === (explicitClubId || primaryClubId))
+      ?.club?.name ??
+    explicitClubNameParam ??
+    null;
+  // Only pin a top banner when launched from a club CTA (explicit clubId param).
+  const showClubBoundBanner = Boolean(explicitClubId);
 
   // Helper to format pace for display
   const formatPace = (secondsPerKm: number | null): string => {
@@ -1620,6 +1770,29 @@ export default function CreateSessionScreen() {
   const [availableWorkouts, setAvailableWorkouts] = useState<WorkoutEntity[]>(
     [],
   );
+
+  // Walk/language clubs: default Organise to Marche (not FARTLEK), when clubId known.
+  useEffect(() => {
+    if (!explicitClubId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { getClubAdminSettings } = await import("@/lib/clubAdminStore");
+        const settings = await getClubAdminSettings(explicitClubId);
+        if (cancelled) return;
+        if (settings.activityStructure === "walk") {
+          setSessionMode("walking");
+          setSelectedWorkoutId(null);
+          setUsePaceGroups(false);
+        }
+      } catch {
+        /* keep workout default */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [explicitClubId]);
 
   // Load available workouts for picker
   useEffect(() => {
@@ -1810,47 +1983,72 @@ export default function CreateSessionScreen() {
           setSelectedMinute(minute);
         }
 
-        // Extract date part (everything before the time)
-        const datePart = existingSession.dateLabel.replace(
-          /\s+\d{2}:\d{2}$/,
-          "",
-        );
-        setDateLabel(datePart);
+        // Prefer stored ISO; fall back to matching label among upcoming choices
+        if (existingSession.dateISO) {
+          setDateISO(existingSession.dateISO);
+        } else {
+          const datePart = existingSession.dateLabel.replace(
+            /\s+\d{2}:\d{2}$/,
+            "",
+          );
+          const match = DATE_CHOICES.find((d) => d.label === datePart);
+          setDateISO(match?.dateISO ?? todayISO());
+        }
 
         // Set spot
         setSpot(existingSession.spot);
 
-        // Determine session mode based on workoutId and typeLabel
-        if (existingSession.workoutId) {
-          // Has workout = structured workout mode
-          setSessionMode("workout");
-          const typeMap: Record<string, "FARTLEK" | "SORTIE LONGUE" | "SEUIL"> = {
-            FARTLEK: "FARTLEK",
-            SORTIE: "SORTIE LONGUE",
-            SEUIL: "SEUIL",
-          };
-          const detectedType = Object.keys(typeMap).find((key) =>
-            existingSession.typeLabel.toUpperCase().includes(key),
-          );
-          if (detectedType) {
-            setSessionType(typeMap[detectedType]);
-          }
-          setSelectedWorkoutId(existingSession.workoutId);
-        } else {
-          // No workout = casual type mode
+        // Determine session mode from typeLabel (associated-workout picker removed).
+        {
           const typeLabelUpper = existingSession.typeLabel.toUpperCase();
-          if (typeLabelUpper.includes("COURSE LIBRE") || typeLabelUpper.includes("LIBRE")) {
+          if (
+            typeLabelUpper.includes("COURSE LIBRE") ||
+            typeLabelUpper.includes("LIBRE")
+          ) {
             setSessionMode("casual_run");
           } else if (typeLabelUpper.includes("DÉCOUVERTE")) {
             setSessionMode("discovery_run");
-          } else if (typeLabelUpper.includes("MARCHE") || typeLabelUpper.includes("WALKING")) {
+          } else if (
+            typeLabelUpper.includes("MARCHE") ||
+            typeLabelUpper.includes("WALKING")
+          ) {
             setSessionMode("walking");
           } else {
-            // Fallback to workout mode if type is unclear
             setSessionMode("workout");
-            setSessionType("FARTLEK");
           }
           setSelectedWorkoutId(null);
+          const rawVolume = existingSession.volume?.trim() || "";
+          const durationMatch = rawVolume.match(/^(\d+)\s*min\b/i);
+          if (durationMatch) {
+            setDurationMinText(durationMatch[1]!);
+            const rest = rawVolume
+              .replace(/^\d+\s*min\s*[·•\-–]?\s*/i, "")
+              .trim();
+            setStructureNotes(rest);
+          } else {
+            setStructureNotes(rawVolume);
+          }
+          if (existingSession.estimatedDistanceKm > 0) {
+            setDistanceKmText(
+              String(existingSession.estimatedDistanceKm).replace(".", ","),
+            );
+          }
+          const pace = existingSession.targetPace?.trim() || "";
+          if (pace && pace !== "—") {
+            const parts = splitPaceFourchette(pace);
+            setPaceLibre(parts.libre);
+            setPaceMinText(parts.min);
+            setPaceMaxText(parts.max);
+          }
+          if (existingSession.coachAdvice?.trim()) {
+            setOutingPurpose(existingSession.coachAdvice.trim());
+          }
+          if (existingSession.title?.trim()) {
+            setOutingTitle(existingSession.title.trim());
+          }
+          if (existingSession.coverImageUrl?.trim()) {
+            setCoverImageUrl(existingSession.coverImageUrl.trim());
+          }
         }
 
         // Pre-fill group configs from paceGroupsOverride (new format) or paceGroups (legacy)
@@ -1888,10 +2086,8 @@ export default function CreateSessionScreen() {
           },
         );
         setGroupConfigs(newGroupConfigs);
-        const hasEnabledGroups =
-          overrideGroups.some((g) => g.isActive) ||
-          (existingSession.paceGroups ?? []).length > 0;
-        setUsePaceGroups(hasEnabledGroups);
+        // Do not revive per-outing A–D UI — edits publish without session pace groups.
+        setUsePaceGroups(false);
 
         setSessionAudience(
           fieldsToSessionAudience(
@@ -1920,34 +2116,47 @@ export default function CreateSessionScreen() {
     () =>
       JSON.stringify({
         spot,
-        dateLabel,
+        dateISO,
         selectedHour,
         selectedMinute,
         sessionMode,
-        sessionType,
-        selectedWorkoutId,
+        structureNotes,
+        distanceKmText,
+        paceMinText,
+        paceMaxText,
+        paceLibre,
+        durationMinText,
         sessionAudience,
         usePaceGroups,
         groupConfigs,
+        outingTitle,
+        outingPurpose,
+        coverImageUrl,
       }),
     [
       spot,
-      dateLabel,
+      dateISO,
       selectedHour,
       selectedMinute,
       sessionMode,
-      sessionType,
-      selectedWorkoutId,
+      structureNotes,
+      distanceKmText,
+      paceMinText,
+      paceMaxText,
+      paceLibre,
+      durationMinText,
       sessionAudience,
       usePaceGroups,
       groupConfigs,
+      outingTitle,
+      outingPurpose,
+      coverImageUrl,
     ],
   );
 
   const formReady = isEditMode
     ? hasLoadedExistingSession
-    : hasInitializedAudience &&
-      (selectedWorkoutId == null || selectedWorkoutEntity != null);
+    : hasInitializedAudience;
 
   useEffect(() => {
     if (!formReady || baselineCapturedRef.current) return;
@@ -1979,8 +2188,28 @@ export default function CreateSessionScreen() {
         profile?.clubName ?? primaryClubId,
       );
       const sessionVisibility = audienceFields.visibility;
-      const hostGroupName = audienceFields.hostGroupName;
       const genderRestrictionUi = audienceFields.genderRestrictionUi;
+      const publishClubId = resolvePublishClubId({
+        visibility: sessionVisibility,
+        primaryClubId,
+      });
+      const boundClubName =
+        approvedClubs.find((m) => m.clubId === publishClubId)?.club?.name ??
+        (publishClubId && publishClubId === explicitClubId
+          ? explicitClubNameParam
+          : null) ??
+        null;
+      const targetGroupName =
+        targetColorGroupId && clubAdminSettings
+          ? sortedActiveColorGroups(clubAdminSettings).find(
+              (g) => g.id === targetColorGroupId,
+            )?.name ?? null
+          : null;
+      // Always brand with the club when bound (Accueil / detail show hostGroupName).
+      // Color-group target is a subtitle-level detail, not a replacement for the club.
+      const hostGroupName = publishClubId
+        ? boundClubName ?? targetGroupName ?? audienceFields.hostGroupName
+        : audienceFields.hostGroupName;
 
       if (sessionVisibility === "members" && !primaryClubId) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -1991,10 +2220,10 @@ export default function CreateSessionScreen() {
         return;
       }
 
-      // Map sessionMode to sessionType
+      // Map sessionMode to sessionType (no FARTLEK/SORTIE/SEUIL subtype chips).
       let effectiveSessionType: string;
       if (sessionMode === "workout") {
-        effectiveSessionType = sessionType;
+        effectiveSessionType = "STRUCTURÉ";
       } else if (sessionMode === "casual_run") {
         effectiveSessionType = "COURSE LIBRE";
       } else if (sessionMode === "discovery_run") {
@@ -2002,34 +2231,106 @@ export default function CreateSessionScreen() {
       } else if (sessionMode === "walking") {
         effectiveSessionType = "MARCHE";
       } else {
-        effectiveSessionType = sessionType;
+        effectiveSessionType = "STRUCTURÉ";
+      }
+      const structureTrimmed = structureNotes.trim() || null;
+
+      if (!outingTitle.trim()) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError("Titre requis — donne un titre à ta sortie.");
+        return;
+      }
+      if (!outingPurpose.trim()) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError(
+          "Objectif requis — décris l’objectif ou ce à quoi s’attendre.",
+        );
+        return;
+      }
+      if (!spot.trim()) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError("Lieu requis — choisis un lieu de rendez-vous.");
+        return;
       }
 
-      // Build effective groups from groupConfigs
-      const effectiveGroups = groupConfigs
-        .filter((g) => g.isActive && g.paceSecondsPerKm !== null)
-        .map((g) => ({
-          ...g,
-          effectivePaceSecondsPerKm: g.paceSecondsPerKm! as number,
-        }));
-      const submittedGroups = usePaceGroups ? effectiveGroups : [];
+      const publishTimeMinutes = selectedHour * 60 + selectedMinute;
+      if (!isSelectableOutingDateTime(dateISO, publishTimeMinutes)) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError(
+          "Date/heure invalide — choisis un créneau encore à venir.",
+        );
+        return;
+      }
+      setFormError(null);
+
+      const distanceParsed = (() => {
+        const t = distanceKmText.trim().replace(",", ".");
+        if (!t) return null;
+        const n = Number(t);
+        if (!Number.isFinite(n) || n <= 0 || n > 100) return null;
+        return Math.round(n * 10) / 10;
+      })();
+      if (distanceKmText.trim() && distanceParsed == null) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError("Distance invalide — ex. 8 ou 8,5 km.");
+        return;
+      }
+      const durationParsed = (() => {
+        const n = parseInt(durationMinText.trim(), 10);
+        if (!Number.isFinite(n) || n <= 0 || n > 600) return null;
+        return n;
+      })();
+      if (durationMinText.trim() && durationParsed == null) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError("Durée invalide — ex. 45 (minutes).");
+        return;
+      }
+      const paceBuilt = buildPaceFourchetteLabel(
+        paceMinText,
+        paceMaxText,
+        paceLibre,
+      );
+      if (paceBuilt.error) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setFormError(paceBuilt.error);
+        return;
+      }
+      const targetPaceExplicit = paceBuilt.label;
+
+      // Per-outing A–D removed from organise — publish without session pace groups.
+      const submittedGroups: typeof groupConfigs = [];
+      const walkTitle = outingTitle.trim() || null;
+      const walkPurpose = outingPurpose.trim() || null;
+      const organizerName =
+        profile?.firstName?.trim() ||
+        profile?.name?.trim() ||
+        null;
 
       if (isEditMode && editSessionId) {
         // Update existing session
         const { session, defaultGroupId } = buildSessionFromForm({
           spot,
-          dateLabel,
+          dateISO,
           timeLabel,
           sessionType: effectiveSessionType,
           groupConfigs: submittedGroups,
-          workoutId: sessionMode === "workout" ? selectedWorkoutId : null,
+          workoutId: null,
           visibility: sessionVisibility,
           hostGroupName,
           genderRestriction: genderRestrictionUi,
+          title: walkTitle,
+          purpose: walkPurpose,
+          structureNotes: structureTrimmed,
+          estimatedDistanceKm: distanceParsed,
+          targetPace: targetPaceExplicit,
+          durationMinutes: durationParsed,
+          organizerName,
+          coverImageUrl,
         });
         const sessionWithAudience = {
           ...session,
-          clubId: sessionVisibility === "members" ? primaryClubId : null,
+          clubId: publishClubId,
+          hostGroupName,
           genderRestriction: genderRestrictionUi,
         };
 
@@ -2039,29 +2340,28 @@ export default function CreateSessionScreen() {
           id: editSessionId, // Preserve original ID
         });
 
-        // Mark workout as used if a workoutId is associated (only for structured workouts)
-        if (sessionMode === "workout" && selectedWorkoutId) {
-          try {
-            await markWorkoutUsed(selectedWorkoutId);
-          } catch (error) {
-            console.warn("Failed to mark workout as used:", error);
-          }
-        }
-
         markLeaving();
         router.back();
       } else {
         // Create new session (API first; fallback to local if API unavailable)
         const { id, session, defaultGroupId } = buildSessionFromForm({
           spot,
-          dateLabel,
+          dateISO,
           timeLabel,
           sessionType: effectiveSessionType,
           groupConfigs: submittedGroups,
-          workoutId: sessionMode === "workout" ? selectedWorkoutId : null,
+          workoutId: null,
           visibility: sessionVisibility,
           hostGroupName,
           genderRestriction: genderRestrictionUi,
+          title: walkTitle,
+          purpose: walkPurpose,
+          structureNotes: structureTrimmed,
+          estimatedDistanceKm: distanceParsed,
+          targetPace: targetPaceExplicit,
+          durationMinutes: durationParsed,
+          organizerName,
+          coverImageUrl,
         });
 
         const apiPayload: SessionCreateInput = {
@@ -2074,18 +2374,19 @@ export default function CreateSessionScreen() {
           volume: session.volume,
           targetPace: session.targetPace,
           estimatedDistanceKm: session.estimatedDistanceKm,
-          recommendedGroupId: session.recommendedGroupId,
-          paceGroups: usePaceGroups ? session.paceGroups : [],
-          clubId: sessionVisibility === "members" ? primaryClubId : null,
+          recommendedGroupId: session.recommendedGroupId || "open",
+          paceGroups: [],
+          clubId: publishClubId,
           visibility: sessionVisibility,
           genderRestriction: audienceFields.genderRestriction,
           workoutId: session.workoutId ?? null,
           isCustom: true,
-          hostGroupName: session.hostGroupName ?? null,
-          meetingPoint: session.meetingPoint ?? null,
+          hostGroupName,
+          meetingPoint: session.meetingPoint ?? session.spot ?? null,
           coachAdvice: session.coachAdvice ?? null,
           coachPhone: session.coachPhone ?? null,
           coachName: session.coachName ?? null,
+          coverImageUrl: session.coverImageUrl ?? null,
         };
 
         let createdId: string = id;
@@ -2113,7 +2414,12 @@ export default function CreateSessionScreen() {
             return;
           }
           console.warn("API session create failed, saving locally:", apiErr);
-          await createSessionLocal(session);
+          await createSessionLocal({
+            ...session,
+            clubId: publishClubId,
+            hostGroupName,
+            visibility: sessionVisibility,
+          });
           try {
             await upsertJoinedSession(id, defaultGroupId);
           } catch (joinErr) {
@@ -2121,24 +2427,18 @@ export default function CreateSessionScreen() {
           }
         }
 
-        if (sessionMode === "workout" && selectedWorkoutId) {
-          try {
-            await markWorkoutUsed(selectedWorkoutId);
-          } catch (error) {
-            console.warn("Failed to mark workout as used:", error);
-          }
-        }
-
         markLeaving();
-        router.push(`/session/${createdId}`);
+        // Confirmation first — not the full detail dump with leftover coach chrome.
+        router.replace(`/session/published?id=${encodeURIComponent(createdId)}`);
       }
     } catch (error) {
       console.error("Failed to publish session:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(
-        "Publication impossible",
-        "Ta séance n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.",
-      );
+      const message =
+        error instanceof Error && error.message.startsWith("PAST_DATE")
+          ? "Choisis une date d'aujourd'hui ou dans le futur."
+          : "Ta séance n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.";
+      Alert.alert("Publication impossible", message);
     } finally {
       setIsPublishing(false);
     }
@@ -2158,7 +2458,7 @@ export default function CreateSessionScreen() {
             <Text style={styles.backLabel}>Retour</Text>
           </TouchableOpacity>
           <Text style={styles.screenTitle}>
-            {isEditMode ? "Modifier la séance" : "Créer une séance"}
+            {isEditMode ? "Modifier la sortie" : "Organiser une sortie"}
           </Text>
         </View>
       </View>
@@ -2170,11 +2470,30 @@ export default function CreateSessionScreen() {
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
+        {showClubBoundBanner ? (
+          <View style={styles.clubBoundBanner} testID="create-club-context">
+            <Text style={styles.clubBoundEyebrow}>SORTIE POUR</Text>
+            <Text
+              style={styles.clubBoundName}
+              numberOfLines={2}
+              testID="create-club-context-name"
+            >
+              {boundClubDisplayName ?? "ton club"}
+            </Text>
+            <Text style={styles.clubBoundHint}>
+              {sessionAudience === "club"
+                ? "Réservée aux membres de ce club — tu peux l’ouvrir à tous plus bas."
+                : "Associée à ce club — visible sur Découvrir."}
+            </Text>
+          </View>
+        ) : null}
+
         {/* Card 1 - Type de séance */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>TYPE DE SÉANCE</Text>
           <Text style={styles.cardSubtitle}>
-            Choisis si tu veux utiliser un workout structuré ou créer une séance libre.
+            Choisis le format, puis renseigne titre, objectif et structure —
+            les mêmes infos pour tous les types.
           </Text>
           
           {/* Mode selector */}
@@ -2251,8 +2570,10 @@ export default function CreateSessionScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setSessionMode("walking");
                 setSelectedWorkoutId(null);
+                setUsePaceGroups(false);
               }}
               activeOpacity={0.7}
+              testID="session-mode-walking"
             >
               <Text
                 style={[
@@ -2265,268 +2586,491 @@ export default function CreateSessionScreen() {
             </TouchableOpacity>
           </View>
 
-          {sessionMode === "workout" ? (
-            <>
-              <Text style={[styles.cardSubtitle, styles.sessionTypeSubtitle]}>
-                Type de séance structurée
-              </Text>
-              <View style={styles.sessionTypeChips}>
-                {SESSION_TYPE_OPTIONS.map((type) => {
-                  const selected = sessionType === type;
-                  return (
-                    <SelectableChip
-                      key={type}
-                      label={type}
-                      selected={selected}
-                      uppercase
-                      showCheckmark
-                      onPress={() => {
-                        Haptics.impactAsync(
-                          Haptics.ImpactFeedbackStyle.Light,
-                        );
-                        setSessionType(type);
-                      }}
-                    />
-                  );
-                })}
+          {/* Same detail fields for every type (Marche block parity). */}
+          <View style={styles.walkMetaBlock} testID="session-detail-fields">
+            <Text style={[styles.cardSubtitle, styles.sessionTypeSubtitle]}>
+              Titre, objectif et métriques — ce que les gens voient sur
+              Découvrir, Mes Sorties et Clubs.
+            </Text>
+            <Text style={styles.fieldLabel}>Titre</Text>
+            <TextInput
+              style={styles.walkTextInput}
+              value={outingTitle}
+              onChangeText={setOutingTitle}
+              placeholder={
+                sessionMode === "walking"
+                  ? "Ex. Marche du dimanche"
+                  : sessionMode === "discovery_run"
+                    ? "Ex. Découverte Corniche"
+                    : sessionMode === "casual_run"
+                      ? "Ex. Footing entre potes"
+                      : "Ex. Pyramides du mardi"
+              }
+              placeholderTextColor={colors.text.tertiary}
+              testID="session-title-input"
+              accessibilityLabel="Titre de la sortie"
+            />
+            <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
+              Objectif / à quoi s&apos;attendre
+            </Text>
+            <TextInput
+              style={[styles.walkTextInput, styles.walkTextArea]}
+              value={outingPurpose}
+              onChangeText={setOutingPurpose}
+              placeholder="Décris la sortie en une ou deux phrases"
+              placeholderTextColor={colors.text.tertiary}
+              multiline
+              testID="session-purpose-input"
+              accessibilityLabel="Objectif de la sortie"
+            />
+            <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
+              Photo{" "}
+              <Text style={styles.optionalHint}>(optionnel)</Text>
+            </Text>
+            {coverImageUrl ? (
+              <View style={styles.coverPreviewWrap} testID="session-cover-preview">
+                <Image
+                  source={{ uri: coverImageUrl }}
+                  style={styles.coverPreview}
+                  resizeMode="cover"
+                  accessibilityIgnoresInvertColors
+                />
+                <View style={styles.coverActions}>
+                  <TouchableOpacity
+                    style={styles.coverActionBtn}
+                    onPress={() => {
+                      void (async () => {
+                        try {
+                          const next = await pickOutingCover();
+                          if (next) setCoverImageUrl(next);
+                        } catch (err) {
+                          const message =
+                            err instanceof Error
+                              ? err.message
+                              : "Impossible d’ajouter la photo.";
+                          setFormError(message);
+                        }
+                      })();
+                    }}
+                    activeOpacity={0.75}
+                    testID="session-cover-replace"
+                    accessibilityRole="button"
+                    accessibilityLabel="Changer la photo"
+                  >
+                    <Text style={styles.coverActionText}>Changer</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.coverActionBtn, styles.coverActionDanger]}
+                    onPress={() => setCoverImageUrl(null)}
+                    activeOpacity={0.75}
+                    testID="session-cover-remove"
+                    accessibilityRole="button"
+                    accessibilityLabel="Retirer la photo"
+                  >
+                    <Text style={styles.coverActionTextDanger}>Retirer</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </>
-          ) : null}
+            ) : (
+              <TouchableOpacity
+                style={styles.coverAddBtn}
+                onPress={() => {
+                  void (async () => {
+                    try {
+                      setFormError(null);
+                      const next = await pickOutingCover();
+                      if (next) setCoverImageUrl(next);
+                    } catch (err) {
+                      const message =
+                        err instanceof Error
+                          ? err.message
+                          : "Impossible d’ajouter la photo.";
+                      setFormError(message);
+                    }
+                  })();
+                }}
+                activeOpacity={0.75}
+                testID="session-cover-add"
+                accessibilityRole="button"
+                accessibilityLabel="Ajouter une photo (optionnel)"
+              >
+                <Ionicons
+                  name="image-outline"
+                  size={20}
+                  color={colors.text.secondary}
+                />
+                <Text style={styles.coverAddText}>Ajouter une photo</Text>
+              </TouchableOpacity>
+            )}
+            <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
+              Structure / déroulé
+            </Text>
+            <TextInput
+              style={[styles.walkTextInput, styles.walkTextArea]}
+              value={structureNotes}
+              onChangeText={setStructureNotes}
+              placeholder="Ex. 10 min échauffement · 6×1 min vite / 1 min lent · retour au calme"
+              placeholderTextColor={colors.text.tertiary}
+              multiline
+              testID="session-structure-input"
+              accessibilityLabel="Structure de la séance"
+            />
+
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
+              Métriques{" "}
+              <Text style={styles.optionalHint}>(ce que les gens voient)</Text>
+            </Text>
+            <View style={styles.metricsRow}>
+              <View style={styles.metricField}>
+                <Text style={styles.metricFieldLabel}>Distance</Text>
+                <TextInput
+                  style={styles.metricInput}
+                  value={distanceKmText}
+                  onChangeText={setDistanceKmText}
+                  placeholder="5"
+                  placeholderTextColor={colors.text.tertiary}
+                  keyboardType="decimal-pad"
+                  testID="session-distance-input"
+                  accessibilityLabel="Distance en kilomètres"
+                />
+                <Text style={styles.metricUnit}>km</Text>
+              </View>
+              <View style={styles.metricField}>
+                <Text style={styles.metricFieldLabel}>Durée</Text>
+                <TextInput
+                  style={styles.metricInput}
+                  value={durationMinText}
+                  onChangeText={setDurationMinText}
+                  placeholder="30"
+                  placeholderTextColor={colors.text.tertiary}
+                  keyboardType="number-pad"
+                  testID="session-duration-input"
+                  accessibilityLabel="Durée en minutes"
+                />
+                <Text style={styles.metricUnit}>min</Text>
+              </View>
+            </View>
+
+            <PaceFourchetteField
+              minValue={paceMinText}
+              maxValue={paceMaxText}
+              libre={paceLibre}
+              onChangeMin={(v) => {
+                setPaceLibre(false);
+                setPaceMinText(v);
+              }}
+              onChangeMax={(v) => {
+                setPaceLibre(false);
+                setPaceMaxText(v);
+              }}
+              onToggleLibre={() => {
+                setPaceLibre((prev) => {
+                  const next = !prev;
+                  if (next) {
+                    setPaceMinText("");
+                    setPaceMaxText("");
+                  }
+                  return next;
+                });
+              }}
+            />
+
+            {formError ? (
+              <Text style={styles.formErrorText} testID="session-form-error">
+                {formError}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
-        {/* Card 2 - Infos de base */}
-        <View style={styles.card}>
+        {/* Infos de base — chips + Autre custom lieu; calm date/time row values */}
+        <View style={styles.card} testID="session-card-basics">
           <Text style={styles.cardLabel}>INFOS DE BASE</Text>
-          <TouchableOpacity
-            style={styles.fieldRow}
-            onPress={() => setShowSpotPicker(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.fieldLabel}>Spot</Text>
-            <Text style={styles.fieldInput}>{spot}</Text>
-          </TouchableOpacity>
+          <Text style={styles.fieldLabel}>Lieu</Text>
+          <LocationSlider
+            value={spot}
+            onChange={setSpot}
+            options={spots}
+            allowCustom
+            testID="session-location-slider"
+          />
           <View style={styles.divider} />
           <TouchableOpacity
-            style={styles.fieldRow}
+            style={styles.fieldRowStacked}
             onPress={() => setShowDatePicker(true)}
             activeOpacity={0.7}
+            testID="session-date-field"
+            accessibilityRole="button"
+            accessibilityLabel="Choisir une date"
           >
             <Text style={styles.fieldLabel}>Date</Text>
-            <Text style={styles.fieldInput}>{dateLabel}</Text>
+            <Text
+              style={styles.fieldValueCalm}
+              numberOfLines={1}
+              testID="session-date-value"
+            >
+              {formatOutingDateShort(dateISO)}
+            </Text>
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity
-            style={styles.fieldRow}
+            style={styles.fieldRowStacked}
             onPress={() => setShowTimePicker(true)}
             activeOpacity={0.7}
+            testID="session-time-field"
+            accessibilityRole="button"
+            accessibilityLabel="Choisir une heure"
           >
             <Text style={styles.fieldLabel}>Heure</Text>
-            <Text style={styles.fieldInput}>{timeLabel}</Text>
+            <Text
+              style={styles.fieldValueCalm}
+              numberOfLines={1}
+              testID="session-time-value"
+            >
+              {timeLabel}
+            </Text>
           </TouchableOpacity>
-          {sessionMode === "workout" && (
-            <>
-              <View style={styles.divider} />
-              <TouchableOpacity
-                style={styles.fieldRow}
-                onPress={() => setShowWorkoutPicker(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.fieldLabel}>Workout associé</Text>
-                <View style={styles.fieldInputRow}>
-                  <Text style={styles.fieldInput}>
-                    {selectedWorkoutName ?? "Aucun workout associé"}
-                  </Text>
-                  <Text style={styles.fieldChevron}>›</Text>
-                </View>
-              </TouchableOpacity>
-            </>
-          )}
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>VISIBILITÉ</Text>
-          <Text style={styles.cardSubtitle}>
-            Qui peut voir et rejoindre cette séance ?
-          </Text>
-          <View style={styles.audienceChips}>
+          <Text style={styles.cardLabel}>CETTE SORTIE EST…</Text>
+          <View style={styles.audienceChips} testID="session-audience-chips">
             {SESSION_AUDIENCE_OPTIONS.map((opt) => {
               const on = sessionAudience === opt.id;
               return (
                 <SelectableChip
                   key={opt.id}
+                  testID={`session-audience-${opt.id}`}
                   label={opt.label}
                   selected={on}
                   showCheckmark
+                  accessibilityLabel={opt.label}
                   labelStyle={styles.audienceChipLabel}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setSessionAudience(opt.id);
+                    void (async () => {
+                      if (
+                        opt.id === "public" &&
+                        sessionAudience === "club" &&
+                        (explicitClubId || primaryClubId)
+                      ) {
+                        const clubLabel =
+                          approvedClubs.find(
+                            (m) =>
+                              m.clubId === (explicitClubId || primaryClubId),
+                          )?.club?.name ?? "ce club";
+                        const ok = await confirmAction({
+                          title: "Rendre ouverte à tous ?",
+                          message: `Tout le monde pourra voir et rejoindre. La sortie restera associée à ${clubLabel} (Organisé avec…).`,
+                          confirmLabel: "Rendre ouverte",
+                        });
+                        if (!ok) return;
+                      }
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSessionAudience(opt.id);
+                      if (opt.id === "public") {
+                        // Soft association: keep club bind when organising from a club.
+                        if (!explicitClubId && !primaryClubId) {
+                          setPrimaryClubId(null);
+                        } else if (explicitClubId) {
+                          setPrimaryClubId(explicitClubId);
+                        }
+                        setTargetColorGroupId(null);
+                      } else if (explicitClubId) {
+                        setPrimaryClubId(explicitClubId);
+                      } else if (!primaryClubId && approvedClubs.length === 1) {
+                        setPrimaryClubId(approvedClubs[0]!.clubId);
+                      } else if (
+                        !primaryClubId &&
+                        approvedClubs.length > 1
+                      ) {
+                        // Multi-club: wait for explicit pick.
+                      }
+                    })();
                   }}
                 />
               );
             })}
           </View>
-          <Text style={styles.audienceNote}>
-            {
-              SESSION_AUDIENCE_OPTIONS.find((o) => o.id === sessionAudience)
-                ?.hint
-            }
-          </Text>
+          {sessionAudience === "club" && approvedClubs.length > 0 ? (
+            <View style={styles.clubPickBlock} testID="create-club-picker">
+              {approvedClubs.length > 1 && !explicitClubId ? (
+                <>
+                  <Text style={styles.clubPickLabel}>QUEL CLUB ?</Text>
+                  <View style={styles.audienceChips}>
+                    {approvedClubs.map((m) => {
+                      const on = m.clubId === primaryClubId;
+                      const label = m.club?.name ?? m.clubId;
+                      return (
+                        <View key={m.clubId} testID={`create-club-${m.clubId}`}>
+                          <SelectableChip
+                            label={label}
+                            selected={on}
+                            showCheckmark
+                            accessibilityLabel={`Club ${label}`}
+                            labelStyle={styles.audienceChipLabel}
+                            onPress={() => {
+                              Haptics.impactAsync(
+                                Haptics.ImpactFeedbackStyle.Light,
+                              );
+                              setPrimaryClubId(m.clubId);
+                            }}
+                          />
+                        </View>
+                      );
+                    })}
+                  </View>
+                </>
+              ) : null}
+              {primaryClubId ||
+              explicitClubId ||
+              approvedClubs.length === 1 ? (
+                <Text style={styles.audienceNote} testID="create-club-bound">
+                  Seuls les membres confirmés de{" "}
+                  {approvedClubs.find(
+                    (m) =>
+                      m.clubId ===
+                      (explicitClubId ||
+                        primaryClubId ||
+                        approvedClubs[0]?.clubId),
+                  )?.club?.name ?? "ton club"}{" "}
+                  voient et rejoignent.
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+          {sessionAudience === "club" &&
+          primaryClubId &&
+          isMemberOrgEnabled(clubAdminSettings) &&
+          sortedActiveColorGroups(clubAdminSettings).length > 0 ? (
+            <View style={styles.clubPickBlock} testID="create-target-group">
+              <Text style={styles.clubPickLabel}>POUR QUEL GROUPE ?</Text>
+              <Text style={styles.audienceNote}>
+                Optionnel — tout le club reste concerné ; le groupe est un
+                repère.
+              </Text>
+              <View style={styles.audienceChips}>
+                <SelectableChip
+                  testID="create-target-group-all"
+                  label="Tout le club"
+                  selected={targetColorGroupId == null}
+                  showCheckmark
+                  accessibilityLabel="Tout le club"
+                  labelStyle={styles.audienceChipLabel}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTargetColorGroupId(null);
+                  }}
+                />
+                {sortedActiveColorGroups(clubAdminSettings).map((g) => (
+                  <SelectableChip
+                    key={g.id}
+                    testID={`create-target-group-${g.id}`}
+                    label={g.name}
+                    selected={targetColorGroupId === g.id}
+                    showCheckmark
+                    accessibilityLabel={`Groupe ${g.name}`}
+                    labelStyle={styles.audienceChipLabel}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setTargetColorGroupId(g.id);
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : null}
         </View>
 
-        {/* Card 2 - Groupes & allures */}
-        {(selectedWorkoutId || sessionMode !== "workout") && (
-          <View style={[styles.card, styles.groupsCard]}>
+        {/* Club member org lives in Clubs — not re-assigned per outing. */}
+        {primaryClubId &&
+        isMemberOrgEnabled(clubAdminSettings) &&
+        sortedActiveColorGroups(clubAdminSettings).length > 0 ? (
+          <View
+            style={[styles.card, styles.groupsCard]}
+            testID="session-club-member-groups-note"
+          >
             <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardTitle}>Groupes & allures</Text>
+              <Text style={styles.cardTitle}>Groupes du club</Text>
             </View>
-            <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>Utiliser des groupes d'allure</Text>
-              <Switch
-                value={usePaceGroups}
-                onValueChange={setUsePaceGroups}
-                trackColor={{ false: "#2a2f3a", true: colors.accent.primary }}
-                thumbColor="#ffffff"
-              />
-            </View>
-            {usePaceGroups && groupConfigs.map((group, index) => {
-              const paceSeconds = group.paceSecondsPerKm ?? null;
-              const adminPaceLabel = clubAdminGroups?.find(
-                (g) => g.id === group.id,
-              )?.paceLabel;
-              const adminInactive =
-                clubAdminGroups?.find((g) => g.id === group.id)?.active ===
-                false;
-
-              // Display pace
-              const paceDisplayStr = paceSeconds
-                ? formatPaceLabel(paceSeconds)
-                : "—";
-
-              // Check if workout is fartlek or series (only for structured workouts)
-              const isIntervalWorkout =
-                sessionMode === "workout" &&
-                (selectedWorkoutEntity?.runType === "fartlek" ||
-                  selectedWorkoutEntity?.runType === "series");
-
-              // Format duration helper
-              const formatDuration = (seconds: number | null): string => {
-                if (seconds === null) return "—";
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                return `${mins}:${secs.toString().padStart(2, "0")}`;
-              };
-
-              return (
-                <View key={group.id}>
-                  {index > 0 && <View style={styles.groupRowDivider} />}
-                  <View style={styles.groupRow}>
-                    <TouchableOpacity
-                      onPress={() => toggleGroupActive(group.id)}
-                      style={[
-                        styles.groupToggle,
-                        group.isActive && styles.groupToggleActive,
-                        adminInactive && styles.groupToggleInactive,
-                      ]}
-                      activeOpacity={0.7}
-                      disabled={adminInactive}
-                    >
-                      <Text style={styles.groupToggleText}>{group.id}</Text>
-                    </TouchableOpacity>
-                    {adminPaceLabel ? (
-                      <Text style={styles.groupAdminPace} numberOfLines={1}>
-                        {adminPaceLabel}
-                      </Text>
-                    ) : null}
-                    <Text style={styles.groupLabel}>
-                      {`Groupe ${group.id}`}
+            <Text style={styles.audienceNote}>
+              Les membres sont déjà affectés dans Clubs (Paramètres). Ils
+              restent dans leur groupe jusqu&apos;à ce qu&apos;un admin
+              change — tu n&apos;as pas à les réaffecter ici.
+            </Text>
+            <View style={styles.audienceChips}>
+              {sortedActiveColorGroups(clubAdminSettings).map((g) => {
+                const count = Object.values(
+                  clubAdminSettings?.memberGroups ?? {},
+                ).filter((id) => id === g.id).length;
+                return (
+                  <View key={g.id} style={styles.clubGroupPill}>
+                    <Text style={styles.clubGroupPillText}>
+                      {g.name}
+                      {count > 0 ? ` · ${count}` : ""}
                     </Text>
-                    {group.isActive && (
-                      <TouchableOpacity
-                        onPress={() => openGroupPacePicker(group.id)}
-                        style={styles.groupPaceChip}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.groupPaceChipText}>
-                          Allure: {paceDisplayStr}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
                   </View>
-                  {/* Interval settings row for fartlek/series */}
-                  {group.isActive && isIntervalWorkout && (
-                    <View style={styles.groupIntervalRow}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setNumberPickerTarget({
-                            groupId: group.id,
-                            type: "reps",
-                          });
-                          setNumberPickerValue(group.reps);
-                        }}
-                        style={styles.groupIntervalChip}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.groupIntervalChipText}>
-                          Répétitions: {group.reps ?? "—"}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          // If effort is distance-based, show distance picker, otherwise duration picker
-                          if (
-                            group.effortDistanceKm !== null &&
-                            group.effortDistanceKm !== undefined
-                          ) {
-                            setDistancePickerTarget({
-                              groupId: group.id,
-                              type: "effort",
-                            });
-                            setDistancePickerValue(group.effortDistanceKm);
-                          } else {
-                            setDurationPickerTarget({
-                              groupId: group.id,
-                              type: "effort",
-                            });
-                            setDurationPickerValue(group.effortDurationSeconds);
-                          }
-                        }}
-                        style={styles.groupIntervalChip}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.groupIntervalChipText}>
-                          Effort:{" "}
-                          {group.effortDistanceKm !== null &&
-                          group.effortDistanceKm !== undefined
-                            ? group.effortDistanceKm < 1
-                              ? `${Math.round(group.effortDistanceKm * 1000)}m`
-                              : `${group.effortDistanceKm} km`
-                            : formatDuration(group.effortDurationSeconds)}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setDurationPickerTarget({
-                            groupId: group.id,
-                            type: "recovery",
-                          });
-                          setDurationPickerValue(group.recoveryDurationSeconds);
-                        }}
-                        style={styles.groupIntervalChip}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.groupIntervalChipText}>
-                          Récup:{" "}
-                          {formatDuration(group.recoveryDurationSeconds) ?? "—"}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              );
-            })}
+                );
+              })}
+            </View>
+            <TouchableOpacity
+              testID="session-open-club-member-assign"
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push({
+                  pathname: "/(tabs)/club/settings",
+                  params: { clubId: primaryClubId },
+                } as import("expo-router").Href);
+              }}
+              style={styles.manageGroupsLink}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.manageGroupsLinkText}>
+                Gérer les affectations dans Clubs →
+              </Text>
+            </TouchableOpacity>
           </View>
-        )}
+        ) : primaryClubId &&
+          sessionAudience === "club" &&
+          clubAdminSettings &&
+          !isMemberOrgEnabled(clubAdminSettings) ? (
+          <View
+            style={[styles.card, styles.groupsCard]}
+            testID="session-enable-club-groups-hint"
+          >
+            <Text style={styles.audienceNote}>
+              Pour affecter les membres une fois pour toutes (sans le refaire
+              à chaque sortie), active les groupes couleur dans Paramètres du
+              club.
+            </Text>
+            <TouchableOpacity
+              testID="session-enable-club-groups-cta"
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push({
+                  pathname: "/(tabs)/club/settings",
+                  params: { clubId: primaryClubId },
+                } as import("expo-router").Href);
+              }}
+              style={styles.manageGroupsLink}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.manageGroupsLinkText}>
+                Organiser les membres →
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {/* Per-outing A–D « Groupes & allures » removed — club member groups + quiet allure. */}
+
+        {formError ? (
+          <Text
+            style={[styles.formErrorText, { marginHorizontal: 20 }]}
+            testID="session-form-error-banner"
+          >
+            {formError}
+          </Text>
+        ) : null}
 
         {/* Bottom spacing for CTA */}
         <View style={styles.bottomSpacing} />
@@ -2538,6 +3082,11 @@ export default function CreateSessionScreen() {
           style={[styles.ctaButton, isPublishing && styles.ctaButtonDisabled]}
           onPress={handlePublish}
           disabled={isPublishing}
+          accessibilityRole="button"
+          accessibilityLabel={
+            isEditMode ? "Mettre à jour la séance" : "Publier la séance"
+          }
+          testID="session-publish-btn"
         >
           <Text style={styles.ctaButtonText}>
             {isPublishing
@@ -2554,13 +3103,13 @@ export default function CreateSessionScreen() {
       {/* Option Pickers */}
       <OptionPicker
         visible={showSpotPicker}
-        title="Choisir un spot"
+        title="Lieu de rendez-vous"
         options={spots}
         selectedValue={spot}
         onClose={() => setShowSpotPicker(false)}
         onSelect={(value) => setSpot(value)}
         allowCustom
-        customLabel="+ Ajouter un nouveau spot"
+        customLabel="Ex. Marina, Corniche, Parc…"
         onAddCustom={async (value) => {
           const { addSpot } = await import("../../lib/spotsStore");
           const updatedSpots = await addSpot(value);
@@ -2572,10 +3121,13 @@ export default function CreateSessionScreen() {
       <OptionPicker
         visible={showDatePicker}
         title="Choisir une date"
-        options={DATE_OPTIONS}
+        options={DATE_CHOICES.map((d) => d.label)}
         selectedValue={dateLabel}
         onClose={() => setShowDatePicker(false)}
-        onSelect={(value) => setDateLabel(value)}
+        onSelect={(value) => {
+          const match = DATE_CHOICES.find((d) => d.label === value);
+          if (match) setDateISO(match.dateISO);
+        }}
       />
       <TimePicker
         visible={showTimePicker}
@@ -2588,26 +3140,6 @@ export default function CreateSessionScreen() {
           setSelectedMinute(minute);
         }}
       />
-      {/* Group pace picker */}
-      {groupPacePickerTargetId !== null && (
-        <PaceWheelPicker
-          visible={groupPacePickerTargetId !== null}
-          title={`Allure du groupe ${groupPacePickerTargetId}`}
-          initialSecondsPerKm={groupPacePickerValue}
-          onClose={() => setGroupPacePickerTargetId(null)}
-          onConfirm={(secondsPerKm) => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setGroupConfigs((prev) =>
-              prev.map((g) =>
-                g.id === groupPacePickerTargetId
-                  ? { ...g, paceSecondsPerKm: secondsPerKm }
-                  : g,
-              ),
-            );
-            setGroupPacePickerTargetId(null);
-          }}
-        />
-      )}
       {/* Duration picker for effort/recovery */}
       {durationPickerTarget !== null && (
         <DurationWheelPicker
@@ -2679,20 +3211,6 @@ export default function CreateSessionScreen() {
           }}
         />
       )}
-      {/* Workout Picker */}
-      {/* TODO[sessionFromWorkout]: Enforce that every session is created from a workout
-          once the builder is fully aligned with workout types. */}
-      <WorkoutPicker
-        visible={showWorkoutPicker}
-        title="Choisir un workout"
-        workouts={availableWorkouts}
-        selectedWorkoutId={selectedWorkoutId}
-        onClose={() => setShowWorkoutPicker(false)}
-        onSelect={(workoutId) => {
-          setSelectedWorkoutId(workoutId);
-          setShowWorkoutPicker(false);
-        }}
-      />
     </SafeAreaView>
   );
 }
@@ -2744,7 +3262,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
+    borderColor: "rgba(232,232,233,0.9)",
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 14,
@@ -2759,11 +3277,136 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   cardSubtitle: {
-    color: "#8A8A8A",
+    color: _stito.outline,
     fontSize: 12,
     fontWeight: "400",
     marginBottom: 16,
     lineHeight: 16,
+  },
+  walkMetaBlock: {
+    marginTop: 8,
+  },
+  walkTextInput: {
+    backgroundColor: colors.background.input,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "500",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 6,
+  },
+  walkTextArea: {
+    minHeight: 72,
+    textAlignVertical: "top",
+  },
+  optionalHint: {
+    color: colors.text.tertiary,
+    fontWeight: "400",
+  },
+  coverAddBtn: {
+    marginTop: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.border.medium,
+    backgroundColor: colors.background.input,
+    paddingHorizontal: 14,
+  },
+  coverAddText: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  coverPreviewWrap: {
+    marginTop: 6,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.input,
+  },
+  coverPreview: {
+    width: "100%",
+    height: 160,
+  },
+  coverActions: {
+    flexDirection: "row",
+    gap: 8,
+    padding: 10,
+  },
+  coverActionBtn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: colors.accent.primaryDim,
+  },
+  coverActionDanger: {
+    backgroundColor: "rgba(196,90,26,0.12)",
+  },
+  coverActionText: {
+    color: colors.text.accent,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  coverActionTextDanger: {
+    color: colors.text.warning,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  metricsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 8,
+  },
+  metricField: {
+    flex: 1,
+    minWidth: 0,
+    position: "relative",
+  },
+  metricFieldLabel: {
+    color: colors.text.tertiary,
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  metricInput: {
+    backgroundColor: colors.background.input,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: "600",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingRight: 40,
+  },
+  metricUnit: {
+    position: "absolute",
+    right: 12,
+    bottom: 14,
+    color: colors.text.tertiary,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  formErrorText: {
+    marginTop: 12,
+    color: colors.text.error,
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 18,
   },
   fieldRow: {
     flexDirection: "row",
@@ -2771,11 +3414,128 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
   },
+  fieldRowStacked: {
+    paddingVertical: 12,
+    gap: 6,
+  },
   fieldLabel: {
     color: colors.text.secondary,
     fontSize: 14,
     fontWeight: "400",
     flex: 1,
+  },
+  fieldValueCalm: {
+    color: colors.text.primary,
+    fontSize: 17,
+    fontWeight: "500",
+    lineHeight: 22,
+    letterSpacing: -0.2,
+  },
+  clubBoundBanner: {
+    backgroundColor: colors.background.card,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: "rgba(0,95,52,0.18)",
+    gap: 4,
+  },
+  clubBoundEyebrow: {
+    color: colors.text.tertiary,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+  clubBoundName: {
+    color: colors.text.primary,
+    fontSize: 20,
+    fontWeight: "700",
+    letterSpacing: -0.3,
+    lineHeight: 26,
+  },
+  clubBoundHint: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  timePickerPreview: {
+    color: colors.text.primary,
+    fontSize: 28,
+    fontWeight: "600",
+    letterSpacing: -0.5,
+    marginTop: 4,
+  },
+  timePickerHint: {
+    color: colors.text.tertiary,
+    fontSize: 12,
+    marginTop: 8,
+  },
+  nativeTimeWrap: {
+    paddingHorizontal: 4,
+    marginBottom: 12,
+  },
+  timeGridLabel: {
+    color: colors.text.secondary,
+    fontSize: 12,
+    fontWeight: "600",
+    letterSpacing: 0.4,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  hourGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
+  hourCell: {
+    width: "14.5%",
+    minWidth: 40,
+    aspectRatio: 1.15,
+    borderRadius: 10,
+    backgroundColor: colors.background.elevated,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  hourCellOn: {
+    backgroundColor: _stito.primary,
+    borderColor: _stito.primary,
+  },
+  hourCellText: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  hourCellTextOn: {
+    color: _stito.onPrimary,
+  },
+  minuteRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 8,
+  },
+  minuteChip: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: colors.background.elevated,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  minuteChipOn: {
+    backgroundColor: _stito.primary,
+  },
+  minuteChipText: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  minuteChipTextOn: {
+    color: _stito.onPrimary,
   },
   fieldHint: {
     color: colors.text.tertiary,
@@ -2836,9 +3596,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 8,
   },
+  clubPickBlock: {
+    marginTop: 14,
+  },
+  clubPickLabel: {
+    color: colors.text.tertiary,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginBottom: 2,
+  },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: "rgba(232,232,233,0.85)",
     marginVertical: 8,
   },
   modeSelector: {
@@ -2853,14 +3623,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: "rgba(232,232,233,0.85)",
     alignItems: "center",
     justifyContent: "center",
   },
   modeButtonActive: {
-    backgroundColor: "rgba(32, 129, 255, 0.15)",
+    backgroundColor: "rgba(0,95,52,0.12)",
     borderColor: colors.accent.primary,
   },
   modeButtonText: {
@@ -2875,6 +3645,28 @@ const styles = StyleSheet.create({
   },
   groupsCard: {
     marginBottom: 16,
+  },
+  clubGroupPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: _stito.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.85)",
+  },
+  clubGroupPillText: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  manageGroupsLink: {
+    marginTop: 12,
+    paddingVertical: 4,
+  },
+  manageGroupsLinkText: {
+    color: colors.text.accent,
+    fontSize: 14,
+    fontWeight: "600",
   },
   cardHeaderRow: {
     flexDirection: "row",
@@ -2898,16 +3690,16 @@ const styles = StyleSheet.create({
   },
   groupRowDivider: {
     height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: "rgba(232,232,233,0.85)",
     marginLeft: 16,
   },
   groupToggle: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: _stito.outlineVariant,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -2940,7 +3732,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
-    backgroundColor: "#11131A",
+    backgroundColor: _stito.canvas,
     borderWidth: 1,
     borderColor: "#2081FF",
   },
@@ -2961,9 +3753,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderColor: "rgba(190,202,190,0.7)",
   },
   groupIntervalChipText: {
     color: colors.text.secondary,
@@ -3008,21 +3800,21 @@ const styles = StyleSheet.create({
   ctaButton: {
     backgroundColor: colors.accent.primary,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 26,
+    paddingVertical: 17,
+    borderRadius: 16,
     alignItems: "center",
   },
   ctaButtonDisabled: {
     opacity: 0.6,
   },
   ctaButtonText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.background.primary,
+    fontSize: 15,
+    fontWeight: "700",
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    backgroundColor: "rgba(26,28,29,0.45)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -3030,7 +3822,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: "rgba(232,232,233,0.85)",
     paddingTop: 24,
     paddingHorizontal: 20,
     paddingBottom: 24,
@@ -3044,71 +3836,119 @@ const styles = StyleSheet.create({
   },
   pickerBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    backgroundColor: "rgba(26,28,29,0.35)",
     justifyContent: "flex-end",
     alignItems: "center",
   },
   pickerContainer: {
     width: "100%",
-    maxWidth: 600,
-    maxHeight: "85%",
+    maxWidth: 560,
+    maxHeight: "78%",
   },
   pickerCard: {
-    backgroundColor: colors.background.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: colors.background.frame,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
     width: "100%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 16,
+    paddingBottom: 28,
+    overflow: "hidden",
+  },
+  pickerHandleWrap: {
+    alignItems: "center",
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  pickerHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(0,95,52,0.12)",
   },
   pickerHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.08)",
+    alignItems: "flex-start",
+    paddingHorizontal: 22,
+    paddingTop: 8,
+    paddingBottom: 14,
   },
   pickerTitle: {
     color: colors.text.primary,
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "600",
-    letterSpacing: 0.5,
+    letterSpacing: -0.4,
+  },
+  pickerSubtitle: {
+    marginTop: 4,
+    color: colors.text.secondary,
+    fontSize: 14,
+    lineHeight: 20,
   },
   pickerOptionsList: {
-    maxHeight: 350,
+    maxHeight: 340,
     flexGrow: 0,
+    paddingHorizontal: 14,
+    paddingBottom: 8,
   },
   pickerOption: {
-    paddingVertical: 18,
-    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 15,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    marginBottom: 4,
     backgroundColor: "transparent",
   },
   pickerOptionSelected: {
-    backgroundColor: "rgba(32, 129, 255, 0.15)",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#2081FF",
+    backgroundColor: colors.accent.sageDim,
   },
   pickerOptionDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    backgroundColor: colors.border.default,
     marginVertical: 4,
   },
   pickerOptionText: {
+    flex: 1,
     color: colors.text.primary,
     fontSize: 16,
-    fontWeight: "400",
+    fontWeight: "500",
+    letterSpacing: -0.2,
   },
   pickerOptionTextSelected: {
     color: colors.text.primary,
+    fontWeight: "600",
+  },
+  pickerOptionCheck: {
+    marginLeft: 12,
+    color: colors.accent.primary,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  pickerCreateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    marginBottom: 8,
+    backgroundColor: colors.background.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
+  },
+  pickerCreateLabel: {
+    color: colors.accent.primary,
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  pickerCreateValue: {
+    flex: 1,
+    color: colors.text.primary,
+    fontSize: 16,
     fontWeight: "600",
   },
   pickerCustomOption: {
@@ -3116,7 +3956,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: "rgba(32, 129, 255, 0.4)",
+    borderColor: colors.border.default,
     borderStyle: "dashed",
     borderRadius: 12,
   },
@@ -3126,22 +3966,21 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   pickerSearchContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingHorizontal: 22,
     paddingBottom: 12,
   },
   pickerSearchInput: {
-    backgroundColor: colors.background.inputDark,
-    borderRadius: 12,
+    backgroundColor: colors.background.card,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
+    paddingVertical: 14,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border.default,
     color: colors.text.primary,
-    fontSize: 15,
+    fontSize: 16,
   },
   pickerEmptyState: {
-    padding: 24,
+    padding: 28,
     alignItems: "center",
   },
   pickerEmptyText: {
@@ -3155,8 +3994,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
     gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.08)",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border.default,
     backgroundColor: colors.background.elevated,
   },
   pickerCustomInput: {
@@ -3179,9 +4018,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pickerCustomSaveText: {
-    color: colors.text.primary,
+    color: colors.background.primary,
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   // Shared wheel picker styles (used by both TimePicker and PaceWheelPicker)
   wheelPickerContainer: {
@@ -3198,7 +4037,7 @@ const styles = StyleSheet.create({
     maxWidth: 100,
   },
   wheelPickerColumnLabel: {
-    color: "#8A8A8A",
+    color: _stito.outline,
     fontSize: 11,
     fontWeight: "600",
     marginBottom: 16,
@@ -3218,7 +4057,7 @@ const styles = StyleSheet.create({
     right: 0,
     height: 54,
     marginTop: -27,
-    backgroundColor: "rgba(32, 129, 255, 0.08)",
+    backgroundColor: "rgba(0,95,52,0.08)",
     borderRadius: 8,
     borderTopWidth: 1,
     borderBottomWidth: 1,
@@ -3263,7 +4102,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.08)",
+    borderTopColor: "rgba(232,232,233,0.85)",
   },
   wheelPickerConfirmButton: {
     paddingHorizontal: 28,
@@ -3284,7 +4123,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: "rgba(232,232,233,0.85)",
     maxWidth: 400,
     width: "90%",
     maxHeight: "80%",
@@ -3300,10 +4139,10 @@ const styles = StyleSheet.create({
   numberPickerItem: {
     width: "18%",
     aspectRatio: 1,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(190,202,190,0.55)",
     justifyContent: "center",
     alignItems: "center",
     minWidth: 50,
@@ -3330,15 +4169,15 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.08)",
+    borderTopColor: "rgba(232,232,233,0.85)",
   },
   numberPickerCancelButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(190,202,190,0.55)",
     alignItems: "center",
   },
   numberPickerCancelText: {
@@ -3375,12 +4214,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   textInput: {
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(190,202,190,0.55)",
     color: colors.text.primary,
     fontSize: 16,
   },
@@ -3396,9 +4235,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: _stito.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(190,202,190,0.55)",
     minWidth: 60,
     alignItems: "center",
   },
@@ -3420,7 +4259,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 26,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: _stito.outlineVariant,
     minWidth: 120,
     alignItems: "center",
   },
@@ -3455,13 +4294,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: "rgba(232,232,233,0.85)",
     backgroundColor: colors.background.card,
     marginBottom: 8,
   },
   optionRowSelected: {
     backgroundColor: "#1A2230",
-    borderColor: "rgba(255, 255, 255, 0.28)",
+    borderColor: _stito.outline,
   },
   optionRowPressed: {
     opacity: 0.7,
@@ -3508,7 +4347,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
+    borderColor: _stito.outlineVariant,
   },
   pickerSecondaryButtonText: {
     color: colors.text.secondary,

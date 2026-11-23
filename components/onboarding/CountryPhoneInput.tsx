@@ -41,6 +41,8 @@ export function CountryPhoneInput({
         placeholder={placeholder}
         placeholderTextColor={colors.text.tertiary}
         maxLength={14}
+        accessibilityLabel="Numéro de téléphone"
+        testID="phone-input"
       />
     </View>
   );

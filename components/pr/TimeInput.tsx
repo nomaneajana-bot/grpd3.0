@@ -1,8 +1,19 @@
-import React from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useState } from "react";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { monoFontFamily, redesignTheme } from "@/constants/redesignTheme";
 import { welcomeFontFamily } from "@/lib/welcomeFonts";
+
+/** Brand forest — soft focus ring on dark sheet (no browser blue). */
+const BRAND_FOCUS = "#005F34";
+const BRAND_FOCUS_RING = "rgba(0, 95, 52, 0.55)";
+const BRAND_FOCUS_GLOW = "rgba(154, 246, 183, 0.22)";
 
 type TimeInputProps = {
   hours: string;
@@ -67,18 +78,30 @@ function TimeBox({
   onChangeText: (t: string) => void;
   maxLength: number;
 }) {
+  const [focused, setFocused] = useState(false);
+
   return (
-    <View style={styles.box}>
+    <View style={[styles.box, focused && styles.boxFocused]}>
       <TextInput
-        style={styles.input}
+        style={[styles.input, focused && styles.inputFocused]}
         value={value}
         onChangeText={onChangeText}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         placeholder="0"
         placeholderTextColor={redesignTheme.text.faint}
         keyboardType="number-pad"
         maxLength={maxLength}
+        selectionColor={BRAND_FOCUS}
+        // Kill default browser blue outline on web
+        {...(Platform.OS === "web"
+          ? ({
+              outlineStyle: "none",
+              outlineWidth: 0,
+            } as object)
+          : null)}
       />
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, focused && styles.labelFocused]}>{label}</Text>
     </View>
   );
 }
@@ -98,6 +121,15 @@ const styles = StyleSheet.create({
   box: {
     flex: 1,
     alignItems: "center",
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: "transparent",
+  },
+  boxFocused: {
+    borderColor: BRAND_FOCUS_RING,
+    backgroundColor: BRAND_FOCUS_GLOW,
   },
   input: {
     fontFamily: welcomeFontFamily.bold,
@@ -107,6 +139,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
     minWidth: 48,
     fontVariant: ["tabular-nums"],
+    ...(Platform.OS === "web"
+      ? ({
+          outlineStyle: "none",
+          outlineWidth: 0,
+          boxShadow: "none",
+        } as object)
+      : null),
+  },
+  inputFocused: {
+    color: "#E8F5E9",
   },
   label: {
     fontFamily: monoFontFamily,
@@ -116,6 +158,9 @@ const styles = StyleSheet.create({
     color: redesignTheme.text.faint,
     marginTop: 4,
     textTransform: "uppercase",
+  },
+  labelFocused: {
+    color: "#9AF6B7",
   },
   colon: {
     fontSize: 28,

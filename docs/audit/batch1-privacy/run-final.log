@@ -1,0 +1,34 @@
+PASS login_member_host 0611111111 (new club admin)
+PASS host_club_created http://localhost:8081/club
+PASS audience_club_selected 
+PASS unique_spot_seeded ZB1V7BMEXH
+PASS ISSUE-001_publish_real_outing_id /session/session_1791934667801_kd1fz215
+PASS member_positive_control_detail unique logistics visible: ZB1V7BMEXH
+PASS member_not_inaccessible_state http://localhost:8081/session/session_1791934667801_kd1fz215
+PASS member_reload_still_accessible /session/session_1791934667801_kd1fz215
+PASS discover_list_hides_unique_private_spot ZB1V7BMEXH
+PASS login_outsider 0699999999
+PASS outsider_direct_link_inaccessible http://localhost:8081/session/session_1791934667801_kd1fz215
+PASS outsider_unique_logistics_absent absent
+PASS outsider_no_join_only_is_insufficient assert inaccessible + logistics absent, not merely no join button
+PASS outsider_list_unique_logistics_absent ZB1V7BMEXH
+PASS outsider_relogin_still_gated http://localhost:8081/session/session_1791934667801_kd1fz215
+PASS login_pending_identity 0688888888
+PASS pending_request_submit_clicked Batch1 Club ZB1V7BMEXH
+PASS pending_setup_membership_pending_not_approved {"userId":"user_1791934708531_ou4fmryh","clubId":"club_1791934660146_0yg6j97n","status":"pending","approved":false,"pending":true}
+PASS M07_pending_club_state_visible pending for Batch1 Club ZB1V7BMEXH
+PASS pending_direct_link_inaccessible http://localhost:8081/session/session_1791934667801_kd1fz215
+PASS pending_unique_logistics_absent absent
+PASS pending_list_unique_logistics_absent ZB1V7BMEXH
+PASS pending_reload_still_gated {"userId":"user_1791934708531_ou4fmryh","clubId":"club_1791934660146_0yg6j97n","status":"pending","approved":false,"pending":true}
+PASS pending_relogin_still_pending_not_approved {"userId":"user_1791934708531_ou4fmryh","clubId":"club_1791934660146_0yg6j97n","status":"pending","approved":false,"pending":true}
+PASS pending_relogin_still_gated http://localhost:8081/session/session_1791934667801_kd1fz215
+PASS invite_for_leave_test BATCHU6X
+PASS ISSUE-010_approved_member_positive_before_leave http://localhost:8081/session/session_1791934667801_kd1fz215
+PASS member_b_left_club 
+PASS ISSUE-010_after_leave_inaccessible http://localhost:8081/session/session_1791934667801_kd1fz215
+PASS ISSUE-010_after_leave_logistics_absent absent
+PASS M08_design_annotation_not_in_product annotation must stay design-only
+SUMMARY { passed: 31, failed: 0, total: 31 }
+EVIDENCE /workspace/docs/audit/batch1-privacy/evidence.json
+SCREENSHOTS 18 repo-relative

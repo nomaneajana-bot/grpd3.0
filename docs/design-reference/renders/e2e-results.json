@@ -1,0 +1,151 @@
+{
+  "mode": "offline-demo",
+  "hosted": "blocked — no hosted preview credentials/URL in this run",
+  "checks": {
+    "login_navigated_to_verify": {
+      "ok": true,
+      "detail": "http://localhost:8081/verify"
+    },
+    "login_reached_tabs": {
+      "ok": true,
+      "detail": "G R P D / EN BONNE COMPAGNIE\n\nDehors. Ensemble.\nPour quelque chose.\nUne marche pour se rencontrer. Un run pour pratiquer une langue. Un club où revenir.\n\n\nTout\n\nCommunauté\n\nLangues\n\nAvec un expe"
+    },
+    "keyboard_tab_smoke": {
+      "ok": true,
+      "detail": ""
+    },
+    "profile_no_primary_streak_prs": {
+      "ok": true,
+      "detail": "primary must not show streak/PR/goal cards"
+    },
+    "profile_has_training_link": {
+      "ok": true,
+      "detail": ""
+    },
+    "profile_has_clubs_section": {
+      "ok": true,
+      "detail": ""
+    },
+    "training_secondary_has_metrics": {
+      "ok": true,
+      "detail": ""
+    },
+    "club1_created": {
+      "ok": true,
+      "detail": ""
+    },
+    "club2_created": {
+      "ok": true,
+      "detail": ""
+    },
+    "invite_generate_clicked": {
+      "ok": true,
+      "detail": ""
+    },
+    "invite_code_captured": {
+      "ok": true,
+      "detail": "CLUBE2EA"
+    },
+    "my_outings_title": {
+      "ok": true,
+      "detail": ""
+    },
+    "outing_1_submit_clicked": {
+      "ok": true,
+      "detail": ""
+    },
+    "outing_1_form_reached": {
+      "ok": true,
+      "detail": "form opened"
+    },
+    "outing_2_submit_clicked": {
+      "ok": true,
+      "detail": ""
+    },
+    "outing_2_form_reached": {
+      "ok": true,
+      "detail": "form opened"
+    },
+    "session_card_semantic_click": {
+      "ok": true,
+      "detail": "session-card-marina-fartlek-court"
+    },
+    "session_leave_clicked": {
+      "ok": true,
+      "detail": "session explore-sortie-longue-facile"
+    },
+    "session_join_clicked": {
+      "ok": true,
+      "detail": "session explore-sortie-longue-facile"
+    },
+    "bad_input_empty_club_name": {
+      "ok": true,
+      "detail": "Ajoute un nom de club.\n←\nRetour\nCréer un club\nNOM DU CLUB\nVILLE\nOBJECTIF DU CLUB\nCourse, marche, networking, mixte… libre.\nVISIBILITÉ\n✓\nPublic\nPrivé (membres)\nC"
+    },
+    "outing_create_has_visibility_controls": {
+      "ok": true,
+      "detail": ""
+    },
+    "desktop_home_loaded": {
+      "ok": true,
+      "detail": ""
+    },
+    "login_identity_b": {
+      "ok": true,
+      "detail": ""
+    },
+    "identity_b_join_attempt": {
+      "ok": true,
+      "detail": "Bienvenue ! Tu as rejoint le club.\n‹\nClub\nAccès club\nInvitations, demandes et administration.\nREJOINDRE AVEC CODE\nCode d'invitation\nRejoindre\nTu peux rejoindre plusieurs clubs. Ce code ajoutera un clu"
+    }
+  },
+  "errors": [],
+  "notes": [
+    "shot:/opt/cursor/artifacts/e2e/screenshots/01-onboarding-welcome.png",
+    "click:J'ai déjà un compte",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/02-phone.png",
+    "click:Recevoir le code",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/03-verify.png",
+    "click:Vérifier",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/04-after-login.png",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/05-profile-community.png",
+    "click:profile-training-link",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/06-training-secondary.png",
+    "click:club-create-nav",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/07-club-create.png",
+    "click:club-create-submit",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/08-club1-created.png",
+    "click:club-create-nav",
+    "click:club-create-submit",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/09-club2-created.png",
+    "click:Générer invite",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/10-invite-code.png",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/11-my-outings.png",
+    "click:Créer sortie",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/12-create-outing-1.png",
+    "click:Créer sortie",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/12-create-outing-2.png",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/13-discovery.png",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/14-session-detail.png",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/15-session-joined.png",
+    "click:club-create-submit",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/16-bad-input.png",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/17-outing-create-visibility.png",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/18-home-desktop.png",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/b-01-onboarding-welcome.png",
+    "click:J'ai déjà un compte",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/02-phone.png",
+    "click:Recevoir le code",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/03-verify.png",
+    "click:Vérifier",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/04-after-login.png",
+    "click:club-join-by-code",
+    "shot:/opt/cursor/artifacts/e2e/screenshots/19-identity-b-joined.png",
+    "OTP 000000 accepted only when EXPO_PUBLIC_DEMO_MODE=true (see mockOtpVerify)"
+  ],
+  "summary": {
+    "passed": 24,
+    "failed": 0,
+    "total": 24
+  }
+}

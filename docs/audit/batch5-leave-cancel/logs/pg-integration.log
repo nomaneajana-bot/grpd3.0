@@ -1,0 +1,27 @@
+
+> grpd3.0@1.0.0 test:integration:pg
+> jest --runInBand lib/server/__tests__/clubLeaveCancel.integration.test.ts
+
+PASS lib/server/__tests__/clubLeaveCancel.integration.test.ts
+  club leave + cancel-request (PostgreSQL)
+    ✓ actual leave/cancel POST: missing/invalid auth → Response 401, no DB mutation (60 ms)
+    ✓ actual leave/cancel POST: actor from auth only — body userId ignored (isolation) (37 ms)
+    ✓ approved member leaves: membership removed, members-only attendance left, public attendance unchanged, club persists (24 ms)
+    ✓ leave is idempotent on retry (duplicate leave) (17 ms)
+    ✓ rejects pending actor on leave (must cancel request) (14 ms)
+    ✓ rejects sole admin leave without inventing transfer/deletion (11 ms)
+    ✓ allows admin leave when another approved admin remains (12 ms)
+    ✓ PG race: concurrent last-admin departures — exactly one leaves, one LAST_ADMIN (25 ms)
+    ✓ cancel-request removes only own pending row (15 ms)
+    ✓ cancel-request rejects approved member and missing request (14 ms)
+    ✓ concurrent duplicate cancellation: exactly one ok, other NOT_FOUND (26 ms)
+    ✓ PG race: cancel pending vs concurrent approval — record both outcomes (159 ms)
+    ✓ lifecycle rollback: hook throw after attendance revoke restores membership + attendance (16 ms)
+    ✓ wrong clubId does not affect other clubs; club not found (20 ms)
+    ✓ persists leave across a new Prisma client (connection) (53 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       15 passed, 15 total
+Snapshots:   0 total
+Time:        1.754 s, estimated 3 s
+Ran all test suites matching /lib\/server\/__tests__\/clubLeaveCancel.integration.test.ts/i.

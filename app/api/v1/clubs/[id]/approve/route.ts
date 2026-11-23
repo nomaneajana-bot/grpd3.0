@@ -2,18 +2,18 @@
 
 import { NextRequest } from "next/server";
 import { MembershipStatus } from "@prisma/client";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { requireClubPermission } from "@/lib/server/role-checks";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { clubIdParamSchema, approveBodySchema } from "@/lib/server/validators";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { requireClubPermission } from "../../../../../../lib/server/role-checks";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { clubIdParamSchema, approveBodySchema } from "../../../../../../lib/server/validators";
 
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const params = await context.params;
     const paramParsed = clubIdParamSchema.safeParse(params);
     if (!paramParsed.success) {

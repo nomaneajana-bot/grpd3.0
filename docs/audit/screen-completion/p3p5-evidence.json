@@ -1,0 +1,132 @@
+{
+  "prompts": [
+    3,
+    4,
+    5
+  ],
+  "tested_sha": "3c569b01b4f0e5a9981e4f98a5d1271f74ada128",
+  "tested_at": "2026-10-25T21:21:09.621Z",
+  "environment": "demo",
+  "hosted_claim": false,
+  "checks": [
+    {
+      "id": "p3_club_created",
+      "ok": true,
+      "detail": "club_1792963272170_6vu2qgy1"
+    },
+    {
+      "id": "p3_invite_code",
+      "ok": true,
+      "detail": "P35CLPX2"
+    },
+    {
+      "id": "p3_pending_panel",
+      "ok": true,
+      "detail": "pending UI"
+    },
+    {
+      "id": "p3_pending_no_admin_save",
+      "ok": true,
+      "detail": "←\nRetour\nParamètres du club\nEspace réservé aux administrateu"
+    },
+    {
+      "id": "p3_approve_visible",
+      "ok": true,
+      "detail": "Approuver"
+    },
+    {
+      "id": "p3_approved_member_access",
+      "ok": true,
+      "detail": "Clubs\nMembre confirmé · Fondé 2026\nPCC\n\nCasablanca · Sur invitation · 2 membres"
+    },
+    {
+      "id": "p3_approval_not_auto_attendance",
+      "ok": true,
+      "detail": "membership ≠ outing registration (verified in join step)"
+    },
+    {
+      "id": "p4_organise_cta",
+      "ok": true,
+      "detail": "cta"
+    },
+    {
+      "id": "p4_walk_no_forced_pace",
+      "ok": true,
+      "detail": "[object Object]"
+    },
+    {
+      "id": "p4_standalone_create_not_auto_club",
+      "ok": true,
+      "detail": "{\"soft\":true,\"bound\":false}"
+    },
+    {
+      "id": "p4_published_real_id",
+      "ok": true,
+      "detail": "session_1792963298572_3g2a5lg5"
+    },
+    {
+      "id": "p4_detail_exact_logistics",
+      "ok": true,
+      "detail": "‹\nDétail de la sortie\n·\nCASABLANCA\nModifier\nMARCHE\nRéservée aux membres\nP35 Outing C1CZ4\nQUAND\nDim. 25 oct. · 22:00\nOÙ\nS"
+    },
+    {
+      "id": "p4_saved_not_seed",
+      "ok": true,
+      "detail": "{\"title\":\"P35 Outing C1CZ4\",\"clubId\":\"club_1792963272170_6vu2qgy1\",\"visibility\":\"members\"}"
+    },
+    {
+      "id": "p5_no_autojoin",
+      "ok": true,
+      "detail": "false"
+    },
+    {
+      "id": "p5_joined",
+      "ok": true,
+      "detail": "Tu es inscrit à cette séance.\n‹\nDétail de la sortie\n·\nCASABLANCA\n···\nMARCHE\nRése"
+    },
+    {
+      "id": "p5_my_outings_exact",
+      "ok": true,
+      "detail": "CALENDRIER PERSONNEL\nMes Sorties & Réservations\nÀ venir\n1\nEn attente\n0\nPassées\n0\nSorties confirmées\n"
+    },
+    {
+      "id": "p5_cancel_modal",
+      "ok": true,
+      "detail": "leave confirm"
+    },
+    {
+      "id": "p5_cancel_names_outing_or_clear",
+      "ok": true,
+      "detail": "‹\nDétail de la sortie\n·\nCASABLANCA\n···\nMARCHE\nRéservée aux membres\nP35 Outing C1CZ4\nQUAND\nDim. 25 oc"
+    },
+    {
+      "id": "p5_cancel_clears_attendance",
+      "ok": true,
+      "detail": "Participation annulée. Tu restes membre du club.\n‹\nDétail de la sortie\n·\nCASABLA"
+    },
+    {
+      "id": "p5_membership_preserved",
+      "ok": true,
+      "detail": "still member"
+    },
+    {
+      "id": "p5_leave_revokes_private",
+      "ok": true,
+      "detail": "gated"
+    }
+  ],
+  "ids": {
+    "clubId": "club_1792963272170_6vu2qgy1",
+    "invite": "P35CLPX2",
+    "outingId": "session_1792963298572_3g2a5lg5"
+  },
+  "notes": {
+    "reject": "Admin reject not in current rules — cancel-by-requester only",
+    "new_screen": "No new route — reused /club/access, /club/admin, /club pending panel"
+  },
+  "summary": {
+    "pass": 21,
+    "fail": 0,
+    "total": 21
+  }
+}

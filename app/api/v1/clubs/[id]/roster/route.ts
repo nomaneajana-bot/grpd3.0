@@ -1,18 +1,18 @@
 // GET /api/v1/clubs/:id/roster – list members (for coach/admin)
 
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { requireClubPermission } from "@/lib/server/role-checks";
-import { clubIdParamSchema } from "@/lib/server/validators";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { requireClubPermission } from "../../../../../../lib/server/role-checks";
+import { clubIdParamSchema } from "../../../../../../lib/server/validators";
 
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const params = await context.params;
     const parsed = clubIdParamSchema.safeParse(params);
     if (!parsed.success) {
@@ -42,6 +42,7 @@ export async function GET(
         id: true,
         userId: true,
         displayName: true,
+        avatarUrl: true,
         role: true,
         status: true,
         sharePrs: true,
@@ -54,6 +55,7 @@ export async function GET(
       membershipId: m.id,
       userId: m.userId,
       displayName: m.displayName ?? null,
+      avatarUrl: m.avatarUrl ?? null,
       role: m.role,
       status: m.status,
       sharePrs: m.sharePrs,

@@ -7,25 +7,58 @@ import {
     Platform,
     Pressable,
     ScrollView,
+    Share,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import * as Linking from "expo-linking";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, Stack, useLocalSearchParams, type Href } from "expo-router";
 
-import { StatGrid3 } from "../../components/redesign/StatGrid3";
-import { Tag } from "../../components/redesign/Tag";
-import { SessionCoachAdviceCard } from "../../components/session/SessionCoachAdviceCard";
+import { StitoOutingHero } from "../../components/outingDetail/StitoOutingHero";
+import { StitoMetricsStrip } from "../../components/outingDetail/StitoMetricsStrip";
+import { StitoStickyJoinBar } from "../../components/outingDetail/StitoStickyJoinBar";
+import { StitoHostCard } from "../../components/outingDetail/StitoHostCard";
+import { StitoPurposeSection } from "../../components/outingDetail/StitoPurposeSection";
+import { StitoLogisticsCard } from "../../components/outingDetail/StitoLogisticsCard";
+import { StitoParticipantsCard } from "../../components/outingDetail/StitoParticipantsCard";
+import { StitoAccessNote } from "../../components/outingDetail/StitoAccessNote";
+import { PaymentModalitySheet } from "../../components/payment/PaymentModalitySheet";
+import { OrganizerPaymentPanel } from "../../components/payment/OrganizerPaymentPanel";
+import { stitoTheme } from "../../constants/stitoTheme";
+import {
+  buildTransferRef,
+  clubCotisationConfig,
+  sessionPaymentChip,
+} from "../../lib/hybridPayment";
+import { isClubAJour } from "../../lib/clubCotisationStore";
+import {
+  clearSessionPayment,
+  getSessionPayment,
+  liberateSessionPayment,
+  markSessionPaid,
+  markSessionTransferDeclared,
+  upsertSessionPayment,
+  type SessionPaymentRecord,
+} from "../../lib/sessionPaymentStore";
+import { formatTimeLabel, initialsFromName } from "../../lib/homeViewModel";
+import { formatOutingDateTime } from "../../lib/mesSortiesViewModel";
 import {
   SessionRunnersPanel,
   type RunnersFilter,
 } from "../../components/session/SessionRunnersPanel";
 import { InterGroupJoinPanel } from "../../components/session/InterGroupJoinPanel";
 import { borderRadius, colors, hairline, typography } from "../../constants/ui";
+import {
+  formatSessionDistanceKm,
+  formatSessionDistanceLabel,
+  formatSessionPaceLabel,
+} from "../../lib/sessionDisplay";
+
 import { buildCoachContext, type CoachContext } from "../../lib/coach";
 import {
     getJoinedSession,
@@ -36,14 +69,19 @@ import {
 import { LoadingState } from "../../components/ui/LoadingState";
 import { Toast } from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
-import { confirmAction } from "../../lib/confirmAction";
 import {
   getClubAdminSettings,
+  memberColorGroupIdFromSettings,
   memberGroupFromSettings,
   type ClubAdminSettings,
 } from "../../lib/clubAdminStore";
 import type { ClubPaceGroupId } from "../../lib/clubPaceGroups";
 import { inferUserClubGroupId } from "../../lib/clubPaceGroups";
+import {
+  memberGroupColor,
+  sortedActiveColorGroups,
+} from "../../lib/clubMemberGroups";
+import { getSessionGroupNotes } from "../../lib/sessionGroupsStore";
 import {
   resolveCrossGroupJoinState,
 } from "../../lib/interGroupPolicy";
@@ -67,7 +105,6 @@ import {
 import {
   getAllSessionsIncludingStored,
   getSessionById,
-  SESSION_MAP,
   apiSessionToSessionData,
   type SessionData,
 } from "../../lib/sessionData";
@@ -84,13 +121,9 @@ import type { WorkoutBlock, WorkoutStep } from "../../lib/workoutTypes";
 
 function formatSessionDetailSubtitle(s: import("../../lib/sessionData").SessionData): string {
   const spot = (s.spot || "").trim();
-  const datePart = s.dateLabel || "";
-  const tm = s.timeMinutes;
-  const timeStr =
-    tm != null && Number.isFinite(tm)
-      ? `${Math.floor(tm / 60)}:${String(tm % 60).padStart(2, "0")}`
-      : "";
-  const parts = [datePart, timeStr, spot].filter(Boolean);
+  // dateLabel already includes HH:MM when built via formatDateLabel — do not append time again
+  const datePart = (s.dateLabel || "").trim();
+  const parts = [datePart, spot].filter(Boolean);
   return parts.join(" · ");
 }
 
@@ -150,6 +183,7 @@ export default function SessionScreen() {
   const [session, setSession] = useState<SessionData | undefined>(undefined);
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
   const [memberships, setMemberships] = useState<ClubMembership[]>([]);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
   // Load session: API first, then SESSION_MAP, then stored sessions
@@ -172,13 +206,20 @@ export default function SessionScreen() {
           return;
         }
       } catch (err) {
+        // Intentional API 403/404 (e.g. members-only privacy) must not be
+        // resurrected from a local cache copy — that would leak logistics.
+        const status =
+          err && typeof err === "object" && "status" in err
+            ? Number((err as { status?: number }).status)
+            : null;
+        if (status === 404 || status === 403) {
+          setSession(undefined);
+          setSessionLoadState("not_found");
+          return;
+        }
         console.warn("API get session failed, trying local:", err);
       }
-      if (SESSION_MAP[id]) {
-        setSession(SESSION_MAP[id]);
-        setSessionLoadState("ready");
-        return;
-      }
+      // Offline / seed fallback only when the API did not deliberately hide it.
       try {
         const storedSession = await getSessionById(id);
         if (storedSession) {
@@ -201,8 +242,12 @@ export default function SessionScreen() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const runner = await getRunnerProfile();
+        const [runner, auth] = await Promise.all([
+          getRunnerProfile(),
+          getAuthUser(),
+        ]);
         setProfile(runner);
+        setAuthUserId(auth?.id ?? null);
       } catch (error) {
         console.warn("Failed to load profile for session:", error);
       }
@@ -240,12 +285,17 @@ export default function SessionScreen() {
           getRunnerProfile(),
         ]);
         setClubAdminSettings(settings);
-        const assigned =
+        const colorAssigned =
+          authUser && settings
+            ? memberColorGroupIdFromSettings(authUser.id, settings)
+            : null;
+        const letterAssigned =
           authUser && settings
             ? memberGroupFromSettings(authUser.id, settings)
             : null;
         setMemberHomeGroupId(
-          assigned ??
+          colorAssigned ??
+            letterAssigned ??
             inferUserClubGroupId(runner, joined, paces),
         );
       } catch (error) {
@@ -269,30 +319,44 @@ export default function SessionScreen() {
         })
       : null;
   const membershipStatus = matchingMembership?.status ?? null;
-  const profileClubMatch =
-    normalizedHost &&
-    profile?.clubName?.toLowerCase().trim() === normalizedHost;
-  const isApprovedMember =
-    membershipStatus === "approved" ||
-    (membershipStatus === null && Boolean(profileClubMatch));
+  // Membership status is authoritative — profile.clubName must not silently grant access
+  const isApprovedMember = membershipStatus === "approved";
   const isPendingMember = membershipStatus === "pending";
   const isCoachOrAdmin =
     membershipStatus === "approved" &&
     (matchingMembership?.role === "coach" ||
       matchingMembership?.role === "admin");
   const clubId = matchingMembership?.clubId ?? null;
+  // Organizer controls require host identity — isCustom alone is not ownership
+  const isOrganizer =
+    Boolean(authUserId) &&
+    Boolean(session?.hostUserId) &&
+    session!.hostUserId === authUserId;
 
   useEffect(() => {
     const loadRoster = async () => {
-      if (!isCoachOrAdmin || !clubId) {
+      if (!isCoachOrAdmin || !clubId || !session?.id) {
         setClubRoster([]);
         return;
       }
       setIsCoachLoading(true);
       try {
         const client = createApiClient();
-        const result = await getClubRoster(client, clubId);
+        const [result, parts] = await Promise.all([
+          getClubRoster(client, clubId),
+          getSessionParticipants(client, session.id),
+        ]);
         setClubRoster(result.members ?? []);
+        if (parts && !("error" in parts)) {
+          const map: Record<string, string> = {};
+          for (const g of parts.groups) {
+            if (!g.groupId) continue;
+            for (const p of g.participants) {
+              map[p.userId] = g.groupId;
+            }
+          }
+          setCoachAssignments(map);
+        }
       } catch (error) {
         console.warn("Failed to load club roster:", error);
         setClubRoster([]);
@@ -300,8 +364,8 @@ export default function SessionScreen() {
         setIsCoachLoading(false);
       }
     };
-    loadRoster();
-  }, [isCoachOrAdmin, clubId]);
+    void loadRoster();
+  }, [isCoachOrAdmin, clubId, session?.id]);
 
   // Initialize selected group state with recommended group as default
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
@@ -309,6 +373,8 @@ export default function SessionScreen() {
       ? session.recommendedGroupId
       : null,
   );
+  /** Quiet allure: collapsed by default — join uses home/recommended without a picker wall. */
+  const [allurePickerOpen, setAllurePickerOpen] = useState(false);
   // Track joined group ID
   const [joinedGroupId, setJoinedGroupId] = useState<string | null>(null);
   // Track whether a saved joined session exists in AsyncStorage
@@ -321,9 +387,23 @@ export default function SessionScreen() {
   const pulseAnim = useRef(new Animated.Value(0)).current;
   // Delete confirmation modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  /** M06 — cancel participation confirm (≠ leave club). */
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [isLeavingOuting, setIsLeavingOuting] = useState(false);
+  const [isJoiningOuting, setIsJoiningOuting] = useState(false);
+  const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
+  const [paymentRecord, setPaymentRecord] =
+    useState<SessionPaymentRecord | null>(null);
+  const [clubAJour, setClubAJour] = useState(false);
+  const [transferRefPreview, setTransferRefPreview] = useState("GRPD-REF");
   const canJoin = session
     ? session.visibility !== "members" || Boolean(isApprovedMember)
     : false;
+
+  const sessionFeeMad = session?.feeMad && session.feeMad > 0 ? session.feeMad : 0;
+  const sessionPaid = sessionFeeMad > 0;
+  const sessionStrict = Boolean(session?.paymentStrict);
+  const sessionRequiresCotisation = Boolean(session?.requiresClubCotisation);
 
   const [clubRoster, setClubRoster] = useState<ClubRosterMember[]>([]);
   const [isCoachLoading, setIsCoachLoading] = useState(false);
@@ -337,8 +417,12 @@ export default function SessionScreen() {
   const [participantsError, setParticipantsError] = useState<"forbidden" | "unavailable" | null>(null);
   const [clubAdminSettings, setClubAdminSettings] =
     useState<ClubAdminSettings | null>(null);
-  const [memberHomeGroupId, setMemberHomeGroupId] =
-    useState<ClubPaceGroupId | null>(null);
+  const [memberHomeGroupId, setMemberHomeGroupId] = useState<string | null>(
+    null,
+  );
+  const [sessionGroupNote, setSessionGroupNoteState] = useState<string | null>(
+    null,
+  );
   const [participantsLoading, setParticipantsLoading] = useState(false);
   const [coachAssignments, setCoachAssignments] = useState<
     Record<string, string>
@@ -376,27 +460,123 @@ export default function SessionScreen() {
     })();
   }, [session, joinedGroupId, selectedGroupId, linkedWorkout]);
 
+  // Prefer club home group when it matches this outing's allures (persistent groups).
   useEffect(() => {
-    if (session) {
-      // Load saved group from async store
-      const loadJoinedSession = async () => {
-        const savedJoined = await getJoinedSession(session.id);
-        if (savedJoined) {
-          // Use saved group
-          setSelectedGroupId(savedJoined.groupId);
-          setJoinedGroupId(savedJoined.groupId);
-          setHasStoredJoin(true);
-        } else {
-          // Otherwise use recommended group, or first group if no recommended
-          const defaultId =
-            session.recommendedGroupId || session.paceGroups[0]?.id || null;
-          setSelectedGroupId(defaultId);
-          setJoinedGroupId(null);
-          setHasStoredJoin(false);
-        }
-      };
-      loadJoinedSession();
+    if (hasStoredJoin || !session?.paceGroups?.length || !memberHomeGroupId) {
+      return;
     }
+    if (!session.paceGroups.some((g) => g.id === memberHomeGroupId)) return;
+    setSelectedGroupId((prev) => {
+      if (!prev || prev === session.recommendedGroupId) return memberHomeGroupId;
+      return prev;
+    });
+  }, [
+    memberHomeGroupId,
+    hasStoredJoin,
+    session?.id,
+    session?.recommendedGroupId,
+    session?.paceGroups,
+  ]);
+
+  useEffect(() => {
+    if (!session?.id) {
+      setSessionGroupNoteState(null);
+      return;
+    }
+    const gid = joinedGroupId || selectedGroupId || memberHomeGroupId;
+    if (!gid) {
+      setSessionGroupNoteState(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const notes = await getSessionGroupNotes(session.id);
+      const fromSession = notes[gid]?.trim();
+      const fromClub = clubAdminSettings?.colorGroups?.find((g) => g.id === gid)
+        ?.note?.trim();
+      if (!cancelled) {
+        setSessionGroupNoteState(fromSession || fromClub || null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    session?.id,
+    joinedGroupId,
+    selectedGroupId,
+    memberHomeGroupId,
+    clubAdminSettings,
+  ]);
+
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    // Load saved group from async store
+    const loadJoinedSession = async () => {
+      const savedJoined = await getJoinedSession(session.id);
+      if (cancelled) return;
+      const apiStatus = session.attendanceStatus ?? null;
+      const homeMatch =
+        memberHomeGroupId &&
+        session.paceGroups.some((g) => g.id === memberHomeGroupId)
+          ? memberHomeGroupId
+          : null;
+      const defaultId =
+        homeMatch ||
+        session.recommendedGroupId ||
+        session.paceGroups[0]?.id ||
+        null;
+      // Per-user API/mock attendance wins over device-global joinedSessions
+      // (local store is not keyed by userId — must not show host join to participant).
+      if (apiStatus === "joined") {
+        const gid = session.attendanceGroupId ?? savedJoined?.groupId ?? null;
+        const uiGid = gid === "open" ? null : gid;
+        setSelectedGroupId(uiGid);
+        setJoinedGroupId(uiGid);
+        setHasStoredJoin(true);
+        return;
+      }
+      if (
+        apiStatus === "left" ||
+        apiStatus === "declined" ||
+        (apiStatus == null && session.hostUserId)
+      ) {
+        setSelectedGroupId(defaultId || null);
+        setJoinedGroupId(null);
+        setHasStoredJoin(false);
+        return;
+      }
+      if (savedJoined) {
+        const gid =
+          savedJoined.groupId === "open" ? null : savedJoined.groupId;
+        setSelectedGroupId(gid);
+        setJoinedGroupId(gid);
+        setHasStoredJoin(true);
+        return;
+      }
+      setSelectedGroupId(defaultId || null);
+      setJoinedGroupId(null);
+      setHasStoredJoin(false);
+    };
+    void loadJoinedSession();
+    void (async () => {
+      const [pay, aJour, auth] = await Promise.all([
+        getSessionPayment(session.id),
+        session.clubId ? isClubAJour(session.clubId) : Promise.resolve(false),
+        getAuthUser(),
+      ]);
+      if (cancelled) return;
+      setPaymentRecord(pay);
+      setClubAJour(aJour);
+      const prefix = session.transferRefPrefix?.trim() || "GRPD";
+      setTransferRefPreview(
+        buildTransferRef(prefix, session.id, auth?.id ?? "toi"),
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [session]);
 
   // Load linked workout if session has workoutId
@@ -521,22 +701,60 @@ export default function SessionScreen() {
   }
 
   if (sessionLoadState === "not_found" || !session) {
+    // M08 inaccessible — never reveal club name, spot, date, or private logistics.
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} testID="session-inaccessible">
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backRow}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Retour"
           >
             <Text style={styles.backIcon}>←</Text>
             <Text style={styles.backLabel}>Retour</Text>
           </TouchableOpacity>
-          <Text style={styles.screenTitle}>Séance introuvable</Text>
-          <Text style={styles.notFoundHint}>
-            Cette séance n&apos;existe plus ou n&apos;est pas accessible.
+        </View>
+        <View style={styles.inaccessibleBody}>
+          <Text style={styles.inaccessibleTitle} testID="session-inaccessible-title">
+            Cette sortie n&apos;est pas accessible.
           </Text>
+          <Text style={styles.notFoundHint}>
+            Elle est introuvable ou ton compte n&apos;y a pas accès.
+          </Text>
+          <View style={styles.inaccessibleCard}>
+            <Text style={styles.inaccessibleCardTitle}>Retrouvons ton chemin</Text>
+            <Text style={styles.inaccessibleCardBody}>
+              Vérifie que tu utilises le bon compte ou retourne à tes clubs.
+            </Text>
+          </View>
+          <Pressable
+            testID="session-inaccessible-clubs-cta"
+            accessibilityRole="button"
+            accessibilityLabel="Retour à mes clubs"
+            style={({ pressed }) => [
+              styles.inaccessiblePrimaryBtn,
+              pressed && { opacity: 0.9 },
+            ]}
+            onPress={() => router.replace("/(tabs)/club")}
+          >
+            <Text style={styles.inaccessiblePrimaryBtnText}>
+              Retour à mes clubs
+            </Text>
+          </Pressable>
+          <Pressable
+            testID="session-inaccessible-discover-cta"
+            accessibilityRole="button"
+            accessibilityLabel="Découvrir les sorties"
+            style={styles.secondaryLinkButton}
+            onPress={() => router.replace("/(tabs)")}
+          >
+            <Text style={styles.secondaryLinkButtonText}>
+              Découvrir les sorties
+            </Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -553,41 +771,227 @@ export default function SessionScreen() {
   const selectedPaceGroupId = (selectedGroupId ??
     sessionAnchorGroupId) as ClubPaceGroupId | null;
 
-  const handleSave = async () => {
-    const currentGroupId =
+  const resolveJoinGroupId = (): string | null => {
+    const hasPaceGroups = (session.paceGroups?.length ?? 0) > 0;
+    if (!hasPaceGroups) return "open";
+    return (
       selectedGroupId ||
       session.recommendedGroupId ||
-      session.paceGroups[0]?.id;
-    if (!currentGroupId) {
+      session.paceGroups[0]?.id ||
+      null
+    );
+  };
+
+  /** FIFO seat after modality (or free / cotisation à jour one-tap). */
+  const performJoinSeat = async (opts?: {
+    silentToast?: boolean;
+  }): Promise<boolean> => {
+    if (isJoiningOuting) return false;
+    const hasPaceGroups = (session.paceGroups?.length ?? 0) > 0;
+    const currentGroupId = resolveJoinGroupId();
+    if (hasPaceGroups && !currentGroupId) {
       showToast("Choisis un groupe.", "error");
+      return false;
+    }
+    if (hasPaceGroups && currentGroupId) {
+      const letterHome =
+        memberHomeGroupId === "A" ||
+        memberHomeGroupId === "B" ||
+        memberHomeGroupId === "C" ||
+        memberHomeGroupId === "D"
+          ? memberHomeGroupId
+          : null;
+      const letterTarget =
+        currentGroupId === "A" ||
+        currentGroupId === "B" ||
+        currentGroupId === "C" ||
+        currentGroupId === "D"
+          ? currentGroupId
+          : ("C" as ClubPaceGroupId);
+      const joinState = resolveCrossGroupJoinState({
+        memberGroupId: letterHome,
+        sessionTargetGroupId: letterTarget,
+        settings: clubAdminSettings,
+      });
+      if (joinState === "locked") {
+        showToast(
+          "Cette séance n'est pas disponible pour ton groupe.",
+          "error",
+        );
+        return false;
+      }
+    }
+    setIsJoiningOuting(true);
+    try {
+      const client = createApiClient();
+      let apiJoined = false;
+      try {
+        await joinSessionApi(client, session.id, {
+          groupId: currentGroupId || "open",
+        });
+        apiJoined = true;
+      } catch (apiErr) {
+        const status =
+          apiErr && typeof apiErr === "object" && "status" in apiErr
+            ? Number((apiErr as { status?: number }).status)
+            : null;
+        if (
+          session.visibility === "members" ||
+          status === 401 ||
+          status === 403 ||
+          status === 404
+        ) {
+          console.warn("API join denied:", apiErr);
+          showToast(
+            status === 403 || session.visibility === "members"
+              ? "Réservé aux membres du club."
+              : "Impossible de t'inscrire pour le moment.",
+            "error",
+          );
+          return false;
+        }
+        if (status === 503 || status === 500 || status === 502) {
+          console.warn("API join temporary failure:", apiErr);
+          showToast("Inscription temporairement impossible. Réessaie.", "error");
+          return false;
+        }
+        console.warn("API join failed, saving locally:", apiErr);
+      }
+      const storedGroupId = currentGroupId || "open";
+      await upsertJoinedSession(session.id, storedGroupId);
+      setJoinedGroupId(hasPaceGroups ? storedGroupId : null);
+      setHasStoredJoin(true);
+      if (!opts?.silentToast) {
+        showToast(
+          apiJoined
+            ? "Tu es inscrit à cette séance."
+            : "Inscription enregistrée sur cet appareil.",
+          "success",
+        );
+      }
+      return true;
+    } catch (error) {
+      console.warn("Failed to save joined session:", error);
+      showToast("Impossible d'enregistrer le groupe.", "error");
+      return false;
+    } finally {
+      setIsJoiningOuting(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (isJoiningOuting || hasStoredJoin) return;
+
+    // Prop3: club cotisation gate — à jour = one-tap; else guest Prop1 fee or block
+    if (sessionRequiresCotisation && session.clubId && clubAJour) {
+      await performJoinSeat();
       return;
     }
-    const joinState = resolveCrossGroupJoinState({
-      memberGroupId: memberHomeGroupId,
-      sessionTargetGroupId: currentGroupId as ClubPaceGroupId,
-      settings: clubAdminSettings,
-    });
-    if (joinState === "locked") {
+    if (
+      sessionRequiresCotisation &&
+      session.clubId &&
+      !clubAJour &&
+      !sessionPaid
+    ) {
       showToast(
-        "Cette séance n'est pas disponible pour ton groupe.",
+        "Règle d’abord ta cotisation club (onglet Clubs) pour rejoindre.",
         "error",
       );
       return;
     }
+
+    // Prop1 / Prop2 / guest one-off: modality required before seat
+    if (sessionPaid) {
+      setPaymentSheetOpen(true);
+      return;
+    }
+
+    await performJoinSeat();
+  };
+
+  const handlePaymentCash = async () => {
+    setPaymentSheetOpen(false);
+    const ok = await performJoinSeat({ silentToast: true });
+    if (!ok) return;
+    const rec: SessionPaymentRecord = {
+      sessionId: session.id,
+      modality: "cash",
+      status: "confirmed_cash",
+      modalityChosenAt: Date.now(),
+      amountMad: sessionFeeMad,
+      strict: sessionStrict,
+    };
+    await upsertSessionPayment(rec);
+    setPaymentRecord(rec);
+    showToast("Confirmé · Espèces — paie sur place.", "success");
+  };
+
+  /** Prop2: hold seat when entering Virement RIB step. */
+  const handlePaymentStartTransfer = async () => {
+    if (!sessionStrict) return;
+    const ok = await performJoinSeat({ silentToast: true });
+    if (!ok) return;
+    const rec: SessionPaymentRecord = {
+      sessionId: session.id,
+      modality: "transfer",
+      status: "awaiting_declare",
+      modalityChosenAt: Date.now(),
+      transferRef: transferRefPreview,
+      amountMad: sessionFeeMad,
+      strict: true,
+    };
+    await upsertSessionPayment(rec);
+    setPaymentRecord(rec);
+  };
+
+  const handlePaymentTransferDeclared = async () => {
+    setPaymentSheetOpen(false);
+    if (sessionStrict && paymentRecord?.status === "awaiting_declare") {
+      const next = await markSessionTransferDeclared(session.id);
+      setPaymentRecord(next);
+      showToast("Confirmé · Virement en attente.", "success");
+      return;
+    }
+    const ok = await performJoinSeat({ silentToast: true });
+    if (!ok) return;
+    const rec: SessionPaymentRecord = {
+      sessionId: session.id,
+      modality: "transfer",
+      status: "transfer_pending",
+      modalityChosenAt: Date.now(),
+      transferDeclaredAt: Date.now(),
+      transferRef: transferRefPreview,
+      amountMad: sessionFeeMad,
+      strict: sessionStrict,
+    };
+    await upsertSessionPayment(rec);
+    setPaymentRecord(rec);
+    showToast("Confirmé · Virement en attente.", "success");
+  };
+
+  const handleOrganizerRecu = async () => {
+    const next = await markSessionPaid(session.id);
+    setPaymentRecord(next);
+    showToast("Payé — reçu confirmé.", "success");
+  };
+
+  const handleOrganizerLiberate = async () => {
+    await liberateSessionPayment(session.id);
     try {
       const client = createApiClient();
-      try {
-        await joinSessionApi(client, session.id, { groupId: currentGroupId });
-      } catch (apiErr) {
-        console.warn("API join failed, saving locally:", apiErr);
-      }
-      await upsertJoinedSession(session.id, currentGroupId);
-      setJoinedGroupId(currentGroupId);
-      showToast("Tu es inscrit à cette séance.", "success");
-    } catch (error) {
-      console.warn("Failed to save joined session:", error);
-      showToast("Impossible d'enregistrer le groupe.", "error");
+      await leaveSessionApi(client, session.id);
+    } catch {
+      /* local liberate still applies */
     }
+    await removeJoinedSession(session.id);
+    await clearSessionPayment(session.id);
+    setHasStoredJoin(false);
+    setPaymentRecord(null);
+    showToast("Place libérée (Non reçu).", "success");
+  };
+
+  const handleDeclareTransferFromBar = async () => {
+    setPaymentSheetOpen(true);
   };
 
   const handleRequestJoin = async () => {
@@ -684,17 +1088,15 @@ export default function SessionScreen() {
     }
   };
 
-  const handleLeave = async () => {
-    const ok = await confirmAction({
-      title: "Quitter la séance",
-      message: "Tu ne seras plus inscrit à cette séance. Continuer ?",
-      confirmLabel: "Quitter",
-      destructive: true,
-    });
-    if (!ok) return;
+  const openLeaveConfirm = () => {
+    setShowLeaveModal(true);
+  };
 
+  const handleLeaveConfirm = async () => {
+    if (isLeavingOuting) return;
+    setIsLeavingOuting(true);
     const sessionId = session.id;
-    const isServerSession = !session.isCustom && sessionId;
+    const isServerSession = Boolean(sessionId);
     let apiSucceeded = false;
     try {
       if (isServerSession) {
@@ -707,20 +1109,25 @@ export default function SessionScreen() {
         }
       }
       await removeJoinedSession(sessionId);
+      await clearSessionPayment(sessionId);
       setJoinedGroupId(null);
       setHasStoredJoin(false);
+      setPaymentRecord(null);
       const defaultId =
         session.recommendedGroupId || session.paceGroups[0]?.id || null;
       setSelectedGroupId(defaultId);
+      setShowLeaveModal(false);
       showToast(
         isServerSession && !apiSucceeded
-          ? "Séance quittée localement."
-          : "Tu as quitté la séance.",
+          ? "Participation annulée sur cet appareil."
+          : "Participation annulée. Tu restes membre du club.",
         "success",
       );
     } catch (error) {
       console.warn("Failed to leave session:", error);
-      showToast("Impossible de quitter la séance.", "error");
+      showToast("Impossible d'annuler la participation.", "error");
+    } finally {
+      setIsLeavingOuting(false);
     }
   };
 
@@ -733,261 +1140,334 @@ export default function SessionScreen() {
           message={toast.message}
           variant={toast.variant}
           onDismiss={hideToast}
+          tone="onLight"
+          placement="top"
         />
       )}
 
-      {/* Fixed Header */}
+      {/* Slim fixed chrome — Stitch: title row + city / Modifier context */}
       <View style={styles.header}>
         <View style={styles.headerNavRow}>
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.headerBackCircle}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Retour"
           >
             <Text style={styles.headerBackChevron}>‹</Text>
           </TouchableOpacity>
-          <Text style={styles.headerLocation} numberOfLines={1}>
-            {session.spot || "Séance"}
-          </Text>
-          {session.isCustom === true ? (
-            <TouchableOpacity
-              onPress={() => {
-                router.push({
-                  pathname: "/session/create",
-                  params: { sessionId: session.id },
-                });
-              }}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={styles.headerMenuAction}>Modifier</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              onPress={() => {
-                const phoneNumber = session.coachPhone || "+212708060337";
-                const message = encodeURIComponent(
-                  `Séance "${session.title}" — ${session.dateLabel}`,
-                );
-                const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
-                if (Platform.OS === "web") {
-                  void Linking.openURL(whatsappUrl);
-                  return;
-                }
-                Alert.alert("Séance", undefined, [
-                  {
-                    text: "Partager via WhatsApp",
-                    onPress: () => {
-                      Linking.openURL(whatsappUrl).catch(() => {
-                        showToast("Impossible d'ouvrir WhatsApp.", "error");
-                      });
-                    },
-                  },
-                  { text: "Annuler", style: "cancel" },
-                ]);
-              }}
-            >
-              <Text style={styles.headerMenuDots}>···</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={styles.headerTagRow}>
-          {(() => {
-            const typeLabelStr = linkedWorkout
-              ? getRunTypePillLabel(linkedWorkout.runType)
-              : getRunTypePillLabelFromModule(
-                  getSessionRunTypeId(session) as RunTypeIdFromRunTypes,
-                );
-            return <Tag label={typeLabelStr} variant="tb" />;
-          })()}
-          {session.genderRestriction === "women_only" ? (
-            <Tag label="100% FEMMES" variant="tpk" />
-          ) : null}
-          {session.visibility === "members" ? (
-            <Tag label="MEMBRES" variant="tgr" />
-          ) : null}
-        </View>
-
-        <Text style={styles.sessionTitleDisplay}>
-          {(linkedWorkout?.name ?? session.title).toUpperCase()}
-        </Text>
-        <Text style={styles.sessionSubtitle}>
-          {formatSessionDetailSubtitle(session)}
-        </Text>
-
-        <View style={styles.tabRow}>
-          <Pressable
-            style={styles.tabCell}
-            onPress={() => setSessionDetailTab("info")}
+          <Text
+            style={styles.headerLocation}
+            numberOfLines={1}
+            testID="session-detail-nav-title"
           >
-            <Text
-              style={[
-                styles.tabLabel,
-                sessionDetailTab === "info" && styles.tabLabelActive,
-              ]}
-            >
-              Info
-            </Text>
-            {sessionDetailTab === "info" ? (
-              <View style={styles.tabUnderline} />
-            ) : (
-              <View style={styles.tabUnderlineMuted} />
-            )}
-          </Pressable>
-          {!session.isCustom ? (
-            <Pressable
-              style={styles.tabCell}
-              onPress={() => setSessionDetailTab("runners")}
-            >
-              <Text
-                style={[
-                  styles.tabLabel,
-                  sessionDetailTab === "runners" && styles.tabLabelActive,
-                ]}
-              >
-                Runners
-              </Text>
-              {sessionDetailTab === "runners" ? (
-                <View style={styles.tabUnderline} />
-              ) : (
-                <View style={styles.tabUnderlineMuted} />
-              )}
-            </Pressable>
-          ) : null}
-        </View>
-
-        {joinedGroupId !== null && joinedGroup && (
-          <Text style={styles.joinedStatus}>
-            Tu es inscrit à cette séance · {joinedGroup.label} ·{" "}
-            {joinedGroup.paceRange}
+            Détail de la sortie
           </Text>
-        )}
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/profile" as import("expo-router").Href)}
+            style={styles.headerAvatarMark}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Ouvrir mon profil"
+            testID="session-profile-avatar"
+          >
+            <Text style={styles.headerAvatarMarkText}>
+              {(
+                initialsFromName(
+                  profile?.firstName?.trim() || profile?.name?.trim() || null,
+                ) || "M"
+              ).charAt(0)}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.headerContextRow}>
+          <Text style={styles.headerCityLabel} numberOfLines={1}>
+            {(
+              matchingMembership?.club?.city ||
+              memberships.find((m) => m.club?.city)?.club?.city ||
+              "Casablanca"
+            ).toString()}
+          </Text>
+          <View style={styles.headerContextActions}>
+            {isOrganizer ? (
+              <TouchableOpacity
+                testID="session-modify-btn"
+                onPress={() => {
+                  router.push({
+                    pathname: "/session/create",
+                    params: { sessionId: session.id },
+                  });
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Modifier la sortie"
+              >
+                <Text style={styles.headerMenuAction}>Modifier</Text>
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity
+              testID="session-share-btn"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              onPress={() => {
+                void (async () => {
+                  const title = session.title?.trim() || "Une sortie";
+                  const when = session.dateLabel?.trim() || "";
+                  const spot =
+                    session.spot?.trim() ||
+                    session.meetingPoint?.trim() ||
+                    "";
+                  const link =
+                    Platform.OS === "web" &&
+                    typeof window !== "undefined" &&
+                    session.id
+                      ? `${window.location.origin}/session/${session.id}`
+                      : "";
+                  const message = [
+                    "Rejoins-moi sur GRpD :",
+                    title,
+                    when,
+                    spot,
+                    link,
+                  ]
+                    .filter(Boolean)
+                    .join("\n");
+                  try {
+                    await Share.share({
+                      message,
+                      title,
+                      url:
+                        Platform.OS === "web" && link ? link : undefined,
+                    });
+                  } catch (error) {
+                    console.warn("Share failed:", error);
+                    showToast("Impossible de partager pour le moment.", "error");
+                  }
+                })();
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Partager la sortie"
+              style={styles.headerShareBtn}
+            >
+              <Ionicons
+                name="share-outline"
+                size={18}
+                color={stitoTheme.text}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
 
       {/* Scrollable Content */}
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        {sessionDetailTab === "runners" && !session.isCustom ? (
-          <SessionRunnersPanel
-            variant="tab"
-            loading={participantsLoading}
-            error={participantsError}
-            data={participantsData}
-            filter={runnersFilter}
-            onFilter={setRunnersFilter}
-            noGroupOnly={runnersNoGroupOnly}
-            onToggleNoGroup={() => setRunnersNoGroupOnly((v) => !v)}
-            onGoToClub={() => router.push("/(tabs)/club")}
-            onRequestAccess={() => router.push("/(tabs)/club/access")}
-          />
-        ) : (
-          <>
-        <StatGrid3
-          cells={[
-            {
-              value: String(session.estimatedDistanceKm),
-              sub: "km",
-              label: "Distance",
-            },
-            {
-              value: session.targetPace.replace(/\s*\/km\s*/i, "").trim(),
-              label: "/km",
-              valueColor: colors.text.accent,
-            },
-            {
-              value: String(
-                session.paceGroups.reduce((a, g) => a + g.runnersCount, 0) ||
-                  "—",
-              ),
-              label: "Runners",
-            },
-          ]}
-        />
-
-        {/* Session Details Card - on top (Type de course first) */}
-        <View style={styles.card}>
-          <View style={styles.groupsHeader}>
-            <Text style={styles.cardLabel}>INFORMATIONS</Text>
-          </View>
-
-          {/* Type de course — first row */}
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Type de course</Text>
-            <Text style={styles.infoValue}>{session.typeLabel} ›</Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Compact info rows */}
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Distance</Text>
-            <Text style={styles.infoValue}>
-              {session.estimatedDistanceKm} km
-            </Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Rendez-vous</Text>
-            <Text style={styles.infoValue}>
-              {session.meetingPoint ||
-                (session.spot === "Spot 1"
-                  ? "Marina Casablanca"
-                  : session.spot)}
-            </Text>
-          </View>
-
-          {session.meetingPointGPS && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>GPS</Text>
-              <Text style={styles.infoValue}>{session.meetingPointGPS}</Text>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        testID="session-detail-scroll"
+      >
+        {(() => {
+          const typeLabelStr = linkedWorkout
+            ? getRunTypePillLabel(linkedWorkout.runType)
+            : getRunTypePillLabelFromModule(
+                getSessionRunTypeId(session) as RunTypeIdFromRunTypes,
+              );
+          const typeUpper = (session.typeLabel || typeLabelStr || "").toUpperCase();
+          const isWalkLike =
+            typeUpper.includes("MARCHE") ||
+            typeUpper.includes("WALKING") ||
+            typeUpper.startsWith("LANGUES");
+          const raw = linkedWorkout?.name ?? session.title;
+          const title = raw;
+          const typeMeta = (
+            typeLabelStr ||
+            (session.genderRestriction === "women_only" ? "Femmes" : "") ||
+            ""
+          )
+            .toString()
+            .toUpperCase();
+          return (
+            <View style={styles.stitoHeroWrap}>
+              <StitoOutingHero
+                title={title}
+                metaLine={typeMeta || null}
+                contextLabel={
+                  session.visibility === "members"
+                    ? "Réservée aux membres"
+                    : "Ouverte à tous"
+                }
+                coverImageUrl={session.coverImageUrl}
+              />
             </View>
-          )}
+          );
+        })()}
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Organisateur</Text>
-            <Text style={[styles.infoValue, styles.organizerValue]}>
-              {session.coachName || "Équipe GRPD"}
-            </Text>
-          </View>
+        {/* Stitch editorial: no Infos/Coureurs chrome — runners stay available via club. */}
 
-          <View style={styles.divider} />
-
-          {/* Description - more compact */}
-          <Text style={[styles.infoLabelSmall, { marginBottom: 8 }]}>
-            À propos de cette séance
+        {joinedGroupId !== null && joinedGroup ? (
+          <Text style={styles.joinedStatus}>
+            Tu es inscrit · {joinedGroup.label} · {joinedGroup.paceRange}
           </Text>
-          <Text style={styles.descriptionText}>
-            {session.typeLabel === "FARTLEK" &&
-              "Intervalles avec variations de rythme pour développer l'endurance et la vitesse."}
-            {session.typeLabel === "SÉRIES" &&
-              "Intervalles structurés sur piste ou route. Travail de vitesse et résistance."}
-            {session.typeLabel === "FOOTING" &&
-              "Sortie d'endurance à allure confortable pour développer la base aérobie."}
-            {session.typeLabel === "PROGRESSIF" &&
-              "Sortie progressive avec accélération graduelle pour améliorer l'endurance."}
-            {(session.typeLabel === "COURSE LIBRE" ||
-              session.typeLabel === "LIBRE") &&
-              "Course libre et conviviale. Pas de structure imposée, juste courir ensemble à votre rythme."}
-            {(session.typeLabel === "DÉCOUVERTE" ||
-              session.typeLabel === "DÉCOUVERTE") &&
-              "Sortie découverte pour explorer de nouveaux parcours en groupe. Allure libre et conviviale."}
-            {(session.typeLabel === "MARCHE" ||
-              session.typeLabel === "WALKING") &&
-              "Marche en groupe. Accessible à tous, parfait pour débuter ou se remettre en mouvement."}
-            {![
-              "FARTLEK",
-              "SÉRIES",
-              "FOOTING",
-              "PROGRESSIF",
-              "COURSE LIBRE",
-              "LIBRE",
-              "DÉCOUVERTE",
-              "MARCHE",
-              "WALKING",
-            ].includes(session.typeLabel) &&
-              "Séance d'entraînement structurée pour améliorer la performance."}
-          </Text>
-        </View>
+        ) : null}
+
+        <>
+        {/* Stitch composition: logistics → host → access → purpose → participants */}
+        {(() => {
+          const typeUpper = (session.typeLabel || "").toUpperCase();
+          const vol = session.volume?.trim() || "";
+          const isLangues = typeUpper.startsWith("LANGUES");
+          const languageOnly =
+            isLangues &&
+            vol.length <= 40 &&
+            !/[·•]/.test(vol) &&
+            !/\d+\s*(min|×|x)/i.test(vol);
+          const purposeText = session.coachAdvice?.trim()
+            ? session.coachAdvice.trim()
+            : session.typeLabel === "FARTLEK"
+              ? "Intervalles avec variations de rythme pour développer l'endurance et la vitesse."
+              : session.typeLabel === "SÉRIES"
+                ? "Intervalles structurés sur piste ou route. Travail de vitesse et résistance."
+                : session.typeLabel === "FOOTING"
+                  ? "Sortie d'endurance à allure confortable pour développer la base aérobie."
+                  : session.typeLabel === "PROGRESSIF"
+                    ? "Sortie progressive avec accélération graduelle pour améliorer l'endurance."
+                    : session.typeLabel === "COURSE LIBRE" ||
+                        session.typeLabel === "LIBRE"
+                      ? "Course libre et conviviale. Pas de structure imposée, juste courir ensemble à votre rythme."
+                      : session.typeLabel === "DÉCOUVERTE"
+                        ? "Sortie découverte pour explorer de nouveaux parcours en groupe. Allure libre et conviviale."
+                        : session.typeLabel === "MARCHE" ||
+                            session.typeLabel === "WALKING" ||
+                            typeUpper.startsWith("LANGUES")
+                          ? "Marche en groupe. Accessible à tous — aucun rythme de course imposé."
+                          : "Séance d'entraînement structurée pour améliorer la performance.";
+          const clubLabel =
+            matchingMembership?.club?.name?.trim() ||
+            session.hostGroupName?.trim() ||
+            null;
+          const hostName =
+            session.coachName?.trim() ||
+            clubLabel ||
+            "Organisateur";
+          const hostRole =
+            session.coachName?.trim()
+              ? "Organisateur"
+              : clubLabel
+                ? "Club hôte"
+                : null;
+          const placeTitle =
+            session.meetingPoint?.trim() || session.spot?.trim() || "—";
+          const placeDetail =
+            session.meetingPoint?.trim() &&
+            session.spot?.trim() &&
+            session.meetingPoint.trim() !== session.spot.trim()
+              ? `Point de repère : ${session.spot.trim()}.`
+              : session.visibility === "members" && session.hostGroupName?.trim()
+                ? `Club · ${session.hostGroupName.trim()}`
+                : null;
+          const joinedFromApi = participantsData?.counts?.joined ?? null;
+          const joinedFromGroups = (session.paceGroups ?? []).reduce(
+            (a, g) => a + (g.runnersCount ?? 0),
+            0,
+          );
+          const joinedCount =
+            joinedFromApi != null && joinedFromApi > 0
+              ? joinedFromApi
+              : joinedFromGroups > 0
+                ? joinedFromGroups
+                : hasStoredJoin
+                  ? 1
+                  : 0;
+          const participantNames = (participantsData?.groups ?? [])
+            .flatMap((g) => g.participants ?? [])
+            .map((p) => (p.displayName || "").trim())
+            .filter(Boolean);
+          return (
+            <View style={styles.stitoStory} testID="stito-outing-story">
+              <StitoLogisticsCard
+                dateLine={formatOutingDateTime(session)}
+                departureTime={null}
+                meetingTime={null}
+                placeTitle={placeTitle}
+                placeDetail={placeDetail || null}
+                isMembersOnly={session.visibility === "members"}
+                gpsAvailable={Boolean(session.meetingPointGPS)}
+              />
+              {session.clubId &&
+              (session.visibility == null || session.visibility === "public") ? (
+                <View testID="session-soft-club-row" collapsable={false}>
+                  <StitoHostCard
+                    hostName={hostName}
+                    hostRole={hostRole}
+                    clubName={
+                      hostName !== clubLabel ? clubLabel : null
+                    }
+                    onClubPress={() => router.push("/(tabs)/club")}
+                  />
+                </View>
+              ) : (
+                <StitoHostCard
+                  hostName={hostName}
+                  hostRole={
+                    session.visibility === "members"
+                      ? "Organisateur club"
+                      : hostRole
+                  }
+                  clubName={
+                    session.visibility === "members"
+                      ? session.hostGroupName?.trim() ||
+                        (hostName !== clubLabel ? clubLabel : null)
+                      : hostName !== clubLabel
+                        ? clubLabel
+                        : null
+                  }
+                  onClubPress={
+                    clubLabel ? () => router.push("/(tabs)/club") : undefined
+                  }
+                />
+              )}
+              {session.visibility === "members" &&
+              session.hostGroupName?.trim() ? (
+                <View testID="session-target-group-row" style={{ height: 0 }} />
+              ) : null}
+              <StitoAccessNote visibility={session.visibility} />
+              <StitoPurposeSection
+                purposeText={purposeText}
+                structureText={languageOnly || !vol ? null : vol}
+                languageLabel={languageOnly ? vol : null}
+              />
+              <StitoParticipantsCard
+                joinedCount={joinedCount}
+                names={participantNames}
+                isJoined={hasStoredJoin}
+                statusLabel={
+                  hasStoredJoin
+                    ? sessionPaymentChip(paymentRecord?.status) ?? "Confirmé"
+                    : null
+                }
+              />
+              {isOrganizer && sessionPaid ? (
+                <OrganizerPaymentPanel
+                  record={paymentRecord}
+                  memberLabel="Toi (démo jury)"
+                  onMarkReceived={() => void handleOrganizerRecu()}
+                  onLiberate={() => void handleOrganizerLiberate()}
+                />
+              ) : null}
+              {!isOrganizer &&
+              hasStoredJoin &&
+              sessionPaid &&
+              paymentRecord &&
+              paymentRecord.status !== "paid" ? (
+                <OrganizerPaymentPanel
+                  record={paymentRecord}
+                  memberLabel="Simulateur organisateur"
+                  onMarkReceived={() => void handleOrganizerRecu()}
+                  onLiberate={() => void handleOrganizerLiberate()}
+                />
+              ) : null}
+            </View>
+          );
+        })()}
 
         {/* Workout Summary Card */}
         {workoutLoadError && session.workoutId ? (
@@ -1006,283 +1486,200 @@ export default function SessionScreen() {
           </View>
         )}
 
-        <TouchableOpacity
-          style={styles.whatsappButtonFull}
-          onPress={() => {
-            const phoneNumber = session.coachPhone || "+212708060337";
-            const message = encodeURIComponent(
-              `Bonjour, je souhaite rejoindre la séance "${session.title}" le ${session.dateLabel}`,
-            );
-            const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
-            Linking.openURL(whatsappUrl).catch((err) => {
-              console.warn("Failed to open WhatsApp:", err);
-            });
-          }}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.whatsappButtonFullText}>Contacter via WhatsApp</Text>
-        </TouchableOpacity>
-
-        <SessionCoachAdviceCard
-          coachName={session.coachName}
-          coachAdvice={session.coachAdvice}
-          engineContext={coachEngineContext}
-          onAskQuestion={() => {
-            const phoneNumber = session.coachPhone || "+212708060337";
-            const message = encodeURIComponent(
-              `Question sur la séance "${session.title}" le ${session.dateLabel}`,
-            );
-            const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
-            Linking.openURL(whatsappUrl).catch(() => {});
-          }}
-        />
-
-        {/* Groups Section */}
-        {session.paceGroupsOverride && session.paceGroupsOverride.length > 0 ? (
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>GROUPES</Text>
-            {session.paceGroupsOverride
-              .filter((g) => g.isActive)
-              .map((groupOverride, index) => {
-                // Format pace helper
-                const formatPaceValue = (
-                  secondsPerKm: number | null,
-                ): string => {
-                  if (secondsPerKm === null) return "—";
-                  const minutes = Math.floor(secondsPerKm / 60);
-                  const secs = secondsPerKm % 60;
-                  return `${minutes}'${secs.toString().padStart(2, "0")}/km`;
-                };
-
-                // Format duration helper
-                const formatDurationValue = (
-                  seconds: number | null,
-                ): string => {
-                  if (seconds === null) return "—";
-                  const mins = Math.floor(seconds / 60);
-                  const secs = seconds % 60;
-                  if (secs === 0) {
-                    return `${mins}:00`;
-                  }
-                  return `${mins}:${secs.toString().padStart(2, "0")}`;
-                };
-
-                const isIntervalWorkout =
-                  linkedWorkout &&
-                  (linkedWorkout.runType === "fartlek" ||
-                    linkedWorkout.runType === "series");
-
-                // Calculate volume for intervals
-                let volumeText: string | null = null;
-                if (
-                  isIntervalWorkout &&
-                  groupOverride.reps !== null &&
-                  groupOverride.effortDurationSeconds !== null
-                ) {
-                  const totalEffort =
-                    groupOverride.reps * groupOverride.effortDurationSeconds;
-                  const totalRecovery = groupOverride.recoveryDurationSeconds
-                    ? (groupOverride.reps - 1) *
-                      groupOverride.recoveryDurationSeconds
-                    : 0;
-                  const totalSeconds = totalEffort + totalRecovery;
-                  volumeText = formatDurationValue(totalSeconds);
-                }
-
-                // Build interval line if applicable
-                let intervalLine: string | null = null;
-                if (
-                  isIntervalWorkout &&
-                  groupOverride.reps !== null &&
-                  groupOverride.effortDurationSeconds !== null &&
-                  groupOverride.recoveryDurationSeconds !== null
-                ) {
-                  intervalLine = `${groupOverride.reps} × ${formatDurationValue(groupOverride.effortDurationSeconds)} effort / ${formatDurationValue(groupOverride.recoveryDurationSeconds)} récup`;
-                }
-
-                return (
-                  <View key={groupOverride.id}>
-                    {index > 0 && <View style={styles.divider} />}
-                    <View style={styles.groupDetailCard}>
-                      <View style={styles.groupDetailHeader}>
-                        <View style={styles.groupBadge}>
-                          <Text style={styles.groupBadgeText}>
-                            {groupOverride.id}
-                          </Text>
-                        </View>
-                        <View style={styles.groupDetailHeaderText}>
-                          <Text style={styles.groupDetailCardTitle}>
-                            GROUPE {groupOverride.id}
-                          </Text>
-                          {groupOverride.paceSecondsPerKm !== null && (
-                            <Text style={styles.groupPaceValue}>
-                              {formatPaceValue(groupOverride.paceSecondsPerKm)}
-                            </Text>
-                          )}
-                          {intervalLine && (
-                            <Text style={styles.groupIntervalLine}>
-                              {intervalLine}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
-          </View>
-        ) : session.paceGroups.length > 0 ? (
-          /* Legacy: Pace groups card for backward compatibility */
-          <View style={styles.card}>
-            <View style={styles.groupsHeader}>
-              <Text style={styles.cardLabel}>
-                Choisis ton groupe (tu peux changer ensuite)
-              </Text>
-              <Text style={styles.groupsSubtext}>
-                Choisis l’allure qui te convient aujourd’hui.
-              </Text>
-            </View>
-            {(() => {
-              const recommendedGroup = session.paceGroups.find(
-                (g) => g.id === session.recommendedGroupId,
+        {session.coachPhone?.trim() ? (
+          <TouchableOpacity
+            style={styles.whatsappButtonFull}
+            onPress={() => {
+              const phoneNumber = session.coachPhone!.trim();
+              const message = encodeURIComponent(
+                `Bonjour, je souhaite rejoindre la séance "${session.title}" le ${session.dateLabel}`,
               );
+              const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
+              Linking.openURL(whatsappUrl).catch((err) => {
+                console.warn("Failed to open WhatsApp:", err);
+              });
+            }}
+            activeOpacity={0.85}
+            testID="session-contact-whatsapp"
+          >
+            <Text style={styles.whatsappButtonFullText}>
+              Contacter via WhatsApp
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {/* Purpose section already surfaces coachAdvice — skip duplicate note card. */}
+
+        {/* Member calm chip — assigned level for this outing */}
+        {(() => {
+          const chipId =
+            (hasStoredJoin ? joinedGroupId : null) ||
+            selectedGroupId ||
+            memberHomeGroupId;
+          if (!chipId) return null;
+          const pace = session.paceGroups.find((g) => g.id === chipId);
+          const colorG = clubAdminSettings
+            ? sortedActiveColorGroups(clubAdminSettings).find(
+                (g) => g.id === chipId,
+              )
+            : null;
+          const label = pace?.label || colorG?.name || `Groupe ${chipId}`;
+          const color = colorG
+            ? memberGroupColor(colorG.colorKey)
+            : stitoTheme.primary;
+          return (
+            <View style={styles.memberLevelChipRow} testID="session-member-level-chip">
+              <View style={[styles.memberLevelDot, { backgroundColor: color }]} />
+              <Text style={styles.memberLevelChipText}>
+                Ton groupe · {label}
+              </Text>
+              {sessionGroupNote ? (
+                <Text style={styles.memberLevelNote} numberOfLines={1}>
+                  {sessionGroupNote}
+                </Text>
+              ) : null}
+            </View>
+          );
+        })()}
+
+        {/* Quiet allure — default home/recommended; optional change. Not a pre-join wall. */}
+        {session.paceGroups.length > 0 ? (
+          <View style={styles.allureCard} testID="session-allure-card">
+            {(() => {
+              const activeId =
+                (hasStoredJoin ? joinedGroupId : selectedGroupId) ||
+                session.recommendedGroupId ||
+                session.paceGroups[0]?.id ||
+                null;
+              const active =
+                session.paceGroups.find((g) => g.id === activeId) ??
+                session.paceGroups[0];
+              if (!active) return null;
+              const fromHome =
+                Boolean(memberHomeGroupId) && active.id === memberHomeGroupId;
               return (
                 <>
-                  {recommendedGroup && (
-                    <View style={styles.compatStrip}>
-                      <Text style={styles.compatStripTitle}>
-                        TA COMPATIBILITÉ
+                  <Text style={styles.allureEyebrow}>
+                    {hasStoredJoin
+                      ? "Ton allure pour cette sortie"
+                      : "Allure prévue"}
+                  </Text>
+                  <View style={styles.allureSummaryRow}>
+                    <View style={styles.allureSummaryText}>
+                      <Text
+                        style={styles.allureTitle}
+                        testID="session-allure-summary"
+                      >
+                        {active.label} · {active.paceRange}
                       </Text>
-                      <Text style={styles.compatStripText}>
-                        Parfait pour toi ·{" "}
-                        <Text style={styles.compatStripTextStrong}>
-                          {recommendedGroup.label} ·{" "}
-                          {recommendedGroup.paceRange}
-                        </Text>
+                      <Text style={styles.allureHint}>
+                        {hasStoredJoin
+                          ? "Tu peux encore la changer si besoin."
+                          : fromHome
+                            ? "Depuis ton groupe club — tu peux ajuster."
+                            : "Préremplie pour toi — tu peux ajuster."}
                       </Text>
                     </View>
-                  )}
-                  <View style={styles.groupsList}>
-                    {session.paceGroups.map((group, index) => {
-                      const isRecommended =
-                        group.id === session.recommendedGroupId;
-                      const isSelected = group.id === selectedGroupId;
-                      const animatedStyle = isRecommended
-                        ? {
-                            transform: [
-                              {
-                                scale: pulseAnim.interpolate({
-                                  inputRange: [0, 1],
-                                  outputRange: [1, 1.02],
-                                }),
-                              },
-                            ],
-                          }
-                        : undefined;
-                      return (
-                        <View key={group.id}>
-                          <Animated.View style={animatedStyle}>
-                            <TouchableOpacity
-                              style={[
-                                styles.groupRow,
-                                isSelected && styles.groupRowSelected,
-                                isRecommended && styles.groupRowRecommended,
-                              ]}
-                              activeOpacity={0.8}
-                              onPress={() => setSelectedGroupId(group.id)}
-                            >
-                              <View style={styles.groupLeft}>
-                                <View style={styles.groupLabelRow}>
-                                  <Text style={styles.groupLabel}>
-                                    {group.label}
-                                  </Text>
-                                  {isRecommended && (
-                                    <View style={styles.recommendedTag}>
-                                      <Text style={styles.recommendedTagText}>
-                                        Recommandé
-                                      </Text>
-                                    </View>
-                                  )}
-                                </View>
-                                <Text style={styles.groupPace}>
-                                  {group.paceRange}
-                                </Text>
-                              </View>
-                              <View style={styles.groupRight}>
-                                {isSelected && (
-                                  <View style={styles.selectedCheck}>
-                                    <Text style={styles.selectedCheckText}>
-                                      ✓
-                                    </Text>
-                                  </View>
-                                )}
-                                <View style={styles.runnersBadge}>
-                                  <Text style={styles.runnersBadgeText}>
-                                    {group.runnersCount} coureurs
-                                  </Text>
-                                </View>
-                              </View>
-                            </TouchableOpacity>
-                          </Animated.View>
-                        </View>
-                      );
-                    })}
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        allurePickerOpen
+                          ? "Masquer les allures"
+                          : "Changer d'allure"
+                      }
+                      onPress={() => setAllurePickerOpen((o) => !o)}
+                      style={({ pressed }) => [
+                        styles.allureChangeBtn,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                      testID="session-allure-change"
+                    >
+                      <Text style={styles.allureChangeText}>
+                        {allurePickerOpen ? "Fermer" : "Changer"}
+                      </Text>
+                    </Pressable>
                   </View>
+
+                  {allurePickerOpen ? (
+                    <View style={styles.allureList}>
+                      {session.paceGroups.map((group) => {
+                        const isSelected = group.id === selectedGroupId;
+                        const isHome =
+                          memberHomeGroupId != null &&
+                          group.id === memberHomeGroupId;
+                        return (
+                          <Pressable
+                            key={group.id}
+                            style={({ pressed }) => [
+                              styles.allureOption,
+                              isSelected && styles.allureOptionSelected,
+                              pressed && { opacity: 0.92 },
+                            ]}
+                            onPress={() => {
+                              setSelectedGroupId(group.id);
+                              setAllurePickerOpen(false);
+                            }}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: isSelected }}
+                            accessibilityLabel={`${group.label}, ${group.paceRange}`}
+                            testID={`session-group-${group.id}`}
+                          >
+                            <View style={styles.allureOptionLeft}>
+                              <Text style={styles.allureOptionLabel}>
+                                {group.label}
+                                {isHome ? " · ton groupe" : ""}
+                              </Text>
+                              <Text style={styles.allureOptionPace}>
+                                {group.paceRange}
+                              </Text>
+                            </View>
+                            <Text style={styles.allureOptionCount}>
+                              {group.runnersCount} inscrit
+                              {group.runnersCount === 1 ? "" : "s"}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  ) : null}
                 </>
               );
             })()}
-            {/* Show saved status if already joined */}
-            {joinedGroup && (
-              <>
-                <View style={styles.divider} />
-                <View style={styles.savedStatus}>
-                  <Text style={styles.savedStatusText}>
-                    Inscription enregistrée · {joinedGroup.label} ·{" "}
-                    {joinedGroup.paceRange}
-                  </Text>
-                </View>
-              </>
-            )}
           </View>
         ) : null}
 
-        {!session.isCustom ? (
-          <View style={styles.actionButtonContainer}>
-            <InterGroupJoinPanel
-              memberGroupId={memberHomeGroupId}
-              sessionAnchorGroupId={sessionAnchorGroupId}
-              selectedGroupId={selectedPaceGroupId}
-              sessionPaceLabel={
-                session.paceGroups.find((g) => g.id === sessionAnchorGroupId)
-                  ?.paceRange ?? session.targetPace
-              }
-              settings={clubAdminSettings}
-              hasStoredJoin={hasStoredJoin}
-              canJoin={canJoin}
-              isPendingMember={isPendingMember}
-              onJoin={handleSave}
-              onRequestJoin={handleRequestJoin}
-              onLeave={handleLeave}
-              onGoToClub={() => router.push("/(tabs)/club")}
-            />
-          </View>
-        ) : null}
 
-        {isCoachOrAdmin && (
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>ESPACE COACH</Text>
-            <Text style={styles.cardSubtitle}>
-              Assigne un groupe pour cette séance.
+        {isCoachOrAdmin && session.clubId && session.paceGroups.length > 0 ? (
+          <View style={styles.orgBlock} testID="session-org-block">
+            <Text style={styles.orgLabel}>Organisation</Text>
+            <Text style={styles.orgHint}>
+              Overrides pour cette sortie seulement — les défauts club restent.
             </Text>
+            <Pressable
+              style={styles.niveauxCta}
+              accessibilityRole="button"
+              accessibilityLabel="Ouvrir Groupes et Niveaux"
+              testID="session-niveaux-cta"
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/club/niveaux",
+                  params: {
+                    clubId: session.clubId ?? "",
+                    sessionId: session.id,
+                  },
+                } as Href)
+              }
+            >
+              <Text style={styles.niveauxCtaTitle}>Groupes / Niveaux</Text>
+              <Text style={styles.niveauxCtaSub}>
+                Réassigner · notes de séance · A–D + customs
+              </Text>
+            </Pressable>
             {isCoachLoading ? (
               <Text style={styles.coachEmptyText}>Chargement...</Text>
-            ) : clubRoster.length === 0 ? (
-              <Text style={styles.coachEmptyText}>
-                Aucun membre disponible.
-              </Text>
-            ) : (
+            ) : clubRoster.length > 0 ? (
               <View style={styles.coachList}>
-                {clubRoster.map((member, index) => (
+                {clubRoster.slice(0, 6).map((member, index) => (
                   <View key={member.membershipId}>
                     {index > 0 && <View style={styles.divider} />}
                     <View style={styles.coachRow}>
@@ -1290,15 +1687,14 @@ export default function SessionScreen() {
                         <Text style={styles.coachMemberName}>
                           {member.displayName || member.userId || "—"}
                         </Text>
-                        <Text style={styles.coachMemberMeta}>
-                          {member.role} ·{" "}
-                          {member.sharePrs ? "PRs partagés" : "PRs privés"}
-                        </Text>
-                        {coachAssignments[member.userId] && (
+                        {coachAssignments[member.userId] ? (
                           <Text style={styles.coachAssignedLabel}>
-                            Assigné : Groupe {coachAssignments[member.userId]}
+                            Cette sortie ·{" "}
+                            {session.paceGroups.find(
+                              (g) => g.id === coachAssignments[member.userId],
+                            )?.label ?? coachAssignments[member.userId]}
                           </Text>
-                        )}
+                        ) : null}
                       </View>
                       <Pressable
                         style={styles.coachAssignButton}
@@ -1311,118 +1707,33 @@ export default function SessionScreen() {
                     </View>
                   </View>
                 ))}
+                {clubRoster.length > 6 ? (
+                  <Text style={styles.orgHint}>
+                    +{clubRoster.length - 6} dans Groupes / Niveaux
+                  </Text>
+                ) : null}
               </View>
-            )}
+            ) : null}
           </View>
-        )}
+        ) : null}
 
-        {/* Ton rendez-vous card - only shown if joined */}
-        {joinedGroupId !== null && (
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>TON RENDEZ-VOUS</Text>
-            <View style={styles.cardSection}>
-              <Text style={styles.infoLabelSmall}>Lieu exact</Text>
-              <Text style={styles.infoValueSmall}>
-                {session.meetingPoint ||
-                  (session.spot === "Spot 1"
-                    ? "Marina Casablanca - Entrée principale"
-                    : session.spot)}
-              </Text>
-              {session.meetingPointGPS ? (
-                <Text style={styles.infoSubtext}>
-                  {session.meetingPointGPS}
-                </Text>
-              ) : (
-                <Text style={styles.infoSubtext}>
-                  Coordonnées GPS disponibles sur demande
-                </Text>
-              )}
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.cardSection}>
-              <Text style={styles.infoLabelSmall}>Heure de rendez-vous</Text>
-              <Text style={styles.infoValueSmall}>
-                {session.dateLabel.split(" ").slice(-1)[0]} - 10 min avant le
-                départ
-              </Text>
-              <Text style={styles.infoSubtext}>
-                Échauffement collectif avant le départ
-              </Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.cardSection}>
-              <Text style={styles.infoLabelSmall}>Conseil coach</Text>
-              <Text style={styles.infoValueSmall}>
-                {session.coachAdvice ||
-                  "Prends un tour de chauffe très léger. Hydrate-toi bien avant et après la séance. Vêtements adaptés à la météo."}
-              </Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.cardSection}>
-              <Text style={styles.infoLabelSmall}>En cas d&apos;urgence</Text>
-              <TouchableOpacity
-                style={styles.whatsappButton}
-                onPress={() => {
-                  const phoneNumber = session.coachPhone || "+212708060337";
-                  const message = encodeURIComponent(
-                    `Urgence - Séance ${session.title}`,
-                  );
-                  const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, "")}?text=${message}`;
-                  Linking.openURL(whatsappUrl).catch((err) => {
-                    console.warn("Failed to open WhatsApp:", err);
-                  });
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.whatsappButtonText}>
-                  📱 Contacter {session.coachName || "le responsable"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* Footer with buttons */}
-        {session.isCustom ? (
+        {/* Footer: delete only — Modifier lives in the slim header */}
+        {isOrganizer ? (
           <View style={styles.footer}>
             <TouchableOpacity
-              style={styles.modifyButton}
-              activeOpacity={0.8}
-              onPress={() => {
-                router.push({
-                  pathname: "/session/create",
-                  params: { sessionId: session.id },
-                });
-              }}
-            >
-              <Text style={styles.modifyButtonText}>Modifier</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.deleteButton}
-              activeOpacity={0.8}
+              style={styles.deleteLink}
+              activeOpacity={0.7}
               onPress={() => setShowDeleteModal(true)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              testID="session-delete-btn"
+              accessibilityRole="button"
+              accessibilityLabel="Supprimer la séance"
             >
-              <Text style={styles.deleteButtonText}>Supprimer la séance</Text>
+              <Text style={styles.deleteLinkText}>Supprimer la sortie</Text>
             </TouchableOpacity>
-          </View>
-        ) : hasStoredJoin ? (
-          <View style={styles.footer}>
-            <View style={styles.footerButtonGroup}>
-              <TouchableOpacity
-                style={styles.leaveButton}
-                activeOpacity={0.8}
-                onPress={handleLeave}
-              >
-                <Text style={styles.leaveButtonText}>
-                  Quitter cette séance
-                </Text>
-              </TouchableOpacity>
-            </View>
           </View>
         ) : null}
         </>
-        )}
       </ScrollView>
 
       {/* Coach assign modal */}
@@ -1533,6 +1844,126 @@ export default function SessionScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {!isOrganizer ? (
+        <StitoStickyJoinBar
+          joined={hasStoredJoin}
+          busy={isJoiningOuting || isLeavingOuting}
+          primaryLabel={
+            sessionPaid
+              ? `Rejoindre · ${sessionFeeMad} MAD`
+              : sessionRequiresCotisation && !clubAJour
+                ? "Rejoindre (cotisation)"
+                : "Rejoindre la sortie"
+          }
+          secondaryHint={
+            sessionPaid
+              ? sessionStrict
+                ? "Payant strict · Espèces ou Virement (45 min)"
+                : "Payant · choisis Espèces ou Virement"
+              : sessionRequiresCotisation && clubAJour
+                ? "Cotisation à jour · un tap"
+                : undefined
+          }
+          joinedStatusLabel={
+            sessionPaymentChip(paymentRecord?.status) ?? "Tu es inscrit"
+          }
+          joinedActionLabel={
+            paymentRecord?.status === "awaiting_declare"
+              ? "J’ai viré"
+              : undefined
+          }
+          onJoinedAction={
+            paymentRecord?.status === "awaiting_declare"
+              ? () => void handleDeclareTransferFromBar()
+              : undefined
+          }
+          onPrimary={() => void handleSave()}
+          onCancelParticipation={openLeaveConfirm}
+        />
+      ) : null}
+
+      <PaymentModalitySheet
+        visible={paymentSheetOpen}
+        title={session.title}
+        amountMad={sessionFeeMad || clubCotisationConfig(session.clubId)?.amountMad || 0}
+        ribAlias={
+          session.ribAlias?.trim() ||
+          clubCotisationConfig(session.clubId)?.ribAlias ||
+          "CIH · GRPD Sorties"
+        }
+        transferRef={transferRefPreview}
+        strict={sessionStrict}
+        onChooseCash={() => void handlePaymentCash()}
+        onStartTransfer={() => void handlePaymentStartTransfer()}
+        onConfirmTransfer={() => void handlePaymentTransferDeclared()}
+        onClose={() => setPaymentSheetOpen(false)}
+      />
+
+      {/* M06 — cancel participation (not leave club) */}
+      <Modal
+        visible={showLeaveModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLeaveModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowLeaveModal(false)}
+          testID="session-leave-modal-dismiss"
+        >
+          <Pressable
+            style={styles.leaveModalContent}
+            onPress={(e) => e.stopPropagation()}
+            testID="session-leave-confirm-modal"
+            accessibilityViewIsModal
+          >
+            <Text style={styles.leaveModalTitle} testID="session-leave-modal-title">
+              Tu ne viens plus ?
+            </Text>
+            <Text style={styles.leaveModalSubtitle}>
+              {session.title}
+              {session.dateLabel ? ` · ${session.dateLabel}` : ""}
+            </Text>
+            <View style={styles.leaveModalCard}>
+              <Text style={styles.leaveModalCardTitle}>
+                Annuler ta participation
+              </Text>
+              <Text style={styles.leaveModalCardBody}>
+                Tu ne figureras plus parmi les participants à cette sortie.
+              </Text>
+              <Text style={styles.leaveModalCardBody}>
+                Ton adhésion au club reste inchangée. Cette action ne quitte
+                pas le club et ne supprime pas la sortie pour les autres.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.leaveModalConfirmBtn,
+                isLeavingOuting && { opacity: 0.6 },
+              ]}
+              onPress={() => void handleLeaveConfirm()}
+              disabled={isLeavingOuting}
+              accessibilityRole="button"
+              accessibilityLabel="Confirmer l'annulation"
+              testID="session-leave-confirm-btn"
+            >
+              <Text style={styles.leaveModalConfirmText}>
+                {isLeavingOuting ? "Annulation…" : "Confirmer l'annulation"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.leaveModalKeepBtn}
+              onPress={() => setShowLeaveModal(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Garder ma place"
+              testID="session-leave-keep-btn"
+            >
+              <Text style={styles.leaveModalKeepText}>Garder ma place</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1540,52 +1971,180 @@ export default function SessionScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: stitoTheme.canvas,
   },
   header: {
+    paddingHorizontal: 20,
+    paddingTop: 6,
+    paddingBottom: 4,
+    backgroundColor: stitoTheme.canvas,
+  },
+  headerContextRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  headerCityLabel: {
+    fontFamily: stitoTheme.font.space.bold,
+    fontSize: 10,
+    lineHeight: 13,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    color: stitoTheme.outline,
+  },
+  headerAvatarMark: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: stitoTheme.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerAvatarMarkText: {
+    fontFamily: stitoTheme.font.space.bold,
+    fontSize: 14,
+    color: stitoTheme.onPrimary,
+  },
+  stitoHeroWrap: {
+    marginBottom: 8,
+  },
+  stitoStory: {
+    gap: 16,
+    marginBottom: 16,
+    paddingTop: 12,
+  },
+  stitoRule: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(190,202,190,0.45)",
+  },
+  orgBlock: {
+    marginTop: 12,
+    marginBottom: 8,
+    paddingTop: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: stitoTheme.surfaceContainerHigh,
+    gap: 8,
+  },
+  orgLabel: {
+    fontFamily: stitoTheme.font.space.bold,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    color: stitoTheme.outline,
+  },
+  orgHint: {
+    fontFamily: stitoTheme.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: stitoTheme.textSecondary,
+    marginBottom: 8,
+  },
+  niveauxCta: {
+    backgroundColor: stitoTheme.surfaceContainerLow,
+    borderRadius: 14,
     paddingHorizontal: 14,
-    paddingTop: 8,
-    paddingBottom: 12,
-    backgroundColor: colors.background.primary,
+    paddingVertical: 14,
+    gap: 4,
+    marginBottom: 8,
+  },
+  niveauxCtaTitle: {
+    fontFamily: stitoTheme.font.space.semibold,
+    fontSize: 16,
+    color: stitoTheme.text,
+  },
+  niveauxCtaSub: {
+    fontFamily: stitoTheme.font.hanken.regular,
+    fontSize: 13,
+    color: stitoTheme.outline,
+  },
+  memberLevelChipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: stitoTheme.surfaceContainerLow,
+  },
+  memberLevelDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  memberLevelChipText: {
+    fontFamily: stitoTheme.font.hanken.medium,
+    fontSize: 13,
+    color: stitoTheme.text,
+  },
+  memberLevelNote: {
+    flexGrow: 1,
+    fontFamily: stitoTheme.font.hanken.regular,
+    fontSize: 12,
+    color: stitoTheme.outline,
+  },
+  deleteLink: {
+    alignItems: "center",
+    paddingVertical: 16,
+    marginTop: 8,
+  },
+  deleteLinkText: {
+    fontFamily: stitoTheme.font.space.semibold,
+    fontSize: 14,
+    color: stitoTheme.error,
   },
   headerNavRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 0,
   },
   headerBackCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surface.s3,
+    width: 44,
+    height: 44,
+    marginLeft: -8,
     alignItems: "center",
     justifyContent: "center",
   },
   headerBackChevron: {
-    color: colors.text.primary,
-    fontSize: 22,
+    color: stitoTheme.text,
+    fontSize: 28,
     fontWeight: "300",
     marginTop: -2,
   },
   headerLocation: {
     flex: 1,
-    marginHorizontal: 10,
-    color: colors.text.secondary,
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  headerMenuDots: {
-    color: colors.text.primary,
+    marginHorizontal: 8,
+    fontFamily: stitoTheme.font.space.semibold,
+    color: stitoTheme.text,
     fontSize: 18,
-    letterSpacing: 1,
-    fontWeight: "700",
+    lineHeight: 24,
+    letterSpacing: -0.2,
+    textAlign: "left",
+  },
+  headerContextActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  headerShareBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(190,202,190,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: stitoTheme.card,
   },
   headerMenuAction: {
-    color: colors.text.accent,
-    fontSize: 14,
-    fontWeight: "700",
+    fontFamily: stitoTheme.font.hanken.medium,
+    color: stitoTheme.primary,
+    fontSize: 12,
+    lineHeight: 16,
   },
   headerTagRow: {
     flexDirection: "row",
@@ -1609,7 +2168,7 @@ const styles = StyleSheet.create({
   tabRow: {
     flexDirection: "row",
     borderBottomWidth: hairline,
-    borderBottomColor: colors.border.default,
+    borderBottomColor: "rgba(190,202,190,0.85)",
     marginBottom: 4,
   },
   tabCell: {
@@ -1620,19 +2179,19 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 15,
     fontWeight: "600",
-    color: colors.text.secondary,
+    color: stitoTheme.textSecondary,
     marginBottom: 6,
     textAlign: "center",
   },
   tabLabelActive: {
-    color: colors.text.primary,
+    color: stitoTheme.text,
   },
   tabUnderline: {
     alignSelf: "stretch",
     height: 3,
     width: "100%",
     borderRadius: 2,
-    backgroundColor: colors.accent.primary,
+    backgroundColor: stitoTheme.primary,
   },
   tabUnderlineMuted: {
     alignSelf: "stretch",
@@ -1670,9 +2229,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 40,
+    paddingBottom: 140,
   },
   backRow: {
     flexDirection: "row",
@@ -1700,18 +2259,64 @@ const styles = StyleSheet.create({
   },
   notFoundHint: {
     color: colors.text.secondary,
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.md,
     marginTop: 8,
-    lineHeight: 20,
+    lineHeight: 22,
+  },
+  inaccessibleBody: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 32,
+  },
+  inaccessibleTitle: {
+    color: colors.text.primary,
+    fontSize: 30,
+    fontWeight: "700",
+    letterSpacing: -0.6,
+    lineHeight: 36,
+    marginBottom: 8,
+  },
+  inaccessibleCard: {
+    marginTop: 22,
+    marginBottom: 28,
+    backgroundColor: colors.background.card,
+    borderWidth: hairline,
+    borderColor: colors.border.default,
+    borderRadius: borderRadius.lg,
+    padding: 18,
+  },
+  inaccessibleCardTitle: {
+    color: colors.text.primary,
+    fontSize: typography.sizes.lg,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  inaccessibleCardBody: {
+    color: colors.text.secondary,
+    fontSize: typography.sizes.md,
+    lineHeight: 22,
+  },
+  inaccessiblePrimaryBtn: {
+    backgroundColor: colors.accent.sage,
+    borderRadius: 18,
+    paddingVertical: 17,
+    alignItems: "center",
+  },
+  inaccessiblePrimaryBtnText: {
+    color: colors.accent.charcoal,
+    fontSize: typography.sizes.md,
+    fontWeight: "700",
   },
   secondaryLinkButton: {
-    marginTop: 10,
-    alignSelf: "flex-start",
+    marginTop: 18,
+    alignSelf: "center",
   },
   secondaryLinkButtonText: {
-    color: colors.accent.primary,
+    color: colors.accent.sage,
     fontSize: typography.sizes.sm,
     fontWeight: "700",
+    textAlign: "center",
   },
   inlineErrorBanner: {
     backgroundColor: colors.accent.orangeDim,
@@ -1747,9 +2352,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   joinedStatus: {
-    color: colors.text.secondary,
+    color: stitoTheme.textSecondary,
     fontSize: 13,
-    marginBottom: 12,
+    lineHeight: 18,
+    marginTop: 8,
+    marginBottom: 4,
+    fontFamily: stitoTheme.font.hanken.regular,
   },
   infoBlock: {
     marginBottom: 0,
@@ -1760,32 +2368,130 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoLabel: {
-    color: colors.text.secondary,
+    color: stitoTheme.textSecondary,
+    fontFamily: stitoTheme.font.hanken.regular,
     fontSize: 14,
   },
   infoValue: {
-    color: colors.text.primary,
+    color: stitoTheme.text,
+    fontFamily: stitoTheme.font.space.semibold,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   infoLabelSmall: {
-    color: colors.text.secondary,
+    color: stitoTheme.textSecondary,
+    fontFamily: stitoTheme.font.hanken.regular,
     fontSize: 12,
     marginBottom: 4,
   },
   infoValueSmall: {
-    color: colors.text.primary,
+    color: stitoTheme.text,
+    fontFamily: stitoTheme.font.hanken.medium,
     fontSize: 13,
     fontWeight: "500",
   },
   card: {
-    backgroundColor: colors.background.card,
-    borderRadius: 14,
-    borderWidth: hairline,
-    borderColor: colors.border.default,
-    paddingHorizontal: 13,
-    paddingVertical: 13,
-    marginBottom: 9,
+    backgroundColor: stitoTheme.card,
+    borderRadius: stitoTheme.radiusMain,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.85)",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 12,
+  },
+  allureCard: {
+    backgroundColor: stitoTheme.card,
+    borderRadius: stitoTheme.radiusMain,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.85)",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 12,
+    gap: 10,
+  },
+  allureEyebrow: {
+    fontFamily: stitoTheme.font.hanken.semibold,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.3,
+    color: stitoTheme.textSecondary,
+    textTransform: "uppercase",
+  },
+  allureSummaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  allureSummaryText: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  allureTitle: {
+    fontFamily: stitoTheme.font.space.semibold,
+    fontSize: 17,
+    lineHeight: 22,
+    color: stitoTheme.text,
+  },
+  allureHint: {
+    fontFamily: stitoTheme.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: stitoTheme.outline,
+  },
+  allureChangeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: "rgba(0,95,52,0.1)",
+    minHeight: 36,
+    justifyContent: "center",
+  },
+  allureChangeText: {
+    fontFamily: stitoTheme.font.hanken.semibold,
+    fontSize: 13,
+    color: stitoTheme.primary,
+  },
+  allureList: {
+    gap: 8,
+    marginTop: 4,
+  },
+  allureOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: stitoTheme.surfaceContainerLow,
+  },
+  allureOptionSelected: {
+    backgroundColor: "rgba(0,95,52,0.12)",
+    borderWidth: 1.5,
+    borderColor: stitoTheme.primary,
+  },
+  allureOptionLeft: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  allureOptionLabel: {
+    fontFamily: stitoTheme.font.hanken.semibold,
+    fontSize: 14,
+    lineHeight: 18,
+    color: stitoTheme.text,
+  },
+  allureOptionPace: {
+    fontFamily: stitoTheme.font.hanken.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: stitoTheme.textSecondary,
+  },
+  allureOptionCount: {
+    fontFamily: stitoTheme.font.hanken.medium,
+    fontSize: 12,
+    color: stitoTheme.outline,
   },
   groupsHeader: {
     flexDirection: "column",
@@ -1822,12 +2528,16 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   cardLabel: {
-    color: colors.text.primary,
-    fontSize: 15,
+    color: stitoTheme.textSecondary,
+    fontFamily: stitoTheme.font.space.bold,
+    fontSize: 11,
     fontWeight: "700",
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
   },
   cardSubtitle: {
-    color: colors.text.tertiary,
+    color: stitoTheme.textSecondary,
+    fontFamily: stitoTheme.font.hanken.regular,
     fontSize: 12,
     marginTop: 6,
     marginBottom: 12,
@@ -2091,27 +2801,32 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   modifyButton: {
-    backgroundColor: colors.accent.primary,
+    backgroundColor: colors.accent.sage,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 26,
+    paddingVertical: 17,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
   },
   modifyButtonText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.accent.charcoal,
+    fontSize: 15,
+    fontWeight: "700",
   },
   deleteButton: {
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.card,
   },
   deleteButtonText: {
-    color: "#FF3B30",
+    color: colors.text.error,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   workoutSummaryText: {
     color: colors.text.primary,
@@ -2240,6 +2955,80 @@ const styles = StyleSheet.create({
   modalConfirmText: {
     color: colors.text.primary,
     fontSize: 15,
+    fontWeight: "600",
+  },
+  leaveModalContent: {
+    backgroundColor: colors.background.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.06)",
+    padding: 24,
+    width: "100%",
+    maxWidth: 400,
+    gap: 12,
+  },
+  leaveModalTitle: {
+    color: colors.text.primary,
+    fontSize: 26,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+  },
+  leaveModalSubtitle: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  leaveModalCard: {
+    backgroundColor: colors.background.primary,
+    borderRadius: 16,
+    borderWidth: hairline,
+    borderColor: colors.border.default,
+    padding: 16,
+    gap: 8,
+  },
+  leaveModalCardTitle: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  leaveModalCardBody: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  leaveModalSmall: {
+    color: colors.text.tertiary,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  leaveModalConfirmBtn: {
+    marginTop: 4,
+    backgroundColor: colors.accent.sage,
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  leaveModalConfirmText: {
+    color: colors.accent.charcoal,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  leaveModalKeepBtn: {
+    paddingVertical: 14,
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  leaveModalKeepText: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  languageMeta: {
+    marginTop: 10,
+    color: colors.accent.sage,
+    fontSize: 13,
     fontWeight: "600",
   },
   coachConfirmButton: {

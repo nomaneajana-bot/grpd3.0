@@ -1,0 +1,260 @@
+{
+  "batch": "codex-correction-api-1-6",
+  "points": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "tested_sha": "4cc4056aa85ff67e9b85e12b78cd48e4684042c7",
+  "tested_at": "2026-10-25T20:10:24.567Z",
+  "environment": "local_postgres_integration",
+  "hosted_claim": false,
+  "native_claim": false,
+  "uat_claim": false,
+  "ocif_claim": false,
+  "summary": {
+    "pass": 47,
+    "fail": 0,
+    "total": 47
+  },
+  "checks": [
+    {
+      "id": "p6_unrelated_seeded_before",
+      "ok": true,
+      "detail": "C"
+    },
+    {
+      "id": "login_admin",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "login_member",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "login_outsider",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "login_pending",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p2_anon_public_200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p2_anon_public_no_pending",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "id": "p2_anon_public_no_createdBy",
+      "ok": true,
+      "detail": "createdById absent"
+    },
+    {
+      "id": "p2_anon_public_allowlist_name",
+      "ok": true,
+      "detail": "Pub cx_mvo9idbq"
+    },
+    {
+      "id": "p2_anon_private_404",
+      "ok": true,
+      "detail": "404"
+    },
+    {
+      "id": "p2_outsider_public_200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p2_outsider_public_no_pending",
+      "ok": true,
+      "detail": "no pending"
+    },
+    {
+      "id": "p2_outsider_private_preview_200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p2_outsider_private_no_pending",
+      "ok": true,
+      "detail": "invite preview without pending"
+    },
+    {
+      "id": "p2_outsider_private_no_createdBy",
+      "ok": true,
+      "detail": "no createdBy"
+    },
+    {
+      "id": "p2_outsider_private_has_name",
+      "ok": true,
+      "detail": "Priv cx_mvo9idbq"
+    },
+    {
+      "id": "p2_pending_200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p2_pending_no_pending_list",
+      "ok": true,
+      "detail": "pending viewer cannot list pendings"
+    },
+    {
+      "id": "p2_member_200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p2_member_no_pending",
+      "ok": true,
+      "detail": "member no pending list"
+    },
+    {
+      "id": "p2_member_no_createdBy",
+      "ok": true,
+      "detail": "member no createdBy"
+    },
+    {
+      "id": "p2_admin_200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p2_admin_sees_pending",
+      "ok": true,
+      "detail": "[{\"id\":\"cmvo9idct0003befnhn0r9x1c\",\"userId\":\"pen_91ab1c6526ca9d\",\"displayName\":\"Pending Person\",\"status\":\"pending\",\"role"
+    },
+    {
+      "id": "p2_admin_has_createdBy",
+      "ok": true,
+      "detail": "adm_0fd102e98565ad"
+    },
+    {
+      "id": "p2_exmember_200_public",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p2_exmember_no_pending",
+      "ok": true,
+      "detail": "ex-member no pending"
+    },
+    {
+      "id": "p3_invite_collision_409",
+      "ok": true,
+      "detail": "409"
+    },
+    {
+      "id": "p3_collision_rolls_back_name",
+      "ok": true,
+      "detail": "Pub cx_mvo9idbq"
+    },
+    {
+      "id": "p3_retry_ok",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p3_unrelated_club_unchanged",
+      "ok": true,
+      "detail": "Other cx_mvo9idbq"
+    },
+    {
+      "id": "p4_ineligible_group_400",
+      "ok": true,
+      "detail": "400"
+    },
+    {
+      "id": "p4_ineligible_no_change",
+      "ok": true,
+      "detail": "A"
+    },
+    {
+      "id": "p4_pending_member_forbidden_or_404",
+      "ok": true,
+      "detail": "403"
+    },
+    {
+      "id": "p4_member_cannot_assign",
+      "ok": true,
+      "detail": "403"
+    },
+    {
+      "id": "p4_admin_assign_ok",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p4_admin_assign_response_home",
+      "ok": true,
+      "detail": "B"
+    },
+    {
+      "id": "p4_color_group_assign_ok",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p4_absent_color_group_400",
+      "ok": true,
+      "detail": "400"
+    },
+    {
+      "id": "p4_membership_gone_during_update",
+      "ok": true,
+      "detail": "404"
+    },
+    {
+      "id": "p6_unrelated_preserved_after_mutation",
+      "ok": true,
+      "detail": "C->C"
+    },
+    {
+      "id": "p4_assign_persisted",
+      "ok": true,
+      "detail": "g_smoke_cx_mvo9idbq"
+    },
+    {
+      "id": "p6_api_get_after_mutation_ok",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p4_attendance_untouched",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "id": "p5_logout_200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p5_logout_stateless_ack",
+      "ok": true,
+      "detail": "{\"ok\":true,\"serverRevocation\":\"not_applicable_stateless_jwt\"}"
+    },
+    {
+      "id": "p5_token_still_valid_until_client_discard",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "id": "p5_no_global_revoke_claim",
+      "ok": true,
+      "detail": "honest ack only"
+    }
+  ]
+}

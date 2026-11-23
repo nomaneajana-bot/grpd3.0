@@ -2,12 +2,12 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAuth } from "@/lib/server/auth-helpers";
-import { hasClubPermission } from "@/lib/server/role-checks";
-import { prisma } from "@/lib/server/prisma";
-import { jsonOk, jsonError } from "@/lib/server/api-response";
-import { sessionIdParamSchema } from "@/lib/server/validators";
-import { getJoinUpdateData } from "@/lib/attendanceStatusLogic";
+import { requireAuth } from "../../../../../../lib/server/auth-helpers";
+import { hasClubPermission } from "../../../../../../lib/server/role-checks";
+import { prisma } from "../../../../../../lib/server/prisma";
+import { jsonOk, jsonError } from "../../../../../../lib/server/api-response";
+import { sessionIdParamSchema } from "../../../../../../lib/server/validators";
+import { getJoinUpdateData } from "../../../../../../lib/attendanceStatusLogic";
 
 const bodySchema = z.object({
   groupId: z.string().min(1, "groupId is required"),
@@ -18,7 +18,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const params = await context.params;
     const parsedParams = sessionIdParamSchema.safeParse(params);
     if (!parsedParams.success) {

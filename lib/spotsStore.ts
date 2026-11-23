@@ -2,14 +2,18 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STORAGE_KEY = 'spots:v1';
-const DEFAULT_SPOTS = ['Marina', 'Parc', 'Piste'];
+import { DEFAULT_LOCATIONS } from '@/lib/moroccoPlaces';
+
+const STORAGE_KEY = 'spots:v2';
+const LEGACY_STORAGE_KEY = 'spots:v1';
+const DEFAULT_SPOTS = [...DEFAULT_LOCATIONS];
 
 async function loadSpotsFromStorage(): Promise<string[]> {
   try {
-    const data = await AsyncStorage.getItem(STORAGE_KEY);
+    let data = await AsyncStorage.getItem(STORAGE_KEY);
     if (!data) {
-      // Initialize with defaults if no data exists
+      // One-time: prefer fresh Casablanca defaults over stale v1 list
+      await AsyncStorage.removeItem(LEGACY_STORAGE_KEY);
       await saveSpotsToStorage(DEFAULT_SPOTS);
       return DEFAULT_SPOTS;
     }
@@ -17,7 +21,21 @@ async function loadSpotsFromStorage(): Promise<string[]> {
     if (!Array.isArray(parsed)) {
       return DEFAULT_SPOTS;
     }
-    return parsed.length > 0 ? parsed : DEFAULT_SPOTS;
+    // Ensure jury spots stay available even if user pruned the list
+    const must = [
+      "Circuit Rodriguez, Casablanca",
+      "Marina Juice, Casablanca",
+      "Vélodrome Casablanca",
+    ];
+    const lower = parsed.map((s: string) => String(s).toLowerCase());
+    let next = [...parsed];
+    for (const spot of must) {
+      if (!lower.includes(spot.toLowerCase())) next = [spot, ...next];
+    }
+    if (next.length !== parsed.length) {
+      await saveSpotsToStorage(next);
+    }
+    return next.length > 0 ? next : DEFAULT_SPOTS;
   } catch (error) {
     console.warn('Failed to load spots from storage:', error);
     return DEFAULT_SPOTS;

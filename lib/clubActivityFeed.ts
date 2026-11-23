@@ -11,7 +11,7 @@ export type ClubFeedItem = {
   kind?: "pr" | "session" | "coach";
 };
 
-const COLORS = ["#2F7BFF", "#E94B5E", "#2BC97A", "#F08A3A", "#B265E0"];
+const COLORS = ["#C3D5B3", "#E94B5E", "#8FA97A", "#F08A3A", "#B1B2B6"];
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/);

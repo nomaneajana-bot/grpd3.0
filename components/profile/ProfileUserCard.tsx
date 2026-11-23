@@ -2,42 +2,80 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { profileTheme } from "@/constants/profileTheme";
-import { colors, typography } from "@/constants/ui";
+import { Avatar } from "@/components/ui/Avatar";
+import { stitoTheme as t } from "@/constants/stitoTheme";
 
 type ProfileUserCardProps = {
   name: string;
   initial: string;
   subtitle: string;
+  avatarUrl?: string | null;
   onEditPress: () => void;
+  onAvatarPress?: () => void;
+  avatarBusy?: boolean;
 };
 
 export function ProfileUserCard({
   name,
   initial,
   subtitle,
+  avatarUrl,
   onEditPress,
+  onAvatarPress,
+  avatarBusy = false,
 }: ProfileUserCardProps) {
   return (
-    <View style={styles.card}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{initial}</Text>
-      </View>
+    <View style={styles.card} testID="profile-user-card">
+      <Pressable
+        onPress={onAvatarPress}
+        disabled={!onAvatarPress || avatarBusy}
+        accessibilityRole="button"
+        accessibilityLabel={
+          avatarUrl ? "Changer la photo de profil" : "Ajouter une photo de profil"
+        }
+        testID="profile-avatar-btn"
+        style={({ pressed }) => [
+          styles.avatarHit,
+          pressed && onAvatarPress ? { opacity: 0.85 } : null,
+        ]}
+      >
+        <Avatar
+          name={name}
+          initial={initial}
+          uri={avatarUrl}
+          size={56}
+          testID="profile-avatar"
+        />
+        {onAvatarPress ? (
+          <View style={styles.cameraBadge}>
+            <Ionicons name="camera-outline" size={12} color={t.onPrimary} />
+          </View>
+        ) : null}
+      </Pressable>
       <View style={styles.meta}>
-        <Text style={styles.name}>{name}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+        <Text style={styles.name} testID="profile-name">
+          {name}
+        </Text>
+        {subtitle ? (
+          <Text style={styles.subtitle} testID="profile-subtitle">
+            {subtitle}
+          </Text>
+        ) : null}
+        {onAvatarPress ? (
+          <Text style={styles.photoHint}>
+            {avatarUrl ? "Appuie pour changer la photo" : "Ajouter une photo"}
+          </Text>
+        ) : null}
       </View>
       <Pressable
         onPress={onEditPress}
         hitSlop={8}
         accessibilityRole="button"
         accessibilityLabel="Modifier le profil"
+        testID="profile-edit"
+        style={styles.editBtn}
       >
-        <Ionicons
-          name="pencil-outline"
-          size={18}
-          color={colors.text.secondary}
-        />
+        <Ionicons name="pencil-outline" size={18} color={t.primary} />
       </Pressable>
     </View>
   );
@@ -48,35 +86,59 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: profileTheme.cardBackground,
-    borderRadius: profileTheme.cardRadius,
+    backgroundColor: t.card,
+    borderRadius: t.radiusMain,
     padding: 16,
-    marginBottom: profileTheme.cardGap,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
   },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.accent.primary,
+  avatarHit: {
+    position: "relative",
+  },
+  cameraBadge: {
+    position: "absolute",
+    right: -2,
+    bottom: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: t.primary,
     alignItems: "center",
     justifyContent: "center",
-  },
-  avatarText: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: t.card,
   },
   meta: {
     flex: 1,
+    minWidth: 0,
   },
   name: {
-    fontSize: typography.sizes.lg,
-    fontWeight: "700",
-    color: "#FFFFFF",
+    ...t.type.cardTitle,
+    fontSize: 22,
+    lineHeight: 26,
+    color: t.text,
     marginBottom: 2,
   },
   subtitle: {
-    fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
+    fontFamily: t.font.hanken.regular,
+    fontSize: 13,
+    color: t.textSecondary,
+  },
+  photoHint: {
+    fontFamily: t.font.hanken.medium,
+    fontSize: 12,
+    color: t.primary,
+    marginTop: 4,
+  },
+  editBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: t.surfaceContainerLow,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(232,232,233,0.9)",
   },
 });
